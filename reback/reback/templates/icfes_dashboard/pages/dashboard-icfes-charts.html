@@ -1,0 +1,538 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ICFES - Gráficos Interactivos</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 0;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stats-card.success {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stats-card.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stats-card.warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .stats-card h3 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-card p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            position: relative;
+            height: 400px;
+        }
+
+        .chart-container.tall {
+            height: 500px;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .badge-rank {
+            font-size: 0.85rem;
+            padding: 0.35rem 0.65rem;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-custom navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">📊 Dashboard ICFES - Análisis Interactivo</span>
+            <div class="d-flex">
+                <select id="global-year-selector" class="form-select">
+                    {% for ano in anos_disponibles %}
+                    <option value="{{ ano }}" {% if ano == ano_actual %}selected{% endif %}>Año {{ ano }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- Stats Cards -->
+        <div class="row" id="stats-cards">
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card">
+                    <h3 id="stat-estudiantes">-</h3>
+                    <p>Total Estudiantes</p>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card success">
+                    <h3 id="stat-colegios">-</h3>
+                    <p>Total Colegios</p>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card info">
+                    <h3 id="stat-promedio">-</h3>
+                    <p>Promedio Nacional</p>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card warning">
+                    <h3 id="stat-departamentos">-</h3>
+                    <p>Departamentos</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="row">
+            <div class="col-xl-8">
+                <div class="chart-container tall">
+                    <h5 class="chart-title">📈 Tendencias Nacionales (1996-2024)</h5>
+                    <canvas id="chartTendencias"></canvas>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="chart-container tall">
+                    <h5 class="chart-title">🥧 Distribución Regional</h5>
+                    <canvas id="chartRegional"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="row">
+            <div class="col-xl-6">
+                <div class="chart-container">
+                    <h5 class="chart-title">📊 Comparación por Sectores</h5>
+                    <canvas id="chartSectores"></canvas>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="chart-container">
+                    <h5 class="chart-title">🏆 Top 10 Departamentos</h5>
+                    <canvas id="chartDepartamentos"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table: Top Colegios -->
+        <div class="row">
+            <div class="col-12">
+                <div class="table-container">
+                    <h5 class="chart-title">🎓 Top 50 Colegios Destacados</h5>
+                    <div class="table-responsive">
+                        <table id="tableColegios" class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ranking</th>
+                                    <th>Colegio</th>
+                                    <th>Departamento</th>
+                                    <th>Municipio</th>
+                                    <th>Sector</th>
+                                    <th>Promedio</th>
+                                    <th>Estudiantes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableColegiosBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <script>
+        let currentYear = {{ ano_actual }};
+        let charts = {};
+
+        const colors = {
+            primary: '#667eea',
+            success: '#10b981',
+            danger: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6',
+            purple: '#8b5cf6',
+            pink: '#ec4899',
+            teal: '#14b8a6',
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadStats();
+            loadTendenciasChart();
+            loadSectoresChart();
+            loadDepartamentosChart();
+            loadRegionalChart();
+            loadColegiosTable();
+
+            document.getElementById('global-year-selector').addEventListener('change', function () {
+                currentYear = this.value;
+                loadStats();
+                loadSectoresChart();
+                loadDepartamentosChart();
+                loadRegionalChart();
+                loadColegiosTable();
+            });
+        });
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`/icfes/api/estadisticas/?ano=${currentYear}`);
+                const data = await response.json();
+
+                document.getElementById('stat-estudiantes').textContent = data.total_estudiantes.toLocaleString();
+                document.getElementById('stat-colegios').textContent = data.total_colegios.toLocaleString();
+                document.getElementById('stat-promedio').textContent = data.promedio_nacional.toFixed(1);
+                document.getElementById('stat-departamentos').textContent = data.total_departamentos;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadTendenciasChart() {
+            try {
+                const response = await fetch('/icfes/api/charts/tendencias/');
+                const data = await response.json();
+
+                const ctx = document.getElementById('chartTendencias').getContext('2d');
+
+                if (charts.tendencias) charts.tendencias.destroy();
+
+                charts.tendencias = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => d.ano),
+                        datasets: [
+                            {
+                                label: 'Global',
+                                data: data.map(d => d.punt_global),
+                                borderColor: colors.primary,
+                                backgroundColor: colors.primary + '20',
+                                tension: 0.4,
+                                fill: true,
+                                borderWidth: 3
+                            },
+                            {
+                                label: 'Matemáticas',
+                                data: data.map(d => d.punt_matematicas),
+                                borderColor: colors.danger,
+                                tension: 0.4,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Lectura',
+                                data: data.map(d => d.punt_lectura),
+                                borderColor: colors.success,
+                                tension: 0.4,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'C. Naturales',
+                                data: data.map(d => d.punt_c_naturales),
+                                borderColor: colors.warning,
+                                tension: 0.4,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Sociales',
+                                data: data.map(d => d.punt_sociales),
+                                borderColor: colors.info,
+                                tension: 0.4,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Inglés',
+                                data: data.map(d => d.punt_ingles),
+                                borderColor: colors.purple,
+                                tension: 0.4,
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 200
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading tendencias chart:', error);
+            }
+        }
+
+        async function loadSectoresChart() {
+            try {
+                const response = await fetch(`/icfes/api/charts/sectores/?ano=${currentYear}`);
+                const data = await response.json();
+
+                const ctx = document.getElementById('chartSectores').getContext('2d');
+
+                if (charts.sectores) charts.sectores.destroy();
+
+                const materias = ['punt_global', 'punt_matematicas', 'punt_lectura', 'punt_c_naturales', 'punt_sociales', 'punt_ingles'];
+                const labels = ['Global', 'Matemáticas', 'Lectura', 'C. Naturales', 'Sociales', 'Inglés'];
+
+                charts.sectores = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: data.map((sector, idx) => ({
+                            label: sector.sector,
+                            data: materias.map(m => sector[m]),
+                            backgroundColor: idx === 0 ? colors.primary : colors.success
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 200
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading sectores chart:', error);
+            }
+        }
+
+        async function loadDepartamentosChart() {
+            try {
+                const response = await fetch(`/icfes/api/charts/departamentos/?ano=${currentYear}&limit=10`);
+                const data = await response.json();
+
+                const ctx = document.getElementById('chartDepartamentos').getContext('2d');
+
+                if (charts.departamentos) charts.departamentos.destroy();
+
+                charts.departamentos = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.departamento),
+                        datasets: [{
+                            label: 'Promedio',
+                            data: data.map(d => d.promedio),
+                            backgroundColor: data.map((_, idx) => {
+                                if (idx < 3) return colors.success;
+                                if (idx < 7) return colors.info;
+                                return colors.warning;
+                            })
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: false,
+                                min: 240
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading departamentos chart:', error);
+            }
+        }
+
+        async function loadRegionalChart() {
+            try {
+                const response = await fetch(`/icfes/api/charts/regional/?ano=${currentYear}`);
+                const data = await response.json();
+
+                const ctx = document.getElementById('chartRegional').getContext('2d');
+
+                if (charts.regional) charts.regional.destroy();
+
+                charts.regional = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.map(d => d.region),
+                        datasets: [{
+                            data: data.map(d => d.total_estudiantes),
+                            backgroundColor: [
+                                colors.primary,
+                                colors.success,
+                                colors.warning,
+                                colors.danger,
+                                colors.info
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed.toLocaleString();
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading regional chart:', error);
+            }
+        }
+
+        async function loadColegiosTable() {
+            try {
+                const response = await fetch(`/icfes/api/colegios/destacados/?ano=${currentYear}&limit=50`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('tableColegiosBody');
+                tbody.innerHTML = '';
+
+                data.forEach((colegio, idx) => {
+                    const row = document.createElement('tr');
+
+                    let badgeClass = 'bg-secondary';
+                    if (idx < 3) badgeClass = 'bg-success';
+                    else if (idx < 10) badgeClass = 'bg-info';
+                    else if (idx < 25) badgeClass = 'bg-primary';
+
+                    row.innerHTML = `
+                    <td><span class="badge ${badgeClass} badge-rank">#${colegio.ranking_nacional}</span></td>
+                    <td><strong>${colegio.nombre_colegio}</strong></td>
+                    <td>${colegio.departamento}</td>
+                    <td>${colegio.municipio}</td>
+                    <td><span class="badge ${colegio.sector === 'NO OFICIAL' ? 'bg-warning text-dark' : 'bg-primary'}">${colegio.sector}</span></td>
+                    <td><strong>${colegio.avg_punt_global.toFixed(1)}</strong></td>
+                    <td>${colegio.total_estudiantes}</td>
+                `;
+
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading colegios table:', error);
+                document.getElementById('tableColegiosBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar datos</td></tr>';
+            }
+        }
+    </script>
+</body>
+
+</html>

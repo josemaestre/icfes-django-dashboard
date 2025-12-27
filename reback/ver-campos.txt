@@ -1,0 +1,14 @@
+                         column_name data_type  is_nullable
+0          acceso_recursos_combinado    BIGINT         True
+1                        ano_estudio   VARCHAR         True
+2                           aprobado    BIGINT         True
+3           brecha_desempeno_estrato    DOUBLE         True
+4                  categoria_estrato   VARCHAR         True
+..                               ...       ...          ...
+98                  punt_matematicas    DOUBLE         True
+99          punt_sociales_ciudadanas    DOUBLE         True
+100  rendimiento_global_motivacional   VARCHAR         True
+101                   seed_codigomen    DOUBLE         True
+102                      seed_nombre   VARCHAR         True
+
+[103 rows x 3 columns]

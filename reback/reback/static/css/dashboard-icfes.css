@@ -1,0 +1,49 @@
+/* Hierarchical Table Styles */
+.hierarchy-level-0 {
+    font-weight: 600;
+    background-color: rgba(var(--bs-light-rgb), 0.3);
+}
+
+.hierarchy-level-1 {
+    background-color: rgba(var(--bs-light-rgb), 0.2);
+}
+
+.hierarchy-level-2 {
+    background-color: rgba(var(--bs-light-rgb), 0.1);
+}
+
+.hierarchy-level-3 {
+    background-color: transparent;
+}
+
+.hierarchy-child {
+    border-left: 3px solid var(--bs-primary);
+}
+
+.expand-toggle {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.expand-toggle:hover {
+    color: var(--bs-primary);
+}
+
+.expand-toggle i {
+    margin-right: 5px;
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.expand-toggle:hover i {
+    transform: scale(1.2);
+}
+
+#hierarchical-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#hierarchical-table tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}

@@ -1,0 +1,359 @@
+{% extends 'layout_vertical.html' %}
+
+{% load static i18n %}
+
+{% block title %}ICFES Dashboard{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='ICFES' sub_title='Dashboards' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<!-- Tab Navigation -->
+<ul class="nav nav-tabs nav-tabs-custom mb-3" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" data-bs-toggle="tab" href="#vista-general" role="tab">
+      <i class="bx bx-bar-chart me-1"></i> Vista General
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#explorador" role="tab">
+      <i class="bx bx-list-ul me-1"></i> Explorador Jerárquico
+    </a>
+  </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+  <!-- Vista General Tab -->
+  <div class="tab-pane fade show active" id="vista-general" role="tabpanel">
+    <!-- KPI Cards Row -->
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 class="mb-0 fw-bold mb-2" id="stat-estudiantes">--</h3>
+                <p class="text-muted">Total Estudiantes</p>
+                <span class="badge fs-12 badge-soft-info">
+                  <i class="ti ti-users"></i> Año <span id="year-display">2024</span>
+                </span>
+              </div>
+              <div>
+                <div class="avatar-lg d-inline-block me-1">
+                  <span class="avatar-title bg-info-subtle text-info rounded-circle">
+                    <iconify-icon icon="iconamoon:profile-circle-duotone" class="fs-32"></iconify-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 class="mb-0 fw-bold mb-2" id="stat-promedio">--</h3>
+                <p class="text-muted">Promedio Nacional</p>
+                <span class="badge fs-12 badge-soft-primary">
+                  <i class="ti ti-chart-line"></i> Puntaje Global
+                </span>
+              </div>
+              <div>
+                <div class="avatar-lg d-inline-block me-1">
+                  <span class="avatar-title bg-primary-subtle text-primary rounded-circle">
+                    <iconify-icon icon="iconamoon:bar-chart-duotone" class="fs-32"></iconify-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 class="mb-0 fw-bold mb-2" id="stat-colegios">--</h3>
+                <p class="text-muted">Total Colegios</p>
+                <span class="badge fs-12 badge-soft-success">
+                  <i class="ti ti-building"></i> Instituciones
+                </span>
+              </div>
+              <div>
+                <div class="avatar-lg d-inline-block me-1">
+                  <span class="avatar-title bg-success-subtle text-success rounded-circle">
+                    <iconify-icon icon="iconamoon:home-duotone" class="fs-32"></iconify-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <h3 class="mb-0 fw-bold mb-2" id="stat-departamentos">--</h3>
+                <p class="text-muted">Departamentos</p>
+                <span class="badge fs-12 badge-soft-warning">
+                  <i class="ti ti-map-pin"></i> Regiones
+                </span>
+              </div>
+              <div>
+                <div class="avatar-lg d-inline-block me-1">
+                  <span class="avatar-title bg-warning-subtle text-warning rounded-circle">
+                    <iconify-icon icon="iconamoon:location-pin-duotone" class="fs-32"></iconify-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Charts Row -->
+    <div class="row">
+      <div class="col-xxl-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title">Tendencias Nacionales (1996-2024)</h4>
+            <div>
+              <select id="year-selector" class="form-select form-select-sm">
+                <optgroup label="2020s">
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                  <option value="2022">2022</option>
+                  <option value="2021">2021</option>
+                  <option value="2020">2020</option>
+                </optgroup>
+                <optgroup label="2010s">
+                  <option value="2019">2019</option>
+                  <option value="2018">2018</option>
+                  <option value="2017">2017</option>
+                  <option value="2016">2016</option>
+                  <option value="2015">2015</option>
+                  <option value="2014">2014</option>
+                  <option value="2013">2013</option>
+                  <option value="2012">2012</option>
+                  <option value="2011">2011</option>
+                  <option value="2010">2010</option>
+                </optgroup>
+                <optgroup label="2000s">
+                  <option value="2009">2009</option>
+                  <option value="2008">2008</option>
+                  <option value="2007">2007</option>
+                  <option value="2006">2006</option>
+                  <option value="2005">2005</option>
+                  <option value="2004">2004</option>
+                  <option value="2003">2003</option>
+                  <option value="2002">2002</option>
+                  <option value="2001">2001</option>
+                  <option value="2000">2000</option>
+                </optgroup>
+                <optgroup label="1990s">
+                  <option value="1999">1999</option>
+                  <option value="1998">1998</option>
+                  <option value="1997">1997</option>
+                  <option value="1996">1996</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+          <div class="card-body">
+            <div dir="ltr">
+              <div id="chart-tendencias" class="apex-charts"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xxl-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title">Distribución Regional</h4>
+          </div>
+          <div class="card-body">
+            <div dir="ltr">
+              <div id="chart-regional" class="apex-charts"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Charts Row -->
+    <div class="row">
+      <div class="col-xxl-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title">Comparación por Sectores</h4>
+          </div>
+          <div class="card-body">
+            <div dir="ltr">
+              <div id="chart-sectores" class="apex-charts"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xxl-6">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title">Top 10 Departamentos</h4>
+          </div>
+          <div class="card-body">
+            <div dir="ltr">
+              <div id="chart-departamentos" class="apex-charts"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Colegios Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="d-flex card-header justify-content-between align-items-center">
+            <h4 class="card-title">Top 50 Colegios Destacados</h4>
+            <div class="flex-shrink-0">
+              <span class="badge bg-primary-subtle text-primary">Año <span id="table-year">2024</span></span>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive table-card">
+              <table class="table table-borderless table-hover table-nowrap align-middle mb-0">
+                <thead class="bg-light bg-opacity-50 thead-sm">
+                  <tr>
+                    <th scope="col">Ranking</th>
+                    <th scope="col">Colegio</th>
+                    <th scope="col">Departamento</th>
+                    <th scope="col">Municipio</th>
+                    <th scope="col">Sector</th>
+                    <th scope="col">Promedio</th>
+                    <th scope="col">Estudiantes</th>
+                  </tr>
+                </thead>
+                <tbody id="table-colegios-body">
+                  <tr>
+                    <td colspan="7" class="text-center py-4">
+                      <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer border-top border-light">
+            <div class="align-items-center justify-content-between row text-center text-sm-start">
+              <div class="col-sm">
+                <div class="text-muted">
+                  Mostrando <span class="fw-semibold text-body">50</span> colegios destacados
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Explorador Jerárquico Tab -->
+  <div class="tab-pane fade" id="explorador" role="tabpanel">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">Explorador Jerárquico - ICFES</h4>
+        <div>
+          <select id="hierarchy-year-selector" class="form-select form-select-sm">
+            <optgroup label="2020s">
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </optgroup>
+            <optgroup label="2010s">
+              <option value="2019">2019</option>
+              <option value="2018">2018</option>
+              <option value="2017">2017</option>
+              <option value="2016">2016</option>
+              <option value="2015">2015</option>
+              <option value="2014">2014</option>
+              <option value="2013">2013</option>
+              <option value="2012">2012</option>
+              <option value="2011">2011</option>
+              <option value="2010">2010</option>
+            </optgroup>
+            <optgroup label="2000s">
+              <option value="2009">2009</option>
+              <option value="2008">2008</option>
+              <option value="2007">2007</option>
+              <option value="2006">2006</option>
+              <option value="2005">2005</option>
+              <option value="2004">2004</option>
+              <option value="2003">2003</option>
+              <option value="2002">2002</option>
+              <option value="2001">2001</option>
+              <option value="2000">2000</option>
+            </optgroup>
+            <optgroup label="1990s">
+              <option value="1999">1999</option>
+              <option value="1998">1998</option>
+              <option value="1997">1997</option>
+              <option value="1996">1996</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0" id="hierarchical-table">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 25%">Entidad</th>
+                <th class="text-end">Global</th>
+                <th class="text-end">Matemáticas</th>
+                <th class="text-end">Lectura</th>
+                <th class="text-end">C. Naturales</th>
+                <th class="text-end">Sociales</th>
+                <th class="text-end">Inglés</th>
+                <th class="text-center">Ranking</th>
+                <th class="text-center">Tendencia</th>
+                <th class="text-center">Z-Score</th>
+                <th class="text-center">Percentil</th>
+              </tr>
+            </thead>
+            <tbody id="hierarchical-tbody">
+              <tr>
+                <td colspan="11" class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="{% static '/vendor/apexcharts/apexcharts.min.js' %}"></script>
+<script src="{% static 'js/pages/dashboard.icfes.js' %}"></script>
+{% endblock extra_javascript %}

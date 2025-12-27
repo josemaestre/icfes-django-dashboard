@@ -1,0 +1,95 @@
+
+{% extends 'layout_vertical.html' %}
+
+{% load static i18n %}
+
+{% block title %}Sales{% endblock title %}
+
+{% block page_title %}
+  {% include "partials/page-title.html" with page_title='Sales' sub_title='Dashboards' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+  <!-- KPIs -->
+  <div class="row">
+    <div class="col-md-3">
+      <div class="card mini-stats-wid">
+        <div class="card-body">
+          <div class="d-flex">
+            <div class="flex-grow-1">
+              <p class="text-muted fw-medium mb-2">Promedio Nacional</p>
+              <h4 class="mb-0" id="promedio_nacional">--</h4>
+            </div>
+            <div class="flex-shrink-0 align-self-center">
+              <div class="avatar-sm rounded-circle bg-primary mini-stat-icon">
+                <span class="avatar-title rounded-circle bg-primary">
+                  <i class="bx bx-bar-chart-alt text-white"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card mini-stats-wid">
+        <div class="card-body">
+          <div class="d-flex">
+            <div class="flex-grow-1">
+              <p class="text-muted fw-medium mb-2">Total Estudiantes</p>
+              <h4 class="mb-0" id="total_estudiantes">--</h4>
+            </div>
+            <div class="flex-shrink-0 align-self-center">
+              <div class="avatar-sm rounded-circle bg-success mini-stat-icon">
+                <span class="avatar-title rounded-circle bg-success">
+                  <i class="bx bx-user text-white"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de Departamentos -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title mb-4">Promedio Global por Departamento</h4>
+          <canvas id="graficoDepto" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-5">
+
+  <!-- Resumen anual -->
+  <h4 class="mb-3">Resumen Anual de Resultados</h4>
+  <table class="table table-striped" id="tabla-resumen">
+    <thead>
+      <tr>
+        <th>Año</th>
+        <th>Total Alumnos</th>
+        <th>Promedio</th>
+        <th>Aprobado (%)</th>
+        <th>No Aprobado (%)</th>
+        <th>Beca (%)</th>
+        <th>Sobresaliente (%)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <canvas id="graficoEvolucion" height="100"></canvas>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/dashboard-icfes.js' %}"></script>
+{% endblock %}
