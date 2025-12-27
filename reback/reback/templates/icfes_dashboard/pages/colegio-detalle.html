@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Colegio - Dashboard ICFES{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-container {
+        max-width: 600px;
+        margin: 20px auto;
+    }
+
+    .school-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .trend-up {
+        color: #28a745;
+    }
+
+    .trend-down {
+        color: #dc3545;
+    }
+
+    .subject-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        margin: 5px;
+        font-weight: 500;
+    }
+
+    .badge-fortaleza {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-debilidad {
+        background: #f8d7da;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Buscador -->
+    <div class="search-container">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" id="searchInput"
+                placeholder="Buscar colegio por nombre o código DANE..." autocomplete="off">
+            <button class="btn btn-primary" type="button" id="searchBtn">
+                <i class="ri-search-line"></i> Buscar
+            </button>
+        </div>
+        <div id="searchResults" class="list-group"></div>
+    </div>
+
+    <!-- Contenido del colegio (oculto inicialmente) -->
+    <div id="schoolContent" style="display: none;">
+        <!-- Header del colegio -->
+        <div class="school-header">
+            <h1 id="schoolName">Cargando...</h1>
+            <p class="mb-0">
+                <span id="schoolDane"></span> |
+                <span id="schoolSector"></span> |
+                <span id="schoolLocation"></span>
+            </p>
+        </div>
+
+        <!-- Estadísticas principales -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value" id="statPuntaje">--</div>
+                    <div class="stat-label">Puntaje Global</div>
+                    <small id="statTendencia"></small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value" id="statRanking">--</div>
+                    <div class="stat-label">Ranking Nacional</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value" id="statEstudiantes">--</div>
+                    <div class="stat-label">Estudiantes</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value" id="statAnos">--</div>
+                    <div class="stat-label">Años de Datos</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="row">
+            <!-- Evolución histórica -->
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Evolución Histórica</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartHistorico"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar de materias -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Desempeño por Materia</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartRadar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparación -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Comparación con Promedios</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartComparacion"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fortalezas y Debilidades -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Fortalezas y Debilidades</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="fortalezasDebilidades"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    let currentSchoolSk = null;
+
+    // Búsqueda de colegios
+    $('#searchInput').on('input', debounce(function () {
+        const query = $(this).val();
+        if (query.length < 3) {
+            $('#searchResults').empty();
+            return;
+        }
+
+        $.get(`/icfes/api/search/colegios/?q=${query}`, function (data) {
+            const results = $('#searchResults');
+            results.empty();
+
+            data.forEach(school => {
+                const item = $(`
+                <a href="#" class="list-group-item list-group-item-action search-result" 
+                   data-sk="${school.colegio_sk}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${school.nombre_colegio}</h6>
+                        <small>${school.codigo_dane}</small>
+                    </div>
+                    <small class="text-muted">${school.municipio}, ${school.departamento}</small>
+                </a>
+            `);
+                results.append(item);
+            });
+        });
+    }, 300));
+
+    // Seleccionar colegio
+    $(document).on('click', '.search-result', function (e) {
+        e.preventDefault();
+        currentSchoolSk = $(this).data('sk');
+        $('#searchResults').empty();
+        $('#searchInput').val($(this).find('h6').text());
+        loadSchoolData(currentSchoolSk);
+    });
+
+    // Cargar datos del colegio
+    function loadSchoolData(schoolSk) {
+        $('#schoolContent').show();
+
+        // Cargar resumen
+        $.get(`/icfes/api/colegio/${schoolSk}/resumen/`, function (data) {
+            const info = data.info_basica;
+            const ultimo = data.ultimo_ano;
+            const rango = data.rango_historico;
+
+            $('#schoolName').text(info.nombre_colegio);
+            $('#schoolDane').text(`DANE: ${info.codigo_dane}`);
+            $('#schoolSector').text(info.sector);
+            $('#schoolLocation').text(`${info.municipio}, ${info.departamento}`);
+
+            $('#statPuntaje').text(ultimo.avg_punt_global ? ultimo.avg_punt_global.toFixed(1) : '--');
+            $('#statRanking').text(ultimo.ranking_nacional || '--');
+            $('#statEstudiantes').text(ultimo.total_estudiantes || '--');
+            $('#statAnos').text(rango.total_anos || '--');
+
+            if (ultimo.cambio_porcentual_global) {
+                const trend = ultimo.cambio_porcentual_global > 0 ? 'trend-up' : 'trend-down';
+                const icon = ultimo.cambio_porcentual_global > 0 ? '↑' : '↓';
+                $('#statTendencia').html(`<span class="${trend}">${icon} ${Math.abs(ultimo.cambio_porcentual_global).toFixed(1)}%</span>`);
+            }
+        });
+
+        // Cargar histórico
+        $.get(`/icfes/api/colegio/${schoolSk}/historico/`, function (data) {
+            renderHistoricoChart(data);
+        });
+
+        // Cargar comparación
+        $.get(`/icfes/api/colegio/${schoolSk}/comparacion/`, function (data) {
+            renderComparacionChart(data);
+            renderRadarChart(data);
+        });
+
+        // Cargar fortalezas
+        $.get(`/icfes/api/colegio/${schoolSk}/fortalezas/`, function (data) {
+            renderFortalezas(data);
+        });
+    }
+
+    // Gráfico de evolución histórica
+    function renderHistoricoChart(data) {
+        const years = data.map(d => d.ano).reverse();
+        const scores = data.map(d => d.avg_punt_global).reverse();
+        const municipal = data.map(d => d.promedio_municipal_global).reverse();
+        const nacional = data.map(d => d.promedio_nacional_global).reverse();
+
+        const options = {
+            series: [{
+                name: 'Colegio',
+                data: scores
+            }, {
+                name: 'Promedio Municipal',
+                data: municipal
+            }, {
+                name: 'Promedio Nacional',
+                data: nacional
+            }],
+            chart: {
+                type: 'line',
+                height: 350
+            },
+            xaxis: {
+                categories: years
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            colors: ['#667eea', '#f6ad55', '#48bb78']
+        };
+
+        new ApexCharts(document.querySelector("#chartHistorico"), options).render();
+    }
+
+    // Gráfico radar de materias
+    function renderRadarChart(data) {
+        const options = {
+            series: [{
+                name: 'Colegio',
+                data: [
+                    data.avg_punt_matematicas,
+                    data.avg_punt_lectura_critica,
+                    data.avg_punt_c_naturales,
+                    data.avg_punt_sociales_ciudadanas,
+                    data.avg_punt_ingles
+                ]
+            }],
+            chart: {
+                type: 'radar',
+                height: 350
+            },
+            xaxis: {
+                categories: ['Matemáticas', 'Lectura', 'C. Naturales', 'Sociales', 'Inglés']
+            },
+            colors: ['#667eea']
+        };
+
+        new ApexCharts(document.querySelector("#chartRadar"), options).render();
+    }
+
+    // Gráfico de comparación
+    function renderComparacionChart(data) {
+        const options = {
+            series: [{
+                name: 'Puntaje',
+                data: [
+                    data.puntaje_colegio,
+                    data.promedio_municipal_global,
+                    data.promedio_departamental_global,
+                    data.promedio_nacional_global
+                ]
+            }],
+            chart: {
+                type: 'bar',
+                height: 350
+            },
+            xaxis: {
+                categories: ['Colegio', 'Municipal', 'Departamental', 'Nacional']
+            },
+            colors: ['#667eea']
+        };
+
+        new ApexCharts(document.querySelector("#chartComparacion"), options).render();
+    }
+
+    // Renderizar fortalezas y debilidades
+    function renderFortalezas(data) {
+        const container = $('#fortalezasDebilidades');
+        container.empty();
+
+        data.forEach(item => {
+            const badgeClass = item.es_fortaleza ? 'badge-fortaleza' : 'badge-debilidad';
+            const badge = $(`
+            <span class="subject-badge ${badgeClass}">
+                ${item.materia}: ${item.promedio_colegio.toFixed(1)}
+                (${item.brecha_vs_nacional > 0 ? '+' : ''}${item.brecha_vs_nacional.toFixed(1)})
+            </span>
+        `);
+            container.append(badge);
+        });
+    }
+
+    // Debounce helper
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+</script>
+{% endblock %}

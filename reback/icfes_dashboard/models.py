@@ -240,3 +240,163 @@ class ColegiosDestacados(models.Model):
         managed = False
         db_table = 'gold.colegios_destacados'
         ordering = ['-ano', 'ranking_nacional']
+
+
+class FctColegioHistorico(models.Model):
+    """
+    Estadísticas históricas año por año de cada colegio.
+    Mapea a: gold.fct_colegio_historico
+    Uso: Vista individual de colegio - evolución temporal
+    """
+    colegio_sk = models.BigIntegerField()
+    codigo_dane = models.CharField(max_length=100)
+    nombre_colegio = models.CharField(max_length=255)
+    sector = models.CharField(max_length=50)
+    departamento = models.CharField(max_length=100)
+    municipio = models.CharField(max_length=100)
+    ano = models.IntegerField()
+    total_estudiantes = models.IntegerField()
+    
+    # Puntajes del colegio
+    avg_punt_global = models.FloatField(null=True)
+    avg_punt_matematicas = models.FloatField(null=True)
+    avg_punt_lectura_critica = models.FloatField(null=True)
+    avg_punt_c_naturales = models.FloatField(null=True)
+    avg_punt_sociales_ciudadanas = models.FloatField(null=True)
+    avg_punt_ingles = models.FloatField(null=True)
+    
+    # Rankings
+    ranking_nacional = models.IntegerField(null=True)
+    percentil_sector = models.FloatField(null=True)
+    ranking_municipal = models.IntegerField(null=True)
+    
+    # Contexto municipal
+    promedio_municipal_global = models.FloatField(null=True)
+    brecha_municipal_global = models.FloatField(null=True)
+    total_colegios_municipio = models.IntegerField(null=True)
+    
+    # Contexto departamental
+    promedio_departamental_global = models.FloatField(null=True)
+    brecha_departamental_global = models.FloatField(null=True)
+    total_colegios_departamento = models.IntegerField(null=True)
+    
+    # Contexto nacional
+    promedio_nacional_global = models.FloatField(null=True)
+    brecha_nacional_global = models.FloatField(null=True)
+    
+    # Tendencias YoY
+    punt_global_ano_anterior = models.FloatField(null=True)
+    cambio_absoluto_global = models.FloatField(null=True)
+    cambio_porcentual_global = models.FloatField(null=True)
+    clasificacion_tendencia = models.CharField(max_length=50, null=True)
+    
+    class Meta:
+        managed = False
+        db_table = 'gold.fct_colegio_historico'
+        ordering = ['colegio_sk', '-ano']
+        unique_together = [['colegio_sk', 'ano']]
+
+
+class FctColegioCorrelaciones(models.Model):
+    """
+    Correlaciones entre materias y puntaje global por colegio.
+    Mapea a: gold.fct_colegio_correlaciones
+    Uso: Identificar qué materia tiene mayor impacto en el puntaje global
+    """
+    colegio_sk = models.BigIntegerField(primary_key=True)
+    codigo_dane = models.CharField(max_length=100)
+    nombre_colegio = models.CharField(max_length=255)
+    sector = models.CharField(max_length=50)
+    departamento = models.CharField(max_length=100)
+    municipio = models.CharField(max_length=100)
+    
+    # Años de datos
+    anos_con_datos = models.IntegerField()
+    rango_historico = models.CharField(max_length=50, null=True)
+    
+    # Correlaciones (qué materia impacta más el puntaje global)
+    corr_matematicas_global = models.FloatField(null=True)
+    corr_lectura_global = models.FloatField(null=True)
+    corr_naturales_global = models.FloatField(null=True)
+    corr_sociales_global = models.FloatField(null=True)
+    corr_ingles_global = models.FloatField(null=True)
+    
+    # Materia con mayor correlación
+    materia_mayor_correlacion = models.CharField(max_length=50, null=True)
+    valor_mayor_correlacion = models.FloatField(null=True)
+    
+    # Promedios históricos
+    promedio_historico_global = models.FloatField(null=True)
+    promedio_historico_matematicas = models.FloatField(null=True)
+    promedio_historico_lectura = models.FloatField(null=True)
+    promedio_historico_naturales = models.FloatField(null=True)
+    promedio_historico_sociales = models.FloatField(null=True)
+    promedio_historico_ingles = models.FloatField(null=True)
+    
+    # Volatilidad (desviación estándar)
+    volatilidad_global = models.FloatField(null=True)
+    volatilidad_matematicas = models.FloatField(null=True)
+    
+    # Mejor y peor año
+    ano_mejor_puntaje = models.IntegerField(null=True)
+    puntaje_mejor_ano = models.FloatField(null=True)
+    ano_peor_puntaje = models.IntegerField(null=True)
+    puntaje_peor_ano = models.FloatField(null=True)
+    
+    # Tendencia general (regresión lineal)
+    tendencia_general = models.CharField(max_length=50, null=True)
+    
+    class Meta:
+        managed = False
+        db_table = 'gold.fct_colegio_correlaciones'
+        ordering = ['nombre_colegio']
+
+
+class FctColegioFortalezasDebilidades(models.Model):
+    """
+    Análisis de fortalezas y debilidades por materia de cada colegio.
+    Mapea a: gold.fct_colegio_fortalezas_debilidades
+    Uso: Identificar áreas de mejora y fortalezas
+    """
+    colegio_sk = models.BigIntegerField()
+    codigo_dane = models.CharField(max_length=100)
+    nombre_colegio = models.CharField(max_length=255)
+    sector = models.CharField(max_length=50)
+    departamento = models.CharField(max_length=100)
+    municipio = models.CharField(max_length=100)
+    materia = models.CharField(max_length=50)
+    
+    # Puntajes
+    promedio_colegio = models.FloatField(null=True)
+    promedio_nacional = models.FloatField(null=True)
+    brecha_vs_nacional = models.FloatField(null=True)
+    brecha_porcentual = models.FloatField(null=True)
+    
+    # Clasificación
+    clasificacion_brecha = models.CharField(max_length=50, null=True)
+    es_fortaleza = models.BooleanField(null=True)
+    es_debilidad = models.BooleanField(null=True)
+    
+    # Ranking de la materia
+    ranking_materia = models.IntegerField(null=True)
+    
+    # Identificación de materia más fuerte/débil
+    es_materia_mas_fuerte = models.BooleanField(null=True)
+    es_materia_mas_debil = models.BooleanField(null=True)
+    
+    # Análisis general del colegio
+    total_fortalezas = models.IntegerField(null=True)
+    total_debilidades = models.IntegerField(null=True)
+    clasificacion_general = models.CharField(max_length=50, null=True)
+    perfil_rendimiento = models.CharField(max_length=100, null=True)
+    
+    # Recomendaciones
+    recomendacion = models.TextField(null=True)
+    prioridad_mejora = models.CharField(max_length=20, null=True)
+    potencial_mejora_estimado = models.FloatField(null=True)
+    
+    class Meta:
+        managed = False
+        db_table = 'gold.fct_colegio_fortalezas_debilidades'
+        ordering = ['colegio_sk', 'ranking_materia']
+

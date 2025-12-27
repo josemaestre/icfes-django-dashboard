@@ -10,6 +10,7 @@ urlpatterns = [
     # Vista principal
     path('', views.icfes_dashboard, name='dashboard'),
     path('charts/', views.dashboard_charts, name='dashboard_charts'),
+    path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
     
     # Endpoints de datos generales
     path('api/estadisticas/', views.icfes_estadisticas_generales, name='estadisticas_generales'),
@@ -43,4 +44,12 @@ urlpatterns = [
     path('api/hierarchy/departments/', views.hierarchy_departments, name='hierarchy_departments'),
     path('api/hierarchy/municipalities/', views.hierarchy_municipalities, name='hierarchy_municipalities'),
     path('api/hierarchy/schools/', views.hierarchy_schools, name='hierarchy_schools'),
+    
+    # Endpoints para Vista Individual de Colegio
+    path('api/search/colegios/', views.api_search_colegios, name='api_search_colegios'),
+    path('api/colegio/<int:colegio_sk>/historico/', views.api_colegio_historico, name='api_colegio_historico'),
+    path('api/colegio/<int:colegio_sk>/correlaciones/', views.api_colegio_correlaciones, name='api_colegio_correlaciones'),
+    path('api/colegio/<int:colegio_sk>/fortalezas/', views.api_colegio_fortalezas, name='api_colegio_fortalezas'),
+    path('api/colegio/<int:colegio_sk>/comparacion/', views.api_colegio_comparacion, name='api_colegio_comparacion'),
+    path('api/colegio/<int:colegio_sk>/resumen/', views.api_colegio_resumen, name='api_colegio_resumen'),
 ]
