@@ -17,6 +17,11 @@
     </a>
   </li>
   <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#busqueda-colegio" role="tab">
+      <i class="bx bx-search me-1"></i> Búsqueda de Colegio
+    </a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link" data-bs-toggle="tab" href="#explorador" role="tab">
       <i class="bx bx-list-ul me-1"></i> Explorador Jerárquico
     </a>
@@ -264,6 +269,116 @@
                   Mostrando <span class="fw-semibold text-body">50</span> colegios destacados
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Búsqueda de Colegio Tab -->
+  <div class="tab-pane fade" id="busqueda-colegio" role="tabpanel">
+    <!-- Search Box -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="input-group">
+              <input type="text" class="form-control form-control-lg" id="searchColegioInput"
+                placeholder="Buscar colegio por nombre o código DANE..." autocomplete="off">
+              <button class="btn btn-primary" type="button" id="searchColegioBtn">
+                <i class="bx bx-search"></i> Buscar
+              </button>
+            </div>
+            <div id="searchColegioResults" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- School Detail Section (hidden initially) -->
+    <div id="schoolDetailSection" style="display: none;">
+      <!-- School Header -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card bg-primary bg-gradient">
+            <div class="card-body text-white">
+              <h3 class="text-white mb-2" id="schoolDetailName">-</h3>
+              <p class="mb-0">
+                <span class="badge bg-light text-dark me-2" id="schoolDetailDane">-</span>
+                <span class="badge bg-light text-dark me-2" id="schoolDetailSector">-</span>
+                <span id="schoolDetailLocation">-</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <h3 class="mb-0 fw-bold" id="schoolStatPuntaje">--</h3>
+              <p class="text-muted mb-0">Puntaje Global</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <h3 class="mb-0 fw-bold" id="schoolStatRanking">--</h3>
+              <p class="text-muted mb-0">Ranking Nacional</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <h3 class="mb-0 fw-bold" id="schoolStatEstudiantes">--</h3>
+              <p class="text-muted mb-0">Estudiantes</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <h3 class="mb-0 fw-bold" id="schoolStatAnos">--</h3>
+              <p class="text-muted mb-0">Años de Datos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Evolución Histórica</h5>
+            </div>
+            <div class="card-body">
+              <div id="schoolChartHistorico"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Desempeño por Materia</h5>
+            </div>
+            <div class="card-body">
+              <div id="schoolChartRadar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Comparación con Promedios</h5>
+            </div>
+            <div class="card-body">
+              <div id="schoolChartComparacion"></div>
             </div>
           </div>
         </div>
