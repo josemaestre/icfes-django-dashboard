@@ -47,9 +47,9 @@ urlpatterns = [
     
     # Endpoints para Vista Individual de Colegio
     path('api/search/colegios/', views.api_search_colegios, name='api_search_colegios'),
-    path('api/colegio/<int:colegio_sk>/historico/', views.api_colegio_historico, name='api_colegio_historico'),
-    path('api/colegio/<int:colegio_sk>/correlaciones/', views.api_colegio_correlaciones, name='api_colegio_correlaciones'),
-    path('api/colegio/<int:colegio_sk>/fortalezas/', views.api_colegio_fortalezas, name='api_colegio_fortalezas'),
-    path('api/colegio/<int:colegio_sk>/comparacion/', views.api_colegio_comparacion, name='api_colegio_comparacion'),
-    path('api/colegio/<int:colegio_sk>/resumen/', views.api_colegio_resumen, name='api_colegio_resumen'),
+    path('api/colegio/<str:colegio_sk>/historico/', views.api_colegio_historico, name='api_colegio_historico'),
+    path('api/colegio/<str:colegio_sk>/correlaciones/', views.api_colegio_correlaciones, name='api_colegio_correlaciones'),
+    path('api/colegio/<str:colegio_sk>/fortalezas/', views.api_colegio_fortalezas, name='api_colegio_fortalezas'),
+    path('api/colegio/<str:colegio_sk>/comparacion/', views.api_colegio_comparacion, name='api_colegio_comparacion'),
+    path('api/colegio/<str:colegio_sk>/resumen/', views.api_colegio_resumen, name='api_colegio_resumen'),
 ]
