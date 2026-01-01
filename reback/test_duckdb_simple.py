@@ -113,23 +113,24 @@ try:
 except Exception as e:
     print(f"   ✗ Error: {e}")
 
-# 8. Consultar brechas_educativas
+# 8. Consultar brechas_educativas (año 2023)...
 print("\n8. Consultando brechas_educativas (año 2023)...")
 try:
     df = con.execute("""
         SELECT 
-            departamento,
-            brecha_absoluta,
-            clasificacion_brecha
+            tipo_brecha,
+            brecha_absoluta_puntos,
+            magnitud_brecha,
+            tendencia_brecha
         FROM gold.brechas_educativas
         WHERE ano = 2023
-        ORDER BY brecha_absoluta DESC
+        ORDER BY brecha_absoluta_puntos DESC
         LIMIT 5
     """).df()
     
-    print(f"   Top 5 departamentos con mayor brecha:")
+    print(f"   Top 5 brechas educativas:")
     for _, row in df.iterrows():
-        print(f"   - {row['departamento']}: {row['brecha_absoluta']:.2f} ({row['clasificacion_brecha']})")
+        print(f"   - {row['tipo_brecha']}: {row['brecha_absoluta_puntos']:.2f} puntos ({row['magnitud_brecha']}, {row['tendencia_brecha']})")
 except Exception as e:
     print(f"   ✗ Error: {e}")
 
