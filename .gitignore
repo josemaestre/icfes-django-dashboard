@@ -181,6 +181,11 @@ desktop.ini
 .coverage
 htmlcov/
 
+# Development test files and endpoints
+test_*.py
+endpoint_*.py
+resultados_*.txt
+
 # Lock files (opcional - algunos prefieren versionarlos)
 # package-lock.json
 # yarn.lock
