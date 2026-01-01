@@ -66,3 +66,10 @@ STATICFILES_DIRS = [
     BASE_DIR / "reback" / "static",  # para archivos globales (logo, vendors, etc.)
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Anthropic Claude API Configuration
+# ------------------------------------------------------------------------------
+# La API key DEBE configurarse como variable de entorno ANTHROPIC_API_KEY
+# Ver ANTHROPIC_SETUP.md para instrucciones de configuración
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+
