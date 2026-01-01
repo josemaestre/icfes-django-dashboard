@@ -212,22 +212,24 @@ def colegio_detalle(request, colegio_sk):
 @require_http_methods(["GET"])
 def brechas_educativas(request):
     """
-    Endpoint: Análisis de brechas educativas por departamento.
-    Query params: ?ano=2023&departamento=CUNDINAMARCA (opcionales)
+    Endpoint: Análisis de brechas educativas agregadas a nivel nacional.
+    Query params: ?ano=2023&tipo_brecha=Sector (opcionales)
+    Nota: Esta tabla contiene brechas agregadas (sector, urbano/rural, materias, regional).
+    Para análisis por departamento, usar fct_agg_colegios_ano directamente.
     """
     ano = request.GET.get('ano')
-    departamento = request.GET.get('departamento')
+    tipo_brecha = request.GET.get('tipo_brecha')
     
     filters = {}
     if ano:
         filters['ano'] = int(ano)
-    if departamento:
-        filters['departamento'] = departamento
+    if tipo_brecha:
+        filters['tipo_brecha'] = tipo_brecha
     
     df = get_table_data(
         'gold.brechas_educativas',
         filters=filters,
-        order_by=['ano DESC', 'brecha_absoluta DESC']
+        order_by=['ano DESC', 'brecha_absoluta_puntos DESC']
     )
     
     data = df.to_dict(orient='records')
@@ -769,6 +771,21 @@ def api_search_colegios(request):
 def api_colegio_historico(request, colegio_sk):
     """Evolución histórica de un colegio"""
     query = f"""
+        WITH ranked_data AS (
+            SELECT ano, nombre_colegio, codigo_dane, sector, departamento, municipio,
+                   total_estudiantes, avg_punt_global, avg_punt_matematicas,
+                   avg_punt_lectura_critica, avg_punt_c_naturales,
+                   avg_punt_sociales_ciudadanas, avg_punt_ingles,
+                   ranking_nacional, ranking_municipal, percentil_sector,
+                   promedio_municipal_global, promedio_departamental_global,
+                   promedio_nacional_global, brecha_municipal_global,
+                   brecha_departamental_global, brecha_nacional_global,
+                   cambio_absoluto_global, cambio_porcentual_global,
+                   clasificacion_tendencia,
+                   ROW_NUMBER() OVER (PARTITION BY ano ORDER BY ano DESC) as rn
+            FROM gold.fct_colegio_historico
+            WHERE colegio_sk = '{colegio_sk}'
+        )
         SELECT ano, nombre_colegio, codigo_dane, sector, departamento, municipio,
                total_estudiantes, avg_punt_global, avg_punt_matematicas,
                avg_punt_lectura_critica, avg_punt_c_naturales,
@@ -779,9 +796,9 @@ def api_colegio_historico(request, colegio_sk):
                brecha_departamental_global, brecha_nacional_global,
                cambio_absoluto_global, cambio_porcentual_global,
                clasificacion_tendencia
-        FROM gold.fct_colegio_historico
-        WHERE colegio_sk = {colegio_sk}
-        ORDER BY ano DESC
+        FROM ranked_data
+        WHERE rn = 1
+        ORDER BY ano ASC
     """
     df = execute_query(query)
     return JsonResponse(df.to_dict(orient='records'), safe=False)
@@ -793,7 +810,7 @@ def api_colegio_correlaciones(request, colegio_sk):
     query = f"""
         SELECT *
         FROM gold.fct_colegio_correlaciones
-        WHERE colegio_sk = {colegio_sk}
+        WHERE colegio_sk = '{colegio_sk}'
     """
     df = execute_query(query)
     if df.empty:
@@ -806,16 +823,18 @@ def api_colegio_fortalezas(request, colegio_sk):
     """Fortalezas y debilidades por materia"""
     query = f"""
         SELECT colegio_sk, codigo_dane, nombre_colegio, sector,
-               departamento, municipio, materia, promedio_colegio,
-               promedio_nacional, brecha_vs_nacional, brecha_porcentual,
-               clasificacion_brecha, es_fortaleza, es_debilidad,
-               ranking_materia, es_materia_mas_fuerte, es_materia_mas_debil,
-               total_fortalezas, total_debilidades, clasificacion_general,
-               perfil_rendimiento, recomendacion, prioridad_mejora,
-               potencial_mejora_estimado
+               departamento, municipio, ano,
+               materia_mas_fuerte, brecha_materia_fuerte,
+               materia_mas_debil, brecha_materia_debil,
+               materias_por_encima_promedio, materias_por_debajo_promedio,
+               clasificacion_general, perfil_rendimiento,
+               urgencia_mejora, recomendacion_principal,
+               potencial_mejora_puntos,
+               brecha_matematicas, brecha_lectura, brecha_ciencias,
+               brecha_sociales, brecha_ingles
         FROM gold.fct_colegio_fortalezas_debilidades
-        WHERE colegio_sk = {colegio_sk}
-        ORDER BY ranking_materia
+        WHERE colegio_sk = '{colegio_sk}'
+        ORDER BY ano DESC
     """
     df = execute_query(query)
     return JsonResponse(df.to_dict(orient='records'), safe=False)
@@ -828,22 +847,72 @@ def api_colegio_comparacion(request, colegio_sk):
         WITH ultimo_ano AS (
             SELECT MAX(ano) as ano
             FROM gold.fct_colegio_historico
-            WHERE colegio_sk = {colegio_sk}
+            WHERE colegio_sk = '{colegio_sk}'
+        ),
+        colegio_data AS (
+            SELECT h.ano, h.nombre_colegio, h.codigo_dane, h.sector,
+                   h.departamento, h.municipio,
+                   h.avg_punt_global as puntaje_colegio,
+                   h.promedio_municipal_global, h.promedio_departamental_global,
+                   h.promedio_nacional_global, h.brecha_municipal_global,
+                   h.brecha_departamental_global, h.brecha_nacional_global,
+                   h.ranking_nacional, h.ranking_municipal,
+                   h.total_colegios_municipio, h.total_colegios_departamento,
+                   h.avg_punt_matematicas, h.avg_punt_lectura_critica,
+                   h.avg_punt_c_naturales, h.avg_punt_sociales_ciudadanas,
+                   h.avg_punt_ingles
+            FROM gold.fct_colegio_historico h
+            INNER JOIN ultimo_ano u ON h.ano = u.ano
+            WHERE h.colegio_sk = '{colegio_sk}'
+        ),
+        promedios_contexto AS (
+            SELECT 
+                c.departamento,
+                c.municipio,
+                c.ano,
+                -- Promedios municipales por materia
+                AVG(CASE WHEN f.municipio = c.municipio THEN f.avg_punt_matematicas END) as promedio_municipal_matematicas,
+                AVG(CASE WHEN f.municipio = c.municipio THEN f.avg_punt_lectura_critica END) as promedio_municipal_lectura_critica,
+                AVG(CASE WHEN f.municipio = c.municipio THEN f.avg_punt_c_naturales END) as promedio_municipal_c_naturales,
+                AVG(CASE WHEN f.municipio = c.municipio THEN f.avg_punt_sociales_ciudadanas END) as promedio_municipal_sociales_ciudadanas,
+                AVG(CASE WHEN f.municipio = c.municipio THEN f.avg_punt_ingles END) as promedio_municipal_ingles,
+                -- Promedios departamentales por materia
+                AVG(CASE WHEN f.departamento = c.departamento THEN f.avg_punt_matematicas END) as promedio_departamental_matematicas,
+                AVG(CASE WHEN f.departamento = c.departamento THEN f.avg_punt_lectura_critica END) as promedio_departamental_lectura_critica,
+                AVG(CASE WHEN f.departamento = c.departamento THEN f.avg_punt_c_naturales END) as promedio_departamental_c_naturales,
+                AVG(CASE WHEN f.departamento = c.departamento THEN f.avg_punt_sociales_ciudadanas END) as promedio_departamental_sociales_ciudadanas,
+                AVG(CASE WHEN f.departamento = c.departamento THEN f.avg_punt_ingles END) as promedio_departamental_ingles,
+                -- Promedios nacionales por materia
+                AVG(f.avg_punt_matematicas) as promedio_nacional_matematicas,
+                AVG(f.avg_punt_lectura_critica) as promedio_nacional_lectura_critica,
+                AVG(f.avg_punt_c_naturales) as promedio_nacional_c_naturales,
+                AVG(f.avg_punt_sociales_ciudadanas) as promedio_nacional_sociales_ciudadanas,
+                AVG(f.avg_punt_ingles) as promedio_nacional_ingles
+            FROM colegio_data c
+            CROSS JOIN gold.fct_agg_colegios_ano f
+            WHERE f.ano = c.ano
+            GROUP BY c.departamento, c.municipio, c.ano
         )
-        SELECT h.ano, h.nombre_colegio, h.codigo_dane, h.sector,
-               h.departamento, h.municipio,
-               h.avg_punt_global as puntaje_colegio,
-               h.promedio_municipal_global, h.promedio_departamental_global,
-               h.promedio_nacional_global, h.brecha_municipal_global,
-               h.brecha_departamental_global, h.brecha_nacional_global,
-               h.ranking_nacional, h.ranking_municipal,
-               h.total_colegios_municipio, h.total_colegios_departamento,
-               h.avg_punt_matematicas, h.avg_punt_lectura_critica,
-               h.avg_punt_c_naturales, h.avg_punt_sociales_ciudadanas,
-               h.avg_punt_ingles
-        FROM gold.fct_colegio_historico h
-        INNER JOIN ultimo_ano u ON h.ano = u.ano
-        WHERE h.colegio_sk = {colegio_sk}
+        SELECT 
+            c.*,
+            p.promedio_municipal_matematicas,
+            p.promedio_municipal_lectura_critica,
+            p.promedio_municipal_c_naturales,
+            p.promedio_municipal_sociales_ciudadanas,
+            p.promedio_municipal_ingles,
+            p.promedio_departamental_matematicas,
+            p.promedio_departamental_lectura_critica,
+            p.promedio_departamental_c_naturales,
+            p.promedio_departamental_sociales_ciudadanas,
+            p.promedio_departamental_ingles,
+            p.promedio_nacional_matematicas,
+            p.promedio_nacional_lectura_critica,
+            p.promedio_nacional_c_naturales,
+            p.promedio_nacional_sociales_ciudadanas,
+            p.promedio_nacional_ingles
+        FROM colegio_data c
+        LEFT JOIN promedios_contexto p ON c.departamento = p.departamento 
+            AND c.municipio = p.municipio AND c.ano = p.ano
     """
     df = execute_query(query)
     if df.empty:
@@ -859,7 +928,7 @@ def api_colegio_resumen(request, colegio_sk):
         SELECT DISTINCT colegio_sk, codigo_dane, nombre_colegio,
                sector, departamento, municipio
         FROM gold.fct_colegio_historico
-        WHERE colegio_sk = {colegio_sk}
+        WHERE colegio_sk = '{colegio_sk}'
         LIMIT 1
     """
     
@@ -868,7 +937,7 @@ def api_colegio_resumen(request, colegio_sk):
         WITH ultimo_ano AS (
             SELECT MAX(ano) as ano
             FROM gold.fct_colegio_historico
-            WHERE colegio_sk = {colegio_sk}
+            WHERE colegio_sk = '{colegio_sk}'
         )
         SELECT h.ano, h.total_estudiantes, h.avg_punt_global,
                h.ranking_nacional, h.ranking_municipal,
@@ -876,7 +945,7 @@ def api_colegio_resumen(request, colegio_sk):
                h.clasificacion_tendencia
         FROM gold.fct_colegio_historico h
         INNER JOIN ultimo_ano u ON h.ano = u.ano
-        WHERE h.colegio_sk = {colegio_sk}
+        WHERE h.colegio_sk = '{colegio_sk}'
     """
     
     # Rango de años
@@ -884,15 +953,16 @@ def api_colegio_resumen(request, colegio_sk):
         SELECT MIN(ano) as ano_inicio, MAX(ano) as ano_fin,
                COUNT(DISTINCT ano) as total_anos
         FROM gold.fct_colegio_historico
-        WHERE colegio_sk = {colegio_sk}
+        WHERE colegio_sk = '{colegio_sk}'
     """
     
     # Fortalezas/debilidades
     query_fd = f"""
-        SELECT total_fortalezas, total_debilidades,
+        SELECT materias_por_encima_promedio, materias_por_debajo_promedio,
                clasificacion_general, perfil_rendimiento
         FROM gold.fct_colegio_fortalezas_debilidades
-        WHERE colegio_sk = {colegio_sk}
+        WHERE colegio_sk = '{colegio_sk}'
+        ORDER BY ano DESC
         LIMIT 1
     """
     
@@ -913,6 +983,333 @@ def api_colegio_resumen(request, colegio_sk):
     
     return JsonResponse(resumen, safe=False)
 
+
+@require_http_methods(["GET"])
+def api_colegio_ai_recommendations(request, colegio_sk):
+    """Generate AI-powered recommendations for school improvement using Anthropic Claude"""
+    try:
+        # Get school data
+        historico_query = f"""
+            SELECT * FROM gold.fct_colegio_historico
+            WHERE colegio_sk = '{colegio_sk}'
+            ORDER BY ano DESC LIMIT 5
+        """
+        historico = execute_query(historico_query)
+        
+        fortalezas_query = f"""
+            SELECT * FROM gold.fct_colegio_fortalezas_debilidades
+            WHERE colegio_sk = '{colegio_sk}'
+            ORDER BY ano DESC LIMIT 1
+        """
+        fortalezas = execute_query(fortalezas_query)
+        
+        if historico.empty:
+            return JsonResponse({'error': 'No se encontraron datos para este colegio'}, status=404)
+        
+        # Prepare data for AI
+        school_data = {
+            'historical_performance': historico.to_dict(orient='records'),
+            'strengths_weaknesses': fortalezas.to_dict(orient='records')[0] if not fortalezas.empty else {}
+        }
+        
+        # Check if Anthropic API key is configured
+        from django.conf import settings
+        if not hasattr(settings, 'ANTHROPIC_API_KEY') or not settings.ANTHROPIC_API_KEY:
+            return JsonResponse({
+                'error': 'API de IA no configurada',
+                'message': 'Por favor, configura ANTHROPIC_API_KEY en settings.py'
+            }, status=503)
+        
+        # Call Anthropic Claude API
+        import anthropic
+        import json
+        
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        
+        prompt = f"""Analiza el siguiente colegio colombiano basado en sus resultados ICFES:
+
+Datos históricos (últimos 5 años):
+{json.dumps(school_data['historical_performance'], indent=2, ensure_ascii=False)}
+
+Fortalezas y debilidades actuales:
+{json.dumps(school_data['strengths_weaknesses'], indent=2, ensure_ascii=False)}
+
+Proporciona un análisis detallado en formato JSON con la siguiente estructura:
+{{
+    "evaluacion_general": "Evaluación general del colegio en 2-3 párrafos",
+    "fortalezas": ["fortaleza 1", "fortaleza 2", "fortaleza 3", "fortaleza 4", "fortaleza 5"],
+    "debilidades": ["debilidad 1", "debilidad 2", "debilidad 3", "debilidad 4", "debilidad 5"],
+    "estrategias_5_puntos": [
+        "Estrategia específica 1 para aumentar 5 puntos en el puntaje global",
+        "Estrategia específica 2",
+        "Estrategia específica 3",
+        "Estrategia específica 4",
+        "Estrategia específica 5"
+    ],
+    "recomendaciones_materias": {{
+        "Matemáticas": "Recomendación específica para matemáticas",
+        "Lectura Crítica": "Recomendación específica para lectura",
+        "Ciencias Naturales": "Recomendación específica para ciencias",
+        "Sociales": "Recomendación específica para sociales",
+        "Inglés": "Recomendación específica para inglés"
+    }},
+    "plan_accion": "Plan de acción prioritario detallado en 1-2 párrafos con pasos concretos"
+}}
+
+Asegúrate de que las recomendaciones sean:
+1. Específicas y accionables
+2. Basadas en los datos proporcionados
+3. Realistas y alcanzables
+4. Priorizadas por impacto
+5. Contextualizadas al sistema educativo colombiano
+
+Responde ÚNICAMENTE con el JSON, sin texto adicional."""
+
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2048,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        # Parse AI response - Claude may wrap JSON in markdown code blocks
+        response_text = message.content[0].text.strip()
+        
+        # Remove markdown code blocks if present
+        if response_text.startswith('```'):
+            # Find the actual JSON content between code blocks
+            lines = response_text.split('\n')
+            json_lines = []
+            in_code_block = False
+            for line in lines:
+                if line.startswith('```'):
+                    in_code_block = not in_code_block
+                    continue
+                if in_code_block or (not line.startswith('```') and json_lines):
+                    json_lines.append(line)
+            response_text = '\n'.join(json_lines).strip()
+        
+        # Parse JSON
+        ai_response = json.loads(response_text)
+        return JsonResponse(ai_response)
+        
+    except json.JSONDecodeError as e:
+        return JsonResponse({
+            'error': 'Error al parsear respuesta de IA',
+            'details': f'La IA no respondió en formato JSON válido. Error: {str(e)}',
+            'raw_response': response_text[:500] if 'response_text' in locals() else 'No disponible'
+        }, status=500)
+    except Exception as e:
+        return JsonResponse({
+            'error': 'Error al generar recomendaciones',
+            'details': str(e)
+        }, status=500)
+
+
 def colegio_detalle_page(request):
     '''Vista de la página de detalle individual del colegio'''
     return render(request, 'icfes_dashboard/pages/colegio-detalle.html')
+
+
+# ============================================================================
+# ENDPOINTS API - COMPARACIÓN CON CONTEXTO (usando modelo gold)
+# ============================================================================
+
+@require_http_methods(["GET"])
+def api_colegio_comparacion_contexto(request, colegio_sk):
+    """
+    Comparación del colegio con contexto municipal, departamental y nacional.
+    Usa el modelo pre-calculado gold.fct_colegio_comparacion_contexto
+    
+    Query params: ?ano=2022 (opcional, retorna todos los años si no se especifica)
+    
+    Retorna:
+    - Puntajes del colegio en todas las materias
+    - Promedios municipal, departamental y nacional
+    - Brechas (diferencias) vs cada nivel
+    - Percentiles (posición relativa)
+    - Clasificaciones de rendimiento
+    """
+    ano = request.GET.get('ano')
+    
+    query = f"""
+        SELECT 
+            ano,
+            colegio_sk,
+            nombre_colegio,
+            departamento,
+            municipio,
+            sector,
+            total_estudiantes,
+            
+            -- Puntajes del colegio
+            colegio_lectura,
+            colegio_matematicas,
+            colegio_c_naturales,
+            colegio_sociales,
+            colegio_ingles,
+            colegio_global,
+            
+            -- Contexto municipal
+            total_colegios_municipio,
+            total_estudiantes_municipio,
+            promedio_municipal_lectura,
+            promedio_municipal_matematicas,
+            promedio_municipal_c_naturales,
+            promedio_municipal_sociales,
+            promedio_municipal_ingles,
+            promedio_municipal_global,
+            brecha_municipal_global,
+            percentil_municipal,
+            clasificacion_vs_municipal,
+            
+            -- Contexto departamental
+            total_colegios_departamento,
+            total_estudiantes_departamento,
+            promedio_departamental_lectura,
+            promedio_departamental_matematicas,
+            promedio_departamental_c_naturales,
+            promedio_departamental_sociales,
+            promedio_departamental_ingles,
+            promedio_departamental_global,
+            brecha_departamental_global,
+            percentil_departamental,
+            clasificacion_vs_departamental,
+            
+            -- Contexto nacional
+            total_colegios_nacional,
+            total_estudiantes_nacional,
+            promedio_nacional_lectura,
+            promedio_nacional_matematicas,
+            promedio_nacional_c_naturales,
+            promedio_nacional_sociales,
+            promedio_nacional_ingles,
+            promedio_nacional_global,
+            brecha_nacional_global,
+            percentil_nacional,
+            clasificacion_vs_nacional
+            
+        FROM gold.fct_colegio_comparacion_contexto
+        WHERE colegio_sk = '{colegio_sk}'
+        {f"AND ano = {ano}" if ano else ""}
+        ORDER BY ano DESC
+    """
+    
+    df = execute_query(query)
+    
+    if df.empty:
+        return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
+    
+    # Si se pidió un año específico, retornar solo ese registro
+    if ano:
+        return JsonResponse(df.to_dict(orient='records')[0], safe=False)
+    
+    # Si no, retornar todos los años (histórico)
+    return JsonResponse(df.to_dict(orient='records'), safe=False)
+
+
+@require_http_methods(["GET"])
+def api_colegio_comparacion_chart_data(request, colegio_sk):
+    """
+    Datos formateados específicamente para gráficos de comparación.
+    Retorna estructura optimizada para Chart.js o similar.
+    
+    Query params: ?ano=2022 (requerido)
+    """
+    ano = request.GET.get('ano')
+    
+    if not ano:
+        return JsonResponse({'error': 'Parámetro ano es requerido'}, status=400)
+    
+    query = f"""
+        SELECT 
+            nombre_colegio,
+            
+            -- Puntajes por materia
+            colegio_lectura,
+            colegio_matematicas,
+            colegio_c_naturales,
+            colegio_sociales,
+            colegio_ingles,
+            
+            -- Promedios para comparación
+            promedio_municipal_lectura,
+            promedio_municipal_matematicas,
+            promedio_municipal_c_naturales,
+            promedio_municipal_sociales,
+            promedio_municipal_ingles,
+            
+            promedio_departamental_lectura,
+            promedio_departamental_matematicas,
+            promedio_departamental_c_naturales,
+            promedio_departamental_sociales,
+            promedio_departamental_ingles,
+            
+            promedio_nacional_lectura,
+            promedio_nacional_matematicas,
+            promedio_nacional_c_naturales,
+            promedio_nacional_sociales,
+            promedio_nacional_ingles,
+            
+            municipio,
+            departamento
+            
+        FROM gold.fct_colegio_comparacion_contexto
+        WHERE colegio_sk = '{colegio_sk}'
+            AND ano = {ano}
+    """
+    
+    df = execute_query(query)
+    
+    if df.empty:
+        return JsonResponse({'error': 'Datos no encontrados'}, status=404)
+    
+    row = df.iloc[0]
+    
+    # Formatear para Chart.js (radar chart)
+    result = {
+        'labels': ['Lectura Crítica', 'Matemáticas', 'C. Naturales', 'Sociales', 'Inglés'],
+        'datasets': [
+            {
+                'label': row['nombre_colegio'],
+                'data': [
+                    float(row['colegio_lectura']),
+                    float(row['colegio_matematicas']),
+                    float(row['colegio_c_naturales']),
+                    float(row['colegio_sociales']),
+                    float(row['colegio_ingles'])
+                ]
+            },
+            {
+                'label': f"Promedio {row['municipio']}",
+                'data': [
+                    float(row['promedio_municipal_lectura']),
+                    float(row['promedio_municipal_matematicas']),
+                    float(row['promedio_municipal_c_naturales']),
+                    float(row['promedio_municipal_sociales']),
+                    float(row['promedio_municipal_ingles'])
+                ]
+            },
+            {
+                'label': f"Promedio {row['departamento']}",
+                'data': [
+                    float(row['promedio_departamental_lectura']),
+                    float(row['promedio_departamental_matematicas']),
+                    float(row['promedio_departamental_c_naturales']),
+                    float(row['promedio_departamental_sociales']),
+                    float(row['promedio_departamental_ingles'])
+                ]
+            },
+            {
+                'label': 'Promedio Nacional',
+                'data': [
+                    float(row['promedio_nacional_lectura']),
+                    float(row['promedio_nacional_matematicas']),
+                    float(row['promedio_nacional_c_naturales']),
+                    float(row['promedio_nacional_sociales']),
+                    float(row['promedio_nacional_ingles'])
+                ]
+            }
+        ]
+    }
+    
+    return JsonResponse(result, safe=False)

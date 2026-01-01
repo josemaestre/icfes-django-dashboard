@@ -52,4 +52,9 @@ urlpatterns = [
     path('api/colegio/<str:colegio_sk>/fortalezas/', views.api_colegio_fortalezas, name='api_colegio_fortalezas'),
     path('api/colegio/<str:colegio_sk>/comparacion/', views.api_colegio_comparacion, name='api_colegio_comparacion'),
     path('api/colegio/<str:colegio_sk>/resumen/', views.api_colegio_resumen, name='api_colegio_resumen'),
+    path('api/colegio/<str:colegio_sk>/ai-recommendations/', views.api_colegio_ai_recommendations, name='api_colegio_ai_recommendations'),
+    
+    # Endpoints de Comparación con Contexto (NUEVO - usando modelo gold)
+    path('api/colegio/<str:colegio_sk>/comparacion-contexto/', views.api_colegio_comparacion_contexto, name='api_colegio_comparacion_contexto'),
+    path('api/colegio/<str:colegio_sk>/comparacion-chart-data/', views.api_colegio_comparacion_chart_data, name='api_colegio_comparacion_chart_data'),
 ]
