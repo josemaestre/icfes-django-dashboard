@@ -383,6 +383,282 @@
           </div>
         </div>
       </div>
+
+      <!-- NEW: Análisis Comparativo Section -->
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">📊 Análisis Comparativo</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <!-- Brechas -->
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-3">Brechas vs Promedios</h6>
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span>vs Municipal</span>
+                      <span id="brechaMunicipal" class="badge bg-secondary">--</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                      <div id="brechaMunicipalBar" class="progress-bar" role="progressbar" style="width: 50%"></div>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span>vs Departamental</span>
+                      <span id="brechaDepartamental" class="badge bg-secondary">--</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                      <div id="brechaDepartamentalBar" class="progress-bar" role="progressbar" style="width: 50%"></div>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span>vs Nacional</span>
+                      <span id="brechaNacional" class="badge bg-secondary">--</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                      <div id="brechaNacionalBar" class="progress-bar" role="progressbar" style="width: 50%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Percentiles -->
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-3">Posición Relativa (Percentiles)</h6>
+                  <div class="mb-3">
+                    <label class="form-label small">Municipal</label>
+                    <div class="d-flex align-items-center">
+                      <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                        <div id="percentilMunicipalBar" class="progress-bar bg-info" role="progressbar"
+                          style="width: 0%">
+                          <span id="percentilMunicipal" class="small">--</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">Departamental</label>
+                    <div class="d-flex align-items-center">
+                      <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                        <div id="percentilDepartamentalBar" class="progress-bar bg-info" role="progressbar"
+                          style="width: 0%">
+                          <span id="percentilDepartamental" class="small">--</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">Nacional</label>
+                    <div class="d-flex align-items-center">
+                      <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                        <div id="percentilNacionalBar" class="progress-bar bg-info" role="progressbar"
+                          style="width: 0%">
+                          <span id="percentilNacional" class="small">--</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Clasificaciones -->
+                <div class="col-md-4">
+                  <h6 class="text-muted mb-3">Clasificación de Rendimiento</h6>
+                  <div class="mb-3">
+                    <label class="form-label small">vs Municipal</label>
+                    <div id="clasificacionMunicipal" class="alert alert-secondary mb-0 py-2">--</div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">vs Departamental</label>
+                    <div id="clasificacionDepartamental" class="alert alert-secondary mb-0 py-2">--</div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small">vs Nacional</label>
+                    <div id="clasificacionNacional" class="alert alert-secondary mb-0 py-2">--</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Table -->
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Evolución Histórica por Año</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover table-sm" id="schoolPerformanceTable">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Año</th>
+                      <th class="text-end">Global</th>
+                      <th class="text-end">Matemáticas</th>
+                      <th class="text-end">Lectura</th>
+                      <th class="text-end">C. Naturales</th>
+                      <th class="text-end">Sociales</th>
+                      <th class="text-end">Inglés</th>
+                      <th class="text-center">Ranking</th>
+                      <th class="text-center">Vs Año Anterior</th>
+                      <th class="text-center">Tendencia</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW: Insights Estratégicos Section -->
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="card border-primary">
+            <div class="card-header bg-primary bg-gradient text-white">
+              <h5 class="card-title mb-0 text-white">
+                <i class="bx bx-bulb me-1"></i> Insights Estratégicos
+              </h5>
+            </div>
+            <div class="card-body">
+
+              <!-- Indicadores de Excelencia -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-muted mb-3"><i class="bx bx-trophy me-1"></i> Indicadores de Excelencia</h6>
+                  <div id="achievementBadges" class="d-flex flex-wrap gap-2">
+                    <!-- Badges will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- Mapa de Calor de Rendimiento -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-muted mb-3"><i class="bx bx-grid-alt me-1"></i> Mapa de Calor: Rendimiento por Materia
+                  </h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered" id="heatmapTable">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Materia</th>
+                          <th class="text-center" id="heatYear1">--</th>
+                          <th class="text-center" id="heatYear2">--</th>
+                          <th class="text-center" id="heatYear3">--</th>
+                          <th class="text-center" id="heatYear4">--</th>
+                          <th class="text-center" id="heatYear5">--</th>
+                          <th class="text-center">Tendencia</th>
+                        </tr>
+                      </thead>
+                      <tbody id="heatmapBody">
+                        <!-- Will be populated by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="d-flex justify-content-end gap-2 mt-2">
+                    <span class="badge" style="background-color: #dc3545;">Bajo (&lt;40)</span>
+                    <span class="badge" style="background-color: #ffc107; color: #000;">Medio (40-60)</span>
+                    <span class="badge" style="background-color: #28a745;">Alto (&gt;60)</span>
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- Simulador de Mejora -->
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="text-muted mb-3"><i class="bx bx-calculator me-1"></i> Simulador: ¿Qué pasaría si...?</h6>
+                  <div class="mb-3">
+                    <label class="form-label">Materia a mejorar</label>
+                    <select class="form-select" id="simulatorSubject">
+                      <option value="matematicas">Matemáticas</option>
+                      <option value="lectura">Lectura Crítica</option>
+                      <option value="c_naturales">C. Naturales</option>
+                      <option value="sociales">Sociales</option>
+                      <option value="ingles">Inglés</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Puntos de mejora: <span id="improvementValue">5</span></label>
+                    <input type="range" class="form-range" id="improvementSlider" min="1" max="20" value="5">
+                  </div>
+                  <button class="btn btn-primary w-100" id="simulateBtn">
+                    <i class="bx bx-play-circle me-1"></i> Simular Impacto
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-muted mb-3">Resultado de la Simulación</h6>
+                  <div id="simulationResult" class="alert alert-info">
+                    <p class="mb-2"><strong>Selecciona una materia y ajusta los puntos de mejora</strong></p>
+                    <p class="mb-0 small">El simulador te mostrará el impacto en tu ranking y percentil</p>
+                  </div>
+                  <div id="simulationDetails" style="display: none;">
+                    <div class="card bg-light">
+                      <div class="card-body">
+                        <div class="mb-2">
+                          <small class="text-muted">Puntaje Global Actual</small>
+                          <h4 class="mb-0" id="simCurrentScore">--</h4>
+                        </div>
+                        <div class="mb-2">
+                          <small class="text-muted">Puntaje Global Proyectado</small>
+                          <h4 class="mb-0 text-success" id="simProjectedScore">--</h4>
+                        </div>
+                        <div class="mb-2">
+                          <small class="text-muted">Mejora en Ranking Nacional</small>
+                          <h5 class="mb-0 text-primary" id="simRankingChange">--</h5>
+                        </div>
+                        <div>
+                          <small class="text-muted">Nuevo Percentil</small>
+                          <div class="progress" style="height: 25px;">
+                            <div id="simPercentilBar" class="progress-bar bg-success" role="progressbar"
+                              style="width: 0%">
+                              <span id="simPercentilValue">--</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Recommendations -->
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                <i class="bx bx-brain me-1"></i> Análisis y Recomendaciones IA
+              </h5>
+              <button class="btn btn-sm btn-primary" id="generateAIBtn">
+                <i class="bx bx-brain"></i> Generar Análisis
+              </button>
+            </div>
+            <div class="card-body">
+              <div id="aiRecommendations">
+                <p class="text-muted">
+                  Haz clic en "Generar Análisis" para obtener recomendaciones personalizadas
+                  basadas en IA sobre cómo mejorar el rendimiento del colegio.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -470,6 +746,8 @@
 
 {% block extra_javascript %}
 <script src="{% static '/vendor/apexcharts/apexcharts.min.js' %}"></script>
-<script src="{% static 'js/pages/dashboard.icfes.js' %}"></script>
-<script src="{% static 'js/pages/dashboard.icfes.school.js' %}"></script>
+<script src="{% static 'js/pages/dashboard.icfes.js' %}?v=5"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=5"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.table.js' %}?v=5"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.insights.js' %}?v=2"></script>
 {% endblock extra_javascript %}

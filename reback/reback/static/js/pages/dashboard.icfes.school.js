@@ -96,8 +96,13 @@ async function loadSchoolDetail(school) {
 
     // Load data
     await loadSchoolResumen(school.colegio_sk);
-    await loadSchoolHistorico(school.colegio_sk);
+    const historicalData = await loadSchoolHistorico(school.colegio_sk);
     await loadSchoolComparacion(school.colegio_sk);
+
+    // Render historical table
+    if (typeof renderPerformanceTable === 'function' && historicalData) {
+        renderPerformanceTable(historicalData);
+    }
 }
 
 // Load school summary
@@ -130,28 +135,92 @@ async function loadSchoolHistorico(sk) {
         const response = await fetch(`/icfes/api/colegio/${sk}/historico/`);
         const data = await response.json();
 
+        // Deduplicate by year, keeping most recent entry
+        const uniqueData = {};
+        data.forEach(d => {
+            if (!uniqueData[d.ano]) {
+                uniqueData[d.ano] = d;
+            }
+        });
+
+        // Sort by year ascending (oldest to newest)
+        const sortedData = Object.values(uniqueData).sort((a, b) => parseInt(a.ano) - parseInt(b.ano));
+
+        console.log(`Historical data loaded: ${sortedData.length} years from ${sortedData[0]?.ano} to ${sortedData[sortedData.length - 1]?.ano}`);
+        console.log('Years:', sortedData.map(d => d.ano));
+
         const options = {
             series: [{
                 name: 'Colegio',
-                data: data.map(d => d.avg_punt_global).reverse()
+                data: sortedData.map(d => d.avg_punt_global)
             }, {
                 name: 'Promedio Municipal',
-                data: data.map(d => d.promedio_municipal_global).reverse()
+                data: sortedData.map(d => d.promedio_municipal_global)
             }, {
                 name: 'Promedio Nacional',
-                data: data.map(d => d.promedio_nacional_global).reverse()
+                data: sortedData.map(d => d.promedio_nacional_global)
             }],
             chart: {
                 type: 'line',
                 height: 350,
-                toolbar: { show: false }
+                toolbar: { show: true },
+                zoom: {
+                    enabled: true,
+                    type: 'x',
+                    autoScaleYaxis: true
+                }
             },
             xaxis: {
-                categories: data.map(d => d.ano).reverse()
+                categories: sortedData.map(d => d.ano),
+                type: 'category',
+                labels: {
+                    rotate: -45,
+                    rotateAlways: false,
+                    hideOverlappingLabels: true,
+                    showDuplicates: false,
+                    trim: false,
+                    minHeight: undefined,
+                    maxHeight: 120,
+                    style: {
+                        fontSize: '11px'
+                    }
+                },
+                tickAmount: undefined, // Show all ticks
+                tickPlacement: 'on'
+            },
+            yaxis: {
+                labels: {
+                    formatter: function (val) {
+                        return Math.round(val);
+                    }
+                }
             },
             stroke: {
                 curve: 'smooth',
                 width: 3
+            },
+            markers: {
+                size: 4,
+                hover: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val ? val.toFixed(2) : '0.00';
+                    }
+                },
+                x: {
+                    formatter: function (val) {
+                        return 'Año ' + val;
+                    }
+                }
+            },
+            legend: {
+                show: true,
+                position: 'top',
+                horizontalAlign: 'left'
             },
             colors: [colors.primary, colors.warning, colors.success]
         };
@@ -159,52 +228,97 @@ async function loadSchoolHistorico(sk) {
         if (schoolCharts.historico) schoolCharts.historico.destroy();
         schoolCharts.historico = new ApexCharts(document.querySelector('#schoolChartHistorico'), options);
         schoolCharts.historico.render();
+
+        return sortedData; // Return data for table
     } catch (error) {
         console.error('Error loading historical chart:', error);
+        return [];
     }
 }
 
-// Load comparison chart
+// Load comparison chart - UPDATED to use new optimized endpoint
 async function loadSchoolComparacion(sk) {
     try {
-        const response = await fetch(`/icfes/api/colegio/${sk}/comparacion/`);
-        const data = await response.json();
+        // Get latest year for this school
+        const resumenResponse = await fetch(`/icfes/api/colegio/${sk}/resumen/`);
+        const resumenData = await resumenResponse.json();
+        const latestYear = resumenData.ultimo_ano?.ano || 2022;
 
-        // Radar chart
+        // Use new optimized endpoint for chart data
+        const response = await fetch(`/icfes/api/colegio/${sk}/comparacion-chart-data/?ano=${latestYear}`);
+        const chartData = await response.json();
+
+        // Radar chart - Now with 4 series (Colegio, Municipal, Departamental, Nacional)
         const radarOptions = {
-            series: [{
-                name: 'Puntaje',
-                data: [
-                    data.avg_punt_matematicas,
-                    data.avg_punt_lectura_critica,
-                    data.avg_punt_c_naturales,
-                    data.avg_punt_sociales_ciudadanas,
-                    data.avg_punt_ingles
-                ]
-            }],
+            series: chartData.datasets,
             chart: {
                 type: 'radar',
                 height: 350
             },
-            xaxis: {
-                categories: ['Matemáticas', 'Lectura', 'C. Naturales', 'Sociales', 'Inglés']
+            yaxis: {
+                show: true,
+                min: 0,
+                max: 100,
+                tickAmount: 5,
+                labels: {
+                    formatter: function (val) {
+                        return Math.round(val);
+                    }
+                }
             },
-            colors: [colors.primary]
+            xaxis: {
+                categories: chartData.labels
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val ? val.toFixed(2) : '0.00';
+                    }
+                }
+            },
+            colors: [colors.primary, colors.warning, colors.info, colors.success],
+            plotOptions: {
+                radar: {
+                    polygons: {
+                        strokeColors: '#b0b0b0',
+                        fill: {
+                            colors: ['#e0e0e0', '#ececec']
+                        }
+                    }
+                }
+            },
+            fill: {
+                opacity: 0.3
+            },
+            stroke: {
+                width: 2
+            },
+            markers: {
+                size: 4
+            },
+            legend: {
+                show: true,
+                position: 'bottom'
+            }
         };
 
         if (schoolCharts.radar) schoolCharts.radar.destroy();
         schoolCharts.radar = new ApexCharts(document.querySelector('#schoolChartRadar'), radarOptions);
         schoolCharts.radar.render();
 
-        // Comparison bar chart
+        // Get full comparison data for bar chart and table
+        const contextResponse = await fetch(`/icfes/api/colegio/${sk}/comparacion-contexto/?ano=${latestYear}`);
+        const contextData = await contextResponse.json();
+
+        // Comparison bar chart - Global scores only
         const barOptions = {
             series: [{
-                name: 'Puntaje',
+                name: 'Puntaje Global',
                 data: [
-                    data.puntaje_colegio,
-                    data.promedio_municipal_global,
-                    data.promedio_departamental_global,
-                    data.promedio_nacional_global
+                    contextData.colegio_global,
+                    contextData.promedio_municipal_global,
+                    contextData.promedio_departamental_global,
+                    contextData.promedio_nacional_global
                 ]
             }],
             chart: {
@@ -216,11 +330,44 @@ async function loadSchoolComparacion(sk) {
                 bar: {
                     horizontal: false,
                     columnWidth: '55%',
-                    borderRadius: 3
+                    borderRadius: 3,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val) {
+                    return val.toFixed(2);
+                },
+                offsetY: -20,
+                style: {
+                    fontSize: '12px',
+                    colors: ['#304758']
                 }
             },
             xaxis: {
-                categories: ['Colegio', 'Municipal', 'Departamental', 'Nacional']
+                categories: [
+                    contextData.nombre_colegio.substring(0, 20) + '...',
+                    contextData.municipio,
+                    contextData.departamento,
+                    'Nacional'
+                ]
+            },
+            yaxis: {
+                labels: {
+                    formatter: function (val) {
+                        return Math.round(val);
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val ? val.toFixed(2) : '0.00';
+                    }
+                }
             },
             colors: [colors.primary]
         };
@@ -228,7 +375,181 @@ async function loadSchoolComparacion(sk) {
         if (schoolCharts.comparacion) schoolCharts.comparacion.destroy();
         schoolCharts.comparacion = new ApexCharts(document.querySelector('#schoolChartComparacion'), barOptions);
         schoolCharts.comparacion.render();
+
+        // Update performance table with new data
+        updatePerformanceTable(contextData);
+
+        // Update comparison context section (NEW)
+        updateComparisonContext(contextData);
+
+        // Update strategic insights section (NEW)
+        if (typeof window.updateStrategicInsights === 'function') {
+            console.log('Calling updateStrategicInsights...');
+            // Get historical data for heatmap
+            const historicalResponse = await fetch(`/icfes/api/colegio/${sk}/historico/`);
+            const historicalData = await historicalResponse.json();
+            window.updateStrategicInsights(contextData, historicalData);
+        } else {
+            console.warn('updateStrategicInsights function not found');
+        }
+
     } catch (error) {
         console.error('Error loading comparison charts:', error);
+    }
+}
+
+// New function to update performance table with context data
+function updatePerformanceTable(data) {
+    const subjects = [
+        { key: 'lectura', name: 'Lectura Crítica' },
+        { key: 'matematicas', name: 'Matemáticas' },
+        { key: 'c_naturales', name: 'C. Naturales' },
+        { key: 'sociales', name: 'Sociales' },
+        { key: 'ingles', name: 'Inglés' }
+    ];
+
+    const tableBody = document.querySelector('#performanceTable tbody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    subjects.forEach(subject => {
+        const schoolScore = data[`colegio_${subject.key}`] || 0;
+        const municipalScore = data[`promedio_municipal_${subject.key}`] || 0;
+        const departamentalScore = data[`promedio_departamental_${subject.key}`] || 0;
+        const nacionalScore = data[`promedio_nacional_${subject.key}`] || 0;
+        const brecha = schoolScore - nacionalScore;
+        const estado = brecha >= 0 ?
+            '<span class="badge bg-success">Por encima</span>' :
+            '<span class="badge bg-danger">Por debajo</span>';
+
+        const row = `
+            <tr>
+                <td><strong>${subject.name}</strong></td>
+                <td>${schoolScore.toFixed(2)}</td>
+                <td>${municipalScore.toFixed(2)}</td>
+                <td>${departamentalScore.toFixed(2)}</td>
+                <td>${nacionalScore.toFixed(2)}</td>
+                <td class="${brecha >= 0 ? 'text-success' : 'text-danger'}">
+                    ${brecha >= 0 ? '+' : ''}${brecha.toFixed(2)}
+                </td>
+                <td>${estado}</td>
+            </tr>
+        `;
+        tableBody.innerHTML += row;
+    });
+
+    // Add global row
+    const globalBrecha = data.colegio_global - data.promedio_nacional_global;
+    const globalEstado = globalBrecha >= 0 ?
+        '<span class="badge bg-success">Por encima</span>' :
+        '<span class="badge bg-danger">Por debajo</span>';
+
+    const globalRow = `
+        <tr class="table-active">
+            <td><strong>GLOBAL</strong></td>
+            <td><strong>${data.colegio_global.toFixed(2)}</strong></td>
+            <td><strong>${data.promedio_municipal_global.toFixed(2)}</strong></td>
+            <td><strong>${data.promedio_departamental_global.toFixed(2)}</strong></td>
+            <td><strong>${data.promedio_nacional_global.toFixed(2)}</strong></td>
+            <td class="${globalBrecha >= 0 ? 'text-success' : 'text-danger'}">
+                <strong>${globalBrecha >= 0 ? '+' : ''}${globalBrecha.toFixed(2)}</strong>
+            </td>
+            <td>${globalEstado}</td>
+        </tr>
+    `;
+    tableBody.innerHTML += globalRow;
+}
+
+// New function to update comparison context section
+function updateComparisonContext(data) {
+    // Update Brechas (Gaps)
+    updateBrechaDisplay('brechaMunicipal', 'brechaMunicipalBar', data.brecha_municipal_global);
+    updateBrechaDisplay('brechaDepartamental', 'brechaDepartamentalBar', data.brecha_departamental_global);
+    updateBrechaDisplay('brechaNacional', 'brechaNacionalBar', data.brecha_nacional_global);
+
+    // Update Percentiles
+    updatePercentilDisplay('percentilMunicipal', 'percentilMunicipalBar', data.percentil_municipal);
+    updatePercentilDisplay('percentilDepartamental', 'percentilDepartamentalBar', data.percentil_departamental);
+    updatePercentilDisplay('percentilNacional', 'percentilNacionalBar', data.percentil_nacional);
+
+    // Update Classifications
+    updateClasificacionDisplay('clasificacionMunicipal', data.clasificacion_vs_municipal);
+    updateClasificacionDisplay('clasificacionDepartamental', data.clasificacion_vs_departamental);
+    updateClasificacionDisplay('clasificacionNacional', data.clasificacion_vs_nacional);
+}
+
+// Helper function to update brecha display
+function updateBrechaDisplay(badgeId, barId, value) {
+    const badge = document.getElementById(badgeId);
+    const bar = document.getElementById(barId);
+
+    if (!badge || !bar) return;
+
+    const formattedValue = value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
+    badge.textContent = formattedValue;
+
+    // Color based on value
+    if (value >= 10) {
+        badge.className = 'badge bg-success';
+        bar.className = 'progress-bar bg-success';
+    } else if (value >= 0) {
+        badge.className = 'badge bg-info';
+        bar.className = 'progress-bar bg-info';
+    } else if (value >= -10) {
+        badge.className = 'badge bg-warning';
+        bar.className = 'progress-bar bg-warning';
+    } else {
+        badge.className = 'badge bg-danger';
+        bar.className = 'progress-bar bg-danger';
+    }
+
+    // Bar width (scale from -30 to +30 to 0-100%)
+    const percentage = Math.min(100, Math.max(0, ((value + 30) / 60) * 100));
+    bar.style.width = percentage + '%';
+}
+
+// Helper function to update percentil display
+function updatePercentilDisplay(spanId, barId, value) {
+    const span = document.getElementById(spanId);
+    const bar = document.getElementById(barId);
+
+    if (!span || !bar) return;
+
+    const percentile = Math.round(value);
+    span.textContent = percentile + '%';
+    bar.style.width = percentile + '%';
+
+    // Color based on percentile
+    if (percentile >= 75) {
+        bar.className = 'progress-bar bg-success';
+    } else if (percentile >= 50) {
+        bar.className = 'progress-bar bg-info';
+    } else if (percentile >= 25) {
+        bar.className = 'progress-bar bg-warning';
+    } else {
+        bar.className = 'progress-bar bg-danger';
+    }
+}
+
+// Helper function to update clasificacion display
+function updateClasificacionDisplay(divId, value) {
+    const div = document.getElementById(divId);
+
+    if (!div) return;
+
+    div.textContent = value;
+
+    // Color based on classification
+    if (value.includes('Muy Superior')) {
+        div.className = 'alert alert-success mb-0 py-2';
+    } else if (value.includes('Superior')) {
+        div.className = 'alert alert-info mb-0 py-2';
+    } else if (value.includes('Similar')) {
+        div.className = 'alert alert-secondary mb-0 py-2';
+    } else if (value.includes('Inferior')) {
+        div.className = 'alert alert-warning mb-0 py-2';
+    } else if (value.includes('Muy Inferior')) {
+        div.className = 'alert alert-danger mb-0 py-2';
     }
 }

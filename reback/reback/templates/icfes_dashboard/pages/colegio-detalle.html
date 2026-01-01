@@ -159,6 +159,140 @@
             </div>
         </div>
 
+        <!-- NEW: Contexto Comparativo (Brechas, Percentiles, Clasificaciones) -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Análisis Comparativo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Brechas -->
+                            <div class="col-md-4">
+                                <h6 class="text-muted mb-3">Brechas vs Promedios</h6>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>vs Municipal</span>
+                                        <span id="brechaMunicipal" class="badge bg-secondary">--</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div id="brechaMunicipalBar" class="progress-bar" role="progressbar"
+                                            style="width: 50%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>vs Departamental</span>
+                                        <span id="brechaDepartamental" class="badge bg-secondary">--</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div id="brechaDepartamentalBar" class="progress-bar" role="progressbar"
+                                            style="width: 50%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>vs Nacional</span>
+                                        <span id="brechaNacional" class="badge bg-secondary">--</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div id="brechaNacionalBar" class="progress-bar" role="progressbar"
+                                            style="width: 50%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Percentiles -->
+                            <div class="col-md-4">
+                                <h6 class="text-muted mb-3">Posición Relativa (Percentiles)</h6>
+                                <div class="mb-3">
+                                    <label class="form-label small">Municipal</label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                            <div id="percentilMunicipalBar" class="progress-bar bg-info"
+                                                role="progressbar" style="width: 0%">
+                                                <span id="percentilMunicipal" class="small">--</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Departamental</label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                            <div id="percentilDepartamentalBar" class="progress-bar bg-info"
+                                                role="progressbar" style="width: 0%">
+                                                <span id="percentilDepartamental" class="small">--</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Nacional</label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                            <div id="percentilNacionalBar" class="progress-bar bg-info"
+                                                role="progressbar" style="width: 0%">
+                                                <span id="percentilNacional" class="small">--</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Clasificaciones -->
+                            <div class="col-md-4">
+                                <h6 class="text-muted mb-3">Clasificación de Rendimiento</h6>
+                                <div class="mb-3">
+                                    <label class="form-label small">vs Municipal</label>
+                                    <div id="clasificacionMunicipal" class="alert alert-secondary mb-0 py-2">--</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">vs Departamental</label>
+                                    <div id="clasificacionDepartamental" class="alert alert-secondary mb-0 py-2">--
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">vs Nacional</label>
+                                    <div id="clasificacionNacional" class="alert alert-secondary mb-0 py-2">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Table -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Rendimiento por Materia</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="performanceTable">
+                                <thead>
+                                    <tr>
+                                        <th>Materia</th>
+                                        <th>Colegio</th>
+                                        <th>Municipal</th>
+                                        <th>Departamental</th>
+                                        <th>Nacional</th>
+                                        <th>Brecha vs Nacional</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Fortalezas y Debilidades -->
         <div class="row">
             <div class="col-md-12">
@@ -172,6 +306,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- AI Recommendations -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="ri-sparkling-line"></i> Análisis y Recomendaciones IA
+                        </h5>
+                        <button class="btn btn-sm btn-primary" id="generateAIBtn">
+                            <i class="ri-sparkling-line"></i> Generar Análisis
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="aiRecommendations">
+                            <p class="text-muted">
+                                Haz clic en "Generar Análisis" para obtener recomendaciones personalizadas
+                                basadas en IA sobre cómo mejorar el rendimiento del colegio.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -180,6 +338,9 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     let currentSchoolSk = null;
+    let chartHistorico = null;
+    let chartRadar = null;
+    let chartComparacion = null;
 
     // Búsqueda de colegios
     $('#searchInput').on('input', debounce(function () {
@@ -254,6 +415,7 @@
         $.get(`/icfes/api/colegio/${schoolSk}/comparacion/`, function (data) {
             renderComparacionChart(data);
             renderRadarChart(data);
+            renderPerformanceTable(data);
         });
 
         // Cargar fortalezas
@@ -264,10 +426,24 @@
 
     // Gráfico de evolución histórica
     function renderHistoricoChart(data) {
-        const years = data.map(d => d.ano).reverse();
-        const scores = data.map(d => d.avg_punt_global).reverse();
-        const municipal = data.map(d => d.promedio_municipal_global).reverse();
-        const nacional = data.map(d => d.promedio_nacional_global).reverse();
+        // Destroy previous chart if exists
+        if (chartHistorico) {
+            chartHistorico.destroy();
+        }
+
+        // Deduplicate by year, keeping most recent entry
+        const uniqueData = {};
+        data.forEach(d => {
+            if (!uniqueData[d.ano]) {
+                uniqueData[d.ano] = d;
+            }
+        });
+
+        const sortedData = Object.values(uniqueData).sort((a, b) => parseInt(a.ano) - parseInt(b.ano));
+        const years = sortedData.map(d => d.ano);
+        const scores = sortedData.map(d => d.avg_punt_global);
+        const municipal = sortedData.map(d => d.promedio_municipal_global);
+        const nacional = sortedData.map(d => d.promedio_nacional_global);
 
         const options = {
             series: [{
@@ -287,44 +463,101 @@
             xaxis: {
                 categories: years
             },
+            yaxis: {
+                labels: {
+                    formatter: function (val) {
+                        return Math.round(val);
+                    }
+                }
+            },
             stroke: {
                 curve: 'smooth',
                 width: 3
             },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val ? val.toFixed(2) : '0.00';
+                    }
+                }
+            },
             colors: ['#667eea', '#f6ad55', '#48bb78']
         };
 
-        new ApexCharts(document.querySelector("#chartHistorico"), options).render();
+        chartHistorico = new ApexCharts(document.querySelector("#chartHistorico"), options);
+        chartHistorico.render();
     }
 
     // Gráfico radar de materias
     function renderRadarChart(data) {
+        // Destroy previous chart if exists
+        if (chartRadar) {
+            chartRadar.destroy();
+        }
+
         const options = {
             series: [{
                 name: 'Colegio',
                 data: [
-                    data.avg_punt_matematicas,
-                    data.avg_punt_lectura_critica,
-                    data.avg_punt_c_naturales,
-                    data.avg_punt_sociales_ciudadanas,
-                    data.avg_punt_ingles
+                    data.avg_punt_matematicas || 0,
+                    data.avg_punt_lectura_critica || 0,
+                    data.avg_punt_c_naturales || 0,
+                    data.avg_punt_sociales_ciudadanas || 0,
+                    data.avg_punt_ingles || 0
                 ]
             }],
             chart: {
                 type: 'radar',
                 height: 350
             },
+            yaxis: {
+                show: true,
+                min: 0,
+                max: 100,
+                tickAmount: 5,
+                labels: {
+                    formatter: function (val) {
+                        return Math.round(val);
+                    }
+                }
+            },
             xaxis: {
                 categories: ['Matemáticas', 'Lectura', 'C. Naturales', 'Sociales', 'Inglés']
             },
-            colors: ['#667eea']
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val ? val.toFixed(2) : '0.00';
+                    }
+                }
+            },
+            colors: ['#667eea'],
+            markers: {
+                size: 4
+            },
+            plotOptions: {
+                radar: {
+                    polygons: {
+                        strokeColors: '#e8e8e8',
+                        fill: {
+                            colors: ['#f8f8f8', '#fff']
+                        }
+                    }
+                }
+            }
         };
 
-        new ApexCharts(document.querySelector("#chartRadar"), options).render();
+        chartRadar = new ApexCharts(document.querySelector("#chartRadar"), options);
+        chartRadar.render();
     }
 
     // Gráfico de comparación
     function renderComparacionChart(data) {
+        // Destroy previous chart if exists
+        if (chartComparacion) {
+            chartComparacion.destroy();
+        }
+
         const options = {
             series: [{
                 name: 'Puntaje',
@@ -342,10 +575,105 @@
             xaxis: {
                 categories: ['Colegio', 'Municipal', 'Departamental', 'Nacional']
             },
-            colors: ['#667eea']
+            yaxis: {
+                labels: {
+                    formatter: function (val) {
+                        return Math.round(val);
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val ? val.toFixed(2) : '0.00';
+                    }
+                }
+            },
+            colors: ['#667eea'],
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val) {
+                    return val.toFixed(2);
+                },
+                offsetY: -20,
+                style: {
+                    fontSize: '12px',
+                    colors: ["#304758"]
+                }
+            }
         };
 
-        new ApexCharts(document.querySelector("#chartComparacion"), options).render();
+        chartComparacion = new ApexCharts(document.querySelector("#chartComparacion"), options);
+        chartComparacion.render();
+    }
+
+    // Renderizar tabla de rendimiento por materia
+    function renderPerformanceTable(data) {
+        const subjects = [
+            { key: 'matematicas', name: 'Matemáticas' },
+            { key: 'lectura_critica', name: 'Lectura Crítica' },
+            { key: 'c_naturales', name: 'C. Naturales' },
+            { key: 'sociales_ciudadanas', name: 'Sociales' },
+            { key: 'ingles', name: 'Inglés' }
+        ];
+
+        const tbody = $('#performanceTable tbody');
+        tbody.empty();
+
+        subjects.forEach(subject => {
+            const schoolScore = data[`avg_punt_${subject.key}`] || 0;
+            const municipalScore = data[`promedio_municipal_${subject.key}`] || data.promedio_municipal_global || 0;
+            const departamentalScore = data[`promedio_departamental_${subject.key}`] || data.promedio_departamental_global || 0;
+            const nacionalScore = data[`promedio_nacional_${subject.key}`] || data.promedio_nacional_global || 0;
+            const brecha = schoolScore - nacionalScore;
+            const estado = brecha >= 0 ?
+                '<span class="badge bg-success">Por encima</span>' :
+                '<span class="badge bg-danger">Por debajo</span>';
+
+            const row = `
+                <tr>
+                    <td><strong>${subject.name}</strong></td>
+                    <td>${schoolScore.toFixed(2)}</td>
+                    <td>${municipalScore.toFixed(2)}</td>
+                    <td>${departamentalScore.toFixed(2)}</td>
+                    <td>${nacionalScore.toFixed(2)}</td>
+                    <td class="${brecha >= 0 ? 'text-success' : 'text-danger'}">
+                        ${brecha >= 0 ? '+' : ''}${brecha.toFixed(2)}
+                    </td>
+                    <td>${estado}</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+
+        // Add global row
+        const globalBrecha = data.puntaje_colegio - data.promedio_nacional_global;
+        const globalEstado = globalBrecha >= 0 ?
+            '<span class="badge bg-success">Por encima</span>' :
+            '<span class="badge bg-danger">Por debajo</span>';
+
+        const globalRow = `
+            <tr class="table-active">
+                <td><strong>GLOBAL</strong></td>
+                <td><strong>${data.puntaje_colegio.toFixed(2)}</strong></td>
+                <td><strong>${data.promedio_municipal_global.toFixed(2)}</strong></td>
+                <td><strong>${data.promedio_departamental_global.toFixed(2)}</strong></td>
+                <td><strong>${data.promedio_nacional_global.toFixed(2)}</strong></td>
+                <td class="${globalBrecha >= 0 ? 'text-success' : 'text-danger'}">
+                    <strong>${globalBrecha >= 0 ? '+' : ''}${globalBrecha.toFixed(2)}</strong>
+                </td>
+                <td>${globalEstado}</td>
+            </tr>
+        `;
+        tbody.append(globalRow);
     }
 
     // Renderizar fortalezas y debilidades
@@ -363,6 +691,69 @@
         `);
             container.append(badge);
         });
+    }
+
+    // AI Recommendations
+    $('#generateAIBtn').on('click', function () {
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Generando...');
+
+        $.get(`/icfes/api/colegio/${currentSchoolSk}/ai-recommendations/`, function (data) {
+            renderAIRecommendations(data);
+            btn.prop('disabled', false).html('<i class="ri-sparkling-line"></i> Generar Análisis');
+        }).fail(function (xhr) {
+            const errorMsg = xhr.status === 503 ?
+                'La API de IA no está configurada. Por favor, configura tu clave API de Anthropic Claude en settings.py' :
+                'Error al generar recomendaciones. Por favor, intenta de nuevo.';
+            $('#aiRecommendations').html(`<div class="alert alert-danger">${errorMsg}</div>`);
+            btn.prop('disabled', false).html('<i class="ri-sparkling-line"></i> Generar Análisis');
+        });
+    });
+
+    function renderAIRecommendations(data) {
+        const container = $('#aiRecommendations');
+        container.html(`
+            <div class="mb-4">
+                <h6><i class="ri-file-text-line"></i> Evaluación General</h6>
+                <p>${data.evaluacion_general}</p>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="text-success"><i class="ri-checkbox-circle-line"></i> Fortalezas</h6>
+                    <ul>
+                        ${data.fortalezas.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-danger"><i class="ri-close-circle-line"></i> Debilidades</h6>
+                    <ul>
+                        ${data.debilidades.map(d => `<li>${d}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h6><i class="ri-lightbulb-line"></i> Estrategias para Aumentar 5 Puntos</h6>
+                <ol>
+                    ${data.estrategias_5_puntos.map(e => `<li>${e}</li>`).join('')}
+                </ol>
+            </div>
+            
+            <div class="mb-4">
+                <h6><i class="ri-book-open-line"></i> Recomendaciones por Materia</h6>
+                ${Object.entries(data.recomendaciones_materias).map(([materia, rec]) => `
+                    <div class="mb-2">
+                        <strong>${materia}:</strong> ${rec}
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="alert alert-info">
+                <h6><i class="ri-roadmap-line"></i> Plan de Acción Prioritario</h6>
+                <p class="mb-0">${data.plan_accion}</p>
+            </div>
+        `);
     }
 
     // Debounce helper

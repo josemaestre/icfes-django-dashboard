@@ -34,25 +34,23 @@ fetch('/icfes/data/')
 fetch('/icfes/resumen/')
   .then(response => response.json())
   .then(data => {
-    // Tabla resumen
+    // Tabla resumen - usando los campos correctos del endpoint
     const tbody = document.querySelector('#tabla-resumen tbody');
     data.forEach(row => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${row.ano}</td>
-        <td>${row.total_alumnos.toLocaleString()}</td>
-        <td>${row.promedio_ajustado.toFixed(1)}</td>
-        <td>${row.pct_aprobado ? row.pct_aprobado.toFixed(1) : "0.0"}%</td>
-
-        <td>${row.pct_no_aprobado ? row.pct_no_aprobado.toFixed(1) : "0.0"}%</td>
-        <td>${row.pct_beca ? row.pct_beca.toFixed(1) : "0.0"}%</td>
-        <td>${row.pct_sobresaliente ? row.pct_sobresaliente.toFixed(1) : "0.0"}%</td>
-
+        <td>${row.total_estudiantes ? row.total_estudiantes.toLocaleString() : '0'}</td>
+        <td>${row.promedio_nacional ? row.promedio_nacional.toFixed(1) : '0.0'}</td>
+        <td>N/A</td>
+        <td>N/A</td>
+        <td>N/A</td>
+        <td>N/A</td>
       `;
       tbody.appendChild(tr);
     });
 
-    // Gráfico de evolución
+    // Gráfico de evolución - usando campos disponibles
     const ctxEvol = document.getElementById('graficoEvolucion').getContext('2d');
     new Chart(ctxEvol, {
       type: 'line',
@@ -60,16 +58,23 @@ fetch('/icfes/resumen/')
         labels: data.map(d => d.ano),
         datasets: [
           {
-            label: 'Promedio Global',
-            data: data.map(d => d.promedio_ajustado),
+            label: 'Promedio Nacional',
+            data: data.map(d => d.promedio_nacional),
             borderColor: 'rgba(75, 192, 192, 1)',
             fill: false,
             tension: 0.3
           },
           {
-            label: '% Aprobado',
-            data: data.map(d => d.pct_aprobado),
+            label: 'Matemáticas',
+            data: data.map(d => d.promedio_matematicas),
             borderColor: 'rgba(54, 162, 235, 1)',
+            fill: false,
+            tension: 0.3
+          },
+          {
+            label: 'Lectura Crítica',
+            data: data.map(d => d.promedio_lectura),
+            borderColor: 'rgba(255, 99, 132, 1)',
             fill: false,
             tension: 0.3
           }
@@ -84,4 +89,7 @@ fetch('/icfes/resumen/')
         }
       }
     });
+  })
+  .catch(error => {
+    console.error('Error cargando resumen:', error);
   });
