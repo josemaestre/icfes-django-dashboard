@@ -1207,7 +1207,7 @@ INSTRUCCIONES CRÍTICAS:
 Responde ÚNICAMENTE con el JSON, sin texto adicional."""
 
         message = client.messages.create(
-            model="claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet (latest)
+            model="claude-3-5-sonnet-20240620",  # Claude 3.5 Sonnet (verified working)
             max_tokens=2048,
             messages=[{"role": "user", "content": prompt}]
         )
