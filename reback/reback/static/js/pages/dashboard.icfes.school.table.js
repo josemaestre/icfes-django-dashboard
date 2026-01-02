@@ -88,20 +88,36 @@ async function generateAIRecommendations() {
 
     try {
         const response = await fetch(`/icfes/api/colegio/${currentSchoolSk}/ai-recommendations/`);
+
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('El servidor retornó una respuesta inválida. Por favor, verifica los logs del servidor.');
+        }
+
         const data = await response.json();
 
         if (response.status === 503) {
             container.innerHTML = `
                 <div class="alert alert-warning">
                     <i class="bx bx-info-circle me-2"></i>
-                    La API de IA no está configurada. Por favor, configura tu clave API de Anthropic Claude in settings.py
+                    ${data.message || 'La API de IA no está configurada.'}
+                    ${data.instrucciones ? `
+                        <hr>
+                        <small>
+                            <strong>Para configurarla:</strong><br>
+                            1. ${data.instrucciones.paso_1}<br>
+                            2. ${data.instrucciones.paso_2}<br>
+                            3. ${data.instrucciones.paso_3}
+                        </small>
+                    ` : ''}
                 </div>
             `;
             return;
         }
 
         if (!response.ok) {
-            throw new Error(data.error || 'Error al generar recomendaciones');
+            throw new Error(data.error || data.message || 'Error al generar recomendaciones');
         }
 
         renderAIRecommendations(data);
@@ -110,7 +126,9 @@ async function generateAIRecommendations() {
         container.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bx bx-error me-2"></i>
-                Error: ${error.message || 'Error al generar recomendaciones. Por favor, intenta de nuevo.'}
+                <strong>Error:</strong> ${error.message || 'Error al generar recomendaciones. Por favor, intenta de nuevo.'}
+                <hr>
+                <small>Si el problema persiste, verifica la consola del navegador (F12) y los logs del servidor.</small>
             </div>
         `;
     } finally {
