@@ -120,6 +120,113 @@
             </div>
         </div>
 
+
+        <!-- HERO SECTION: Indicadores de Excelencia -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg"
+                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body text-white p-4">
+                        <h4 class="mb-1">
+                            <i class="ri-trophy-line"></i> Indicadores de Excelencia Académica
+                        </h4>
+                        <p class="mb-0 opacity-75">Métricas clave que distinguen a los mejores colegios del país</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjetas de Indicadores -->
+        <div class="row mb-4" id="indicadoresExcelencia">
+            <!-- Excelencia Integral -->
+            <div class="col-md-3 mb-3">
+                <div class="card h-100 border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="ri-trophy-fill" style="font-size: 3rem; color: #FFD700;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Excelencia Integral</h6>
+                        <div class="display-4 fw-bold text-warning" id="pctExcelenciaIntegral">--</div>
+                        <p class="text-muted small mb-2">de estudiantes con nivel 4 en TODAS las materias</p>
+                        <div class="mb-2">
+                            <span class="badge bg-info" id="rankingExcelencia">--</span>
+                        </div>
+                        <div id="tendenciaExcelencia" class="small">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competencia Satisfactoria -->
+            <div class="col-md-3 mb-3">
+                <div class="card h-100 border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="ri-checkbox-circle-fill" style="font-size: 3rem; color: #28a745;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Competencia Satisfactoria</h6>
+                        <div class="display-4 fw-bold text-success" id="pctCompetenciaSatisfactoria">--</div>
+                        <p class="text-muted small mb-2">con nivel 3+ en TODAS las materias</p>
+                        <div class="mb-2">
+                            <span class="badge bg-info" id="rankingCompetencia">--</span>
+                        </div>
+                        <div id="tendenciaCompetencia" class="small">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Perfil STEM -->
+            <div class="col-md-3 mb-3">
+                <div class="card h-100 border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="ri-flask-fill" style="font-size: 3rem; color: #007bff;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Perfil STEM Avanzado</h6>
+                        <div class="display-4 fw-bold text-primary" id="pctPerfilStem">--</div>
+                        <p class="text-muted small mb-2">con nivel 4 en Matemáticas Y Ciencias</p>
+                        <div class="mb-2">
+                            <span class="badge bg-info" id="rankingStem">--</span>
+                        </div>
+                        <div id="tendenciaStem" class="small">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Perfil Humanístico -->
+            <div class="col-md-3 mb-3">
+                <div class="card h-100 border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="ri-book-open-fill" style="font-size: 3rem; color: #6f42c1;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Perfil Humanístico Avanzado</h6>
+                        <div class="display-4 fw-bold" style="color: #6f42c1;" id="pctPerfilHumanistico">--</div>
+                        <p class="text-muted small mb-2">con nivel 4 en Lectura Y Sociales</p>
+                        <div class="mb-2">
+                            <span class="badge bg-info" id="rankingHumanistico">--</span>
+                        </div>
+                        <div id="tendenciaHumanistico" class="small">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparación Nacional -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="ri-bar-chart-box-line"></i> Comparación con Promedio Nacional
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chartComparacionExcelencia"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Gráficos -->
         <div class="row">
             <!-- Evolución histórica -->
@@ -334,7 +441,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_javascript %}`r`n<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     let currentSchoolSk = null;
@@ -422,6 +529,9 @@
         $.get(`/icfes/api/colegio/${schoolSk}/fortalezas/`, function (data) {
             renderFortalezas(data);
         });
+
+        // Cargar indicadores de excelencia
+        loadIndicadoresExcelencia(schoolSk);
     }
 
     // Gráfico de evolución histórica
@@ -754,6 +864,174 @@
                 <p class="mb-0">${data.plan_accion}</p>
             </div>
         `);
+    }
+
+
+    // ============================================================================
+    // INDICADORES DE EXCELENCIA
+    // ============================================================================
+
+    let chartComparacionExcelencia = null;
+
+    // Cargar indicadores de excelencia
+    function loadIndicadoresExcelencia(schoolSk) {
+        $.get(`/icfes/api/colegio/${schoolSk}/indicadores-excelencia/`, function (data) {
+            if (data.length === 0) {
+                // Ocultar sección si no hay datos
+                $('#indicadoresExcelencia').parent().hide();
+                return;
+            }
+
+            const actual = data[0]; // Año más reciente
+            const anterior = data.length > 1 ? data[1] : null;
+
+            // Actualizar tarjetas
+            updateIndicadorCard('ExcelenciaIntegral', actual, anterior, data, {
+                pct: 'pct_excelencia_integral',
+                nacional: 'nacional_excelencia',
+                ranking: 'ranking_excelencia'
+            });
+
+            updateIndicadorCard('CompetenciaSatisfactoria', actual, anterior, data, {
+                pct: 'pct_competencia_satisfactoria_integral',
+                nacional: 'nacional_competencia',
+                ranking: 'ranking_competencia'
+            });
+
+            updateIndicadorCard('PerfilStem', actual, anterior, data, {
+                pct: 'pct_perfil_stem_avanzado',
+                nacional: 'nacional_stem',
+                ranking: 'ranking_stem'
+            });
+
+            updateIndicadorCard('PerfilHumanistico', actual, anterior, data, {
+                pct: 'pct_perfil_humanistico_avanzado',
+                nacional: 'nacional_humanistico',
+                ranking: 'ranking_humanistico'
+            });
+
+            // Renderizar gráfico de comparación
+            renderComparacionExcelenciaChart(actual);
+        }).fail(function () {
+            // Si falla, ocultar la sección
+            $('#indicadoresExcelencia').parent().hide();
+        });
+    }
+
+    // Actualizar tarjeta de indicador
+    function updateIndicadorCard(tipo, actual, anterior, historico, config) {
+        const valor = actual[config.pct] || 0;
+        const ranking = actual[config.ranking] || 0;
+
+        // Actualizar porcentaje
+        $(`#pct${tipo}`).text(valor.toFixed(1) + '%');
+
+        // Actualizar ranking (Top X% Nacional)
+        const topPct = 100 - ranking;
+        $(`#ranking${tipo}`).text(`Top ${topPct.toFixed(0)}% Nacional`);
+
+        // Calcular tendencia vs año anterior
+        if (anterior) {
+            const cambio = valor - (anterior[config.pct] || 0);
+            const icon = cambio >= 0 ? '↑' : '↓';
+            const color = cambio >= 0 ? 'text-success' : 'text-danger';
+            $(`#tendencia${tipo}`).html(`
+                <span class="${color}">
+                    ${icon} ${Math.abs(cambio).toFixed(1)}% vs año anterior
+                </span>
+            `);
+        } else {
+            $(`#tendencia${tipo}`).html('<span class="text-muted">Sin datos previos</span>');
+        }
+    }
+
+    // Renderizar gráfico de comparación de excelencia
+    function renderComparacionExcelenciaChart(data) {
+        // Destroy previous chart if exists
+        if (chartComparacionExcelencia) {
+            chartComparacionExcelencia.destroy();
+        }
+
+        const options = {
+            series: [{
+                name: 'Tu Colegio',
+                data: [
+                    data.pct_excelencia_integral || 0,
+                    data.pct_competencia_satisfactoria_integral || 0,
+                    data.pct_perfil_stem_avanzado || 0,
+                    data.pct_perfil_humanistico_avanzado || 0
+                ]
+            }, {
+                name: 'Promedio Nacional',
+                data: [
+                    data.nacional_excelencia || 0,
+                    data.nacional_competencia || 0,
+                    data.nacional_stem || 0,
+                    data.nacional_humanistico || 0
+                ]
+            }],
+            chart: {
+                type: 'bar',
+                height: 350
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: true,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val) {
+                    return val.toFixed(1) + '%';
+                },
+                offsetX: 30,
+                style: {
+                    fontSize: '12px',
+                    colors: ['#304758']
+                }
+            },
+            xaxis: {
+                categories: [
+                    'Excelencia Integral',
+                    'Competencia Satisfactoria',
+                    'Perfil STEM',
+                    'Perfil Humanístico'
+                ],
+                labels: {
+                    formatter: function (val) {
+                        return val.toFixed(1) + '%';
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    }
+                }
+            },
+            colors: ['#667eea', '#48bb78'],
+            legend: {
+                position: 'top',
+                horizontalAlign: 'left'
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val.toFixed(2) + '%';
+                    }
+                }
+            }
+        };
+
+        chartComparacionExcelencia = new ApexCharts(
+            document.querySelector("#chartComparacionExcelencia"),
+            options
+        );
+        chartComparacionExcelencia.render();
     }
 
     // Debounce helper

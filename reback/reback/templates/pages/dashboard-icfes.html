@@ -343,8 +343,13 @@
         <div class="col-md-3">
           <div class="card">
             <div class="card-body text-center">
-              <h3 class="mb-0 fw-bold" id="schoolStatAnos">--</h3>
-              <p class="text-muted mb-0">Años de Datos</p>
+              <h3 class="mb-0 fw-bold" id="schoolStatZScore">--</h3>
+              <p class="text-muted mb-0">
+                Z-Score
+                <i class="bx bx-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
+                  title="Mide cuántas desviaciones estándar está el colegio del promedio nacional. +2 = Élite, 0 = Promedio, -2 = Bajo"></i>
+              </p>
+              <small id="schoolStatZScoreInterpretation" class="text-muted">--</small>
             </div>
           </div>
         </div>
@@ -534,6 +539,138 @@
                   <h6 class="text-muted mb-3"><i class="bx bx-trophy me-1"></i> Indicadores de Excelencia</h6>
                   <div id="achievementBadges" class="d-flex flex-wrap gap-2">
                     <!-- Badges will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+
+
+              <!-- NEW: Tarjetas de Indicadores de Excelencia Académica -->
+              <div id="indicadoresExcelenciaSection" style="display: none;">
+                <div class="row mb-3">
+                  <div class="col-12">
+                    <div class="alert alert-primary border-primary">
+                      <h6 class="alert-heading"><i class="bx bx-star me-1"></i> Indicadores de Excelencia Académica</h6>
+                      <p class="mb-0 small">Métricas clave que distinguen a los mejores colegios del país</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row with 4 cards -->
+                <div class="row mb-3">
+                  <!-- Excelencia Integral -->
+                  <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-warning h-100">
+                      <div class="card-body text-center">
+                        <div class="mb-2">
+                          <i class="bx bx-trophy" style="font-size: 2.5rem; color: #FFD700;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Excelencia Integral</h6>
+                        <h3 class="fw-bold text-warning mb-1" id="pctExcelenciaIntegral">--</h3>
+                        <p class="text-muted small mb-2">Nivel 4 en TODAS las materias</p>
+                        <span class="badge bg-info" id="rankingExcelencia">--</span>
+                        <div id="tendenciaExcelencia" class="small mt-2">--</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Competencia Satisfactoria -->
+                  <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-success h-100">
+                      <div class="card-body text-center">
+                        <div class="mb-2">
+                          <i class="bx bx-check-circle" style="font-size: 2.5rem; color: #28a745;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Competencia Satisfactoria</h6>
+                        <h3 class="fw-bold text-success mb-1" id="pctCompetenciaSatisfactoria">--</h3>
+                        <p class="text-muted small mb-2">Nivel 3+ en TODAS las materias</p>
+                        <span class="badge bg-info" id="rankingCompetencia">--</span>
+                        <div id="tendenciaCompetencia" class="small mt-2">--</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Perfil STEM -->
+                  <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-primary h-100">
+                      <div class="card-body text-center">
+                        <div class="mb-2">
+                          <i class="bx bx-atom" style="font-size: 2.5rem; color: #007bff;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Perfil STEM Avanzado</h6>
+                        <h3 class="fw-bold text-primary mb-1" id="pctPerfilStem">--</h3>
+                        <p class="text-muted small mb-2">Nivel 4 en Math & Ciencias</p>
+                        <span class="badge bg-info" id="rankingStem">--</span>
+                        <div id="tendenciaStem" class="small mt-2">--</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Perfil Humanístico -->
+                  <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-info h-100">
+                      <div class="card-body text-center">
+                        <div class="mb-2">
+                          <i class="bx bx-book-open" style="font-size: 2.5rem; color: #6f42c1;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Perfil Humanístico Avanzado</h6>
+                        <h3 class="fw-bold" style="color: #6f42c1;" id="pctPerfilHumanistico">--</h3>
+                        <p class="text-muted small mb-2">Nivel 4 en Lectura & Sociales</p>
+                        <span class="badge bg-info" id="rankingHumanistico">--</span>
+                        <div id="tendenciaHumanistico" class="small mt-2">--</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Gráfico de Comparación -->
+                <div class="row">
+                  <div class="col-12">
+                    <div class="card">
+                      <div class="card-header">
+                        <h6 class="card-title mb-0">Comparación con Promedio Nacional</h6>
+                      </div>
+                      <div class="card-body">
+                        <div id="chartComparacionExcelencia"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Z-Score Explanation -->
+              <div class="row mb-4" id="zscoreExplanation" style="display: none;">
+                <div class="col-12">
+                  <div class="alert alert-info border-info">
+                    <h6 class="alert-heading"><i class="bx bx-info-circle me-1"></i> ¿Qué es el Z-Score?</h6>
+                    <p class="mb-2 small">
+                      El <strong>Z-Score</strong> (o puntuación estandarizada) mide cuántas <strong>desviaciones
+                        estándar</strong>
+                      está su colegio por encima o debajo del promedio nacional.
+                    </p>
+                    <div class="row small">
+                      <div class="col-md-6">
+                        <strong>Interpretación:</strong>
+                        <ul class="mb-0 mt-1">
+                          <li><span class="badge bg-success">+2.0 o más</span> = <strong>Élite</strong> (Top 2.5%)</li>
+                          <li><span class="badge bg-success">+1.0 a +2.0</span> = <strong>Muy Superior</strong> (Top
+                            16%)</li>
+                          <li><span class="badge bg-info">+0.5 a +1.0</span> = <strong>Superior</strong> (Top 30%)</li>
+                          <li><span class="badge bg-secondary">-0.5 a +0.5</span> = <strong>Promedio</strong> (38%
+                            central)</li>
+                          <li><span class="badge bg-warning">-1.0 a -0.5</span> = <strong>Por Debajo</strong></li>
+                          <li><span class="badge bg-danger">-2.0 o menos</span> = <strong>Muy Bajo</strong></li>
+                        </ul>
+                      </div>
+                      <div class="col-md-6">
+                        <strong>¿Por qué es útil?</strong>
+                        <ul class="mb-0 mt-1">
+                          <li>Permite comparar colegios de diferentes años</li>
+                          <li>No se afecta por cambios en la escala de puntajes</li>
+                          <li>Muestra qué tan "excepcional" o "típico" es su colegio</li>
+                          <li>Es el estándar internacional para comparaciones estadísticas</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

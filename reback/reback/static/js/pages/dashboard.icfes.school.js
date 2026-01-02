@@ -99,6 +99,11 @@ async function loadSchoolDetail(school) {
     const historicalData = await loadSchoolHistorico(school.colegio_sk);
     await loadSchoolComparacion(school.colegio_sk);
 
+    // Load excellence indicators
+    if (typeof loadIndicadoresExcelencia === 'function') {
+        await loadIndicadoresExcelencia(school.colegio_sk);
+    }
+
     // Render historical table
     if (typeof renderPerformanceTable === 'function' && historicalData) {
         renderPerformanceTable(historicalData);
@@ -120,9 +125,44 @@ async function loadSchoolResumen(sk) {
                 data.ultimo_ano.total_estudiantes || '--';
         }
 
-        if (data.rango_historico) {
-            document.getElementById('schoolStatAnos').textContent =
-                data.rango_historico.total_anos || '--';
+        // Z-Score display with interpretation
+        if (data.z_score && data.z_score.z_score_global !== null) {
+            const zScore = data.z_score.z_score_global;
+            const zScoreElement = document.getElementById('schoolStatZScore');
+            const interpretationElement = document.getElementById('schoolStatZScoreInterpretation');
+
+            // Display z-score with color coding
+            zScoreElement.textContent = zScore.toFixed(2);
+
+            // Color coding based on z-score
+            if (zScore >= 2) {
+                zScoreElement.className = 'mb-0 fw-bold text-success';
+                interpretationElement.innerHTML = '<span class="badge bg-success">⭐ Élite</span>';
+            } else if (zScore >= 1) {
+                zScoreElement.className = 'mb-0 fw-bold text-success';
+                interpretationElement.innerHTML = '<span class="badge bg-success">Muy Superior</span>';
+            } else if (zScore >= 0.5) {
+                zScoreElement.className = 'mb-0 fw-bold text-info';
+                interpretationElement.innerHTML = '<span class="badge bg-info">Superior</span>';
+            } else if (zScore >= -0.5) {
+                zScoreElement.className = 'mb-0 fw-bold text-secondary';
+                interpretationElement.innerHTML = '<span class="badge bg-secondary">Promedio</span>';
+            } else if (zScore >= -1) {
+                zScoreElement.className = 'mb-0 fw-bold text-warning';
+                interpretationElement.innerHTML = '<span class="badge bg-warning">Por Debajo</span>';
+            } else {
+                zScoreElement.className = 'mb-0 fw-bold text-danger';
+                interpretationElement.innerHTML = '<span class="badge bg-danger">Muy Bajo</span>';
+            }
+
+            // Show Z-Score explanation
+            const explanationSection = document.getElementById('zscoreExplanation');
+            if (explanationSection) {
+                explanationSection.style.display = 'block';
+            }
+        } else {
+            document.getElementById('schoolStatZScore').textContent = '--';
+            document.getElementById('schoolStatZScoreInterpretation').innerHTML = '<span class="text-muted">Sin datos</span>';
         }
     } catch (error) {
         console.error('Error loading school summary:', error);
@@ -553,3 +593,188 @@ function updateClasificacionDisplay(divId, value) {
         div.className = 'alert alert-danger mb-0 py-2';
     }
 }
+
+// ============================================================================
+// EXCELLENCE INDICATORS
+// ============================================================================
+
+let chartComparacionExcelencia = null;
+
+// Load excellence indicators for a school
+async function loadIndicadoresExcelencia(sk) {
+    try {
+        const response = await fetch(`/icfes/api/colegio/${sk}/indicadores-excelencia/`);
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+            // Hide section if no data
+            document.getElementById('indicadoresExcelenciaSection').style.display = 'none';
+            return;
+        }
+
+        // Show section
+        document.getElementById('indicadoresExcelenciaSection').style.display = 'block';
+
+        const actual = data[0]; // Most recent year
+        const anterior = data.length > 1 ? data[1] : null;
+
+        // Update cards
+        updateIndicadorCard('ExcelenciaIntegral', actual, anterior, {
+            pct: 'pct_excelencia_integral',
+            nacional: 'nacional_excelencia',
+            ranking: 'ranking_excelencia'
+        });
+
+        updateIndicadorCard('CompetenciaSatisfactoria', actual, anterior, {
+            pct: 'pct_competencia_satisfactoria_integral',
+            nacional: 'nacional_competencia',
+            ranking: 'ranking_competencia'
+        });
+
+        updateIndicadorCard('PerfilStem', actual, anterior, {
+            pct: 'pct_perfil_stem_avanzado',
+            nacional: 'nacional_stem',
+            ranking: 'ranking_stem'
+        });
+
+        updateIndicadorCard('PerfilHumanistico', actual, anterior, {
+            pct: 'pct_perfil_humanistico_avanzado',
+            nacional: 'nacional_humanistico',
+            ranking: 'ranking_humanistico'
+        });
+
+        // Render comparison chart
+        renderComparacionExcelenciaChart(actual);
+    } catch (error) {
+        console.error('Error loading excellence indicators:', error);
+        document.getElementById('indicadoresExcelenciaSection').style.display = 'none';
+    }
+}
+
+// Update indicator card
+function updateIndicadorCard(tipo, actual, anterior, config) {
+    const valor = actual[config.pct] || 0;
+    const ranking = actual[config.ranking] || 0;
+
+    // Update percentage
+    const pctElement = document.getElementById(`pct${tipo}`);
+    if (pctElement) {
+        pctElement.textContent = valor.toFixed(1) + '%';
+    }
+
+    // Update ranking (Top X% Nacional)
+    const topPct = 100 - ranking;
+    const rankingElement = document.getElementById(`ranking${tipo}`);
+    if (rankingElement) {
+        rankingElement.textContent = `Top ${topPct.toFixed(0)}% Nacional`;
+    }
+
+    // Calculate trend vs previous year
+    const tendenciaElement = document.getElementById(`tendencia${tipo}`);
+    if (tendenciaElement) {
+        if (anterior) {
+            const cambio = valor - (anterior[config.pct] || 0);
+            const icon = cambio >= 0 ? '↑' : '↓';
+            const color = cambio >= 0 ? 'text-success' : 'text-danger';
+            tendenciaElement.innerHTML = `
+                <span class="${color}">
+                    ${icon} ${Math.abs(cambio).toFixed(1)}% vs año anterior
+                </span>
+            `;
+        } else {
+            tendenciaElement.innerHTML = '<span class="text-muted">Sin datos previos</span>';
+        }
+    }
+}
+
+// Render excellence comparison chart
+function renderComparacionExcelenciaChart(data) {
+    // Destroy previous chart if exists
+    if (chartComparacionExcelencia) {
+        chartComparacionExcelencia.destroy();
+    }
+
+    const options = {
+        series: [{
+            name: 'Tu Colegio',
+            data: [
+                data.pct_excelencia_integral || 0,
+                data.pct_competencia_satisfactoria_integral || 0,
+                data.pct_perfil_stem_avanzado || 0,
+                data.pct_perfil_humanistico_avanzado || 0
+            ]
+        }, {
+            name: 'Promedio Nacional',
+            data: [
+                data.nacional_excelencia || 0,
+                data.nacional_competencia || 0,
+                data.nacional_stem || 0,
+                data.nacional_humanistico || 0
+            ]
+        }],
+        chart: {
+            type: 'bar',
+            height: 350
+        },
+        plotOptions: {
+            bar: {
+                horizontal: true,
+                dataLabels: {
+                    position: 'top'
+                }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+                return val.toFixed(1) + '%';
+            },
+            offsetX: 30,
+            style: {
+                fontSize: '12px',
+                colors: ['#304758']
+            }
+        },
+        xaxis: {
+            categories: [
+                'Excelencia Integral',
+                'Competencia Satisfactoria',
+                'Perfil STEM',
+                'Perfil Humanístico'
+            ],
+            labels: {
+                formatter: function (val) {
+                    return val.toFixed(1) + '%';
+                }
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    fontSize: '12px'
+                }
+            }
+        },
+        colors: [colors.primary, colors.success],
+        legend: {
+            position: 'top',
+            horizontalAlign: 'left'
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val.toFixed(2) + '%';
+                }
+            }
+        }
+    };
+
+    chartComparacionExcelencia = new ApexCharts(
+        document.querySelector("#chartComparacionExcelencia"),
+        options
+    );
+    chartComparacionExcelencia.render();
+}
+
+// Export function to be called from loadSchoolDetail
+window.loadIndicadoresExcelencia = loadIndicadoresExcelencia;

@@ -948,6 +948,33 @@ def api_colegio_resumen(request, colegio_sk):
         WHERE h.colegio_sk = '{colegio_sk}'
     """
     
+    # Z-Score global (último año)
+    query_zscore = f"""
+        WITH ultimo_ano AS (
+            SELECT MAX(ano) as ano
+            FROM gold.fct_colegio_historico
+            WHERE colegio_sk = '{colegio_sk}'
+        ),
+        stats_nacionales AS (
+            SELECT 
+                AVG(avg_punt_global) as promedio_nacional,
+                STDDEV(avg_punt_global) as desviacion_nacional
+            FROM gold.fct_colegio_historico h
+            INNER JOIN ultimo_ano u ON h.ano = u.ano
+        ),
+        colegio_data AS (
+            SELECT avg_punt_global
+            FROM gold.fct_colegio_historico h
+            INNER JOIN ultimo_ano u ON h.ano = u.ano
+            WHERE h.colegio_sk = '{colegio_sk}'
+        )
+        SELECT 
+            (c.avg_punt_global - s.promedio_nacional) / NULLIF(s.desviacion_nacional, 0) as z_score_global,
+            s.promedio_nacional,
+            s.desviacion_nacional
+        FROM colegio_data c, stats_nacionales s
+    """
+    
     # Rango de años
     query_rango = f"""
         SELECT MIN(ano) as ano_inicio, MAX(ano) as ano_fin,
@@ -966,8 +993,10 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
     
+    
     df_basico = execute_query(query_basico)
     df_ultimo = execute_query(query_ultimo)
+    df_zscore = execute_query(query_zscore)
     df_rango = execute_query(query_rango)
     df_fd = execute_query(query_fd)
     
@@ -977,6 +1006,7 @@ def api_colegio_resumen(request, colegio_sk):
     resumen = {
         'info_basica': df_basico.to_dict(orient='records')[0],
         'ultimo_ano': df_ultimo.to_dict(orient='records')[0] if not df_ultimo.empty else {},
+        'z_score': df_zscore.to_dict(orient='records')[0] if not df_zscore.empty else {},
         'rango_historico': df_rango.to_dict(orient='records')[0] if not df_rango.empty else {},
         'analisis': df_fd.to_dict(orient='records')[0] if not df_fd.empty else {}
     }
@@ -1003,13 +1033,55 @@ def api_colegio_ai_recommendations(request, colegio_sk):
         """
         fortalezas = execute_query(fortalezas_query)
         
+        # NEW: Get excellence indicators
+        indicadores_query = f"""
+            WITH indicadores_colegio AS (
+                SELECT 
+                    i.ano,
+                    i.pct_excelencia_integral,
+                    i.pct_competencia_satisfactoria_integral,
+                    i.pct_perfil_stem_avanzado,
+                    i.pct_perfil_humanistico_avanzado,
+                    i.total_estudiantes
+                FROM gold.fct_indicadores_desempeno i
+                WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = '{colegio_sk}' LIMIT 1)
+            ),
+            promedios_nacionales AS (
+                SELECT 
+                    ano,
+                    AVG(pct_excelencia_integral) as nacional_excelencia,
+                    AVG(pct_competencia_satisfactoria_integral) as nacional_competencia,
+                    AVG(pct_perfil_stem_avanzado) as nacional_stem,
+                    AVG(pct_perfil_humanistico_avanzado) as nacional_humanistico
+                FROM gold.fct_indicadores_desempeno
+                GROUP BY ano
+            )
+            SELECT 
+                ic.ano,
+                ic.pct_excelencia_integral,
+                ic.pct_competencia_satisfactoria_integral,
+                ic.pct_perfil_stem_avanzado,
+                ic.pct_perfil_humanistico_avanzado,
+                ic.total_estudiantes,
+                pn.nacional_excelencia,
+                pn.nacional_competencia,
+                pn.nacional_stem,
+                pn.nacional_humanistico
+            FROM indicadores_colegio ic
+            LEFT JOIN promedios_nacionales pn ON ic.ano = pn.ano
+            ORDER BY ic.ano DESC
+            LIMIT 3
+        """
+        indicadores = execute_query(indicadores_query)
+        
         if historico.empty:
             return JsonResponse({'error': 'No se encontraron datos para este colegio'}, status=404)
         
         # Prepare data for AI
         school_data = {
             'historical_performance': historico.to_dict(orient='records'),
-            'strengths_weaknesses': fortalezas.to_dict(orient='records')[0] if not fortalezas.empty else {}
+            'strengths_weaknesses': fortalezas.to_dict(orient='records')[0] if not fortalezas.empty else {},
+            'excellence_indicators': indicadores.to_dict(orient='records') if not indicadores.empty else []
         }
         
         # Check if Anthropic API key is configured
@@ -1026,42 +1098,92 @@ def api_colegio_ai_recommendations(request, colegio_sk):
         
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         
-        prompt = f"""Analiza el siguiente colegio colombiano basado en sus resultados ICFES:
+        prompt = f"""Analiza el siguiente colegio colombiano basado en sus resultados ICFES y sus indicadores de excelencia académica:
 
-Datos históricos (últimos 5 años):
+DATOS HISTÓRICOS (últimos 5 años):
 {json.dumps(school_data['historical_performance'], indent=2, ensure_ascii=False)}
 
-Fortalezas y debilidades actuales:
+FORTALEZAS Y DEBILIDADES ACTUALES:
 {json.dumps(school_data['strengths_weaknesses'], indent=2, ensure_ascii=False)}
 
-Proporciona un análisis detallado en formato JSON con la siguiente estructura:
+INDICADORES DE EXCELENCIA ACADÉMICA (últimos 3 años):
+{json.dumps(school_data['excellence_indicators'], indent=2, ensure_ascii=False)}
+
+CONTEXTO DE LOS INDICADORES DE EXCELENCIA:
+- pct_excelencia_integral: % de estudiantes con nivel 4 (avanzado) en TODAS las materias
+- pct_competencia_satisfactoria_integral: % de estudiantes con nivel 3+ (satisfactorio o superior) en TODAS las materias
+- pct_perfil_stem_avanzado: % de estudiantes con nivel 4 en Matemáticas Y Ciencias Naturales
+- pct_perfil_humanistico_avanzado: % de estudiantes con nivel 4 en Lectura Crítica Y Sociales
+- nacional_*: Promedio nacional del indicador correspondiente
+
+ANÁLISIS REQUERIDO:
+Proporciona un análisis estratégico y detallado en formato JSON con la siguiente estructura:
 {{
-    "evaluacion_general": "Evaluación general del colegio en 2-3 párrafos",
-    "fortalezas": ["fortaleza 1", "fortaleza 2", "fortaleza 3", "fortaleza 4", "fortaleza 5"],
-    "debilidades": ["debilidad 1", "debilidad 2", "debilidad 3", "debilidad 4", "debilidad 5"],
+    "evaluacion_general": "Evaluación general del colegio en 2-3 párrafos. DEBE incluir análisis de los indicadores de excelencia y cómo se comparan con el promedio nacional. Menciona específicamente los porcentajes de excelencia integral, competencia satisfactoria, y perfiles STEM/Humanístico.",
+    
+    "fortalezas": [
+        "Fortaleza 1 (debe ser específica, con datos numéricos si es posible)",
+        "Fortaleza 2",
+        "Fortaleza 3",
+        "Fortaleza 4",
+        "Fortaleza 5"
+    ],
+    
+    "debilidades": [
+        "Debilidad 1 (debe ser específica, con datos numéricos si es posible)",
+        "Debilidad 2",
+        "Debilidad 3",
+        "Debilidad 4",
+        "Debilidad 5"
+    ],
+    
     "estrategias_5_puntos": [
-        "Estrategia específica 1 para aumentar 5 puntos en el puntaje global",
-        "Estrategia específica 2",
-        "Estrategia específica 3",
+        "Estrategia específica 1 para aumentar 5 puntos en el puntaje global. DEBE considerar los indicadores de excelencia y ser muy específica sobre qué hacer.",
+        "Estrategia específica 2 (puede enfocarse en aumentar el % de excelencia integral o competencia satisfactoria)",
+        "Estrategia específica 3 (puede enfocarse en fortalecer perfil STEM o Humanístico según necesidad)",
         "Estrategia específica 4",
         "Estrategia específica 5"
     ],
+    
     "recomendaciones_materias": {{
-        "Matemáticas": "Recomendación específica para matemáticas",
-        "Lectura Crítica": "Recomendación específica para lectura",
-        "Ciencias Naturales": "Recomendación específica para ciencias",
-        "Sociales": "Recomendación específica para sociales",
-        "Inglés": "Recomendación específica para inglés"
+        "Matemáticas": "Recomendación específica para matemáticas. Si el perfil STEM es bajo, enfócate en cómo mejorarlo.",
+        "Lectura Crítica": "Recomendación específica para lectura. Si el perfil humanístico es bajo, enfócate en cómo mejorarlo.",
+        "Ciencias Naturales": "Recomendación específica para ciencias. Relaciona con perfil STEM.",
+        "Sociales": "Recomendación específica para sociales. Relaciona con perfil humanístico.",
+        "Inglés": "Recomendación específica para inglés."
     }},
-    "plan_accion": "Plan de acción prioritario detallado en 1-2 párrafos con pasos concretos"
+    
+    "plan_accion": "Plan de acción prioritario detallado en 2-3 párrafos con pasos concretos. DEBE incluir metas específicas para mejorar los indicadores de excelencia (ej: 'aumentar excelencia integral de X% a Y% en 1 año', 'incrementar perfil STEM de A% a B%'). Prioriza acciones de alto impacto.",
+    
+    "metas_indicadores_excelencia": {{
+        "excelencia_integral": {{
+            "actual": "X.X%",
+            "meta_1_ano": "Y.Y%",
+            "justificacion": "Explicación de por qué esta meta es alcanzable y cómo lograrla"
+        }},
+        "competencia_satisfactoria": {{
+            "actual": "X.X%",
+            "meta_1_ano": "Y.Y%",
+            "justificacion": "Explicación"
+        }},
+        "perfil_prioritario": "STEM o Humanístico (el que necesite más atención)",
+        "acciones_perfil_prioritario": [
+            "Acción específica 1",
+            "Acción específica 2",
+            "Acción específica 3"
+        ]
+    }}
 }}
 
-Asegúrate de que las recomendaciones sean:
-1. Específicas y accionables
-2. Basadas en los datos proporcionados
-3. Realistas y alcanzables
-4. Priorizadas por impacto
-5. Contextualizadas al sistema educativo colombiano
+INSTRUCCIONES CRÍTICAS:
+1. Las recomendaciones DEBEN ser específicas y accionables, no genéricas
+2. DEBES usar los datos numéricos proporcionados (porcentajes, puntajes, rankings)
+3. Las estrategias DEBEN considerar los indicadores de excelencia académica
+4. Prioriza acciones que aumenten la excelencia integral y competencia satisfactoria
+5. Si el colegio está por debajo del promedio nacional en algún indicador, enfócate en cómo mejorarlo
+6. Si el colegio está por encima, enfócate en cómo mantener y ampliar la ventaja
+7. Contextualiza al sistema educativo colombiano (ICFES, niveles de desempeño, etc.)
+8. Las metas deben ser ambiciosas pero realistas (típicamente +2-5% anual en indicadores de excelencia)
 
 Responde ÚNICAMENTE con el JSON, sin texto adicional."""
 
@@ -1313,3 +1435,90 @@ def api_colegio_comparacion_chart_data(request, colegio_sk):
     }
     
     return JsonResponse(result, safe=False)
+
+
+@require_http_methods(["GET"])
+def api_colegio_indicadores_excelencia(request, colegio_sk):
+    """
+    Endpoint: Indicadores de Excelencia Académica por colegio.
+    Retorna los 4 indicadores clave con comparación nacional y rankings.
+    
+    Query params: ?ano=2022 (opcional, retorna últimos 5 años si no se especifica)
+    
+    Indicadores:
+    - Excelencia Integral: % con nivel 4 en TODAS las materias
+    - Competencia Satisfactoria: % con nivel 3+ en TODAS las materias
+    - Perfil STEM Avanzado: % con nivel 4 en Matemáticas Y Ciencias
+    - Perfil Humanístico Avanzado: % con nivel 4 en Lectura Y Sociales
+    """
+    ano = request.GET.get('ano')
+    
+    # Query con promedios nacionales y rankings
+    query = f"""
+        WITH indicadores_colegio AS (
+            SELECT 
+                i.ano,
+                i.colegio_bk,
+                i.pct_excelencia_integral,
+                i.pct_competencia_satisfactoria_integral,
+                i.pct_perfil_stem_avanzado,
+                i.pct_perfil_humanistico_avanzado,
+                i.total_estudiantes
+            FROM gold.fct_indicadores_desempeno i
+            WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = '{colegio_sk}' LIMIT 1)
+            {f"AND i.ano = {ano}" if ano else ""}
+        ),
+        promedios_nacionales AS (
+            SELECT 
+                ano,
+                AVG(pct_excelencia_integral) as nacional_excelencia,
+                AVG(pct_competencia_satisfactoria_integral) as nacional_competencia,
+                AVG(pct_perfil_stem_avanzado) as nacional_stem,
+                AVG(pct_perfil_humanistico_avanzado) as nacional_humanistico
+            FROM gold.fct_indicadores_desempeno
+            GROUP BY ano
+        ),
+        rankings AS (
+            SELECT 
+                ano,
+                colegio_bk,
+                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_excelencia_integral) * 100 as ranking_excelencia,
+                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_competencia_satisfactoria_integral) * 100 as ranking_competencia,
+                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_stem_avanzado) * 100 as ranking_stem,
+                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_humanistico_avanzado) * 100 as ranking_humanistico
+            FROM gold.fct_indicadores_desempeno
+        )
+        SELECT 
+            ic.ano,
+            ic.colegio_bk,
+            ic.pct_excelencia_integral,
+            ic.pct_competencia_satisfactoria_integral,
+            ic.pct_perfil_stem_avanzado,
+            ic.pct_perfil_humanistico_avanzado,
+            ic.total_estudiantes,
+            
+            pn.nacional_excelencia,
+            pn.nacional_competencia,
+            pn.nacional_stem,
+            pn.nacional_humanistico,
+            
+            r.ranking_excelencia,
+            r.ranking_competencia,
+            r.ranking_stem,
+            r.ranking_humanistico
+            
+        FROM indicadores_colegio ic
+        LEFT JOIN promedios_nacionales pn ON ic.ano = pn.ano
+        LEFT JOIN rankings r ON ic.ano = r.ano AND ic.colegio_bk = r.colegio_bk
+        ORDER BY ic.ano DESC
+        LIMIT 5
+    """
+    
+    df = execute_query(query)
+    
+    if df.empty:
+        return JsonResponse([], safe=False)
+    
+    # Convertir a diccionario y retornar
+    data = df.to_dict(orient='records')
+    return JsonResponse(data, safe=False)
