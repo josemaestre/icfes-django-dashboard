@@ -643,6 +643,9 @@ async function loadIndicadoresExcelencia(sk) {
             ranking: 'ranking_humanistico'
         });
 
+        // Update Riesgo Alto card (5th indicator - inverted logic)
+        updateRiesgoAltoCard(actual, anterior);
+
         // Render comparison chart
         renderComparacionExcelenciaChart(actual);
     } catch (error) {
@@ -774,6 +777,71 @@ function renderComparacionExcelenciaChart(data) {
         options
     );
     chartComparacionExcelencia.render();
+}
+
+// Update Riesgo Alto card (inverted logic - lower is better)
+function updateRiesgoAltoCard(actual, anterior) {
+    const valor = actual.pct_riesgo_alto || 0;
+    const nacional = actual.nacional_riesgo || 0;
+    const ranking = actual.ranking_riesgo || 0;
+
+    // Update percentage
+    const pctElement = document.getElementById('pctRiesgoAlto');
+    if (pctElement) {
+        pctElement.textContent = valor.toFixed(1) + '%';
+    }
+
+    // Update difference vs national (inverted: negative is good)
+    const diferencia = valor - nacional;
+    const diferenciaElement = document.getElementById('diferenciaRiesgo');
+    if (diferenciaElement) {
+        const signo = diferencia >= 0 ? '+' : '';
+        diferenciaElement.textContent = `${signo}${diferencia.toFixed(1)}%`;
+
+        // Color: green if below national, red if above
+        if (diferencia <= -5) {
+            diferenciaElement.className = 'mb-0 text-success fw-bold';
+        } else if (diferencia < 0) {
+            diferenciaElement.className = 'mb-0 text-info fw-bold';
+        } else if (diferencia < 5) {
+            diferenciaElement.className = 'mb-0 text-warning fw-bold';
+        } else {
+            diferenciaElement.className = 'mb-0 text-danger fw-bold';
+        }
+    }
+
+    // Update ranking (inverted: lower percentile is better for risk)
+    const rankingElement = document.getElementById('rankingRiesgo');
+    if (rankingElement) {
+        if (ranking < 25) {
+            rankingElement.textContent = `✅ Bajo Riesgo (Bottom ${ranking.toFixed(0)}%)`;
+            rankingElement.className = 'badge bg-success';
+        } else if (ranking < 50) {
+            rankingElement.textContent = `Riesgo Moderado (${ranking.toFixed(0)}%)`;
+            rankingElement.className = 'badge bg-warning';
+        } else {
+            rankingElement.textContent = `⚠️ Alto Riesgo (${ranking.toFixed(0)}%)`;
+            rankingElement.className = 'badge bg-danger';
+        }
+    }
+
+    // Calculate trend vs previous year (inverted: decrease is good)
+    const tendenciaElement = document.getElementById('tendenciaRiesgo');
+    if (tendenciaElement) {
+        if (anterior && anterior.pct_riesgo_alto !== undefined) {
+            const cambio = valor - anterior.pct_riesgo_alto;
+            const icon = cambio <= 0 ? '↓' : '↑';
+            const color = cambio <= 0 ? 'text-success' : 'text-danger';
+            const texto = cambio <= 0 ? 'Mejora' : 'Aumento';
+            tendenciaElement.innerHTML = `
+                <span class="${color}">
+                    ${icon} ${Math.abs(cambio).toFixed(1)}% ${texto} vs año anterior
+                </span>
+            `;
+        } else {
+            tendenciaElement.innerHTML = '<span class="text-muted">Sin datos previos</span>';
+        }
+    }
 }
 
 // Export function to be called from loadSchoolDetail

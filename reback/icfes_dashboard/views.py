@@ -1441,7 +1441,7 @@ def api_colegio_comparacion_chart_data(request, colegio_sk):
 def api_colegio_indicadores_excelencia(request, colegio_sk):
     """
     Endpoint: Indicadores de Excelencia Académica por colegio.
-    Retorna los 4 indicadores clave con comparación nacional y rankings.
+    Retorna los 4 indicadores clave + Riesgo Alto con comparación nacional y rankings.
     
     Query params: ?ano=2022 (opcional, retorna últimos 5 años si no se especifica)
     
@@ -1450,6 +1450,7 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
     - Competencia Satisfactoria: % con nivel 3+ en TODAS las materias
     - Perfil STEM Avanzado: % con nivel 4 en Matemáticas Y Ciencias
     - Perfil Humanístico Avanzado: % con nivel 4 en Lectura Y Sociales
+    - Riesgo Alto: % con nivel 1 en 2+ materias (INVERTED: lower is better)
     """
     ano = request.GET.get('ano')
     
@@ -1463,6 +1464,7 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
                 i.pct_competencia_satisfactoria_integral,
                 i.pct_perfil_stem_avanzado,
                 i.pct_perfil_humanistico_avanzado,
+                i.pct_riesgo_alto,
                 i.total_estudiantes
             FROM gold.fct_indicadores_desempeno i
             WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = '{colegio_sk}' LIMIT 1)
@@ -1474,7 +1476,8 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
                 AVG(pct_excelencia_integral) as nacional_excelencia,
                 AVG(pct_competencia_satisfactoria_integral) as nacional_competencia,
                 AVG(pct_perfil_stem_avanzado) as nacional_stem,
-                AVG(pct_perfil_humanistico_avanzado) as nacional_humanistico
+                AVG(pct_perfil_humanistico_avanzado) as nacional_humanistico,
+                AVG(pct_riesgo_alto) as nacional_riesgo
             FROM gold.fct_indicadores_desempeno
             GROUP BY ano
         ),
@@ -1485,7 +1488,8 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
                 PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_excelencia_integral) * 100 as ranking_excelencia,
                 PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_competencia_satisfactoria_integral) * 100 as ranking_competencia,
                 PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_stem_avanzado) * 100 as ranking_stem,
-                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_humanistico_avanzado) * 100 as ranking_humanistico
+                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_humanistico_avanzado) * 100 as ranking_humanistico,
+                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_riesgo_alto) * 100 as ranking_riesgo
             FROM gold.fct_indicadores_desempeno
         )
         SELECT 
@@ -1495,17 +1499,20 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
             ic.pct_competencia_satisfactoria_integral,
             ic.pct_perfil_stem_avanzado,
             ic.pct_perfil_humanistico_avanzado,
+            ic.pct_riesgo_alto,
             ic.total_estudiantes,
             
             pn.nacional_excelencia,
             pn.nacional_competencia,
             pn.nacional_stem,
             pn.nacional_humanistico,
+            pn.nacional_riesgo,
             
             r.ranking_excelencia,
             r.ranking_competencia,
             r.ranking_stem,
-            r.ranking_humanistico
+            r.ranking_humanistico,
+            r.ranking_riesgo
             
         FROM indicadores_colegio ic
         LEFT JOIN promedios_nacionales pn ON ic.ano = pn.ano
