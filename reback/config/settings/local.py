@@ -71,5 +71,28 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # ------------------------------------------------------------------------------
 # La API key DEBE configurarse como variable de entorno ANTHROPIC_API_KEY
 # Ver ANTHROPIC_SETUP.md para instrucciones de configuración
-ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+# Si no está configurada, Django no iniciará (fail-fast)
+try:
+    ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
+except Exception:
+    import sys
+    print("\n" + "="*80)
+    print("⚠️  ERROR: ANTHROPIC_API_KEY no está configurada")
+    print("="*80)
+    print("\nPara configurarla:")
+    print("1. Obtén tu API key en: https://console.anthropic.com/")
+    print("2. En PowerShell, ejecuta:")
+    print('   $env:ANTHROPIC_API_KEY = "sk-ant-api03-TU-KEY-AQUI"')
+    print("3. Reinicia el servidor Django")
+    print("\nO configúrala como variable de entorno permanente en Windows.")
+    print("Ver documentación completa en: setup_api_key.md")
+    print("="*80 + "\n")
+    
+    # En desarrollo, permitir continuar sin API key
+    if 'runserver' in sys.argv or 'shell' in sys.argv:
+        print("⚠️  Continuando en modo desarrollo SIN IA...")
+        ANTHROPIC_API_KEY = None
+    else:
+        # En producción, fallar
+        raise Exception("ANTHROPIC_API_KEY es requerida")
 

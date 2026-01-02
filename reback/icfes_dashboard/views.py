@@ -1089,7 +1089,14 @@ def api_colegio_ai_recommendations(request, colegio_sk):
         if not hasattr(settings, 'ANTHROPIC_API_KEY') or not settings.ANTHROPIC_API_KEY:
             return JsonResponse({
                 'error': 'API de IA no configurada',
-                'message': 'Por favor, configura ANTHROPIC_API_KEY en settings.py'
+                'message': 'La API key de Anthropic Claude no está configurada.',
+                'instrucciones': {
+                    'paso_1': 'Obtén tu API key en https://console.anthropic.com/',
+                    'paso_2': 'En PowerShell ejecuta: $env:ANTHROPIC_API_KEY = "sk-ant-api03-TU-KEY-AQUI"',
+                    'paso_3': 'Reinicia el servidor Django',
+                    'documentacion': 'Ver setup_api_key.md para más detalles'
+                },
+                'nota': 'Las recomendaciones de IA estarán disponibles una vez configurada la API key'
             }, status=503)
         
         # Call Anthropic Claude API
