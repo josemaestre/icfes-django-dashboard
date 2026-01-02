@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import pandas as pd
+import json
 from .db_utils import (
     execute_query,
     get_table_data,
@@ -1113,7 +1114,6 @@ def api_colegio_ai_recommendations(request, colegio_sk):
         
         # Call Anthropic Claude API
         import anthropic
-        import json
         
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         
