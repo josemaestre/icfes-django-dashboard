@@ -5,6 +5,7 @@ Conecta con la base de datos DuckDB del proyecto dbt.
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+import pandas as pd
 from .db_utils import (
     execute_query,
     get_table_data,
@@ -1072,10 +1073,21 @@ def api_colegio_ai_recommendations(request, colegio_sk):
             ORDER BY ic.ano DESC
             LIMIT 3
         """
-        indicadores = execute_query(indicadores_query)
         
+        # Try to get excellence indicators (may not exist for all schools)
+        try:
+            indicadores = execute_query(indicadores_query)
+        except Exception as e:
+            print(f"Warning: Could not fetch indicators for {colegio_sk}: {e}")
+            indicadores = pd.DataFrame()  # Empty dataframe
+        
+        # Validate that we have at least historical data
         if historico.empty:
-            return JsonResponse({'error': 'No se encontraron datos para este colegio'}, status=404)
+            return JsonResponse({
+                'error': 'No se encontraron datos históricos para este colegio',
+                'message': 'Este colegio no tiene datos suficientes en la base de datos para generar recomendaciones.',
+                'colegio_sk': colegio_sk
+            }, status=404)
         
         # Prepare data for AI
         school_data = {

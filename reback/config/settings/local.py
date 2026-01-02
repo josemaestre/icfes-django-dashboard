@@ -77,14 +77,14 @@ ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 if not ANTHROPIC_API_KEY:
     import sys
     print("\n" + "="*80)
-    print("⚠️  WARNING: ANTHROPIC_API_KEY no está configurada")
+    print("WARNING: ANTHROPIC_API_KEY no esta configurada")
     print("="*80)
-    print("\nLas recomendaciones de IA no estarán disponibles.")
+    print("\nLas recomendaciones de IA no estaran disponibles.")
     print("\nPara configurarla:")
-    print("1. Obtén tu API key en: https://console.anthropic.com/")
+    print("1. Obten tu API key en: https://console.anthropic.com/")
     print("2. En PowerShell, ejecuta:")
     print('   $env:ANTHROPIC_API_KEY = "sk-ant-api03-TU-KEY-AQUI"')
     print("3. Reinicia el servidor Django")
-    print("\nVer documentación completa en: setup_api_key.md")
+    print("\nVer documentacion completa en: setup_api_key.md")
     print("="*80 + "\n")
 
