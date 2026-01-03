@@ -61,5 +61,8 @@ urlpatterns = [
     
     # Endpoint de Indicadores de Excelencia (NUEVO - usando fct_indicadores_desempeno)
     path('api/colegio/<str:colegio_sk>/indicadores-excelencia/', views.api_colegio_indicadores_excelencia, name='api_colegio_indicadores_excelencia'),
+    
+    # Endpoint de Mapa Geográfico (NUEVO - heatmap de estudiantes)
+    path('api/mapa-estudiantes-heatmap/', views.api_mapa_estudiantes_heatmap, name='api_mapa_estudiantes_heatmap'),
 ]
 

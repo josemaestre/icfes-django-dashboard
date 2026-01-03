@@ -1567,3 +1567,141 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
     # Convertir a diccionario y retornar
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
+
+
+# ============================================================================
+# ENDPOINTS API - MAPA GEOGRÁFICO
+# ============================================================================
+
+@require_http_methods(["GET"])
+def api_mapa_estudiantes_heatmap(request):
+    """
+    Retorna datos agregados de estudiantes para visualización en heatmap.
+    Agrupa por cuadrícula geográfica (~1km) para performance y privacidad.
+    
+    Query params:
+    - ano: Año de evaluación (default: 2024)
+    - categoria: excelencia_integral, perfil_stem, perfil_humanistico, riesgo_alto, todos (default: excelencia_integral)
+    - departamento: Filtro opcional por departamento
+    - municipio: Filtro opcional por municipio
+    
+    Returns:
+    {
+        "type": "heatmap",
+        "data": [[lat, lon, intensity], ...],
+        "stats": {
+            "total_estudiantes": int,
+            "max_concentracion": int,
+            "zonas_alta_concentracion": int,
+            "total_celdas": int
+        }
+    }
+    """
+    ano = request.GET.get('ano', 2024)
+    categoria = request.GET.get('categoria', 'excelencia_integral')
+    departamento = request.GET.get('departamento', None)
+    municipio = request.GET.get('municipio', None)
+    
+    # Build WHERE clause for filters
+    where_clauses = [f"i.ano = {ano}"]
+    
+    if departamento:
+        where_clauses.append(f"a.departamento_reside = '{departamento}'")
+    if municipio:
+        where_clauses.append(f"a.municipio_reside = '{municipio}'")
+    
+    where_sql = " AND ".join(where_clauses)
+    
+    # Build category condition based on performance levels
+    if categoria == 'excelencia_integral':
+        # Level 4 in all subjects
+        categoria_condition = """
+            i.desemp_lectura_critica = '4' 
+            AND i.desemp_matematicas = '4' 
+            AND i.desemp_sociales_ciudadanas = '4' 
+            AND i.desemp_c_naturales = '4' 
+            AND i.desemp_ingles = '4'
+        """
+    elif categoria == 'perfil_stem':
+        # Level 4 in Math and Sciences
+        categoria_condition = """
+            i.desemp_matematicas = '4' 
+            AND i.desemp_c_naturales = '4'
+        """
+    elif categoria == 'perfil_humanistico':
+        # Level 4 in Reading and Social Studies
+        categoria_condition = """
+            i.desemp_lectura_critica = '4' 
+            AND i.desemp_sociales_ciudadanas = '4'
+        """
+    elif categoria == 'riesgo_alto':
+        # Level 1 in 2 or more subjects
+        categoria_condition = """
+            (CASE WHEN i.desemp_lectura_critica = '1' THEN 1 ELSE 0 END +
+             CASE WHEN i.desemp_matematicas = '1' THEN 1 ELSE 0 END +
+             CASE WHEN i.desemp_sociales_ciudadanas = '1' THEN 1 ELSE 0 END +
+             CASE WHEN i.desemp_c_naturales = '1' THEN 1 ELSE 0 END +
+             CASE WHEN i.desemp_ingles = '1' THEN 1 ELSE 0 END) >= 2
+        """
+    else:  # 'todos'
+        categoria_condition = "1=1"
+    
+    # Main query: aggregate students by geographic grid
+    query = f"""
+        WITH estudiantes_ubicados AS (
+            SELECT 
+                a.latitud_reside,
+                a.longitud_reside,
+                ROUND(CAST(REPLACE(a.latitud_reside, ',', '.') AS DOUBLE), 2) as lat_grid,
+                ROUND(CAST(REPLACE(a.longitud_reside, ',', '.') AS DOUBLE), 2) as lon_grid
+            FROM icfes_bronze.icfes i
+            JOIN icfes_silver.alumnos a ON i.estu_consecutivo = a.estudiante_bk
+            WHERE {where_sql}
+              AND a.latitud_reside IS NOT NULL
+              AND a.longitud_reside IS NOT NULL
+              AND CAST(REPLACE(a.latitud_reside, ',', '.') AS DOUBLE) BETWEEN -4.5 AND 13.5
+              AND CAST(REPLACE(a.longitud_reside, ',', '.') AS DOUBLE) BETWEEN -79 AND -66
+              AND ({categoria_condition})
+        )
+        SELECT 
+            lat_grid,
+            lon_grid,
+            COUNT(*) as count
+        FROM estudiantes_ubicados
+        GROUP BY lat_grid, lon_grid
+        HAVING COUNT(*) >= 3  -- Minimum 3 students per cell (privacy)
+        ORDER BY count DESC
+    """
+    
+    try:
+        df = execute_query(query)
+        
+        # Format for Leaflet.heat: [[lat, lon, intensity], ...]
+        heatmap_data = [
+            [float(row['lat_grid']), float(row['lon_grid']), int(row['count'])]
+            for _, row in df.iterrows()
+        ]
+        
+        # Calculate statistics
+        total_estudiantes = int(df['count'].sum()) if not df.empty else 0
+        max_concentracion = int(df['count'].max()) if not df.empty else 0
+        zonas_concentracion = len(df[df['count'] >= 10]) if not df.empty else 0
+        
+        return JsonResponse({
+            'type': 'heatmap',
+            'data': heatmap_data,
+            'stats': {
+                'total_estudiantes': total_estudiantes,
+                'max_concentracion': max_concentracion,
+                'zonas_alta_concentracion': zonas_concentracion,
+                'total_celdas': len(df)
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'Error al generar mapa de calor',
+            'details': str(e)
+        }, status=500)
