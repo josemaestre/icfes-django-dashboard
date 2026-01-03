@@ -1208,7 +1208,7 @@ Responde ÚNICAMENTE con el JSON, sin texto adicional."""
 
         message = client.messages.create(
             model="claude-sonnet-4-5",  # Latest Claude Sonnet (from Anthropic docs)
-            max_tokens=2048,
+            max_tokens=4096,  # Increased to allow complete responses
             messages=[{"role": "user", "content": prompt}]
         )
         
@@ -1230,19 +1230,38 @@ Responde ÚNICAMENTE con el JSON, sin texto adicional."""
             response_text = '\n'.join(json_lines).strip()
         
         # Parse JSON
-        ai_response = json.loads(response_text)
-        return JsonResponse(ai_response)
+        try:
+            ai_response = json.loads(response_text)
+            return JsonResponse(ai_response)
+        except json.JSONDecodeError as e:
+            # Log the actual response for debugging
+            print(f"\n{'='*80}")
+            print("ERROR: Failed to parse Claude response as JSON")
+            print(f"{'='*80}")
+            print(f"Error: {str(e)}")
+            print(f"\nRaw response from Claude:")
+            print(response_text)
+            print(f"{'='*80}\n")
+            
+            return JsonResponse({
+                'error': 'Error al parsear respuesta de IA',
+                'details': f'La IA no respondió en formato JSON válido. Error: {str(e)}',
+                'raw_response': response_text[:1000]  # Show more of the response
+            }, status=500)
         
-    except json.JSONDecodeError as e:
-        return JsonResponse({
-            'error': 'Error al parsear respuesta de IA',
-            'details': f'La IA no respondió en formato JSON válido. Error: {str(e)}',
-            'raw_response': response_text[:500] if 'response_text' in locals() else 'No disponible'
-        }, status=500)
     except Exception as e:
+        print(f"\n{'='*80}")
+        print("ERROR: Unexpected error in AI recommendations")
+        print(f"{'='*80}")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        print(f"{'='*80}\n")
+        
         return JsonResponse({
             'error': 'Error al generar recomendaciones',
-            'details': str(e)
+            'details': f'{type(e).__name__}: {str(e)}'
         }, status=500)
 
 
