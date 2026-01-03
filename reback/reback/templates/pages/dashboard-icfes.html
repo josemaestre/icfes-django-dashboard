@@ -26,6 +26,11 @@
       <i class="bx bx-list-ul me-1"></i> Explorador Jerárquico
     </a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#mapa-geografico" role="tab" id="mapa-tab">
+      <i class="bx bx-map me-1"></i> Mapa Geográfico
+    </a>
+  </li>
 </ul>
 
 <!-- Tab Content -->
@@ -910,8 +915,118 @@
       </div>
     </div>
   </div>
+
+  <!-- Mapa Geográfico Tab -->
+  <div class="tab-pane fade" id="mapa-geografico" role="tabpanel">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="bx bx-map me-2"></i>
+          Mapa de Concentración de Estudiantes
+        </h5>
+      </div>
+      <div class="card-body">
+        <!-- Filtros -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label class="form-label">Categoría</label>
+            <select id="mapaCategoria" class="form-select">
+              <option value="excelencia_integral">🟢 Excelencia Integral</option>
+              <option value="perfil_stem">🔵 Perfil STEM Avanzado</option>
+              <option value="perfil_humanistico">🟣 Perfil Humanístico</option>
+              <option value="riesgo_alto">🔴 Riesgo Alto</option>
+              <option value="todos">⚫ Todos los Estudiantes</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Año</label>
+            <select id="mapaAno" class="form-select">
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Departamento</label>
+            <select id="mapaDepartamento" class="form-select">
+              <option value="">Todos</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Municipio</label>
+            <select id="mapaMunicipio" class="form-select">
+              <option value="">Todos</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <div class="card bg-light">
+              <div class="card-body text-center p-2">
+                <h4 class="mb-0" id="statTotalEstudiantes">--</h4>
+                <small class="text-muted">Total Estudiantes</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-light">
+              <div class="card-body text-center p-2">
+                <h4 class="mb-0" id="statMaxConcentracion">--</h4>
+                <small class="text-muted">Máx. por Zona</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-light">
+              <div class="card-body text-center p-2">
+                <h4 class="mb-0" id="statZonasAltas">--</h4>
+                <small class="text-muted">Zonas Alta Concentración</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-light">
+              <div class="card-body text-center p-2">
+                <h4 class="mb-0" id="statTotalCeldas">--</h4>
+                <small class="text-muted">Áreas Cubiertas</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="alert alert-info mb-3">
+          <strong>Interpretación del Mapa:</strong>
+          <span id="mapaLeyenda">
+            Las zonas más <strong class="text-success">intensas</strong> indican mayor concentración de estudiantes con
+            excelencia integral.
+          </span>
+        </div>
+
+        <!-- Mapa -->
+        <div id="mapHeatmap" style="height: 600px; border-radius: 8px; border: 1px solid #dee2e6;"></div>
+
+        <!-- Loading -->
+        <div id="mapLoading" class="text-center py-5" style="display: none;">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2">Cargando datos del mapa...</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock page_content %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock extra_css %}
 
 {% block extra_javascript %}
 <script src="{% static '/vendor/apexcharts/apexcharts.min.js' %}"></script>
@@ -919,4 +1034,11 @@
 <script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=5"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.table.js' %}?v=5"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.insights.js' %}?v=2"></script>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<!-- Geographic Map JS -->
+<script src="{% static 'js/pages/dashboard.icfes.map.js' %}?v=1"></script>
 {% endblock extra_javascript %}
