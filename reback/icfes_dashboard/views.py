@@ -1208,7 +1208,7 @@ Responde ÚNICAMENTE con el JSON, sin texto adicional."""
 
         message = client.messages.create(
             model="claude-sonnet-4-5",  # Latest Claude Sonnet (from Anthropic docs)
-            max_tokens=4096,  # Increased to allow complete responses
+            max_tokens=8192,  # Maximum recommended for complete detailed responses
             messages=[{"role": "user", "content": prompt}]
         )
         
