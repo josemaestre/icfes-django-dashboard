@@ -1616,32 +1616,32 @@ def api_mapa_estudiantes_heatmap(request):
     if categoria == 'excelencia_integral':
         # Level 4 in all subjects
         categoria_condition = """
-            i.desemp_lectura_critica = '4' 
-            AND i.desemp_matematicas = '4' 
-            AND i.desemp_sociales_ciudadanas = '4' 
-            AND i.desemp_c_naturales = '4' 
-            AND i.desemp_ingles = '4'
+            f.desempeno_lectura_critica = 4 
+            AND f.desempeno_matematicas = 4 
+            AND f.desempeno_sociales_ciudadanas = 4 
+            AND f.desempeno_c_naturales = 4 
+            AND f.desempeno_ingles = 4
         """
     elif categoria == 'perfil_stem':
         # Level 4 in Math and Sciences
         categoria_condition = """
-            i.desemp_matematicas = '4' 
-            AND i.desemp_c_naturales = '4'
+            f.desempeno_matematicas = 4 
+            AND f.desempeno_c_naturales = 4
         """
     elif categoria == 'perfil_humanistico':
         # Level 4 in Reading and Social Studies
         categoria_condition = """
-            i.desemp_lectura_critica = '4' 
-            AND i.desemp_sociales_ciudadanas = '4'
+            f.desempeno_lectura_critica = 4 
+            AND f.desempeno_sociales_ciudadanas = 4
         """
     elif categoria == 'riesgo_alto':
         # Level 1 in 2 or more subjects
         categoria_condition = """
-            (CASE WHEN i.desemp_lectura_critica = '1' THEN 1 ELSE 0 END +
-             CASE WHEN i.desemp_matematicas = '1' THEN 1 ELSE 0 END +
-             CASE WHEN i.desemp_sociales_ciudadanas = '1' THEN 1 ELSE 0 END +
-             CASE WHEN i.desemp_c_naturales = '1' THEN 1 ELSE 0 END +
-             CASE WHEN i.desemp_ingles = '1' THEN 1 ELSE 0 END) >= 2
+            (CASE WHEN f.desempeno_lectura_critica = 1 THEN 1 ELSE 0 END +
+             CASE WHEN f.desempeno_matematicas = 1 THEN 1 ELSE 0 END +
+             CASE WHEN f.desempeno_sociales_ciudadanas = 1 THEN 1 ELSE 0 END +
+             CASE WHEN f.desempeno_c_naturales = 1 THEN 1 ELSE 0 END +
+             CASE WHEN f.desempeno_ingles = 1 THEN 1 ELSE 0 END) >= 2
         """
     else:  # 'todos'
         categoria_condition = "1=1"
@@ -1654,9 +1654,9 @@ def api_mapa_estudiantes_heatmap(request):
                 a.longitud_reside,
                 ROUND(CAST(REPLACE(a.latitud_reside, ',', '.') AS DOUBLE), 2) as lat_grid,
                 ROUND(CAST(REPLACE(a.longitud_reside, ',', '.') AS DOUBLE), 2) as lon_grid
-            FROM icfes_bronze.icfes i
-            JOIN icfes_silver.alumnos a ON i.estu_consecutivo = a.estudiante_bk
-            WHERE {where_sql}
+            FROM gold.fact_icfes_analytics f
+            JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
+            WHERE f.ano = {ano}
               AND a.latitud_reside IS NOT NULL
               AND a.longitud_reside IS NOT NULL
               AND CAST(REPLACE(a.latitud_reside, ',', '.') AS DOUBLE) BETWEEN -4.5 AND 13.5
