@@ -934,7 +934,9 @@
               <option value="excelencia_integral">🟢 Excelencia Integral</option>
               <option value="perfil_stem">🔵 Perfil STEM Avanzado</option>
               <option value="perfil_humanistico">🟣 Perfil Humanístico</option>
+              <option value="perfil_bilingue">🟡 Perfil Bilingüe Avanzado</option>
               <option value="riesgo_alto">🔴 Riesgo Alto</option>
+              <option value="critico_ingles">🟠 Necesidad Crítica en Inglés</option>
               <option value="todos">⚫ Todos los Estudiantes</option>
             </select>
           </div>
@@ -959,6 +961,105 @@
               <option value="">Todos</option>
               <!-- Populated dynamically -->
             </select>
+          </div>
+        </div>
+
+        <!-- Filtro de Tipo de Ubicación -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">
+              <i class="bx bx-map-pin me-1"></i> Tipo de Ubicación
+            </label>
+            <select id="mapaTipoUbicacion" class="form-select">
+              <option value="colegio">📍 Ubicación del Colegio (donde está la institución)</option>
+              <option value="residencia">🏠 Residencia del Estudiante (donde vive)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <div class="alert alert-info mb-0 py-2 px-3">
+              <small>
+                <strong id="tipoUbicacionHelp">📍 Colegio:</strong>
+                <span id="tipoUbicacionDesc">Muestra dónde están ubicadas las instituciones educativas (oferta
+                  educativa)</span>
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de Categorías -->
+        <div class="row mb-3">
+          <div class="col-12">
+            <div class="card bg-light border-0">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bx bx-info-circle text-primary me-2"></i>
+                  <strong>¿Qué significa cada categoría?</strong>
+                </div>
+                <div class="row small">
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">🟢</span>
+                      <div>
+                        <strong>Excelencia Integral:</strong> Estudiantes con nivel 4 (superior) en TODAS las materias
+                        evaluadas.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">🔵</span>
+                      <div>
+                        <strong>Perfil STEM Avanzado:</strong> Estudiantes con nivel 4 en Matemáticas y Ciencias
+                        Naturales.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">🟣</span>
+                      <div>
+                        <strong>Perfil Humanístico:</strong> Estudiantes con nivel 4 en Lectura Crítica y Sociales.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">🔴</span>
+                      <div>
+                        <strong>Riesgo Alto:</strong> Estudiantes con nivel 1 (insuficiente) en 2 o más materias.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">🟡</span>
+                      <div>
+                        <strong>Perfil Bilingüe Avanzado:</strong> Estudiantes con nivel 4 en Inglés. Oportunidad para
+                        programas internacionales.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">🟠</span>
+                      <div>
+                        <strong>Necesidad Crítica en Inglés:</strong> Estudiantes con nivel 1 en Inglés. Oportunidad
+                        para academias de inglés.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-start">
+                      <span class="me-2">⚫</span>
+                      <div>
+                        <strong>Todos los Estudiantes:</strong> Visualiza la distribución completa sin filtros de
+                        desempeño.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

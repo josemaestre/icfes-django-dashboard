@@ -64,5 +64,7 @@ urlpatterns = [
     
     # Endpoint de Mapa Geográfico (NUEVO - heatmap de estudiantes)
     path('api/mapa-estudiantes-heatmap/', views.api_mapa_estudiantes_heatmap, name='api_mapa_estudiantes_heatmap'),
+    path('api/mapa-departamentos/', views.api_mapa_departamentos, name='api_mapa_departamentos'),
+    path('api/mapa-municipios/', views.api_mapa_municipios, name='api_mapa_municipios'),
 ]
 

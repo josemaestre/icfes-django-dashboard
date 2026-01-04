@@ -1581,7 +1581,8 @@ def api_mapa_estudiantes_heatmap(request):
     
     Query params:
     - ano: Año de evaluación (default: 2024)
-    - categoria: excelencia_integral, perfil_stem, perfil_humanistico, riesgo_alto, todos (default: excelencia_integral)
+    - categoria: excelencia_integral, perfil_stem, perfil_humanistico, perfil_bilingue, riesgo_alto, critico_ingles, todos (default: excelencia_integral)
+    - tipo_ubicacion: colegio (ubicación del colegio), residencia (residencia del estudiante) (default: colegio)
     - departamento: Filtro opcional por departamento
     - municipio: Filtro opcional por municipio
     
@@ -1601,14 +1602,27 @@ def api_mapa_estudiantes_heatmap(request):
     categoria = request.GET.get('categoria', 'excelencia_integral')
     departamento = request.GET.get('departamento', None)
     municipio = request.GET.get('municipio', None)
+    tipo_ubicacion = request.GET.get('tipo_ubicacion', 'colegio')  # 'colegio' or 'residencia'
+    
+    # Determine which coordinates to use
+    if tipo_ubicacion == 'residencia':
+        lat_field = 'a.latitud_reside'
+        lon_field = 'a.longitud_reside'
+        dept_field = 'a.departamento_reside'
+        muni_field = 'a.municipio_reside'
+    else:  # 'colegio' (default)
+        lat_field = 'a.latitud_presentacion'
+        lon_field = 'a.longitud_presentacion'
+        dept_field = 'a.departamento_presentacion'
+        muni_field = 'a.municipio_presentacion'
     
     # Build WHERE clause for filters
     where_clauses = [f"i.ano = {ano}"]
     
     if departamento:
-        where_clauses.append(f"a.departamento_reside = '{departamento}'")
+        where_clauses.append(f"{dept_field} = '{departamento}'")
     if municipio:
-        where_clauses.append(f"a.municipio_reside = '{municipio}'")
+        where_clauses.append(f"{muni_field} = '{municipio}'")
     
     where_sql = " AND ".join(where_clauses)
     
@@ -1634,6 +1648,11 @@ def api_mapa_estudiantes_heatmap(request):
             f.desempeno_lectura_critica = 4 
             AND f.desempeno_sociales_ciudadanas = 4
         """
+    elif categoria == 'perfil_bilingue':
+        # Level 4 in English (advanced bilingual profile)
+        categoria_condition = """
+            f.desempeno_ingles = 4
+        """
     elif categoria == 'riesgo_alto':
         # Level 1 in 2 or more subjects
         categoria_condition = """
@@ -1643,24 +1662,39 @@ def api_mapa_estudiantes_heatmap(request):
              CASE WHEN f.desempeno_c_naturales = 1 THEN 1 ELSE 0 END +
              CASE WHEN f.desempeno_ingles = 1 THEN 1 ELSE 0 END) >= 2
         """
+    elif categoria == 'critico_ingles':
+        # Level 1 in English (critical need for English academies)
+        categoria_condition = """
+            f.desempeno_ingles = 1
+        """
     else:  # 'todos'
         categoria_condition = "1=1"
+    
+    # Special handling for San Andrés - filter out erroneous continental coordinates
+    # San Andrés should only show coordinates in the Caribbean (12-13.5°N, -82 to -81°W)
+    san_andres_filter = ""
+    if departamento and 'Archipiélago' in departamento:
+        san_andres_filter = f"""
+              AND CAST(REPLACE({lat_field}, ',', '.') AS DOUBLE) BETWEEN 12.0 AND 13.5
+              AND CAST(REPLACE({lon_field}, ',', '.') AS DOUBLE) BETWEEN -82.0 AND -81.0
+        """
     
     # Main query: aggregate students by geographic grid
     query = f"""
         WITH estudiantes_ubicados AS (
             SELECT 
-                a.latitud_reside,
-                a.longitud_reside,
-                ROUND(CAST(REPLACE(a.latitud_reside, ',', '.') AS DOUBLE), 2) as lat_grid,
-                ROUND(CAST(REPLACE(a.longitud_reside, ',', '.') AS DOUBLE), 2) as lon_grid
+                {lat_field},
+                {lon_field},
+                ROUND(CAST(REPLACE({lat_field}, ',', '.') AS DOUBLE), 2) as lat_grid,
+                ROUND(CAST(REPLACE({lon_field}, ',', '.') AS DOUBLE), 2) as lon_grid
             FROM gold.fact_icfes_analytics f
             JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
             WHERE f.ano = {ano}
-              AND a.latitud_reside IS NOT NULL
-              AND a.longitud_reside IS NOT NULL
-              AND CAST(REPLACE(a.latitud_reside, ',', '.') AS DOUBLE) BETWEEN -4.5 AND 13.5
-              AND CAST(REPLACE(a.longitud_reside, ',', '.') AS DOUBLE) BETWEEN -79 AND -66
+              AND {lat_field} IS NOT NULL
+              AND {lon_field} IS NOT NULL
+              AND CAST(REPLACE({lat_field}, ',', '.') AS DOUBLE) BETWEEN -4.5 AND 13.5
+              AND CAST(REPLACE({lon_field}, ',', '.') AS DOUBLE) BETWEEN -82 AND -66
+              {san_andres_filter}
               AND ({categoria_condition})
         )
         SELECT 
@@ -1705,3 +1739,96 @@ def api_mapa_estudiantes_heatmap(request):
             'error': 'Error al generar mapa de calor',
             'details': str(e)
         }, status=500)
+
+
+@require_http_methods(["GET"])
+def api_mapa_departamentos(request):
+    """
+    Retorna lista de departamentos con conteo de estudiantes.
+    
+    Query params:
+    - ano: Año de evaluación (default: 2024)
+    
+    Returns:
+    [
+        {"departamento": "BOGOTÁ D.C.", "total_estudiantes": 12345},
+        ...
+    ]
+    """
+    ano = request.GET.get('ano', 2024)
+    
+    query = f"""
+        SELECT 
+            a.departamento_reside as departamento,
+            COUNT(*) as total_estudiantes
+        FROM gold.fact_icfes_analytics f
+        JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
+        WHERE f.ano = {ano}
+          AND a.departamento_reside IS NOT NULL
+          AND a.departamento_reside != ''
+        GROUP BY a.departamento_reside
+        ORDER BY total_estudiantes DESC
+    """
+    
+    try:
+        df = execute_query(query)
+        data = df.to_dict(orient='records')
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'Error al obtener departamentos',
+            'details': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def api_mapa_municipios(request):
+    """
+    Retorna lista de municipios filtrados por departamento.
+    
+    Query params:
+    - ano: Año de evaluación (default: 2024)
+    - departamento: Departamento para filtrar (requerido)
+    
+    Returns:
+    [
+        {"municipio": "BOGOTÁ D.C.", "total_estudiantes": 12345},
+        ...
+    ]
+    """
+    ano = request.GET.get('ano', 2024)
+    departamento = request.GET.get('departamento')
+    
+    if not departamento:
+        return JsonResponse({
+            'error': 'Parámetro departamento es requerido'
+        }, status=400)
+    
+    query = f"""
+        SELECT 
+            a.municipio_reside as municipio,
+            COUNT(*) as total_estudiantes
+        FROM gold.fact_icfes_analytics f
+        JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
+        WHERE f.ano = {ano}
+          AND a.departamento_reside = '{departamento}'
+          AND a.municipio_reside IS NOT NULL
+          AND a.municipio_reside != ''
+        GROUP BY a.municipio_reside
+        ORDER BY total_estudiantes DESC
+    """
+    
+    try:
+        df = execute_query(query)
+        data = df.to_dict(orient='records')
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'Error al obtener municipios',
+            'details': str(e)
+        }, status=500)
+
