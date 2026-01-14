@@ -1675,8 +1675,8 @@ def api_mapa_estudiantes_heatmap(request):
     san_andres_filter = ""
     if departamento and 'Archipiélago' in departamento:
         san_andres_filter = f"""
-              AND CAST(REPLACE({lat_field}, ',', '.') AS DOUBLE) BETWEEN 12.0 AND 13.5
-              AND CAST(REPLACE({lon_field}, ',', '.') AS DOUBLE) BETWEEN -82.0 AND -81.0
+              AND {lat_field} BETWEEN 12.0 AND 13.5
+              AND {lon_field} BETWEEN -82.0 AND -81.0
         """
     
     # Main query: aggregate students by geographic grid
@@ -1685,15 +1685,15 @@ def api_mapa_estudiantes_heatmap(request):
             SELECT 
                 {lat_field},
                 {lon_field},
-                ROUND(CAST(REPLACE({lat_field}, ',', '.') AS DOUBLE), 2) as lat_grid,
-                ROUND(CAST(REPLACE({lon_field}, ',', '.') AS DOUBLE), 2) as lon_grid
+                ROUND(CAST({lat_field} AS DOUBLE), 2) as lat_grid,
+                ROUND(CAST({lon_field} AS DOUBLE), 2) as lon_grid
             FROM gold.fact_icfes_analytics f
             JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
             WHERE f.ano = {ano}
               AND {lat_field} IS NOT NULL
               AND {lon_field} IS NOT NULL
-              AND CAST(REPLACE({lat_field}, ',', '.') AS DOUBLE) BETWEEN -4.5 AND 13.5
-              AND CAST(REPLACE({lon_field}, ',', '.') AS DOUBLE) BETWEEN -82 AND -66
+              AND CAST({lat_field} AS DOUBLE) BETWEEN -4.5 AND 13.5
+              AND CAST({lon_field} AS DOUBLE) BETWEEN -82 AND -66
               {san_andres_filter}
               AND ({categoria_condition})
         )

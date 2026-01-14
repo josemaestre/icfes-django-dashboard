@@ -88,13 +88,205 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### Acceder al Dashboard
+### Inicializar Planes de Suscripción
 
-```
-http://localhost:8000/dashboard-icfes/
+```bash
+# Crear los 4 planes de suscripción (Free, Basic, Premium, Enterprise)
+python manage.py create_plans
 ```
 
 ---
+
+## 🔐 Acceso a la Aplicación
+
+### URLs Principales
+
+| Página | URL | Acceso | Descripción |
+|--------|-----|--------|-------------|
+| **Pricing** | `http://localhost:8000/pages-pricing/` | 🌐 Público | Ver planes y precios |
+| **Registro** | `http://localhost:8000/accounts/signup/` | 🌐 Público | Crear cuenta nueva |
+| **Login** | `http://localhost:8000/accounts/login/` | 🌐 Público | Iniciar sesión |
+| **Dashboard** | `http://localhost:8000/` | 🔒 Requiere login | Dashboard principal |
+| **Admin Django** | `http://localhost:8000/admin/` | 🔒 Superuser | Gestión de suscripciones |
+
+### Flujo de Usuario
+
+```
+1. Ver Pricing (Público)
+   ↓
+2. Seleccionar Plan → Click "Get Started"
+   ↓
+3. Registrarse (email + password)
+   ↓
+4. Verificar email (check console Django en desarrollo)
+   ↓
+5. Login
+   ↓
+6. ✅ Acceso al Dashboard con Plan Free automático
+```
+
+---
+
+## 💳 Sistema de Suscripciones (Freemium)
+
+### Planes Disponibles
+
+| Plan | Precio | Queries/Día | Acceso Geográfico | Años Históricos | Exportar | API |
+|------|--------|-------------|-------------------|-----------------|----------|-----|
+| **Free** | $0/mes | 10 | Solo regiones | 3 años | ❌ | ❌ |
+| **Basic** | $9.99/mes | 100 | Departamentos + Municipios | 10 años | CSV | ❌ |
+| **Premium** | $29.99/mes | 1,000 | Colegios individuales | 29 años (completo) | CSV, Excel, PDF | ✅ (100 req/hr) |
+| **Enterprise** | Custom | 10,000 | Todo | 29 años | Todo | ✅ Ilimitado |
+
+### Características por Tier
+
+#### 🆓 Free Plan
+- ✅ Datos agregados por **región**
+- ✅ Últimos **3 años** de datos
+- ✅ **10 consultas** por día
+- ❌ Sin exportación de datos
+- ❌ Sin acceso a API
+
+#### 💼 Basic Plan
+- ✅ Datos por **departamento** y **municipio**
+- ✅ Últimos **10 años** de datos
+- ✅ **100 consultas** por día
+- ✅ Exportación a **CSV**
+- ❌ Sin acceso a API
+
+#### ⭐ Premium Plan
+- ✅ Datos de **colegios individuales**
+- ✅ **Histórico completo** (1996-2024)
+- ✅ **1,000 consultas** por día
+- ✅ Exportación a **CSV, Excel y PDF**
+- ✅ **Acceso a API REST** (100 requests/hora)
+
+#### 🏢 Enterprise Plan
+- ✅ Todo lo de Premium
+- ✅ **API ilimitada**
+- ✅ **10,000 consultas** por día
+- ✅ Soporte dedicado
+- ✅ Integraciones personalizadas
+
+### Gestión de Suscripciones
+
+#### Admin Django
+
+```bash
+# 1. Crear superusuario (si no existe)
+python manage.py createsuperuser
+
+# 2. Acceder al admin
+http://localhost:8000/admin/
+
+# 3. Navegar a: Users → Subscription plans / User subscriptions
+```
+
+**En el admin puedes:**
+- ✅ Ver y editar planes de suscripción
+- ✅ Asignar planes a usuarios manualmente
+- ✅ Ver logs de queries por usuario
+- ✅ Monitorear uso diario de queries
+
+#### Asignar Plan Manualmente (Python Shell)
+
+```bash
+python manage.py shell
+```
+
+```python
+from reback.users.models import User
+from reback.users.subscription_models import SubscriptionPlan, UserSubscription
+
+# Obtener usuario
+user = User.objects.get(email='usuario@example.com')
+
+# Obtener plan Premium
+premium = SubscriptionPlan.objects.get(tier='premium')
+
+# Asignar plan
+subscription = UserSubscription.objects.create(user=user, plan=premium)
+print(f"✅ {user.email} ahora tiene plan {premium.name}")
+```
+
+### Control de Acceso Automático
+
+El sistema usa **middleware** para controlar acceso a endpoints `/icfes/api/`:
+
+```python
+# Verifica automáticamente:
+✅ Usuario autenticado?
+✅ Suscripción activa?
+✅ Queries disponibles hoy?
+✅ Plan permite acceder a este endpoint?
+
+# Si todo OK → Procesa request
+# Si NO → Retorna error 403/429 con mensaje de upgrade
+```
+
+**Ejemplo de respuesta cuando se excede límite:**
+
+```json
+{
+  "error": "Daily query limit exceeded",
+  "message": "You have reached your daily limit of 10 queries",
+  "current_plan": "free",
+  "queries_used": 10,
+  "queries_limit": 10,
+  "upgrade_url": "/pages-pricing/"
+}
+```
+
+---
+
+## 🧪 Testing del Sistema Freemium
+
+### Test 1: Página Pública de Pricing
+
+```bash
+# Abrir en navegador (sin login):
+http://localhost:8000/pages-pricing/
+```
+
+✅ Debe mostrar los 4 planes sin pedir login
+
+### Test 2: Registro con Plan Free Automático
+
+```bash
+# 1. Ir a pricing y click "Get Started"
+# 2. Registrarse con email nuevo
+# 3. Verificar email (en desarrollo, ver console de Django)
+# 4. Login
+# 5. Verificar en admin que tiene UserSubscription con plan Free
+```
+
+### Test 3: Verificar Límites de Queries
+
+```python
+# En Django shell:
+from reback.users.models import User
+
+user = User.objects.get(email='tu@email.com')
+sub = user.subscription
+
+print(f"Plan: {sub.plan.name}")
+print(f"Queries hoy: {sub.queries_today}/{sub.plan.max_queries_per_day}")
+print(f"Queries restantes: {sub.get_remaining_queries()}")
+```
+
+---
+
+## 📊 Acceso al Dashboard ICFES
+
+### Dashboard Principal
+
+```
+http://localhost:8000/
+```
+
+**Requiere:** Login con cualquier plan (Free, Basic, Premium, Enterprise)
+
+
 
 ## 📊 Dashboard ICFES
 

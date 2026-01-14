@@ -4,28 +4,28 @@
 
 {% block html_attribute %}{% endblock html_attribute %}
 
-{% block title %}Pricing{% endblock title %}
+{% block title %}Pricing - ICFES Analytics{% endblock title %}
 
 {% block page_title %}
-{% include "partials/page-title.html" with page_title='Pricing' sub_title='Pages' %}
+{% include "partials/page-title.html" with page_title='Pricing Plans' sub_title='ICFES Analytics' %}
 {% endblock page_title %}
 
 {% block page_content %}
 <div class="row">
     <div class="col-12">
         <div class="text-center my-4">
-            <h3>Simple Pricing Plans</h3>
+            <h3>Choose Your Plan</h3>
             <p class="text-muted text-center">
-                Get the power and control you need to manage
-                your organization's technical documentation
+                Access comprehensive ICFES data and analytics for Colombian education
             </p>
         </div>
         <div class="row justify-content-center">
+            <!-- FREE PLAN -->
             <div class="col-lg-3">
                 <div class="card card-pricing">
                     <div class="card-body">
                         <h5 class="mt-0 mb-3 fs-14 text-uppercase fw-semibold">
-                            Free Pack
+                            Free Plan
                         </h5>
                         <h2 class="mt-0 mb-3 fw-bold">
                             $0
@@ -34,36 +34,32 @@
 
                         <ul class="card-pricing-features text-muted border-top pt-2 mt-2 ps-0 list-unstyled">
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>5 GB Storage
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Regional data only
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>100 GB Bandwidth
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Last 3 years
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>1 Domain
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>10 queries/day
                             </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>No Support
+                            <li class="text-muted">
+                                <i class="bx bx-x-circle fs-15 me-1"></i>No exports
                             </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>24x7 Support
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>1 User
+                            <li class="text-muted">
+                                <i class="bx bx-x-circle fs-15 me-1"></i>No API access
                             </li>
                         </ul>
 
                         <div class="mt-4 text-center">
-                            <button class="btn btn-primary px-sm-4 w-100">
+                            <a href="{% url 'account_signup' %}" class="btn btn-outline-primary px-sm-4 w-100">
                                 Get Started
-                            </button>
+                            </a>
                         </div>
                     </div>
-                    <!-- end card body -->
                 </div>
-                <!-- end card -->
             </div>
-            <!-- end col -->
+
+            <!-- BASIC PLAN -->
             <div class="col-lg-3">
                 <div class="card card-pricing">
                     <div class="card-body">
@@ -71,134 +67,118 @@
                             Popular
                         </div>
                         <h5 class="mt-0 mb-3 fs-14 text-uppercase fw-semibold">
-                            Professional Pack
+                            Basic Plan
                         </h5>
                         <h2 class="mt-0 mb-3 fw-bold">
-                            $19
+                            $9.99
                             <span class="fs-14 fw-medium text-muted">/ Month</span>
                         </h2>
 
                         <ul class="card-pricing-features text-muted border-top pt-2 mt-2 ps-0 list-unstyled">
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>50 GB Storage
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Department & municipality data
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>900 GB Bandwidth
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Last 10 years
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>2 Domains
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>100 queries/day
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Email Support
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>CSV exports
                             </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>24x7 Support
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>5 Users
-                            </li>
-                        </ul>
-
-                        <div class="mt-4 text-center">
-                            <button class="btn btn-primary px-sm-4 disabled w-100">
-                                Current Plan
-                            </button>
-                        </div>
-                    </div>
-                    <!-- end card body -->
-                </div>
-                <!-- end card -->
-            </div>
-            <!-- end col -->
-            <div class="col-lg-3">
-                <div class="card card-pricing">
-                    <div class="card-body">
-                        <h5 class="mt-0 mb-3 fs-14 text-uppercase fw-semibold">
-                            Business Pack
-                        </h5>
-                        <h2 class="mt-0 mb-3 fw-bold">
-                            $29
-                            <span class="fs-14 fw-medium text-muted">/ Month</span>
-                        </h2>
-
-                        <ul class="card-pricing-features text-muted border-top pt-2 mt-2 ps-0 list-unstyled">
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>500 GB Storage
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>2.5 TB Bandwidth
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>5 Domains
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Email Support
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>24x7 Support
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>10 Users
+                            <li class="text-muted">
+                                <i class="bx bx-x-circle fs-15 me-1"></i>No API access
                             </li>
                         </ul>
 
                         <div class="mt-4 text-center">
                             <button class="btn btn-primary px-sm-4 w-100">
-                                Get Started
+                                Subscribe
                             </button>
                         </div>
                     </div>
-                    <!-- end card body -->
                 </div>
-                <!-- end card -->
             </div>
-            <!-- end col -->
+
+            <!-- PREMIUM PLAN -->
             <div class="col-lg-3">
                 <div class="card card-pricing">
                     <div class="card-body">
                         <h5 class="mt-0 mb-3 fs-14 text-uppercase fw-semibold">
-                            Enterprise Pack
+                            Premium Plan
                         </h5>
                         <h2 class="mt-0 mb-3 fw-bold">
-                            $49
+                            $29.99
                             <span class="fs-14 fw-medium text-muted">/ Month</span>
                         </h2>
 
                         <ul class="card-pricing-features text-muted border-top pt-2 mt-2 ps-0 list-unstyled">
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>2 TB Storage
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Individual school data
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Unlimited Bandwidth
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Full history (1996-2024)
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>50 Domains
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>1000 queries/day
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Email Support
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Excel & PDF exports
                             </li>
                             <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>24x7 Support
-                            </li>
-                            <li class="text-dark">
-                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Unlimited Users
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>API access (100 req/hr)
                             </li>
                         </ul>
 
                         <div class="mt-4 text-center">
-                            <button class="btn btn-primary px-sm-4 w-100">
-                                Get Started
+                            <button class="btn btn-success px-sm-4 w-100">
+                                Subscribe
                             </button>
                         </div>
                     </div>
-                    <!-- end card body -->
                 </div>
-                <!-- end card -->
             </div>
-            <!-- end col -->
+
+            <!-- ENTERPRISE PLAN -->
+            <div class="col-lg-3">
+                <div class="card card-pricing">
+                    <div class="card-body">
+                        <h5 class="mt-0 mb-3 fs-14 text-uppercase fw-semibold">
+                            Enterprise
+                        </h5>
+                        <h2 class="mt-0 mb-3 fw-bold">
+                            Custom
+                            <span class="fs-14 fw-medium text-muted">Pricing</span>
+                        </h2>
+
+                        <ul class="card-pricing-features text-muted border-top pt-2 mt-2 ps-0 list-unstyled">
+                            <li class="text-dark">
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Everything in Premium
+                            </li>
+                            <li class="text-dark">
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Unlimited API access
+                            </li>
+                            <li class="text-dark">
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>10,000 queries/day
+                            </li>
+                            <li class="text-dark">
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Dedicated support
+                            </li>
+                            <li class="text-dark">
+                                <i class="bx bx-check-circle text-primary fs-15 me-1"></i>Custom integrations
+                            </li>
+                        </ul>
+
+                        <div class="mt-4 text-center">
+                            <button class="btn btn-dark px-sm-4 w-100">
+                                Contact Sales
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!-- end row -->
     </div>
-    <!-- end col -->
 </div>
 {% endblock page_content %}

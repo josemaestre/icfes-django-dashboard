@@ -1,0 +1,1118 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ICFES Analytics - Plataforma de análisis de datos educativos de Colombia. 17.7M+ estudiantes, 29 años de historia.">
+    <title>ICFES Analytics - Datos Educativos de Colombia</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --dark-bg: #0f172a;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 120px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+
+        .cta-button {
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: white;
+            padding: 60px 0;
+            margin-top: -40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px 20px;
+            border-radius: 16px;
+            background: var(--light-bg);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            text-align: center;
+            margin-bottom: 4rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature-card {
+            padding: 40px 30px;
+            border-radius: 16px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(37, 99, 235, 0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon i {
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 80px 0;
+            background: var(--light-bg);
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+        }
+
+        .pricing-card.featured {
+            border: 3px solid var(--primary-color);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -15px;
+            right: 30px;
+            background: var(--primary-color);
+            color: white;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-tier {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-price {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-price span {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+        }
+
+        .pricing-features li {
+            padding: 12px 0;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+        }
+
+        .pricing-features li i {
+            color: #10b981;
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+
+        .pricing-features li.disabled {
+            color: var(--text-light);
+            text-decoration: line-through;
+        }
+
+        .pricing-features li.disabled i {
+            color: #ef4444;
+        }
+
+        .pricing-button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark-bg);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 40px 0 20px;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7 hero-content">
+                    <h1 class="hero-title">
+                        Datos Educativos de Colombia al Alcance de Todos
+                    </h1>
+                    <p class="hero-subtitle">
+                        Accede a 29 años de datos históricos del ICFES. Analiza tendencias, compara colegios y toma
+                        decisiones basadas en datos reales.
+                    </p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="#pricing" class="btn btn-light btn-lg cta-button">
+                            Ver Planes
+                        </a>
+                        <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg cta-button">
+                            Comenzar Gratis
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center d-none d-lg-block">
+                    <i class="bi bi-graph-up-arrow" style="font-size: 15rem; opacity: 0.2;"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">17.7M+</div>
+                        <div class="stat-label">Estudiantes</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">29</div>
+                        <div class="stat-label">Años de Datos</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">15K+</div>
+                        <div class="stat-label">Colegios</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">33</div>
+                        <div class="stat-label">Departamentos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stakeholders Section -->
+    <section class="stakeholders-section"
+        style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);">
+        <div class="container">
+            <h2 class="section-title">¿Quién se Beneficia?</h2>
+            <p class="section-subtitle">
+                ICFES Analytics empodera a diferentes actores del ecosistema educativo colombiano
+            </p>
+
+            <div class="row g-4">
+                <!-- Padres de Familia -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-people-fill" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Padres de Familia
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Compara colegios antes de matricular
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Evalúa tendencias de rendimiento
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Toma decisiones informadas sobre educación
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Identifica fortalezas y áreas de mejora
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Educadores -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-mortarboard-fill" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Educadores y Docentes
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Benchmarking con otras instituciones
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Identifica brechas de aprendizaje
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Diseña estrategias pedagógicas basadas en datos
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Monitorea progreso año tras año
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Instituciones Educativas -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-building" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Instituciones Educativas
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Análisis de posicionamiento competitivo
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Reportes para acreditación y calidad
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Planificación estratégica institucional
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Marketing educativo con datos reales
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Investigadores -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-search" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Investigadores
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                29 años de datos históricos para análisis
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                API REST para integraciones académicas
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                Exportación masiva en múltiples formatos
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                Estudios longitudinales y correlacionales
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Gobierno y Política Pública -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-flag-fill" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Gobierno y Política Pública
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Monitoreo de brechas educativas regionales
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Evaluación de impacto de políticas
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Asignación eficiente de recursos
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Transparencia y rendición de cuentas
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Empresas EdTech -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-laptop" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Empresas EdTech
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Integración vía API REST
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Enriquece productos con datos reales
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Análisis de mercado educativo
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Identificación de oportunidades de negocio
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">¿Por qué ICFES Analytics?</h2>
+            <p class="section-subtitle">
+                La plataforma más completa para análisis de datos educativos en Colombia
+            </p>
+
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h3 class="feature-title">Análisis Histórico Completo</h3>
+                        <p class="feature-description">
+                            Accede a 29 años de datos del ICFES (1996-2024). Identifica tendencias, patrones y evolución
+                            del sistema educativo colombiano.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Exploración Geográfica</h3>
+                        <p class="feature-description">
+                            Navega desde regiones hasta colegios individuales. Compara departamentos, municipios y
+                            encuentra los mejores colegios.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <h3 class="feature-title">Dashboard Interactivo</h3>
+                        <p class="feature-description">
+                            Visualizaciones dinámicas con ApexCharts. KPIs en tiempo real, rankings, tendencias y
+                            métricas avanzadas.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-file-earmark-bar-graph"></i>
+                        </div>
+                        <h3 class="feature-title">Exportación de Datos</h3>
+                        <p class="feature-description">
+                            Descarga datos en CSV, Excel o PDF. Crea reportes personalizados para presentaciones o
+                            análisis externos.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-code-square"></i>
+                        </div>
+                        <h3 class="feature-title">API REST</h3>
+                        <p class="feature-description">
+                            Integra datos del ICFES en tus aplicaciones. API REST documentada con endpoints JSON para
+                            desarrolladores.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <h3 class="feature-title">Alto Rendimiento</h3>
+                        <p class="feature-description">
+                            Queries optimizadas con DuckDB. Respuestas en 12-25ms. Procesa millones de registros
+                            instantáneamente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Z-Score Analysis Section -->
+    <section class="zscore-section"
+        style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);">
+        <div class="container">
+            <h2 class="section-title">Análisis Z-Score: Comparación Justa y Precisa</h2>
+            <p class="section-subtitle">
+                Utilizamos Z-Score para normalizar puntajes y permitir comparaciones equitativas entre colegios,
+                independientemente del año o la materia evaluada.
+            </p>
+
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6">
+                    <div
+                        style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                        <h3
+                            style="font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1.5rem;">
+                            <i class="bi bi-calculator text-primary me-2"></i>
+                            ¿Qué es el Z-Score?
+                        </h3>
+                        <p style="color: var(--text-light); line-height: 1.8; margin-bottom: 1.5rem;">
+                            El Z-Score es una métrica estadística que indica cuántas desviaciones estándar se encuentra
+                            un valor respecto a la media. En ICFES Analytics, lo usamos para:
+                        </p>
+                        <div
+                            style="background: #f8fafc; border-left: 4px solid var(--primary-color); padding: 20px; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <code style="font-size: 1.1rem; color: var(--text-dark);">
+                                Z = (X - μ) / σ
+                            </code>
+                            <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.9rem; color: var(--text-light);">
+                                Donde X es el puntaje, μ es la media y σ es la desviación estándar
+                            </p>
+                        </div>
+                        <ul style="list-style: none; padding: 0; color: var(--text-dark);">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <strong>Comparación Normalizada:</strong> Compara colegios de diferentes años en la
+                                misma escala
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <strong>Identificación de Outliers:</strong> Detecta colegios con rendimiento
+                                excepcional o deficiente
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <strong>Percentiles Precisos:</strong> Ubica cada colegio en su posición relativa exacta
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div
+                        style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                        <h3
+                            style="font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1.5rem;">
+                            <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                            Interpretación del Z-Score
+                        </h3>
+                        <div style="margin-bottom: 20px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 8px; margin-bottom: 10px;">
+                                <span style="color: white; font-weight: 600;">Z > +2.0</span>
+                                <span style="color: white;">Excepcional (Top 2.5%)</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 8px; margin-bottom: 10px;">
+                                <span style="color: white; font-weight: 600;">+1.0 < Z < +2.0</span>
+                                        <span style="color: white;">Muy Bueno (Top 16%)</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #e0e7ff; border-radius: 8px; margin-bottom: 10px;">
+                                <span style="color: var(--text-dark); font-weight: 600;">-1.0 < Z < +1.0</span>
+                                        <span style="color: var(--text-dark);">Promedio (68%)</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 8px; margin-bottom: 10px;">
+                                <span style="color: white; font-weight: 600;">-2.0 < Z < -1.0</span>
+                                        <span style="color: white;">Por Debajo del Promedio</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 8px;">
+                                <span style="color: white; font-weight: 600;">Z < -2.0</span>
+                                        <span style="color: white;">Requiere Atención (Bottom 2.5%)</span>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-light); font-size: 0.95rem; margin: 0;">
+                            <i class="bi bi-info-circle text-primary me-2"></i>
+                            Esta métrica permite identificar rápidamente el rendimiento relativo de cualquier colegio
+                            en el contexto nacional.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Recommendations Section -->
+    <section class="ai-section" style="padding: 80px 0; background: white;">
+        <div class="container">
+            <h2 class="section-title">Recomendaciones Impulsadas por IA</h2>
+            <p class="section-subtitle">
+                Análisis profundo con Claude AI que transforma datos en estrategias accionables para mejorar el
+                rendimiento académico
+            </p>
+
+            <div class="row g-4 align-items-center mb-5">
+                <div class="col-lg-6 order-lg-2">
+                    <div style="border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.2);">
+                        <img src="{% static 'images/screenshots/dashboard_ai_recommendations.png' %}"
+                            alt="Recomendaciones de IA ICFES" class="img-fluid" style="width: 100%; height: auto;">
+                    </div>
+                </div>
+
+                <div class="col-lg-6 order-lg-1">
+                    <div
+                        style="background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%); border-radius: 16px; padding: 40px; border-left: 6px solid var(--primary-color);">
+                        <h3
+                            style="font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1.5rem;">
+                            <i class="bi bi-robot text-primary me-2"></i>
+                            Análisis Inteligente con Claude
+                        </h3>
+                        <p style="color: var(--text-light); line-height: 1.8; margin-bottom: 2rem;">
+                            Nuestra integración con Claude AI de Anthropic analiza el rendimiento histórico de cada
+                            colegio y genera recomendaciones personalizadas basadas en:
+                        </p>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div
+                                    style="background: white; padding: 20px; border-radius: 12px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                    <div
+                                        style="width: 50px; height: 50px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                        <i class="bi bi-graph-up" style="font-size: 1.5rem; color: white;"></i>
+                                    </div>
+                                    <h4
+                                        style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 10px;">
+                                        Análisis Profundo
+                                    </h4>
+                                    <p style="color: var(--text-light); font-size: 0.95rem; margin: 0;">
+                                        Evaluación completa de fortalezas y debilidades por materia
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div
+                                    style="background: white; padding: 20px; border-radius: 12px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                    <div
+                                        style="width: 50px; height: 50px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                        <i class="bi bi-lightbulb" style="font-size: 1.5rem; color: white;"></i>
+                                    </div>
+                                    <h4
+                                        style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 10px;">
+                                        Estrategias Accionables
+                                    </h4>
+                                    <p style="color: var(--text-light); font-size: 0.95rem; margin: 0;">
+                                        Planes de acción específicos para aumentar puntajes
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div
+                                    style="background: white; padding: 20px; border-radius: 12px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                    <div
+                                        style="width: 50px; height: 50px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                        <i class="bi bi-book" style="font-size: 1.5rem; color: white;"></i>
+                                    </div>
+                                    <h4
+                                        style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 10px;">
+                                        Por Materia
+                                    </h4>
+                                    <p style="color: var(--text-light); font-size: 0.95rem; margin: 0;">
+                                        Recomendaciones específicas para Matemáticas, Lectura, Ciencias, etc.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div
+                                    style="background: white; padding: 20px; border-radius: 12px; height: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                    <div
+                                        style="width: 50px; height: 50px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                        <i class="bi bi-list-check" style="font-size: 1.5rem; color: white;"></i>
+                                    </div>
+                                    <h4
+                                        style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 10px;">
+                                        Plan Prioritario
+                                    </h4>
+                                    <p style="color: var(--text-light); font-size: 0.95rem; margin: 0;">
+                                        Acciones priorizadas para máximo impacto en el corto plazo
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="margin-top: 30px; padding: 20px; background: white; border-radius: 12px; border: 2px solid var(--primary-color);">
+                            <p style="margin: 0; color: var(--text-dark); font-weight: 600;">
+                                <i class="bi bi-stars text-warning me-2"></i>
+                                Genera análisis personalizados en segundos con un solo clic
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Product Showcase Section -->
+
+    <section class="showcase-section" style="padding: 80px 0; background: white;">
+        <div class="container">
+            <h2 class="section-title">Plataforma en Acción</h2>
+            <p class="section-subtitle">
+                Descubre cómo ICFES Analytics te ayuda a tomar decisiones basadas en datos
+            </p>
+
+            <div class="row g-4 mb-5">
+                <div class="col-lg-6">
+                    <div class="showcase-card"
+                        style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                        <img src="{% static 'images/screenshots/dashboard_main.png' %}" alt="Dashboard Principal ICFES"
+                            class="img-fluid" style="width: 100%; height: auto;">
+                        <div style="padding: 30px; background: white;">
+                            <h4 style="font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                                <i class="bi bi-graph-up text-primary me-2"></i>
+                                Dashboard Interactivo
+                            </h4>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Visualiza tendencias nacionales desde 1996 hasta 2024. Gráficos interactivos con
+                                ApexCharts muestran la evolución de puntajes por materia en tiempo real.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="showcase-card"
+                        style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                        <img src="{% static 'images/screenshots/dashboard_hierarchy.png' %}" alt="Explorador Jerárquico"
+                            class="img-fluid" style="width: 100%; height: auto;">
+                        <div style="padding: 30px; background: white;">
+                            <h4 style="font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                                <i class="bi bi-list-nested text-primary me-2"></i>
+                                Explorador Jerárquico
+                            </h4>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Navega desde regiones hasta colegios individuales. Rankings, promedios, tendencias y
+                                métricas avanzadas organizadas por niveles geográficos.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-12">
+                    <div class="showcase-card"
+                        style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                        <img src="{% static 'images/screenshots/dashboard_map.png' %}" alt="Mapa Geográfico"
+                            class="img-fluid" style="width: 100%; height: auto;">
+                        <div style="padding: 30px; background: white;">
+                            <h4 style="font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                                <i class="bi bi-geo-alt text-primary me-2"></i>
+                                Visualización Geográfica
+                            </h4>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Mapa interactivo de Colombia con distribución de estudiantes y resultados. Identifica
+                                patrones geográficos y compara regiones visualmente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Second Row - Rankings -->
+            <div class="row g-4 mt-4">
+                <div class="col-lg-8 mx-auto">
+                    <div class="showcase-card"
+                        style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                        <img src="{% static 'images/screenshots/dashboard_rankings.png' %}"
+                            alt="Rankings de Colegios ICFES" class="img-fluid" style="width: 100%; height: auto;">
+                        <div style="padding: 30px; background: white;">
+                            <h4 style="font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                                <i class="bi bi-trophy text-warning me-2"></i>
+                                Rankings y Posiciones
+                            </h4>
+                            <p style="color: var(--text-light); margin: 0;">
+                                Explora rankings detallados por región, departamento y colegio. Compara puntajes
+                                globales,
+                                por materia, y posiciones nacionales. Identifica las instituciones de mejor desempeño.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <h2 class="section-title">Planes y Precios</h2>
+            <p class="section-subtitle">
+                Elige el plan que mejor se adapte a tus necesidades
+            </p>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Free Plan -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="pricing-card">
+                        <div class="pricing-tier">Free</div>
+                        <div class="pricing-price">$0<span>/mes</span></div>
+                        <p class="text-muted">Perfecto para comenzar</p>
+
+                        <ul class="pricing-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Datos regionales</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Últimos 3 años</li>
+                            <li><i class="bi bi-check-circle-fill"></i> 10 consultas/día</li>
+                            <li class="disabled"><i class="bi bi-x-circle-fill"></i> Sin exportación</li>
+                            <li class="disabled"><i class="bi bi-x-circle-fill"></i> Sin API</li>
+                        </ul>
+
+                        <a href="{% url 'account_signup' %}" class="btn btn-outline-primary pricing-button">
+                            Comenzar Gratis
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Basic Plan -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="pricing-card featured">
+                        <div class="pricing-badge">Popular</div>
+                        <div class="pricing-tier">Basic</div>
+                        <div class="pricing-price">$9.99<span>/mes</span></div>
+                        <p class="text-muted">Para educadores</p>
+
+                        <ul class="pricing-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Departamentos + Municipios</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Últimos 10 años</li>
+                            <li><i class="bi bi-check-circle-fill"></i> 100 consultas/día</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Exportar CSV</li>
+                            <li class="disabled"><i class="bi bi-x-circle-fill"></i> Sin API</li>
+                        </ul>
+
+                        <a href="{% url 'account_signup' %}" class="btn btn-primary pricing-button">
+                            Suscribirse
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="pricing-card">
+                        <div class="pricing-tier">Premium</div>
+                        <div class="pricing-price">$29.99<span>/mes</span></div>
+                        <p class="text-muted">Para instituciones</p>
+
+                        <ul class="pricing-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Colegios individuales</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Histórico completo (29 años)</li>
+                            <li><i class="bi bi-check-circle-fill"></i> 1,000 consultas/día</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Excel + PDF</li>
+                            <li><i class="bi bi-check-circle-fill"></i> API REST (100/hr)</li>
+                        </ul>
+
+                        <a href="{% url 'account_signup' %}" class="btn btn-success pricing-button">
+                            Suscribirse
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="pricing-card">
+                        <div class="pricing-tier">Enterprise</div>
+                        <div class="pricing-price">Custom</div>
+                        <p class="text-muted">Soluciones a medida</p>
+
+                        <ul class="pricing-features">
+                            <li><i class="bi bi-check-circle-fill"></i> Todo en Premium</li>
+                            <li><i class="bi bi-check-circle-fill"></i> API ilimitada</li>
+                            <li><i class="bi bi-check-circle-fill"></i> 10,000 consultas/día</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Soporte dedicado</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Integraciones custom</li>
+                        </ul>
+
+                        <a href="mailto:contact@icfesanalytics.com" class="btn btn-dark pricing-button">
+                            Contactar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>¿Listo para comenzar?</h2>
+            <p>Únete a cientos de educadores, investigadores e instituciones que ya usan ICFES Analytics</p>
+            <a href="{% url 'account_signup' %}" class="btn btn-light btn-lg cta-button">
+                Crear Cuenta Gratis
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-2">&copy; 2026 ICFES Analytics. Todos los derechos reservados.</p>
+            <p class="mb-0">
+                <a href="{% url 'account_login' %}" class="text-white-50 text-decoration-none me-3">Iniciar Sesión</a>
+                <a href="{% url 'pages:dynamic_pages' 'pages-pricing' %}"
+                    class="text-white-50 text-decoration-none me-3">Precios</a>
+                <a href="mailto:contact@icfesanalytics.com" class="text-white-50 text-decoration-none">Contacto</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
