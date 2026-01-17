@@ -10,12 +10,15 @@ ENV PYTHONUNBUFFERED=1 \
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Node.js
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     postgresql-client \
     libpq-dev \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (for better caching)
@@ -26,6 +29,9 @@ RUN pip install --no-cache-dir -r requirements/production.txt
 
 # Copy project files from reback folder
 COPY reback/ .
+
+# Install npm dependencies and build assets
+RUN npm install && npm run build
 
 # Create directory for DuckDB
 RUN mkdir -p /app/data
