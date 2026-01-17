@@ -9,3 +9,9 @@ Collectfast==2.2.0  # https://github.com/antonagestam/collectfast
 # ------------------------------------------------------------------------------
 django-storages[s3]==1.14.3  # https://github.com/jschneier/django-storages
 django-anymail==10.3  # https://github.com/anymail/django-anymail
+
+# Railway-specific
+# ------------------------------------------------------------------------------
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+whitenoise==6.6.0  # Static file serving
+dj-database-url==2.1.0  # Database URL parsing
