@@ -19,13 +19,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (for better caching)
-COPY requirements/production.txt requirements.txt
+COPY reback/requirements/production.txt requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
-COPY . .
+# Copy project files from reback folder
+COPY reback/ .
 
 # Create directory for DuckDB
 RUN mkdir -p /app/data
