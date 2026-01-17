@@ -30,6 +30,9 @@ RUN pip install --no-cache-dir -r requirements/production.txt
 # Copy all project files from reback folder
 COPY reback/ .
 
+# Debug: List files to verify static folder was copied
+RUN ls -la && ls -la static/ || echo "static folder not found"
+
 # Set environment variable for Gulp to know we're in production
 ENV BUILD_ENV=production
 
