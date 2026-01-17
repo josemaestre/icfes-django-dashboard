@@ -21,17 +21,26 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (for better caching)
+# Copy package.json and gulpfile first (for better caching)
+COPY reback/package.json reback/gulpfile.js ./
+
+# Install npm dependencies
+RUN npm install
+
+# Copy requirements folder
 COPY reback/requirements/ requirements/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements/production.txt
 
-# Copy project files from reback folder
-COPY reback/ .
+# Copy all project files (maintain reback folder structure for Gulp)
+COPY reback/ ./reback/
 
-# Install npm dependencies and build assets
-RUN npm install && npm run build
+# Build frontend assets with Gulp
+RUN npm run build
+
+# Move built files to app root for Django
+RUN cp -r reback/* . && rm -rf reback
 
 # Create directory for DuckDB
 RUN mkdir -p /app/data
