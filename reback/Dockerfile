@@ -27,9 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput --settings=config.settings.railway
-
 # Create directory for DuckDB
 RUN mkdir -p /app/data
 
