@@ -25,9 +25,9 @@ const npmdist = require("gulp-npm-dist");
 
 // Relative paths function
 function pathsConfig(appName) {
-    // In production (Railway), files are in current directory
+    // In production build (Docker/Railway), files are in current directory
     // In development, files are in ./reback subdirectory
-    this.app = process.env.RAILWAY_ENVIRONMENT ? '.' : `./${pjson.name}`;
+    this.app = process.env.BUILD_ENV === 'production' ? '.' : `./${pjson.name}`;
     const vendorsRoot = 'node_modules';
 
     return {

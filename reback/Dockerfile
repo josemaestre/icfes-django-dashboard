@@ -30,6 +30,9 @@ RUN pip install --no-cache-dir -r requirements/production.txt
 # Copy all project files from reback folder
 COPY reback/ .
 
+# Set environment variable for Gulp to know we're in production
+ENV BUILD_ENV=production
+
 # Install npm dependencies and build assets
 RUN npm install && npm run build
 
