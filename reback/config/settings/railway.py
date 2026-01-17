@@ -61,7 +61,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 # STATIC FILES (whitenoise)
 # ------------------------------------------------------------------------------
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
-STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
+# Use Django default storage (no compression, no manifest)
 STATIC_ROOT = str(BASE_DIR / "staticfiles")  # noqa: F405
 STATIC_URL = "/static/"
 
