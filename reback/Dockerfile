@@ -19,10 +19,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (for better caching)
-COPY reback/requirements/production.txt requirements.txt
+COPY reback/requirements/ requirements/
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements/production.txt
 
 # Copy project files from reback folder
 COPY reback/ .
