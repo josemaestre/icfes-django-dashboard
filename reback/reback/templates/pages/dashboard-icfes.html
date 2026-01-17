@@ -31,6 +31,11 @@
       <i class="bx bx-map me-1"></i> Mapa Geográfico
     </a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#comparar-colegios" role="tab">
+      <i class="bx bx-git-compare me-1"></i> Comparar Colegios
+    </a>
+  </li>
 </ul>
 
 <!-- Tab Content -->
@@ -132,7 +137,99 @@
       </div>
     </div>
 
-    <!-- Main Charts Row -->
+    <!-- Location Comparison Selector -->
+    <div class="row mb-2">
+      <div class="col-12">
+        <div class="d-flex align-items-center gap-2">
+          <label class="text-muted small mb-0"><i class="bx bx-map me-1"></i>Comparar con:</label>
+          <select id="location-selector" class="form-select form-select-sm" style="width: auto; min-width: 200px;">
+            <option value="nacional">📊 Nacional</option>
+            <optgroup label="Principales Departamentos">
+              <option value="BOGOTÁ">Bogotá</option>
+              <option value="ANTIOQUIA">Antioquia</option>
+              <option value="VALLE DEL CAUCA">Valle del Cauca</option>
+              <option value="CUNDINAMARCA">Cundinamarca</option>
+              <option value="ATLÁNTICO">Atlántico</option>
+              <option value="SANTANDER">Santander</option>
+              <option value="BOLÍVAR">Bolívar</option>
+            </optgroup>
+          </select>
+          <small class="text-muted ms-2" id="location-info"></small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Gauges Row -->
+    <div class="row mb-3">
+      <!-- Global Score Gauge -->
+      <div class="col-xxl-4 col-lg-5">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="bx bx-target-lock me-1"></i> Puntaje Global
+            </h5>
+          </div>
+          <div class="card-body">
+            <div id="gauge-global" class="apex-charts"></div>
+            <div class="text-center mt-3">
+              <div class="row">
+                <div class="col-6">
+                  <p class="text-muted mb-1 small">Actual</p>
+                  <h4 class="mb-0" id="gauge-global-actual">--</h4>
+                </div>
+                <div class="col-6">
+                  <p class="text-muted mb-1 small">Meta</p>
+                  <h4 class="mb-0 text-primary" id="gauge-global-meta">400</h4>
+                </div>
+              </div>
+              <div class="mt-2">
+                <small class="text-muted" id="gauge-global-distance">Falta: --</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject Gauges -->
+      <div class="col-xxl-8 col-lg-7">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="bx bx-book-open me-1"></i> Desempeño por Materia
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col">
+                <div id="gauge-lectura" class="apex-charts"></div>
+                <p class="text-muted small mb-0 mt-1">Lectura Crítica</p>
+                <h6 class="mb-0 mt-1" id="gauge-lectura-value">--</h6>
+              </div>
+              <div class="col">
+                <div id="gauge-matematicas" class="apex-charts"></div>
+                <p class="text-muted small mb-0 mt-1">Matemáticas</p>
+                <h6 class="mb-0 mt-1" id="gauge-matematicas-value">--</h6>
+              </div>
+              <div class="col">
+                <div id="gauge-ciencias" class="apex-charts"></div>
+                <p class="text-muted small mb-0 mt-1">C. Naturales</p>
+                <h6 class="mb-0 mt-1" id="gauge-ciencias-value">--</h6>
+              </div>
+              <div class="col">
+                <div id="gauge-sociales" class="apex-charts"></div>
+                <p class="text-muted small mb-0 mt-1">Sociales</p>
+                <h6 class="mb-0 mt-1" id="gauge-sociales-value">--</h6>
+              </div>
+              <div class="col">
+                <div id="gauge-ingles" class="apex-charts"></div>
+                <p class="text-muted small mb-0 mt-1">Inglés</p>
+                <h6 class="mb-0 mt-1" id="gauge-ingles-value">--</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="row">
       <div class="col-xxl-8">
         <div class="card">
@@ -355,6 +452,76 @@
                   title="Mide cuántas desviaciones estándar está el colegio del promedio nacional. +2 = Élite, 0 = Promedio, -2 = Bajo"></i>
               </p>
               <small id="schoolStatZScoreInterpretation" class="text-muted">--</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- School Performance Gauges -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="bx bx-target-lock me-1"></i> Rendimiento del Colegio
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <!-- Global Score Gauge -->
+                <div class="col-xxl-4 col-lg-5">
+                  <div id="school-gauge-global"></div>
+                  <div class="text-center mt-2">
+                    <p class="mb-1"><strong>Actual:</strong> <span id="school-gauge-global-actual">0</span></p>
+                    <div id="school-gauge-global-comparison" class="small"></div>
+                  </div>
+                </div>
+
+                <!-- Subject Gauges -->
+                <div class="col-xxl-8 col-lg-7">
+                  <div class="row">
+                    <!-- Lectura Crítica -->
+                    <div class="col-md-2 col-4 mb-3">
+                      <div id="school-gauge-lectura"></div>
+                      <p class="text-center small mt-1 mb-0">Lectura</p>
+                      <p class="text-center small mb-0" id="school-gauge-lectura-value">0</p>
+                      <div id="school-gauge-lectura-comparison" class="text-center small"></div>
+                    </div>
+
+                    <!-- Matemáticas -->
+                    <div class="col-md-2 col-4 mb-3">
+                      <div id="school-gauge-matematicas"></div>
+                      <p class="text-center small mt-1 mb-0">Matemáticas</p>
+                      <p class="text-center small mb-0" id="school-gauge-matematicas-value">0</p>
+                      <div id="school-gauge-matematicas-comparison" class="text-center small"></div>
+                    </div>
+
+                    <!-- C. Naturales -->
+                    <div class="col-md-2 col-4 mb-3">
+                      <div id="school-gauge-ciencias"></div>
+                      <p class="text-center small mt-1 mb-0">C. Naturales</p>
+                      <p class="text-center small mb-0" id="school-gauge-ciencias-value">0</p>
+                      <div id="school-gauge-ciencias-comparison" class="text-center small"></div>
+                    </div>
+
+                    <!-- Sociales -->
+                    <div class="col-md-2 col-4 mb-3">
+                      <div id="school-gauge-sociales"></div>
+                      <p class="text-center small mt-1 mb-0">Sociales</p>
+                      <p class="text-center small mb-0" id="school-gauge-sociales-value">0</p>
+                      <div id="school-gauge-sociales-comparison" class="text-center small"></div>
+                    </div>
+
+                    <!-- Inglés -->
+                    <div class="col-md-2 col-4 mb-3">
+                      <div id="school-gauge-ingles"></div>
+                      <p class="text-center small mt-1 mb-0">Inglés</p>
+                      <p class="text-center small mb-0" id="school-gauge-ingles-value">0</p>
+                      <div id="school-gauge-ingles-comparison" class="text-center small"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1121,20 +1288,267 @@
       </div>
     </div>
   </div>
+
+  <!-- Comparar Colegios Tab -->
+  <div class="tab-pane fade" id="comparar-colegios" role="tabpanel">
+    <!-- School Selectors -->
+    <div class="row mb-3">
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-body">
+            <label class="form-label">Colegio A</label>
+            <select id="select-colegio-a" class="form-select" style="width: 100%;"></select>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
+        <h2 class="text-muted">VS</h2>
+      </div>
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-body">
+            <label class="form-label">Colegio B</label>
+            <select id="select-colegio-b" class="form-select" style="width: 100%;"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Year Selector -->
+    <div class="row mb-3">
+      <div class="col-md-4 offset-md-4">
+        <div class="card">
+          <div class="card-body">
+            <label class="form-label">Año de Comparación</label>
+            <select id="select-ano-comparacion" class="form-select">
+              <option value="2024" selected>2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+              <option value="2019">2019</option>
+              <option value="2018">2018</option>
+              <option value="2017">2017</option>
+              <option value="2016">2016</option>
+              <option value="2015">2015</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare Button -->
+    <div class="row mb-3">
+      <div class="col-12 text-center">
+        <button id="btn-comparar" class="btn btn-primary btn-lg">
+          <i class="bx bx-search"></i> Comparar Colegios
+        </button>
+      </div>
+    </div>
+
+    <!-- Comparison Results (hidden initially) -->
+    <div id="comparison-results" style="display: none;">
+
+      <!-- School Headers -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="card bg-primary text-white">
+            <div class="card-body">
+              <h4 id="nombre-colegio-a" class="text-white">-</h4>
+              <p id="ubicacion-colegio-a" class="mb-0">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card bg-info text-white">
+            <div class="card-body">
+              <h4 id="nombre-colegio-b" class="text-white">-</h4>
+              <p id="ubicacion-colegio-b" class="mb-0">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Global Scores Comparison -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>📊 Puntajes Globales</h5>
+            </div>
+            <div class="card-body">
+              <div id="global-comparison"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gauges Comparison -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <div id="gauge-colegio-a"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <div id="gauge-colegio-b"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject Comparison -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>📚 Comparación por Materias</h5>
+            </div>
+            <div class="card-body">
+              <div id="chart-materias-comparison"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Z-Score Comparison -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>📈 Z-Score y Clasificación</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div id="zscore-colegio-a"></div>
+                </div>
+                <div class="col-md-6">
+                  <div id="zscore-colegio-b"></div>
+                </div>
+              </div>
+              <div class="alert alert-info mt-3">
+                <h6>💡 Explicación del Z-Score</h6>
+                <p class="mb-0">El Z-Score mide cuántas desviaciones estándar está el colegio del promedio nacional.
+                  Un Z-Score de +2 indica rendimiento excepcional (top 2.5%), mientras que 0 es promedio. Valores
+                  negativos indican rendimiento por debajo del promedio.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excellence Indicators -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>🏆 Indicadores de Excelencia</h5>
+            </div>
+            <div class="card-body">
+              <table class="table table-hover" id="table-indicadores">
+                <thead>
+                  <tr>
+                    <th>Indicador</th>
+                    <th class="text-center">Colegio A</th>
+                    <th class="text-center">Colegio B</th>
+                    <th class="text-center">Brecha</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>💡 Insights Automáticos</h5>
+            </div>
+            <div class="card-body">
+              <ul id="insights-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historical Trends Comparison -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>📈 Evolución Histórica (Últimos 5 Años)</h5>
+            </div>
+            <div class="card-body">
+              <div id="chart-historical-trends"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Radar Chart for Subjects -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>🎯 Perfil de Fortalezas por Materia</h5>
+            </div>
+            <div class="card-body">
+              <div id="chart-radar-subjects"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export Button -->
+      <div class="row mb-3">
+        <div class="col-12 text-center">
+          <button id="btn-exportar-pdf" class="btn btn-success btn-lg" disabled>
+            <i class="bx bx-download"></i> Exportar Comparación PDF
+          </button>
+          <p class="text-muted small mt-2">Funcionalidad de exportación próximamente</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 {% endblock page_content %}
 
 {% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+  rel="stylesheet" />
+
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 {% endblock extra_css %}
 
 {% block extra_javascript %}
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- ApexCharts and Dashboard Scripts -->
 <script src="{% static '/vendor/apexcharts/apexcharts.min.js' %}"></script>
 <script src="{% static 'js/pages/dashboard.icfes.js' %}?v=5"></script>
-<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=5"></script>
+<script src="{% static 'js/pages/dashboard.icfes.gauges.js' %}?v=1"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.gauges.js' %}?v=2"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=6"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.table.js' %}?v=5"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.insights.js' %}?v=2"></script>
+<script src="{% static 'js/pages/dashboard.icfes.compare.js' %}?v=7"></script>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

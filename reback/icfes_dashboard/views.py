@@ -12,7 +12,8 @@ from .db_utils import (
     get_table_data,
     get_anos_disponibles,
     get_departamentos,
-    get_estadisticas_generales
+    get_estadisticas_generales,
+    get_promedios_ubicacion
 )
 
 
@@ -463,6 +464,31 @@ def api_distribucion_regional(request):
     df = execute_query(query)
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
+
+
+@require_http_methods(["GET"])
+def api_promedios_ubicacion(request):
+    """
+    Endpoint: Promedios por ubicación (departamento o municipio).
+    Query params: ?ano=2024&departamento=BOGOTÁ D.C.&municipio=BOGOTA (opcionales)
+    Retorna promedios para comparación en gauges.
+    """
+    ano = request.GET.get('ano', 2024)
+    departamento = request.GET.get('departamento')
+    municipio = request.GET.get('municipio')
+    
+    if not ano:
+        return JsonResponse({'error': 'Parámetro ano es requerido'}, status=400)
+    
+    try:
+        data = get_promedios_ubicacion(
+            ano=int(ano),
+            departamento=departamento,
+            municipio=municipio
+        )
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # ============================================================================
@@ -1829,6 +1855,44 @@ def api_mapa_municipios(request):
         traceback.print_exc()
         return JsonResponse({
             'error': 'Error al obtener municipios',
+            'details': str(e)
+        }, status=500)
+
+
+# ============================================================================
+# ENDPOINTS API - SCHOOL COMPARISON
+# ============================================================================
+
+@require_http_methods(["GET"])
+def api_comparar_colegios(request):
+    """
+    Endpoint: Comparar dos colegios lado a lado.
+    Query params: ?colegio_a_sk=xxx&colegio_b_sk=yyy&ano=2024
+    """
+    
+    colegio_a_sk = request.GET.get('colegio_a_sk')
+    colegio_b_sk = request.GET.get('colegio_b_sk')
+    ano = request.GET.get('ano', 2024)
+    
+    if not colegio_a_sk or not colegio_b_sk:
+        return JsonResponse({
+            'error': 'Parámetros faltantes',
+            'message': 'Se requieren colegio_a_sk y colegio_b_sk'
+        }, status=400)
+    
+    try:
+        from .db_utils import get_comparacion_colegios
+        data = get_comparacion_colegios(colegio_a_sk, colegio_b_sk, int(ano))
+        
+        if 'error' in data:
+            return JsonResponse(data, status=404)
+        
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'Error al comparar colegios',
             'details': str(e)
         }, status=500)
 

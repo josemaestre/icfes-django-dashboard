@@ -28,11 +28,13 @@ class SubscriptionMiddleware:
             '/icfes/api/estadisticas/',
             '/icfes/api/anos/',
             '/icfes/api/charts/',
+            '/icfes/api/promedios-ubicacion/',  # Promedios por ubicación para gauges
             '/icfes/api/hierarchy/',
             '/icfes/api/search/colegios/',  # Búsqueda de colegios
             '/icfes/api/generate-ai-analysis/',  # Análisis de IA
             '/icfes/api/colegios/destacados/',  # Colegios destacados
             '/icfes/api/colegio/',  # Detalles de colegio (incluye AI recommendations)
+            '/icfes/api/comparar-colegios/',  # Comparación de colegios
         ]
         
         # Solo aplicar a endpoints de ICFES API
@@ -90,11 +92,13 @@ class SubscriptionMiddleware:
                 '/icfes/api/estadisticas/',
                 '/icfes/api/anos/',
                 '/icfes/api/charts/',
+                '/icfes/api/promedios-ubicacion/',
                 '/icfes/api/hierarchy/',
                 '/icfes/api/search/colegios/',
                 '/icfes/api/generate-ai-analysis/',
                 '/icfes/api/colegios/destacados/',
                 '/icfes/api/colegio/',
+                '/icfes/api/comparar-colegios/',
             ])
             
             if 200 <= response.status_code < 300 and not is_exempt:
