@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/charts/sectores/', views.api_comparacion_sectores_chart, name='api_comparacion_sectores_chart'),
     path('api/charts/departamentos/', views.api_ranking_departamentos, name='api_ranking_departamentos'),
     path('api/charts/regional/', views.api_distribucion_regional, name='api_distribucion_regional'),
+    path('api/promedios-ubicacion/', views.api_promedios_ubicacion, name='api_promedios_ubicacion'),
     
     # Endpoints para explorador jerárquico
     path('api/hierarchy/regions/', views.hierarchy_regions, name='hierarchy_regions'),
@@ -66,5 +67,9 @@ urlpatterns = [
     path('api/mapa-estudiantes-heatmap/', views.api_mapa_estudiantes_heatmap, name='api_mapa_estudiantes_heatmap'),
     path('api/mapa-departamentos/', views.api_mapa_departamentos, name='api_mapa_departamentos'),
     path('api/mapa-municipios/', views.api_mapa_municipios, name='api_mapa_municipios'),
+    
+    # Endpoint de Comparación de Colegios (NUEVO - requiere autenticación)
+    path('api/comparar-colegios/', views.api_comparar_colegios, name='api_comparar_colegios'),
 ]
+
 

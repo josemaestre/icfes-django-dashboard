@@ -433,6 +433,14 @@ async function loadSchoolComparacion(sk) {
             console.warn('updateStrategicInsights function not found');
         }
 
+        // Initialize school gauges (NEW)
+        if (typeof initializeSchoolGauges === 'function') {
+            console.log('Initializing school gauges...');
+            initializeSchoolGauges(contextData);
+        } else {
+            console.warn('initializeSchoolGauges function not found');
+        }
+
     } catch (error) {
         console.error('Error loading comparison charts:', error);
     }
