@@ -3,7 +3,7 @@
 ////////////////////////////////
 
 // Gulp and package
-const {src, dest, parallel, series, watch} = require('gulp');
+const { src, dest, parallel, series, watch } = require('gulp');
 const pjson = require('./package.json');
 
 // Plugins
@@ -25,7 +25,9 @@ const npmdist = require("gulp-npm-dist");
 
 // Relative paths function
 function pathsConfig(appName) {
-    this.app = `./${pjson.name}`;
+    // In production (Railway), files are in current directory
+    // In development, files are in ./reback subdirectory
+    this.app = process.env.RAILWAY_ENVIRONMENT ? '.' : `./${pjson.name}`;
     const vendorsRoot = 'node_modules';
 
     return {
@@ -89,7 +91,7 @@ const processCss = [
 ];
 
 const minifyCss = [
-    cssnano({preset: 'default'}), // minify result
+    cssnano({ preset: 'default' }), // minify result
 ];
 
 function styles() {
@@ -103,7 +105,7 @@ function styles() {
         .pipe(plumber()) // Checks for errors
         .pipe(postcss(processCss))
         .pipe(dest(paths.css))
-        .pipe(rename({suffix: '.min'}))
+        .pipe(rename({ suffix: '.min' }))
         .pipe(postcss(minifyCss)) // Minifies the result
         .pipe(dest(paths.css));
 }
@@ -113,29 +115,29 @@ function scripts() {
     return src([`${paths.js}/app.js`, `${paths.js}/config.js`, `${paths.js}/layout.js`])
         .pipe(plumber()) // Checks for errors
         .pipe(uglify()) // Minifies the js
-        .pipe(rename({suffix: '.min'}))
+        .pipe(rename({ suffix: '.min' }))
         .pipe(dest(paths.js));
 }
 
 // Vendor Javascript minification
 function vendorScripts() {
-    return src(paths.vendorsJs, {sourcemaps: true})
+    return src(paths.vendorsJs, { sourcemaps: true })
         .pipe(concat('vendors.js'))
         .pipe(dest(paths.js))
         .pipe(plumber()) // Checks for errors
         .pipe(uglify()) // Minifies the js
-        .pipe(rename({suffix: '.min'}))
-        .pipe(dest(paths.js, {sourcemaps: '.'}));
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(dest(paths.js, { sourcemaps: '.' }));
 }
 
 // Vendor CSS minification
 function vendorStyles() {
-    return src(paths.vendorsCSS, {sourcemaps: true})
+    return src(paths.vendorsCSS, { sourcemaps: true })
         .pipe(concat('vendors.css'))
         .pipe(plumber()) // Checks for errors
         .pipe(postcss(processCss))
         .pipe(dest(paths.css))
-        .pipe(rename({suffix: '.min'}))
+        .pipe(rename({ suffix: '.min' }))
         .pipe(postcss(minifyCss)) // Minifies the result
         .pipe(dest(paths.css));
 }
@@ -143,7 +145,7 @@ function vendorStyles() {
 // Whole Plugins
 const plugins = function () {
     const out = paths.app + "/static/vendor/";
-    return src(npmdist(), {base: "./node_modules"})
+    return src(npmdist(), { base: "./node_modules" })
         .pipe(rename(function (path) {
             path.dirname = path.dirname.replace(/\/dist/, '').replace(/\\dist/, '');
         }))
