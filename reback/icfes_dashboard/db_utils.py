@@ -52,11 +52,29 @@ def get_duckdb_connection(read_only=True):
                 con.execute(f"SET s3_access_key_id='{aws_key}';")
                 con.execute(f"SET s3_secret_access_key='{aws_secret}';")
             
-            # Attach S3 database
-            con.execute(f"ATTACH '{db_path}' AS prod (READ_ONLY);")
+            # Crear vistas para las tablas gold desde S3
+            # Esto permite usar las queries existentes sin cambios
+            gold_tables = [
+                'fact_icfes_analytics', 'dim_colegios', 'dim_colegios_ano',
+                'fct_agg_colegios_ano', 'fct_colegio_historico', 
+                'fct_indicadores_desempeno', 'dim_departamentos_region',
+                'average_by_year', 'tendencias_regionales', 'total_regional',
+                'brechas_educativas', 'convergencia_regional'
+            ]
             
-            # Usar schema gold del database prod
-            con.execute("USE prod;")
+            # Crear schema gold
+            con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
+            
+            # Crear vistas para cada tabla
+            for table in gold_tables:
+                try:
+                    con.execute(f"""
+                        CREATE OR REPLACE VIEW gold.{table} AS 
+                        SELECT * FROM duckdb_read('{db_path}', table_name='gold.{table}')
+                    """)
+                except:
+                    # Si la tabla no existe, continuar
+                    pass
         else:
             # Conexión local tradicional
             con = duckdb.connect(db_path, read_only=read_only)
