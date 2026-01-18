@@ -80,20 +80,34 @@ def get_duckdb_connection(read_only=True):
             # Conectar al archivo local en modo read-write para crear vistas
             con = duckdb.connect(local_path, read_only=False)
             
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Connected to {local_path}")
+            
             # prod.duckdb tiene tablas en schema 'prod', no 'gold'
             # Crear vistas en gold que apunten a prod para compatibilidad
             # IMPORTANTE: Esto se ejecuta siempre, no solo en la primera descarga
-            con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
-            
-            # Obtener tablas del schema prod
-            tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prod'").fetchall()
-            
-            # Crear vistas gold.* -> prod.*
-            for (table_name,) in tables:
-                try:
-                    con.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM prod.{table_name}")
-                except:
-                    pass  # Ignorar errores
+            try:
+                con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
+                logger.info("Created gold schema")
+                
+                # Obtener tablas del schema prod
+                tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prod'").fetchall()
+                logger.info(f"Found {len(tables)} tables in prod schema")
+                
+                # Crear vistas gold.* -> prod.*
+                views_created = 0
+                for (table_name,) in tables:
+                    try:
+                        con.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM prod.{table_name}")
+                        views_created += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to create view for {table_name}: {e}")
+                
+                logger.info(f"Successfully created {views_created} gold schema views")
+            except Exception as e:
+                logger.error(f"Error creating gold schema views: {e}")
+                raise
         else:
             # Conexión local tradicional
             con = duckdb.connect(db_path, read_only=read_only)
