@@ -14,6 +14,8 @@ def get_duckdb_connection(read_only=True):
     Context manager para obtener una conexión a DuckDB.
     Soporta tanto archivos locales como S3.
     
+    Para S3, descarga el archivo a /tmp en el primer uso.
+    
     Args:
         read_only: Si True, abre la BD en modo solo lectura (default: True)
     
@@ -25,6 +27,7 @@ def get_duckdb_connection(read_only=True):
             df = con.execute("SELECT * FROM gold.fact_icfes_analytics LIMIT 10").df()
     """
     import os
+    import subprocess
     
     con = None
     try:
@@ -35,46 +38,31 @@ def get_duckdb_connection(read_only=True):
         is_s3 = db_path and db_path.startswith('s3://')
         
         if is_s3:
-            # Conexión en memoria para S3
-            con = duckdb.connect(':memory:')
+            # Descargar desde S3 a /tmp si no existe
+            local_path = '/tmp/prod.duckdb'
             
-            # Instalar y cargar httpfs extension
-            con.execute("INSTALL httpfs;")
-            con.execute("LOAD httpfs;")
+            if not os.path.exists(local_path):
+                # Instalar httpfs y descargar
+                temp_conn = duckdb.connect(':memory:')
+                temp_conn.execute("INSTALL httpfs;")
+                temp_conn.execute("LOAD httpfs;")
+                
+                # Configurar credenciales AWS
+                aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
+                aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
+                aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
+                
+                if aws_key and aws_secret:
+                    temp_conn.execute(f"SET s3_region='{aws_region}';")
+                    temp_conn.execute(f"SET s3_access_key_id='{aws_key}';")
+                    temp_conn.execute(f"SET s3_secret_access_key='{aws_secret}';")
+                
+                # Copiar desde S3 a local
+                temp_conn.execute(f"COPY DATABASE FROM '{db_path}' TO '{local_path}';")
+                temp_conn.close()
             
-            # Configurar credenciales AWS
-            aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
-            aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
-            aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
-            
-            if aws_key and aws_secret:
-                con.execute(f"SET s3_region='{aws_region}';")
-                con.execute(f"SET s3_access_key_id='{aws_key}';")
-                con.execute(f"SET s3_secret_access_key='{aws_secret}';")
-            
-            # Crear vistas para las tablas gold desde S3
-            # Esto permite usar las queries existentes sin cambios
-            gold_tables = [
-                'fact_icfes_analytics', 'dim_colegios', 'dim_colegios_ano',
-                'fct_agg_colegios_ano', 'fct_colegio_historico', 
-                'fct_indicadores_desempeno', 'dim_departamentos_region',
-                'average_by_year', 'tendencias_regionales', 'total_regional',
-                'brechas_educativas', 'convergencia_regional'
-            ]
-            
-            # Crear schema gold
-            con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
-            
-            # Crear vistas para cada tabla
-            for table in gold_tables:
-                try:
-                    con.execute(f"""
-                        CREATE OR REPLACE VIEW gold.{table} AS 
-                        SELECT * FROM duckdb_read('{db_path}', table_name='gold.{table}')
-                    """)
-                except:
-                    # Si la tabla no existe, continuar
-                    pass
+            # Conectar al archivo local
+            con = duckdb.connect(local_path, read_only=True)
         else:
             # Conexión local tradicional
             con = duckdb.connect(db_path, read_only=read_only)
