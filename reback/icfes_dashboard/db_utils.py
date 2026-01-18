@@ -79,6 +79,20 @@ def get_duckdb_connection(read_only=True):
             
             # Conectar al archivo local
             con = duckdb.connect(local_path, read_only=True)
+            
+            # prod.duckdb tiene tablas en schema 'prod', no 'gold'
+            # Crear vistas en gold que apunten a prod para compatibilidad
+            con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
+            
+            # Obtener tablas del schema prod
+            tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prod'").fetchall()
+            
+            # Crear vistas gold.* -> prod.*
+            for (table_name,) in tables:
+                try:
+                    con.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM prod.{table_name}")
+                except:
+                    pass  # Ignorar errores
         else:
             # Conexión local tradicional
             con = duckdb.connect(db_path, read_only=read_only)
