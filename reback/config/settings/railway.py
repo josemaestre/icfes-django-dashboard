@@ -137,5 +137,8 @@ LOGGING = {
     },
 }
 
-# Your stuff
+# DuckDB Configuration
+# ------------------------------------------------------------------------------
+# Use S3 path if DUCKDB_S3_PATH is set, otherwise use local path (for dev)
+ICFES_DUCKDB_PATH = env("DUCKDB_S3_PATH", default=env("DUCKDB_PATH", default="/app/data/dev.duckdb"))
 # ------------------------------------------------------------------------------

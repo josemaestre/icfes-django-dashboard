@@ -12,6 +12,7 @@ from contextlib import contextmanager
 def get_duckdb_connection(read_only=True):
     """
     Context manager para obtener una conexión a DuckDB.
+    Soporta tanto archivos locales como S3.
     
     Args:
         read_only: Si True, abre la BD en modo solo lectura (default: True)
@@ -23,9 +24,43 @@ def get_duckdb_connection(read_only=True):
         with get_duckdb_connection() as con:
             df = con.execute("SELECT * FROM gold.fact_icfes_analytics LIMIT 10").df()
     """
+    import os
+    
     con = None
     try:
-        con = duckdb.connect(settings.ICFES_DUCKDB_PATH, read_only=read_only)
+        # Crear conexión en memoria para S3 o local para archivo
+        db_path = getattr(settings, 'ICFES_DUCKDB_PATH', None)
+        
+        # Determinar si es S3 o local
+        is_s3 = db_path and db_path.startswith('s3://')
+        
+        if is_s3:
+            # Conexión en memoria para S3
+            con = duckdb.connect(':memory:')
+            
+            # Instalar y cargar httpfs extension
+            con.execute("INSTALL httpfs;")
+            con.execute("LOAD httpfs;")
+            
+            # Configurar credenciales AWS
+            aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
+            aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
+            aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
+            
+            if aws_key and aws_secret:
+                con.execute(f"SET s3_region='{aws_region}';")
+                con.execute(f"SET s3_access_key_id='{aws_key}';")
+                con.execute(f"SET s3_secret_access_key='{aws_secret}';")
+            
+            # Attach S3 database
+            con.execute(f"ATTACH '{db_path}' AS prod (READ_ONLY);")
+            
+            # Usar schema gold del database prod
+            con.execute("USE prod;")
+        else:
+            # Conexión local tradicional
+            con = duckdb.connect(db_path, read_only=read_only)
+        
         yield con
     finally:
         if con:
