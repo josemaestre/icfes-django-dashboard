@@ -9,9 +9,11 @@ from .base import env
 
 # GENERAL
 # ------------------------------------------------------------------------------
-DEBUG = False
+# TEMPORARY: DEBUG=True to serve static files directly
+# TODO: Fix static files deployment and set back to False
+DEBUG = True
 SECRET_KEY = env("DJANGO_SECRET_KEY")
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[".railway.app", "localhost"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[".railway.app", "localhost", "*"])
 
 # DATABASES
 # ------------------------------------------------------------------------------
