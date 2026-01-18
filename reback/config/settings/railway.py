@@ -15,6 +15,20 @@ DEBUG = True
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[".railway.app", "localhost", "*"])
 
+# MIDDLEWARE - Add auto-create admin middleware
+# ------------------------------------------------------------------------------
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "reback.users.middleware.AutoCreateAdminMiddleware",  # Auto-create admin
+]
+
 # DATABASES
 # ------------------------------------------------------------------------------
 # Parse database URL from Railway
