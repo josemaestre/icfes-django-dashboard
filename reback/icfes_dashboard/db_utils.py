@@ -77,8 +77,8 @@ def get_duckdb_connection(read_only=True):
                 
                 logger.info(f"Successfully downloaded {db_path}")
             
-            # Conectar al archivo local
-            con = duckdb.connect(local_path, read_only=True)
+            # Conectar al archivo local en modo read-write para crear vistas
+            con = duckdb.connect(local_path, read_only=False)
             
             # prod.duckdb tiene tablas en schema 'prod', no 'gold'
             # Crear vistas en gold que apunten a prod para compatibilidad
