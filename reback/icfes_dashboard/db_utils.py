@@ -34,8 +34,13 @@ def get_duckdb_connection(read_only=True):
         # Crear conexión en memoria para S3 o local para archivo
         db_path = getattr(settings, 'ICFES_DUCKDB_PATH', None)
         
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Database path: {db_path}")
+        
         # Determinar si es S3 o local
         is_s3 = db_path and db_path.startswith('s3://')
+        logger.info(f"Is S3: {is_s3}")
         
         if is_s3:
             # Descargar desde S3 a Railway volume (persiste entre deployments)
