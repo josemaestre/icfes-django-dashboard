@@ -18,6 +18,7 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[".railway.app", "local
 # MIDDLEWARE - Add auto-create admin middleware
 # ------------------------------------------------------------------------------
 MIDDLEWARE = [
+    "django.middleware.gzip.GZipMiddleware",  # Compress responses (cost optimization)
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -82,6 +83,10 @@ MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 STATIC_ROOT = str(BASE_DIR / "staticfiles")  # noqa: F405
 STATIC_URL = "/static/"
+
+# WhiteNoise optimization (cost reduction)
+WHITENOISE_MAX_AGE = 31536000  # 1 year cache
+WHITENOISE_COMPRESS_OFFLINE = True  # Pre-compress files
 
 # MEDIA
 # ------------------------------------------------------------------------------
