@@ -82,6 +82,7 @@ def get_duckdb_connection(read_only=True):
             
             # prod.duckdb tiene tablas en schema 'prod', no 'gold'
             # Crear vistas en gold que apunten a prod para compatibilidad
+            # IMPORTANTE: Esto se ejecuta siempre, no solo en la primera descarga
             con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
             
             # Obtener tablas del schema prod
