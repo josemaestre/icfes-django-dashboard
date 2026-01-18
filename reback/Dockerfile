@@ -10,15 +10,20 @@ ENV PYTHONUNBUFFERED=1 \
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies including Node.js
+# Install system dependencies including Node.js and AWS CLI
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     postgresql-client \
     libpq-dev \
     curl \
+    unzip \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
+    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf aws awscliv2.zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements folder

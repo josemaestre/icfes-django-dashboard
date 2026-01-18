@@ -42,24 +42,27 @@ def get_duckdb_connection(read_only=True):
             local_path = '/tmp/prod.duckdb'
             
             if not os.path.exists(local_path):
-                # Instalar httpfs y descargar
-                temp_conn = duckdb.connect(':memory:')
-                temp_conn.execute("INSTALL httpfs;")
-                temp_conn.execute("LOAD httpfs;")
-                
-                # Configurar credenciales AWS
+                # Usar AWS CLI para descargar
                 aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
                 aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
                 aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
                 
-                if aws_key and aws_secret:
-                    temp_conn.execute(f"SET s3_region='{aws_region}';")
-                    temp_conn.execute(f"SET s3_access_key_id='{aws_key}';")
-                    temp_conn.execute(f"SET s3_secret_access_key='{aws_secret}';")
+                # Configurar variables de entorno para AWS CLI
+                env = os.environ.copy()
+                env['AWS_ACCESS_KEY_ID'] = aws_key
+                env['AWS_SECRET_ACCESS_KEY'] = aws_secret
+                env['AWS_DEFAULT_REGION'] = aws_region
                 
-                # Copiar desde S3 a local
-                temp_conn.execute(f"COPY DATABASE FROM '{db_path}' TO '{local_path}';")
-                temp_conn.close()
+                # Descargar archivo desde S3
+                result = subprocess.run(
+                    ['aws', 's3', 'cp', db_path, local_path],
+                    env=env,
+                    capture_output=True,
+                    text=True
+                )
+                
+                if result.returncode != 0:
+                    raise Exception(f"Failed to download from S3: {result.stderr}")
             
             # Conectar al archivo local
             con = duckdb.connect(local_path, read_only=True)
