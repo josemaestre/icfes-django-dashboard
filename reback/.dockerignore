@@ -41,11 +41,8 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
-# Static files (will be collected in container)
-staticfiles/
-reback/staticfiles/
-# Note: We need static/ source files for Gulp build, so don't ignore them
-!reback/static/
+# Note: Removed static/staticfiles exclusions to allow Docker COPY
+# collectstatic will handle static files in container
 
 # Media
 media/
