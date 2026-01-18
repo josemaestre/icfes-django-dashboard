@@ -43,7 +43,9 @@ yarn-error.log
 
 # Static files (will be collected in container)
 staticfiles/
+reback/staticfiles/
 # Note: We need static/ source files for Gulp build, so don't ignore them
+!reback/static/
 
 # Media
 media/
