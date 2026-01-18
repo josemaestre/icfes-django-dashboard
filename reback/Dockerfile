@@ -30,9 +30,6 @@ RUN pip install --no-cache-dir -r requirements/production.txt
 # Copy all project files from reback folder
 COPY reback/ .
 
-# Explicitly copy static folder (in case dockerignore interferes)
-COPY reback/static/ ./static/
-
 # Note: Using pre-compiled CSS/JS files from repository
 # Gulp build step skipped to avoid build complexity
 # Assets are already compiled and committed to repo
