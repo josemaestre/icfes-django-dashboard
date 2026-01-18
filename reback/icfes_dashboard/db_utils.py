@@ -54,6 +54,11 @@ def get_duckdb_connection(read_only=True):
                 env['AWS_DEFAULT_REGION'] = aws_region
                 
                 # Descargar archivo desde S3
+                import logging
+                logger = logging.getLogger(__name__)
+                
+                logger.info(f"Downloading {db_path} to {local_path}...")
+                
                 result = subprocess.run(
                     ['aws', 's3', 'cp', db_path, local_path],
                     env=env,
@@ -62,7 +67,15 @@ def get_duckdb_connection(read_only=True):
                 )
                 
                 if result.returncode != 0:
-                    raise Exception(f"Failed to download from S3: {result.stderr}")
+                    error_msg = f"Failed to download from S3. Return code: {result.returncode}\n"
+                    error_msg += f"STDOUT: {result.stdout}\n"
+                    error_msg += f"STDERR: {result.stderr}\n"
+                    error_msg += f"S3 Path: {db_path}\n"
+                    error_msg += f"Local Path: {local_path}"
+                    logger.error(error_msg)
+                    raise Exception(error_msg)
+                
+                logger.info(f"Successfully downloaded {db_path}")
             
             # Conectar al archivo local
             con = duckdb.connect(local_path, read_only=True)
