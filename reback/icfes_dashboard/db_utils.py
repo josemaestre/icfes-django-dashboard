@@ -46,7 +46,14 @@ def get_duckdb_connection(read_only=True):
             # Descargar desde S3 a Railway volume (persiste entre deployments)
             local_path = '/app/data/prod.duckdb'
             
-            if not os.path.exists(local_path):
+            # Verificar si el archivo existe Y tiene tamaño adecuado (> 1GB)
+            file_exists = os.path.exists(local_path)
+            file_size = os.path.getsize(local_path) if file_exists else 0
+            min_size = 1 * 1024 * 1024 * 1024  # 1 GB
+            
+            logger.info(f"File exists: {file_exists}, Size: {file_size / (1024**3):.2f} GB")
+            
+            if not file_exists or file_size < min_size:
                 # Usar AWS CLI para descargar
                 aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
                 aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
