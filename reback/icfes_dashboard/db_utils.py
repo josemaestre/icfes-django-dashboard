@@ -38,8 +38,8 @@ def get_duckdb_connection(read_only=True):
         is_s3 = db_path and db_path.startswith('s3://')
         
         if is_s3:
-            # Descargar desde S3 a /tmp si no existe
-            local_path = '/tmp/prod.duckdb'
+            # Descargar desde S3 a Railway volume (persiste entre deployments)
+            local_path = '/app/data/prod.duckdb'
             
             if not os.path.exists(local_path):
                 # Usar AWS CLI para descargar
