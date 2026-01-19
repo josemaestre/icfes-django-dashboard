@@ -6,6 +6,56 @@ import pandas as pd
 import numpy as np
 from django.conf import settings
 from contextlib import contextmanager
+import threading
+
+# Lock para crear vistas solo una vez
+_views_lock = threading.Lock()
+_views_created = set()
+
+def _ensure_gold_views_exist(db_path):
+    """Asegura que las vistas gold existan (thread-safe)."""
+    if db_path in _views_created:
+        return
+    
+    with _views_lock:
+        # Double-check después del lock
+        if db_path in _views_created:
+            return
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Conectar temporalmente en read-write para crear vistas
+            temp_conn = duckdb.connect(db_path, read_only=False)
+            
+            logger.info(f"Creating gold schema views for {db_path}")
+            
+            # Crear schema gold
+            temp_conn.execute("CREATE SCHEMA IF NOT EXISTS gold;")
+            
+            # Obtener tablas del schema main
+            tables = temp_conn.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'").fetchall()
+            logger.info(f"Found {len(tables)} tables in main schema")
+            
+            # Crear vistas gold.* -> main.*
+            views_created = 0
+            for (table_name,) in tables:
+                try:
+                    temp_conn.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM main.{table_name}")
+                    views_created += 1
+                except Exception as e:
+                    logger.warning(f"Failed to create view for {table_name}: {e}")
+            
+            temp_conn.close()
+            logger.info(f"Successfully created {views_created} gold schema views")
+            
+            # Marcar como creado
+            _views_created.add(db_path)
+            
+        except Exception as e:
+            logger.error(f"Error creating gold schema views: {e}")
+            # No raise - continuar con conexión normal
 
 
 @contextmanager
@@ -111,37 +161,12 @@ def get_duckdb_connection(read_only=True):
                 
                 logger.info(f"Successfully downloaded {db_path}")
             
-            # Conectar al archivo local en modo read-write para crear vistas
-            con = duckdb.connect(local_path, read_only=False)
+            # Conectar al archivo local
+            # Crear vistas una sola vez si no existen
+            _ensure_gold_views_exist(local_path)
             
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"Connected to {local_path}")
-            
-            # prod.duckdb tiene tablas en schema 'main' (default), no 'gold'
-            # Crear vistas en gold que apunten a main para compatibilidad
-            # IMPORTANTE: Esto se ejecuta siempre, no solo en la primera descarga
-            try:
-                con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
-                logger.info("Created gold schema")
-                
-                # Obtener tablas del schema main (donde realmente están las tablas)
-                tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'").fetchall()
-                logger.info(f"Found {len(tables)} tables in main schema")
-                
-                # Crear vistas gold.* -> main.*
-                views_created = 0
-                for (table_name,) in tables:
-                    try:
-                        con.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM main.{table_name}")
-                        views_created += 1
-                    except Exception as e:
-                        logger.warning(f"Failed to create view for {table_name}: {e}")
-                
-                logger.info(f"Successfully created {views_created} gold schema views")
-            except Exception as e:
-                logger.error(f"Error creating gold schema views: {e}")
-                raise
+            # Ahora conectar en modo read-only para queries
+            con = duckdb.connect(local_path, read_only=read_only)
         else:
             # Conexión local tradicional
             con = duckdb.connect(db_path, read_only=read_only)
