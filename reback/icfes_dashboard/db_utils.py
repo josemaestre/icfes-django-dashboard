@@ -53,7 +53,28 @@ def get_duckdb_connection(read_only=True):
             
             logger.info(f"File exists: {file_exists}, Size: {file_size / (1024**3):.2f} GB")
             
-            if not file_exists or file_size < min_size:
+            # Si el archivo existe pero podría estar corrupto, verificar tablas
+            needs_download = not file_exists or file_size < min_size
+            
+            if file_exists and file_size >= min_size:
+                # Verificar si tiene tablas (archivo podría estar corrupto)
+                try:
+                    test_conn = duckdb.connect(local_path, read_only=True)
+                    table_count = test_conn.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'prod'").fetchone()[0]
+                    test_conn.close()
+                    logger.info(f"File has {table_count} tables in prod schema")
+                    
+                    if table_count == 0:
+                        logger.warning("File exists but has 0 tables - deleting corrupted file")
+                        os.remove(local_path)
+                        needs_download = True
+                except Exception as e:
+                    logger.warning(f"Error checking file: {e} - will re-download")
+                    if os.path.exists(local_path):
+                        os.remove(local_path)
+                    needs_download = True
+            
+            if needs_download:
                 # Usar AWS CLI para descargar
                 aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
                 aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
