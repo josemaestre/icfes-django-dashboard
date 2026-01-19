@@ -1630,17 +1630,17 @@ def api_mapa_estudiantes_heatmap(request):
     municipio = request.GET.get('municipio', None)
     tipo_ubicacion = request.GET.get('tipo_ubicacion', 'colegio')  # 'colegio' or 'residencia'
     
-    # Determine which coordinates to use
+    # Determine which coordinates to use (from fact_icfes_analytics)
     if tipo_ubicacion == 'residencia':
-        lat_field = 'a.latitud_reside'
-        lon_field = 'a.longitud_reside'
-        dept_field = 'a.departamento_reside'
-        muni_field = 'a.municipio_reside'
+        lat_field = 'f.latitud_reside'
+        lon_field = 'f.longitud_reside'
+        dept_field = 'f.departamento'
+        muni_field = 'f.municipio'
     else:  # 'colegio' (default)
-        lat_field = 'a.latitud_presentacion'
-        lon_field = 'a.longitud_presentacion'
-        dept_field = 'a.departamento_presentacion'
-        muni_field = 'a.municipio_presentacion'
+        lat_field = 'f.latitud_presentacion'
+        lon_field = 'f.longitud_presentacion'
+        dept_field = 'f.departamento'
+        muni_field = 'f.municipio'
     
     # Build WHERE clause for filters
     where_clauses = [f"i.ano = {ano}"]
@@ -1714,7 +1714,6 @@ def api_mapa_estudiantes_heatmap(request):
                 ROUND(CAST({lat_field} AS DOUBLE), 2) as lat_grid,
                 ROUND(CAST({lon_field} AS DOUBLE), 2) as lon_grid
             FROM gold.fact_icfes_analytics f
-            JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
             WHERE f.ano = {ano}
               AND {lat_field} IS NOT NULL
               AND {lon_field} IS NOT NULL
@@ -1785,14 +1784,13 @@ def api_mapa_departamentos(request):
     
     query = f"""
         SELECT 
-            a.departamento_reside as departamento,
+            f.departamento,
             COUNT(*) as total_estudiantes
         FROM gold.fact_icfes_analytics f
-        JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
         WHERE f.ano = {ano}
-          AND a.departamento_reside IS NOT NULL
-          AND a.departamento_reside != ''
-        GROUP BY a.departamento_reside
+          AND f.departamento IS NOT NULL
+          AND f.departamento != ''
+        GROUP BY f.departamento
         ORDER BY total_estudiantes DESC
     """
     
@@ -1834,15 +1832,14 @@ def api_mapa_municipios(request):
     
     query = f"""
         SELECT 
-            a.municipio_reside as municipio,
+            f.municipio,
             COUNT(*) as total_estudiantes
         FROM gold.fact_icfes_analytics f
-        JOIN icfes_silver.alumnos a ON f.estudiante_sk = a.estudiante_sk
         WHERE f.ano = {ano}
-          AND a.departamento_reside = '{departamento}'
-          AND a.municipio_reside IS NOT NULL
-          AND a.municipio_reside != ''
-        GROUP BY a.municipio_reside
+          AND f.departamento = '{departamento}'
+          AND f.municipio IS NOT NULL
+          AND f.municipio != ''
+        GROUP BY f.municipio
         ORDER BY total_estudiantes DESC
     """
     
