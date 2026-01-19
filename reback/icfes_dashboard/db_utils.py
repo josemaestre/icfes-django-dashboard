@@ -60,9 +60,10 @@ def get_duckdb_connection(read_only=True):
                 # Verificar si tiene tablas (archivo podría estar corrupto)
                 try:
                     test_conn = duckdb.connect(local_path, read_only=True)
-                    table_count = test_conn.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'prod'").fetchone()[0]
+                    # Las tablas están en schema 'main', no 'prod' (prod es el database name)
+                    table_count = test_conn.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main'").fetchone()[0]
                     test_conn.close()
-                    logger.info(f"File has {table_count} tables in prod schema")
+                    logger.info(f"File has {table_count} tables in main schema")
                     
                     if table_count == 0:
                         logger.warning("File exists but has 0 tables - deleting corrupted file")
@@ -117,22 +118,22 @@ def get_duckdb_connection(read_only=True):
             logger = logging.getLogger(__name__)
             logger.info(f"Connected to {local_path}")
             
-            # prod.duckdb tiene tablas en schema 'prod', no 'gold'
-            # Crear vistas en gold que apunten a prod para compatibilidad
+            # prod.duckdb tiene tablas en schema 'main' (default), no 'gold'
+            # Crear vistas en gold que apunten a main para compatibilidad
             # IMPORTANTE: Esto se ejecuta siempre, no solo en la primera descarga
             try:
                 con.execute("CREATE SCHEMA IF NOT EXISTS gold;")
                 logger.info("Created gold schema")
                 
-                # Obtener tablas del schema prod
-                tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'prod'").fetchall()
-                logger.info(f"Found {len(tables)} tables in prod schema")
+                # Obtener tablas del schema main (donde realmente están las tablas)
+                tables = con.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'").fetchall()
+                logger.info(f"Found {len(tables)} tables in main schema")
                 
-                # Crear vistas gold.* -> prod.*
+                # Crear vistas gold.* -> main.*
                 views_created = 0
                 for (table_name,) in tables:
                     try:
-                        con.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM prod.{table_name}")
+                        con.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM main.{table_name}")
                         views_created += 1
                     except Exception as e:
                         logger.warning(f"Failed to create view for {table_name}: {e}")
