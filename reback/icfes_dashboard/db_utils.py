@@ -298,24 +298,81 @@ def get_estadisticas_generales(ano=None):
     Returns:
         dict: Diccionario con estadísticas
     """
-    filters = {'ano': ano} if ano else None
+    # Intentar usar tabla materializada fct_estadisticas_anuales para performance
+    # Si no existe (aún no se ejecutó dbt), usar query antigua
     
-    query = f"""
-        SELECT 
-            COUNT(DISTINCT estudiante_sk) as total_estudiantes,
-            COUNT(DISTINCT colegio_sk) as total_colegios,
-            COUNT(DISTINCT departamento) as total_departamentos,
-            COUNT(DISTINCT municipio) as total_municipios,
-            AVG(punt_global) as promedio_nacional,
-            MIN(punt_global) as puntaje_minimo,
-            MAX(punt_global) as puntaje_maximo,
-            STDDEV(punt_global) as desviacion_estandar
-        FROM gold.fact_icfes_analytics
-        {f"WHERE ano = {ano}" if ano else ""}
-    """
-    
-    df = execute_query(query)
-    return df.iloc[0].to_dict() if not df.empty else {}
+    try:
+        if ano:
+            query = f"""
+                SELECT 
+                    total_estudiantes,
+                    total_colegios,
+                    total_departamentos,
+                    total_municipios,
+                    promedio_nacional,
+                    puntaje_minimo,
+                    puntaje_maximo,
+                    desviacion_estandar
+                FROM gold.fct_estadisticas_anuales
+                WHERE ano = {ano}
+            """
+        else:
+            # Si no hay año, agregar todas las filas
+            query = """
+                SELECT 
+                    SUM(total_estudiantes) as total_estudiantes,
+                    COUNT(DISTINCT ano) as total_anos,
+                    ROUND(AVG(promedio_nacional), 2) as promedio_nacional,
+                    MIN(puntaje_minimo) as puntaje_minimo,
+                    MAX(puntaje_maximo) as puntaje_maximo,
+                    ROUND(AVG(desviacion_estandar), 2) as desviacion_estandar
+                FROM gold.fct_estadisticas_anuales
+            """
+        
+        df = execute_query(query)
+        
+        if df.empty:
+            return {}
+        
+        result = df.iloc[0].to_dict()
+        
+        # Si no hay año específico, agregar conteos totales
+        if not ano:
+            counts_query = """
+                SELECT 
+                    COUNT(DISTINCT colegio_sk) as total_colegios,
+                    COUNT(DISTINCT departamento) as total_departamentos,
+                    COUNT(DISTINCT municipio) as total_municipios
+                FROM gold.fact_icfes_analytics
+            """
+            counts_df = execute_query(counts_query)
+            if not counts_df.empty:
+                result.update(counts_df.iloc[0].to_dict())
+        
+        return result
+        
+    except Exception as e:
+        # Fallback: usar query antigua si la tabla no existe
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"fct_estadisticas_anuales no existe, usando query antigua: {e}")
+        
+        query = f"""
+            SELECT 
+                COUNT(DISTINCT estudiante_sk) as total_estudiantes,
+                COUNT(DISTINCT colegio_sk) as total_colegios,
+                COUNT(DISTINCT departamento) as total_departamentos,
+                COUNT(DISTINCT municipio) as total_municipios,
+                AVG(punt_global) as promedio_nacional,
+                MIN(punt_global) as puntaje_minimo,
+                MAX(punt_global) as puntaje_maximo,
+                STDDEV(punt_global) as desviacion_estandar
+            FROM gold.fact_icfes_analytics
+            {f"WHERE ano = {ano}" if ano else ""}
+        """
+        
+        df = execute_query(query)
+        return df.iloc[0].to_dict() if not df.empty else {}
 
 
 def get_promedios_ubicacion(ano, departamento=None, municipio=None):
