@@ -1542,8 +1542,10 @@
 
 <!-- ApexCharts and Dashboard Scripts -->
 <script src="{% static '/vendor/apexcharts/apexcharts.min.js' %}"></script>
-<script src="{% static 'js/pages/dashboard.icfes.js' %}?v=5"></script>
-<script src="{% static 'js/pages/dashboard.icfes.gauges.js' %}?v=1"></script>
+<!-- API Cache (must load before dashboard scripts) -->
+<script src="{% static 'js/utils/api-cache.js' %}"></script>
+<script src="{% static 'js/pages/dashboard.icfes.js' %}?v=6"></script>
+<script src="{% static 'js/pages/dashboard.icfes.gauges.js' %}?v=2"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.gauges.js' %}?v=2"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=6"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.table.js' %}?v=5"></script>

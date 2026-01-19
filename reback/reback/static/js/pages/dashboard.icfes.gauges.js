@@ -189,9 +189,8 @@ async function loadGaugeData() {
     try {
         const year = document.getElementById('year-selector')?.value || 2024;
 
-        // Fetch global score from estadisticas API
-        const statsResponse = await fetch(`/icfes/api/estadisticas/?ano=${year}`);
-        const statsData = await statsResponse.json();
+        // Fetch global score from estadisticas API (using cache)
+        const statsData = await window.apiCache.fetch(`/icfes/api/estadisticas/?ano=${year}`);
 
         // Fetch subject scores from tendencias API (get the data for the selected year)
         const tendenciasResponse = await fetch('/icfes/api/charts/tendencias/');

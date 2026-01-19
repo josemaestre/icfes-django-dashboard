@@ -44,8 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // Load statistics (KPI cards)
 async function loadStats() {
     try {
-        const response = await fetch(`/icfes/api/estadisticas/?ano=${currentYear}`);
-        const data = await response.json();
+        const data = await window.apiCache.fetch(`/icfes/api/estadisticas/?ano=${currentYear}`);
 
         document.getElementById('stat-estudiantes').textContent = data.total_estudiantes.toLocaleString();
         document.getElementById('stat-colegios').textContent = data.total_colegios.toLocaleString();
