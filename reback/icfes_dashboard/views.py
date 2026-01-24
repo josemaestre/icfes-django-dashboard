@@ -133,14 +133,20 @@ def colegios_destacados(request):
     Query params: ?ano=2023&limit=50 (opcionales)
     Genera el ranking dinámicamente desde fct_agg_colegios_ano
     """
-    ano = request.GET.get('ano', 2023)
-    limit = request.GET.get('limit', 50)
-    
+    # Validar y sanitizar parámetros
+    try:
+        ano = int(request.GET.get('ano', 2023))
+        limit = int(request.GET.get('limit', 50))
+        # Limitar el máximo de resultados
+        limit = min(limit, 500)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetros inválidos'}, status=400)
+
     # Generar ranking dinámicamente desde fct_agg_colegios_ano
     # Agrupar por colegio_sk para evitar duplicados con variaciones de nombre
-    query = f"""
+    query = """
         WITH ranked_colegios AS (
-            SELECT 
+            SELECT
                 colegio_sk,
                 MIN(nombre_colegio) as nombre_colegio,
                 MIN(departamento) as departamento,
@@ -150,12 +156,12 @@ def colegios_destacados(request):
                 SUM(total_estudiantes) as total_estudiantes,
                 MIN(ranking_nacional) as ranking_nacional
             FROM gold.fct_agg_colegios_ano
-            WHERE ano = {ano}
+            WHERE ano = ?
                 AND ranking_nacional IS NOT NULL
                 AND total_estudiantes >= 10
             GROUP BY colegio_sk
         )
-        SELECT 
+        SELECT
             colegio_sk,
             nombre_colegio,
             departamento,
@@ -166,10 +172,10 @@ def colegios_destacados(request):
             ranking_nacional
         FROM ranked_colegios
         ORDER BY ranking_nacional
-        LIMIT {limit}
+        LIMIT ?
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano, limit])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -179,8 +185,12 @@ def colegio_detalle(request, colegio_sk):
     """
     Endpoint: Detalle histórico de un colegio específico.
     """
-    query = f"""
-        SELECT 
+    # Validar colegio_sk (debe ser string alfanumérico)
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    query = """
+        SELECT
             ano,
             nombre_colegio,
             departamento,
@@ -199,11 +209,11 @@ def colegio_detalle(request, colegio_sk):
             gap_municipio_promedio,
             rendimiento_relativo_municipal
         FROM gold.fct_agg_colegios_ano
-        WHERE colegio_sk = {colegio_sk}
+        WHERE colegio_sk = ?
         ORDER BY ano DESC
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[str(colegio_sk)])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -249,10 +259,13 @@ def comparacion_sectores(request):
     Endpoint: Comparación entre sector oficial y no oficial.
     Query params: ?ano=2023 (opcional)
     """
-    ano = request.GET.get('ano', 2023)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2023))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             sector,
             COUNT(DISTINCT colegio_sk) as total_colegios,
             SUM(total_estudiantes) as total_estudiantes,
@@ -263,12 +276,12 @@ def comparacion_sectores(request):
             AVG(avg_punt_sociales_ciudadanas) as promedio_sociales,
             AVG(avg_punt_ingles) as promedio_ingles
         FROM gold.fct_agg_colegios_ano
-        WHERE ano = {ano}
+        WHERE ano = ?
         GROUP BY sector
         ORDER BY sector
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -279,10 +292,13 @@ def ranking_departamental(request):
     Endpoint: Ranking de departamentos por promedio.
     Query params: ?ano=2023 (opcional)
     """
-    ano = request.GET.get('ano', 2023)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2023))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             departamento,
             COUNT(DISTINCT colegio_sk) as total_colegios,
             SUM(total_estudiantes) as total_estudiantes,
@@ -291,12 +307,12 @@ def ranking_departamental(request):
             MIN(avg_punt_global) as puntaje_minimo,
             MAX(avg_punt_global) as puntaje_maximo
         FROM gold.fct_agg_colegios_ano
-        WHERE ano = {ano}
+        WHERE ano = ?
         GROUP BY departamento
         ORDER BY promedio_departamental DESC
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -311,20 +327,23 @@ def icfes_data(request):
     Endpoint legacy: Datos básicos por departamento.
     Mantiene compatibilidad con versión anterior.
     """
-    ano = request.GET.get('ano', 2023)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2023))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             departamento as depto,
             AVG(avg_punt_global) as promedio_global,
             SUM(total_estudiantes) as total_estudiantes
         FROM gold.fct_agg_colegios_ano
-        WHERE ano = {ano}
+        WHERE ano = ?
         GROUP BY departamento
         ORDER BY promedio_global DESC
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -391,10 +410,13 @@ def api_comparacion_sectores_chart(request):
     Endpoint: Comparación de sectores para gráfico de barras.
     Query params: ?ano=2023 (opcional)
     """
-    ano = request.GET.get('ano', 2023)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2023))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             sector,
             AVG(avg_punt_global) as punt_global,
             AVG(avg_punt_matematicas) as punt_matematicas,
@@ -405,12 +427,12 @@ def api_comparacion_sectores_chart(request):
             COUNT(DISTINCT colegio_sk) as total_colegios,
             SUM(total_estudiantes) as total_estudiantes
         FROM gold.fct_agg_colegios_ano
-        WHERE ano = {ano}
+        WHERE ano = ?
         GROUP BY sector
         ORDER BY sector
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -421,23 +443,27 @@ def api_ranking_departamentos(request):
     Endpoint: Ranking de departamentos para gráfico de barras.
     Query params: ?ano=2023&limit=10 (opcionales)
     """
-    ano = request.GET.get('ano', 2023)
-    limit = request.GET.get('limit', 10)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2023))
+        limit = int(request.GET.get('limit', 10))
+        limit = min(limit, 100)  # Limitar máximo
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetros inválidos'}, status=400)
+
+    query = """
+        SELECT
             departamento,
             AVG(avg_punt_global) as promedio,
             COUNT(DISTINCT colegio_sk) as total_colegios,
             SUM(total_estudiantes) as total_estudiantes
         FROM gold.fct_agg_colegios_ano
-        WHERE ano = {ano}
+        WHERE ano = ?
         GROUP BY departamento
         ORDER BY promedio DESC
-        LIMIT {limit}
+        LIMIT ?
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano, limit])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -448,20 +474,23 @@ def api_distribucion_regional(request):
     Endpoint: Distribución de estudiantes por región.
     Query params: ?ano=2023 (opcional)
     """
-    ano = request.GET.get('ano', 2023)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2023))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             region,
             SUM(total_estudiantes) as total_estudiantes,
             AVG(avg_punt_global) as promedio
         FROM gold.vw_fct_colegios_region
-        WHERE ano = {ano} AND region IS NOT NULL
+        WHERE ano = ? AND region IS NOT NULL
         GROUP BY region
         ORDER BY total_estudiantes DESC
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -501,12 +530,15 @@ def hierarchy_regions(request):
     Endpoint: Regiones con estadísticas agregadas y Z-scores.
     Query params: ?ano=2024
     """
-    ano = int(request.GET.get('ano', 2024))
-    ano_anterior = int(ano) - 1
-    
-    query = f"""
+    try:
+        ano = int(request.GET.get('ano', 2024))
+        ano_anterior = ano - 1
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
         WITH current_year AS (
-            SELECT 
+            SELECT
                 region,
                 AVG(avg_punt_global) as punt_global,
                 AVG(avg_punt_matematicas) as punt_matematicas,
@@ -516,24 +548,24 @@ def hierarchy_regions(request):
                 AVG(avg_punt_ingles) as punt_ingles,
                 SUM(total_estudiantes) as total_estudiantes
             FROM gold.vw_fct_colegios_region
-            WHERE ano = {ano} AND region IS NOT NULL
+            WHERE ano = ? AND region IS NOT NULL
             GROUP BY region
         ),
         previous_year AS (
-            SELECT 
+            SELECT
                 region,
                 AVG(avg_punt_global) as punt_global_anterior
             FROM gold.vw_fct_colegios_region
-            WHERE ano = {ano_anterior} AND region IS NOT NULL
+            WHERE ano = ? AND region IS NOT NULL
             GROUP BY region
         ),
         national_stats AS (
-            SELECT 
+            SELECT
                 AVG(punt_global) as media_nacional,
                 STDDEV(punt_global) as std_nacional
             FROM current_year
         )
-        SELECT 
+        SELECT
             c.region,
             c.punt_global,
             c.punt_matematicas,
@@ -550,8 +582,8 @@ def hierarchy_regions(request):
         CROSS JOIN national_stats n
         ORDER BY c.punt_global DESC
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano, ano_anterior])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -563,28 +595,31 @@ def hierarchy_departments(request):
     Query params: ?region=ANDINA&ano=2024
     """
     region = request.GET.get('region', '')
-    ano = request.GET.get('ano', 2024)
-    ano_anterior = int(ano) - 1
-    
-    # Obtener departamentos de la región desde la base de datos
-    query_deptos = f"""
-        SELECT DISTINCT departamento
-        FROM gold.dim_colegios
-        WHERE region = '{region}'
-        ORDER BY departamento
-    """
-    deptos_df = execute_query(query_deptos)
-    deptos = tuple(deptos_df['departamento'].tolist()) if not deptos_df.empty else ()
-    
-    if not deptos:
-        return JsonResponse([], safe=False)
-    
     if not region:
         return JsonResponse([], safe=False)
-    
-    query = f"""
+
+    try:
+        ano = int(request.GET.get('ano', 2024))
+        ano_anterior = ano - 1
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    # Obtener departamentos de la región desde la base de datos
+    query_deptos = """
+        SELECT DISTINCT departamento
+        FROM gold.dim_colegios
+        WHERE region = ?
+        ORDER BY departamento
+    """
+    deptos_df = execute_query(query_deptos, params=[region])
+    deptos = tuple(deptos_df['departamento'].tolist()) if not deptos_df.empty else ()
+
+    if not deptos:
+        return JsonResponse([], safe=False)
+
+    query = """
         WITH current_year AS (
-            SELECT 
+            SELECT
                 departamento,
                 AVG(avg_punt_global) as punt_global,
                 AVG(avg_punt_matematicas) as punt_matematicas,
@@ -594,24 +629,24 @@ def hierarchy_departments(request):
                 AVG(avg_punt_ingles) as punt_ingles,
                 SUM(total_estudiantes) as total_estudiantes
             FROM gold.vw_fct_colegios_region
-            WHERE ano = {ano} AND region = '{region}'
+            WHERE ano = ? AND region = ?
             GROUP BY departamento
         ),
         previous_year AS (
-            SELECT 
+            SELECT
                 departamento,
                 AVG(avg_punt_global) as punt_global_anterior
             FROM gold.vw_fct_colegios_region
-            WHERE ano = {ano_anterior} AND region = '{region}'
+            WHERE ano = ? AND region = ?
             GROUP BY departamento
         ),
         regional_stats AS (
-            SELECT 
+            SELECT
                 AVG(punt_global) as media_regional,
                 STDDEV(punt_global) as std_regional
             FROM current_year
         )
-        SELECT 
+        SELECT
             c.departamento as id,
             c.departamento as nombre,
             c.punt_global,
@@ -629,8 +664,8 @@ def hierarchy_departments(request):
         CROSS JOIN regional_stats r
         ORDER BY c.punt_global DESC
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano, region, ano_anterior, region])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -642,15 +677,18 @@ def hierarchy_municipalities(request):
     Query params: ?department=CUNDINAMARCA&ano=2024
     """
     department = request.GET.get('department', '')
-    ano = request.GET.get('ano', 2024)
-    ano_anterior = int(ano) - 1
-    
     if not department:
         return JsonResponse([], safe=False)
-    
-    query = f"""
+
+    try:
+        ano = int(request.GET.get('ano', 2024))
+        ano_anterior = ano - 1
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
         WITH current_year AS (
-            SELECT 
+            SELECT
                 municipio,
                 AVG(avg_punt_global) as punt_global,
                 AVG(avg_punt_matematicas) as punt_matematicas,
@@ -660,24 +698,24 @@ def hierarchy_municipalities(request):
                 AVG(avg_punt_ingles) as punt_ingles,
                 SUM(total_estudiantes) as total_estudiantes
             FROM gold.fct_agg_colegios_ano
-            WHERE ano = {ano} AND departamento = '{department}'
+            WHERE ano = ? AND departamento = ?
             GROUP BY municipio
         ),
         previous_year AS (
-            SELECT 
+            SELECT
                 municipio,
                 AVG(avg_punt_global) as punt_global_anterior
             FROM gold.fct_agg_colegios_ano
-            WHERE ano = {ano_anterior} AND departamento = '{department}'
+            WHERE ano = ? AND departamento = ?
             GROUP BY municipio
         ),
         departmental_stats AS (
-            SELECT 
+            SELECT
                 AVG(punt_global) as media_departamental,
                 STDDEV(punt_global) as std_departamental
             FROM current_year
         )
-        SELECT 
+        SELECT
             c.municipio as id,
             c.municipio as nombre,
             c.punt_global,
@@ -696,8 +734,8 @@ def hierarchy_municipalities(request):
         ORDER BY c.punt_global DESC
         LIMIT 100
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano, department, ano_anterior, department])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -709,15 +747,18 @@ def hierarchy_schools(request):
     Query params: ?municipality=BOGOTA&ano=2024
     """
     municipality = request.GET.get('municipality', '')
-    ano = request.GET.get('ano', 2024)
-    ano_anterior = int(ano) - 1
-    
     if not municipality:
         return JsonResponse([], safe=False)
-    
-    query = f"""
+
+    try:
+        ano = int(request.GET.get('ano', 2024))
+        ano_anterior = ano - 1
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
         WITH current_year AS (
-            SELECT 
+            SELECT
                 colegio_sk,
                 MIN(nombre_colegio) as nombre_colegio,
                 AVG(avg_punt_global) as punt_global,
@@ -728,24 +769,24 @@ def hierarchy_schools(request):
                 AVG(avg_punt_ingles) as punt_ingles,
                 SUM(total_estudiantes) as total_estudiantes
             FROM gold.fct_agg_colegios_ano
-            WHERE ano = {ano} AND municipio = '{municipality}'
+            WHERE ano = ? AND municipio = ?
             GROUP BY colegio_sk
         ),
         previous_year AS (
-            SELECT 
+            SELECT
                 colegio_sk,
                 AVG(avg_punt_global) as punt_global_anterior
             FROM gold.fct_agg_colegios_ano
-            WHERE ano = {ano_anterior} AND municipio = '{municipality}'
+            WHERE ano = ? AND municipio = ?
             GROUP BY colegio_sk
         ),
         municipal_stats AS (
-            SELECT 
+            SELECT
                 AVG(punt_global) as media_municipal,
                 STDDEV(punt_global) as std_municipal
             FROM current_year
         )
-        SELECT 
+        SELECT
             c.colegio_sk as id,
             c.nombre_colegio as nombre,
             c.punt_global,
@@ -765,8 +806,8 @@ def hierarchy_schools(request):
         ORDER BY c.punt_global DESC
         LIMIT 200
     """
-    
-    df = execute_query(query)
+
+    df = execute_query(query, params=[ano, municipality, ano_anterior, municipality])
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
@@ -778,27 +819,39 @@ def hierarchy_schools(request):
 def api_search_colegios(request):
     '''Búsqueda/autocomplete de colegios'''
     query_text = request.GET.get('q', '')
-    limit = request.GET.get('limit', 20)
-    
+
     if not query_text or len(query_text) < 3:
         return JsonResponse([], safe=False)
-    
-    query = f'''
+
+    try:
+        limit = int(request.GET.get('limit', 20))
+        limit = min(limit, 100)  # Limitar máximo
+    except (ValueError, TypeError):
+        limit = 20
+
+    # Sanitizar el texto de búsqueda para LIKE (usar parámetros)
+    search_pattern = f'%{query_text}%'
+
+    query = '''
         SELECT DISTINCT colegio_sk, codigo_dane, nombre_colegio,
                 departamento, municipio, sector
         FROM gold.fct_colegio_historico
-        WHERE LOWER(nombre_colegio) LIKE LOWER('%{query_text}%')
-           OR codigo_dane LIKE '%{query_text}%'
-        ORDER BY nombre_colegio LIMIT {limit}
+        WHERE LOWER(nombre_colegio) LIKE LOWER(?)
+           OR codigo_dane LIKE ?
+        ORDER BY nombre_colegio LIMIT ?
     '''
-    df = execute_query(query)
+    df = execute_query(query, params=[search_pattern, search_pattern, limit])
     return JsonResponse(df.to_dict(orient='records'), safe=False)
 
 
 @require_http_methods(["GET"])
 def api_colegio_historico(request, colegio_sk):
     """Evolución histórica de un colegio"""
-    query = f"""
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    query = """
         WITH ranked_data AS (
             SELECT ano, nombre_colegio, codigo_dane, sector, departamento, municipio,
                    total_estudiantes, avg_punt_global, avg_punt_matematicas,
@@ -812,7 +865,7 @@ def api_colegio_historico(request, colegio_sk):
                    clasificacion_tendencia,
                    ROW_NUMBER() OVER (PARTITION BY ano ORDER BY ano DESC) as rn
             FROM gold.fct_colegio_historico
-            WHERE colegio_sk = '{colegio_sk}'
+            WHERE colegio_sk = ?
         )
         SELECT ano, nombre_colegio, codigo_dane, sector, departamento, municipio,
                total_estudiantes, avg_punt_global, avg_punt_matematicas,
@@ -828,19 +881,23 @@ def api_colegio_historico(request, colegio_sk):
         WHERE rn = 1
         ORDER BY ano ASC
     """
-    df = execute_query(query)
+    df = execute_query(query, params=[str(colegio_sk)])
     return JsonResponse(df.to_dict(orient='records'), safe=False)
 
 
 @require_http_methods(["GET"])
 def api_colegio_correlaciones(request, colegio_sk):
     """Correlaciones entre materias y puntaje global"""
-    query = f"""
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    query = """
         SELECT *
         FROM gold.fct_colegio_correlaciones
-        WHERE colegio_sk = '{colegio_sk}'
+        WHERE colegio_sk = ?
     """
-    df = execute_query(query)
+    df = execute_query(query, params=[str(colegio_sk)])
     if df.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
     return JsonResponse(df.to_dict(orient='records')[0], safe=False)
@@ -849,7 +906,11 @@ def api_colegio_correlaciones(request, colegio_sk):
 @require_http_methods(["GET"])
 def api_colegio_fortalezas(request, colegio_sk):
     """Fortalezas y debilidades por materia"""
-    query = f"""
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    query = """
         SELECT colegio_sk, codigo_dane, nombre_colegio, sector,
                departamento, municipio, ano,
                materia_mas_fuerte, brecha_materia_fuerte,
@@ -861,21 +922,25 @@ def api_colegio_fortalezas(request, colegio_sk):
                brecha_matematicas, brecha_lectura, brecha_ciencias,
                brecha_sociales, brecha_ingles
         FROM gold.fct_colegio_fortalezas_debilidades
-        WHERE colegio_sk = '{colegio_sk}'
+        WHERE colegio_sk = ?
         ORDER BY ano DESC
     """
-    df = execute_query(query)
+    df = execute_query(query, params=[str(colegio_sk)])
     return JsonResponse(df.to_dict(orient='records'), safe=False)
 
 
 @require_http_methods(["GET"])
 def api_colegio_comparacion(request, colegio_sk):
     """Comparación del colegio vs promedios (último año)"""
-    query = f"""
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    query = """
         WITH ultimo_ano AS (
             SELECT MAX(ano) as ano
             FROM gold.fct_colegio_historico
-            WHERE colegio_sk = '{colegio_sk}'
+            WHERE colegio_sk = ?
         ),
         colegio_data AS (
             SELECT h.ano, h.nombre_colegio, h.codigo_dane, h.sector,
@@ -891,10 +956,10 @@ def api_colegio_comparacion(request, colegio_sk):
                    h.avg_punt_ingles
             FROM gold.fct_colegio_historico h
             INNER JOIN ultimo_ano u ON h.ano = u.ano
-            WHERE h.colegio_sk = '{colegio_sk}'
+            WHERE h.colegio_sk = ?
         ),
         promedios_contexto AS (
-            SELECT 
+            SELECT
                 c.departamento,
                 c.municipio,
                 c.ano,
@@ -921,7 +986,7 @@ def api_colegio_comparacion(request, colegio_sk):
             WHERE f.ano = c.ano
             GROUP BY c.departamento, c.municipio, c.ano
         )
-        SELECT 
+        SELECT
             c.*,
             p.promedio_municipal_matematicas,
             p.promedio_municipal_lectura_critica,
@@ -939,10 +1004,11 @@ def api_colegio_comparacion(request, colegio_sk):
             p.promedio_nacional_sociales_ciudadanas,
             p.promedio_nacional_ingles
         FROM colegio_data c
-        LEFT JOIN promedios_contexto p ON c.departamento = p.departamento 
+        LEFT JOIN promedios_contexto p ON c.departamento = p.departamento
             AND c.municipio = p.municipio AND c.ano = p.ano
     """
-    df = execute_query(query)
+    colegio_sk_str = str(colegio_sk)
+    df = execute_query(query, params=[colegio_sk_str, colegio_sk_str])
     if df.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
     return JsonResponse(df.to_dict(orient='records')[0], safe=False)
@@ -951,21 +1017,27 @@ def api_colegio_comparacion(request, colegio_sk):
 @require_http_methods(["GET"])
 def api_colegio_resumen(request, colegio_sk):
     """Resumen ejecutivo del colegio"""
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    colegio_sk_str = str(colegio_sk)
+
     # Información básica
-    query_basico = f"""
+    query_basico = """
         SELECT DISTINCT colegio_sk, codigo_dane, nombre_colegio,
                sector, departamento, municipio
         FROM gold.fct_colegio_historico
-        WHERE colegio_sk = '{colegio_sk}'
+        WHERE colegio_sk = ?
         LIMIT 1
     """
-    
+
     # Último año
-    query_ultimo = f"""
+    query_ultimo = """
         WITH ultimo_ano AS (
             SELECT MAX(ano) as ano
             FROM gold.fct_colegio_historico
-            WHERE colegio_sk = '{colegio_sk}'
+            WHERE colegio_sk = ?
         )
         SELECT h.ano, h.total_estudiantes, h.avg_punt_global,
                h.ranking_nacional, h.ranking_municipal,
@@ -973,18 +1045,18 @@ def api_colegio_resumen(request, colegio_sk):
                h.clasificacion_tendencia
         FROM gold.fct_colegio_historico h
         INNER JOIN ultimo_ano u ON h.ano = u.ano
-        WHERE h.colegio_sk = '{colegio_sk}'
+        WHERE h.colegio_sk = ?
     """
-    
+
     # Z-Score global (último año)
-    query_zscore = f"""
+    query_zscore = """
         WITH ultimo_ano AS (
             SELECT MAX(ano) as ano
             FROM gold.fct_colegio_historico
-            WHERE colegio_sk = '{colegio_sk}'
+            WHERE colegio_sk = ?
         ),
         stats_nacionales AS (
-            SELECT 
+            SELECT
                 AVG(avg_punt_global) as promedio_nacional,
                 STDDEV(avg_punt_global) as desviacion_nacional
             FROM gold.fct_colegio_historico h
@@ -994,43 +1066,43 @@ def api_colegio_resumen(request, colegio_sk):
             SELECT avg_punt_global
             FROM gold.fct_colegio_historico h
             INNER JOIN ultimo_ano u ON h.ano = u.ano
-            WHERE h.colegio_sk = '{colegio_sk}'
+            WHERE h.colegio_sk = ?
         )
-        SELECT 
+        SELECT
             (c.avg_punt_global - s.promedio_nacional) / NULLIF(s.desviacion_nacional, 0) as z_score_global,
             s.promedio_nacional,
             s.desviacion_nacional
         FROM colegio_data c, stats_nacionales s
     """
-    
+
     # Rango de años
-    query_rango = f"""
+    query_rango = """
         SELECT MIN(ano) as ano_inicio, MAX(ano) as ano_fin,
                COUNT(DISTINCT ano) as total_anos
         FROM gold.fct_colegio_historico
-        WHERE colegio_sk = '{colegio_sk}'
+        WHERE colegio_sk = ?
     """
-    
+
     # Fortalezas/debilidades
-    query_fd = f"""
+    query_fd = """
         SELECT materias_por_encima_promedio, materias_por_debajo_promedio,
                clasificacion_general, perfil_rendimiento
         FROM gold.fct_colegio_fortalezas_debilidades
-        WHERE colegio_sk = '{colegio_sk}'
+        WHERE colegio_sk = ?
         ORDER BY ano DESC
         LIMIT 1
     """
-    
-    
-    df_basico = execute_query(query_basico)
-    df_ultimo = execute_query(query_ultimo)
-    df_zscore = execute_query(query_zscore)
-    df_rango = execute_query(query_rango)
-    df_fd = execute_query(query_fd)
-    
+
+
+    df_basico = execute_query(query_basico, params=[colegio_sk_str])
+    df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
+    df_zscore = execute_query(query_zscore, params=[colegio_sk_str, colegio_sk_str])
+    df_rango = execute_query(query_rango, params=[colegio_sk_str])
+    df_fd = execute_query(query_fd, params=[colegio_sk_str])
+
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
-    
+
     resumen = {
         'info_basica': df_basico.to_dict(orient='records')[0],
         'ultimo_ano': df_ultimo.to_dict(orient='records')[0] if not df_ultimo.empty else {},
@@ -1038,33 +1110,39 @@ def api_colegio_resumen(request, colegio_sk):
         'rango_historico': df_rango.to_dict(orient='records')[0] if not df_rango.empty else {},
         'analisis': df_fd.to_dict(orient='records')[0] if not df_fd.empty else {}
     }
-    
+
     return JsonResponse(resumen, safe=False)
 
 
 @require_http_methods(["GET"])
 def api_colegio_ai_recommendations(request, colegio_sk):
     """Generate AI-powered recommendations for school improvement using Anthropic Claude"""
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    colegio_sk_str = str(colegio_sk)
+
     try:
         # Get school data
-        historico_query = f"""
+        historico_query = """
             SELECT * FROM gold.fct_colegio_historico
-            WHERE colegio_sk = '{colegio_sk}'
+            WHERE colegio_sk = ?
             ORDER BY ano DESC LIMIT 5
         """
-        historico = execute_query(historico_query)
-        
-        fortalezas_query = f"""
+        historico = execute_query(historico_query, params=[colegio_sk_str])
+
+        fortalezas_query = """
             SELECT * FROM gold.fct_colegio_fortalezas_debilidades
-            WHERE colegio_sk = '{colegio_sk}'
+            WHERE colegio_sk = ?
             ORDER BY ano DESC LIMIT 1
         """
-        fortalezas = execute_query(fortalezas_query)
-        
+        fortalezas = execute_query(fortalezas_query, params=[colegio_sk_str])
+
         # NEW: Get excellence indicators
-        indicadores_query = f"""
+        indicadores_query = """
             WITH indicadores_colegio AS (
-                SELECT 
+                SELECT
                     i.ano,
                     i.pct_excelencia_integral,
                     i.pct_competencia_satisfactoria_integral,
@@ -1072,10 +1150,10 @@ def api_colegio_ai_recommendations(request, colegio_sk):
                     i.pct_perfil_humanistico_avanzado,
                     i.total_estudiantes
                 FROM gold.fct_indicadores_desempeno i
-                WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = '{colegio_sk}' LIMIT 1)
+                WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = ? LIMIT 1)
             ),
             promedios_nacionales AS (
-                SELECT 
+                SELECT
                     ano,
                     AVG(pct_excelencia_integral) as nacional_excelencia,
                     AVG(pct_competencia_satisfactoria_integral) as nacional_competencia,
@@ -1084,7 +1162,7 @@ def api_colegio_ai_recommendations(request, colegio_sk):
                 FROM gold.fct_indicadores_desempeno
                 GROUP BY ano
             )
-            SELECT 
+            SELECT
                 ic.ano,
                 ic.pct_excelencia_integral,
                 ic.pct_competencia_satisfactoria_integral,
@@ -1103,7 +1181,7 @@ def api_colegio_ai_recommendations(request, colegio_sk):
         
         # Try to get excellence indicators (may not exist for all schools)
         try:
-            indicadores = execute_query(indicadores_query)
+            indicadores = execute_query(indicadores_query, params=[colegio_sk_str])
         except Exception as e:
             print(f"Warning: Could not fetch indicators for {colegio_sk}: {e}")
             indicadores = pd.DataFrame()  # Empty dataframe
@@ -1305,9 +1383,9 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
     """
     Comparación del colegio con contexto municipal, departamental y nacional.
     Usa el modelo pre-calculado gold.fct_colegio_comparacion_contexto
-    
+
     Query params: ?ano=2022 (opcional, retorna todos los años si no se especifica)
-    
+
     Retorna:
     - Puntajes del colegio en todas las materias
     - Promedios municipal, departamental y nacional
@@ -1315,10 +1393,16 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
     - Percentiles (posición relativa)
     - Clasificaciones de rendimiento
     """
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
     ano = request.GET.get('ano')
-    
-    query = f"""
-        SELECT 
+    params = [str(colegio_sk)]
+
+    # Construir query base
+    query_base = """
+        SELECT
             ano,
             colegio_sk,
             nombre_colegio,
@@ -1326,7 +1410,7 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
             municipio,
             sector,
             total_estudiantes,
-            
+
             -- Puntajes del colegio
             colegio_lectura,
             colegio_matematicas,
@@ -1334,7 +1418,7 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
             colegio_sociales,
             colegio_ingles,
             colegio_global,
-            
+
             -- Contexto municipal
             total_colegios_municipio,
             total_estudiantes_municipio,
@@ -1347,7 +1431,7 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
             brecha_municipal_global,
             percentil_municipal,
             clasificacion_vs_municipal,
-            
+
             -- Contexto departamental
             total_colegios_departamento,
             total_estudiantes_departamento,
@@ -1360,7 +1444,7 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
             brecha_departamental_global,
             percentil_departamental,
             clasificacion_vs_departamental,
-            
+
             -- Contexto nacional
             total_colegios_nacional,
             total_estudiantes_nacional,
@@ -1373,22 +1457,31 @@ def api_colegio_comparacion_contexto(request, colegio_sk):
             brecha_nacional_global,
             percentil_nacional,
             clasificacion_vs_nacional
-            
+
         FROM gold.fct_colegio_comparacion_contexto
-        WHERE colegio_sk = '{colegio_sk}'
-        {f"AND ano = {ano}" if ano else ""}
-        ORDER BY ano DESC
+        WHERE colegio_sk = ?
     """
-    
-    df = execute_query(query)
-    
+
+    # Agregar filtro de año si se especifica
+    if ano:
+        try:
+            ano_int = int(ano)
+            query_base += " AND ano = ?"
+            params.append(ano_int)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = query_base + " ORDER BY ano DESC"
+
+    df = execute_query(query, params=params)
+
     if df.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
-    
+
     # Si se pidió un año específico, retornar solo ese registro
     if ano:
         return JsonResponse(df.to_dict(orient='records')[0], safe=False)
-    
+
     # Si no, retornar todos los años (histórico)
     return JsonResponse(df.to_dict(orient='records'), safe=False)
 
@@ -1398,59 +1491,68 @@ def api_colegio_comparacion_chart_data(request, colegio_sk):
     """
     Datos formateados específicamente para gráficos de comparación.
     Retorna estructura optimizada para Chart.js o similar.
-    
+
     Query params: ?ano=2022 (requerido)
     """
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
     ano = request.GET.get('ano')
-    
+
     if not ano:
         return JsonResponse({'error': 'Parámetro ano es requerido'}, status=400)
-    
-    query = f"""
-        SELECT 
+
+    try:
+        ano_int = int(ano)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             nombre_colegio,
-            
+
             -- Puntajes por materia
             colegio_lectura,
             colegio_matematicas,
             colegio_c_naturales,
             colegio_sociales,
             colegio_ingles,
-            
+
             -- Promedios para comparación
             promedio_municipal_lectura,
             promedio_municipal_matematicas,
             promedio_municipal_c_naturales,
             promedio_municipal_sociales,
             promedio_municipal_ingles,
-            
+
             promedio_departamental_lectura,
             promedio_departamental_matematicas,
             promedio_departamental_c_naturales,
             promedio_departamental_sociales,
             promedio_departamental_ingles,
-            
+
             promedio_nacional_lectura,
             promedio_nacional_matematicas,
             promedio_nacional_c_naturales,
             promedio_nacional_sociales,
             promedio_nacional_ingles,
-            
+
             municipio,
             departamento
-            
+
         FROM gold.fct_colegio_comparacion_contexto
-        WHERE colegio_sk = '{colegio_sk}'
-            AND ano = {ano}
+        WHERE colegio_sk = ?
+            AND ano = ?
     """
-    
-    df = execute_query(query)
-    
+
+    df = execute_query(query, params=[str(colegio_sk), ano_int])
+
     if df.empty:
         return JsonResponse({'error': 'Datos no encontrados'}, status=404)
-    
+
     row = df.iloc[0]
-    
+
     # Formatear para Chart.js (radar chart)
     result = {
         'labels': ['Lectura Crítica', 'Matemáticas', 'C. Naturales', 'Sociales', 'Inglés'],
@@ -1497,7 +1599,7 @@ def api_colegio_comparacion_chart_data(request, colegio_sk):
             }
         ]
     }
-    
+
     return JsonResponse(result, safe=False)
 
 
@@ -1506,9 +1608,9 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
     """
     Endpoint: Indicadores de Excelencia Académica por colegio.
     Retorna los 4 indicadores clave + Riesgo Alto con comparación nacional y rankings.
-    
+
     Query params: ?ano=2022 (opcional, retorna últimos 5 años si no se especifica)
-    
+
     Indicadores:
     - Excelencia Integral: % con nivel 4 en TODAS las materias
     - Competencia Satisfactoria: % con nivel 3+ en TODAS las materias
@@ -1516,12 +1618,28 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
     - Perfil Humanístico Avanzado: % con nivel 4 en Lectura Y Sociales
     - Riesgo Alto: % con nivel 1 en 2+ materias (INVERTED: lower is better)
     """
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
     ano = request.GET.get('ano')
-    
+    colegio_sk_str = str(colegio_sk)
+    params = [colegio_sk_str]
+
+    # Construir parte condicional del query
+    ano_filter = ""
+    if ano:
+        try:
+            ano_int = int(ano)
+            ano_filter = "AND i.ano = ?"
+            params.append(ano_int)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
     # Query con promedios nacionales y rankings
     query = f"""
         WITH indicadores_colegio AS (
-            SELECT 
+            SELECT
                 i.ano,
                 i.colegio_bk,
                 i.pct_excelencia_integral,
@@ -1531,11 +1649,11 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
                 i.pct_riesgo_alto,
                 i.total_estudiantes
             FROM gold.fct_indicadores_desempeno i
-            WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = '{colegio_sk}' LIMIT 1)
-            {f"AND i.ano = {ano}" if ano else ""}
+            WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = ? LIMIT 1)
+            {ano_filter}
         ),
         promedios_nacionales AS (
-            SELECT 
+            SELECT
                 ano,
                 AVG(pct_excelencia_integral) as nacional_excelencia,
                 AVG(pct_competencia_satisfactoria_integral) as nacional_competencia,
@@ -1546,7 +1664,7 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
             GROUP BY ano
         ),
         rankings AS (
-            SELECT 
+            SELECT
                 ano,
                 colegio_bk,
                 PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_excelencia_integral) * 100 as ranking_excelencia,
@@ -1556,7 +1674,7 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
                 PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_riesgo_alto) * 100 as ranking_riesgo
             FROM gold.fct_indicadores_desempeno
         )
-        SELECT 
+        SELECT
             ic.ano,
             ic.colegio_bk,
             ic.pct_excelencia_integral,
@@ -1565,31 +1683,31 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
             ic.pct_perfil_humanistico_avanzado,
             ic.pct_riesgo_alto,
             ic.total_estudiantes,
-            
+
             pn.nacional_excelencia,
             pn.nacional_competencia,
             pn.nacional_stem,
             pn.nacional_humanistico,
             pn.nacional_riesgo,
-            
+
             r.ranking_excelencia,
             r.ranking_competencia,
             r.ranking_stem,
             r.ranking_humanistico,
             r.ranking_riesgo
-            
+
         FROM indicadores_colegio ic
         LEFT JOIN promedios_nacionales pn ON ic.ano = pn.ano
         LEFT JOIN rankings r ON ic.ano = r.ano AND ic.colegio_bk = r.colegio_bk
         ORDER BY ic.ano DESC
         LIMIT 5
     """
-    
-    df = execute_query(query)
-    
+
+    df = execute_query(query, params=params)
+
     if df.empty:
         return JsonResponse([], safe=False)
-    
+
     # Convertir a diccionario y retornar
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
@@ -1604,14 +1722,14 @@ def api_mapa_estudiantes_heatmap(request):
     """
     Retorna datos agregados de estudiantes para visualización en heatmap.
     Agrupa por cuadrícula geográfica (~1km) para performance y privacidad.
-    
+
     Query params:
     - ano: Año de evaluación (default: 2024)
     - categoria: excelencia_integral, perfil_stem, perfil_humanistico, perfil_bilingue, riesgo_alto, critico_ingles, todos (default: excelencia_integral)
     - tipo_ubicacion: colegio (ubicación del colegio), residencia (residencia del estudiante) (default: colegio)
     - departamento: Filtro opcional por departamento
     - municipio: Filtro opcional por municipio
-    
+
     Returns:
     {
         "type": "heatmap",
@@ -1624,12 +1742,27 @@ def api_mapa_estudiantes_heatmap(request):
         }
     }
     """
-    ano = request.GET.get('ano', 2024)
+    # Validar parámetros
+    try:
+        ano = int(request.GET.get('ano', 2024))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
     categoria = request.GET.get('categoria', 'excelencia_integral')
+    # Validar categoria contra lista permitida
+    categorias_validas = ['excelencia_integral', 'perfil_stem', 'perfil_humanistico',
+                          'perfil_bilingue', 'riesgo_alto', 'critico_ingles', 'todos']
+    if categoria not in categorias_validas:
+        categoria = 'excelencia_integral'
+
     departamento = request.GET.get('departamento', None)
     municipio = request.GET.get('municipio', None)
-    tipo_ubicacion = request.GET.get('tipo_ubicacion', 'colegio')  # 'colegio' or 'residencia'
-    
+    tipo_ubicacion = request.GET.get('tipo_ubicacion', 'colegio')
+
+    # Validar tipo_ubicacion
+    if tipo_ubicacion not in ['colegio', 'residencia']:
+        tipo_ubicacion = 'colegio'
+
     # Determine which coordinates to use (from fact_icfes_analytics)
     if tipo_ubicacion == 'residencia':
         lat_field = 'f.latitud_reside'
@@ -1641,14 +1774,17 @@ def api_mapa_estudiantes_heatmap(request):
         lon_field = 'f.longitud_presentacion'
         dept_field = 'f.departamento'
         muni_field = 'f.municipio'
-    
-    # Build WHERE clause for filters
-    where_clauses = [f"i.ano = {ano}"]
-    
+
+    # Build WHERE clause for filters using parameterized queries
+    params = [ano]
+    where_clauses = ["f.ano = ?"]
+
     if departamento:
-        where_clauses.append(f"{dept_field} = '{departamento}'")
+        where_clauses.append(f"{dept_field} = ?")
+        params.append(departamento)
     if municipio:
-        where_clauses.append(f"{muni_field} = '{municipio}'")
+        where_clauses.append(f"{muni_field} = ?")
+        params.append(municipio)
     
     where_sql = " AND ".join(where_clauses)
     
@@ -1704,17 +1840,21 @@ def api_mapa_estudiantes_heatmap(request):
               AND {lat_field} BETWEEN 12.0 AND 13.5
               AND {lon_field} BETWEEN -82.0 AND -81.0
         """
-    
+
+    # Build dynamic WHERE clause
+    where_sql = " AND ".join(where_clauses)
+
     # Main query: aggregate students by geographic grid
+    # Note: lat_field/lon_field are safe - derived from validated tipo_ubicacion
     query = f"""
         WITH estudiantes_ubicados AS (
-            SELECT 
+            SELECT
                 {lat_field},
                 {lon_field},
                 ROUND(CAST({lat_field} AS DOUBLE), 2) as lat_grid,
                 ROUND(CAST({lon_field} AS DOUBLE), 2) as lon_grid
             FROM gold.fact_icfes_analytics f
-            WHERE f.ano = {ano}
+            WHERE {where_sql}
               AND {lat_field} IS NOT NULL
               AND {lon_field} IS NOT NULL
               AND CAST({lat_field} AS DOUBLE) BETWEEN -4.5 AND 13.5
@@ -1722,7 +1862,7 @@ def api_mapa_estudiantes_heatmap(request):
               {san_andres_filter}
               AND ({categoria_condition})
         )
-        SELECT 
+        SELECT
             lat_grid,
             lon_grid,
             COUNT(*) as count
@@ -1731,9 +1871,9 @@ def api_mapa_estudiantes_heatmap(request):
         HAVING COUNT(*) >= 3  -- Minimum 3 students per cell (privacy)
         ORDER BY count DESC
     """
-    
+
     try:
-        df = execute_query(query)
+        df = execute_query(query, params=params)
         
         # Format for Leaflet.heat: [[lat, lon, intensity], ...]
         heatmap_data = [
@@ -1770,32 +1910,35 @@ def api_mapa_estudiantes_heatmap(request):
 def api_mapa_departamentos(request):
     """
     Retorna lista de departamentos con conteo de estudiantes.
-    
+
     Query params:
     - ano: Año de evaluación (default: 2024)
-    
+
     Returns:
     [
         {"departamento": "BOGOTÁ D.C.", "total_estudiantes": 12345},
         ...
     ]
     """
-    ano = request.GET.get('ano', 2024)
-    
-    query = f"""
-        SELECT 
+    try:
+        ano = int(request.GET.get('ano', 2024))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    query = """
+        SELECT
             f.departamento,
             COUNT(*) as total_estudiantes
         FROM gold.fact_icfes_analytics f
-        WHERE f.ano = {ano}
+        WHERE f.ano = ?
           AND f.departamento IS NOT NULL
           AND f.departamento != ''
         GROUP BY f.departamento
         ORDER BY total_estudiantes DESC
     """
-    
+
     try:
-        df = execute_query(query)
+        df = execute_query(query, params=[ano])
         data = df.to_dict(orient='records')
         return JsonResponse(data, safe=False)
     except Exception as e:
@@ -1811,40 +1954,44 @@ def api_mapa_departamentos(request):
 def api_mapa_municipios(request):
     """
     Retorna lista de municipios filtrados por departamento.
-    
+
     Query params:
     - ano: Año de evaluación (default: 2024)
     - departamento: Departamento para filtrar (requerido)
-    
+
     Returns:
     [
         {"municipio": "BOGOTÁ D.C.", "total_estudiantes": 12345},
         ...
     ]
     """
-    ano = request.GET.get('ano', 2024)
+    try:
+        ano = int(request.GET.get('ano', 2024))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
     departamento = request.GET.get('departamento')
-    
+
     if not departamento:
         return JsonResponse({
             'error': 'Parámetro departamento es requerido'
         }, status=400)
-    
-    query = f"""
-        SELECT 
+
+    query = """
+        SELECT
             f.municipio,
             COUNT(*) as total_estudiantes
         FROM gold.fact_icfes_analytics f
-        WHERE f.ano = {ano}
-          AND f.departamento = '{departamento}'
+        WHERE f.ano = ?
+          AND f.departamento = ?
           AND f.municipio IS NOT NULL
           AND f.municipio != ''
         GROUP BY f.municipio
         ORDER BY total_estudiantes DESC
     """
-    
+
     try:
-        df = execute_query(query)
+        df = execute_query(query, params=[ano, departamento])
         data = df.to_dict(orient='records')
         return JsonResponse(data, safe=False)
     except Exception as e:
@@ -1866,24 +2013,34 @@ def api_comparar_colegios(request):
     Endpoint: Comparar dos colegios lado a lado.
     Query params: ?colegio_a_sk=xxx&colegio_b_sk=yyy&ano=2024
     """
-    
+
     colegio_a_sk = request.GET.get('colegio_a_sk')
     colegio_b_sk = request.GET.get('colegio_b_sk')
-    ano = request.GET.get('ano', 2024)
-    
+
     if not colegio_a_sk or not colegio_b_sk:
         return JsonResponse({
             'error': 'Parámetros faltantes',
             'message': 'Se requieren colegio_a_sk y colegio_b_sk'
         }, status=400)
-    
+
+    # Validar colegio_sk
+    if not str(colegio_a_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_a_sk inválido'}, status=400)
+    if not str(colegio_b_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_b_sk inválido'}, status=400)
+
+    try:
+        ano = int(request.GET.get('ano', 2024))
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
     try:
         from .db_utils import get_comparacion_colegios
-        data = get_comparacion_colegios(colegio_a_sk, colegio_b_sk, int(ano))
-        
+        data = get_comparacion_colegios(str(colegio_a_sk), str(colegio_b_sk), ano)
+
         if 'error' in data:
             return JsonResponse(data, status=404)
-        
+
         return JsonResponse(data, safe=False)
     except Exception as e:
         import traceback

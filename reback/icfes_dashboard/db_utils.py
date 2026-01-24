@@ -203,37 +203,76 @@ def execute_query(query, params=None):
 def get_table_data(table_name, filters=None, limit=None, order_by=None):
     """
     Obtiene datos de una tabla con filtros opcionales.
-    
+
     Args:
         table_name: Nombre de la tabla (ej: 'gold.fact_icfes_analytics')
         filters: Dict con filtros (ej: {'ano': 2023, 'sector': 'OFICIAL'})
         limit: Límite de registros
         order_by: Campo(s) para ordenar
-    
+
     Returns:
         pandas.DataFrame: Datos de la tabla
     """
+    # Validar table_name contra whitelist de tablas permitidas
+    allowed_tables = [
+        'gold.fact_icfes_analytics',
+        'gold.dim_colegios',
+        'gold.fct_agg_colegios_ano',
+        'gold.vw_fct_colegios_region',
+        'gold.fct_colegio_historico',
+        'gold.fct_estadisticas_anuales',
+        'gold.tendencias_regionales',
+        'gold.brechas_educativas',
+        'gold.fct_indicadores_desempeno',
+    ]
+
+    if table_name not in allowed_tables:
+        raise ValueError(f"Tabla no permitida: {table_name}")
+
+    # Validar order_by fields
+    allowed_order_fields = [
+        'ano', 'ano DESC', 'ano ASC',
+        'departamento', 'municipio', 'sector', 'region',
+        'avg_punt_global', 'avg_punt_global DESC', 'avg_punt_global ASC',
+        'promedio_departamental', 'promedio_departamental DESC',
+        'brecha_absoluta_puntos', 'brecha_absoluta_puntos DESC',
+        'total_estudiantes', 'total_estudiantes DESC',
+    ]
+
+    params = []
     query = f"SELECT * FROM {table_name}"
-    
+
     if filters:
         where_clauses = []
         for key, value in filters.items():
-            if isinstance(value, str):
-                where_clauses.append(f"{key} = '{value}'")
-            else:
-                where_clauses.append(f"{key} = {value}")
+            # Validar que key sea un campo permitido
+            if not key.replace('_', '').isalnum():
+                raise ValueError(f"Campo de filtro no válido: {key}")
+            where_clauses.append(f"{key} = ?")
+            params.append(value)
         query += " WHERE " + " AND ".join(where_clauses)
-    
+
     if order_by:
         if isinstance(order_by, list):
+            # Validar cada campo de orden
+            for field in order_by:
+                if field not in allowed_order_fields:
+                    raise ValueError(f"Campo de orden no permitido: {field}")
             query += f" ORDER BY {', '.join(order_by)}"
         else:
+            if order_by not in allowed_order_fields:
+                raise ValueError(f"Campo de orden no permitido: {order_by}")
             query += f" ORDER BY {order_by}"
-    
+
     if limit:
-        query += f" LIMIT {limit}"
-    
-    return execute_query(query)
+        try:
+            limit = int(limit)
+            limit = min(limit, 10000)  # Máximo 10000 registros
+            query += f" LIMIT {limit}"
+        except (ValueError, TypeError):
+            pass
+
+    return execute_query(query, params=params if params else None)
 
 
 def get_anos_disponibles():
@@ -271,40 +310,47 @@ def get_departamentos():
 def get_municipios_por_departamento(departamento):
     """
     Obtiene municipios de un departamento específico.
-    
+
     Args:
         departamento: Nombre del departamento
-    
+
     Returns:
         list: Lista de municipios
     """
-    query = f"""
-        SELECT DISTINCT municipio 
-        FROM gold.dim_colegios 
-        WHERE departamento = '{departamento}'
+    query = """
+        SELECT DISTINCT municipio
+        FROM gold.dim_colegios
+        WHERE departamento = ?
         ORDER BY municipio
     """
-    df = execute_query(query)
+    df = execute_query(query, params=[departamento])
     return df['municipio'].tolist()
 
 
 def get_estadisticas_generales(ano=None):
     """
     Obtiene estadísticas generales del sistema.
-    
+
     Args:
         ano: Año específico (opcional, si None usa todos los años)
-    
+
     Returns:
         dict: Diccionario con estadísticas
     """
+    # Validar ano si se proporciona
+    if ano is not None:
+        try:
+            ano = int(ano)
+        except (ValueError, TypeError):
+            return {}
+
     # Intentar usar tabla materializada fct_estadisticas_anuales para performance
     # Si no existe (aún no se ejecutó dbt), usar query antigua
-    
+
     try:
         if ano:
-            query = f"""
-                SELECT 
+            query = """
+                SELECT
                     total_estudiantes,
                     total_colegios,
                     total_departamentos,
@@ -314,12 +360,13 @@ def get_estadisticas_generales(ano=None):
                     puntaje_maximo,
                     desviacion_estandar
                 FROM gold.fct_estadisticas_anuales
-                WHERE ano = {ano}
+                WHERE ano = ?
             """
+            df = execute_query(query, params=[ano])
         else:
             # Si no hay año, agregar todas las filas
             query = """
-                SELECT 
+                SELECT
                     SUM(total_estudiantes) as total_estudiantes,
                     COUNT(DISTINCT ano) as total_anos,
                     ROUND(AVG(promedio_nacional), 2) as promedio_nacional,
@@ -328,18 +375,17 @@ def get_estadisticas_generales(ano=None):
                     ROUND(AVG(desviacion_estandar), 2) as desviacion_estandar
                 FROM gold.fct_estadisticas_anuales
             """
-        
-        df = execute_query(query)
-        
+            df = execute_query(query)
+
         if df.empty:
             return {}
-        
+
         result = df.iloc[0].to_dict()
-        
+
         # Si no hay año específico, agregar conteos totales
         if not ano:
             counts_query = """
-                SELECT 
+                SELECT
                     COUNT(DISTINCT colegio_sk) as total_colegios,
                     COUNT(DISTINCT departamento) as total_departamentos,
                     COUNT(DISTINCT municipio) as total_municipios
@@ -348,58 +394,85 @@ def get_estadisticas_generales(ano=None):
             counts_df = execute_query(counts_query)
             if not counts_df.empty:
                 result.update(counts_df.iloc[0].to_dict())
-        
+
         return result
-        
+
     except Exception as e:
         # Fallback: usar query antigua si la tabla no existe
         import logging
         logger = logging.getLogger(__name__)
         logger.warning(f"fct_estadisticas_anuales no existe, usando query antigua: {e}")
-        
-        query = f"""
-            SELECT 
-                COUNT(DISTINCT estudiante_sk) as total_estudiantes,
-                COUNT(DISTINCT colegio_sk) as total_colegios,
-                COUNT(DISTINCT departamento) as total_departamentos,
-                COUNT(DISTINCT municipio) as total_municipios,
-                AVG(punt_global) as promedio_nacional,
-                MIN(punt_global) as puntaje_minimo,
-                MAX(punt_global) as puntaje_maximo,
-                STDDEV(punt_global) as desviacion_estandar
-            FROM gold.fact_icfes_analytics
-            {f"WHERE ano = {ano}" if ano else ""}
-        """
-        
-        df = execute_query(query)
+
+        if ano:
+            query = """
+                SELECT
+                    COUNT(DISTINCT estudiante_sk) as total_estudiantes,
+                    COUNT(DISTINCT colegio_sk) as total_colegios,
+                    COUNT(DISTINCT departamento) as total_departamentos,
+                    COUNT(DISTINCT municipio) as total_municipios,
+                    AVG(punt_global) as promedio_nacional,
+                    MIN(punt_global) as puntaje_minimo,
+                    MAX(punt_global) as puntaje_maximo,
+                    STDDEV(punt_global) as desviacion_estandar
+                FROM gold.fact_icfes_analytics
+                WHERE ano = ?
+            """
+            df = execute_query(query, params=[ano])
+        else:
+            query = """
+                SELECT
+                    COUNT(DISTINCT estudiante_sk) as total_estudiantes,
+                    COUNT(DISTINCT colegio_sk) as total_colegios,
+                    COUNT(DISTINCT departamento) as total_departamentos,
+                    COUNT(DISTINCT municipio) as total_municipios,
+                    AVG(punt_global) as promedio_nacional,
+                    MIN(punt_global) as puntaje_minimo,
+                    MAX(punt_global) as puntaje_maximo,
+                    STDDEV(punt_global) as desviacion_estandar
+                FROM gold.fact_icfes_analytics
+            """
+            df = execute_query(query)
+
         return df.iloc[0].to_dict() if not df.empty else {}
 
 
 def get_promedios_ubicacion(ano, departamento=None, municipio=None):
     """
     Obtiene promedios por ubicación (departamento o municipio).
-    
+
     Args:
         ano: Año
         departamento: Nombre del departamento (opcional)
         municipio: Nombre del municipio (opcional)
-    
+
     Returns:
         dict: Promedios por materia para la ubicación especificada
     """
-    filters = [f"ano = {ano}"]
-    
+    # Validar ano
+    try:
+        ano = int(ano)
+    except (ValueError, TypeError):
+        return {}
+
+    params = [ano]
+    where_clauses = ["ano = ?"]
+
     if departamento:
-        filters.append(f"departamento = '{departamento}'")
+        where_clauses.append("departamento = ?")
+        params.append(departamento)
     if municipio:
-        filters.append(f"municipio = '{municipio}'")
-    
-    where_clause = " AND ".join(filters)
-    
+        where_clauses.append("municipio = ?")
+        params.append(municipio)
+
+    where_clause = " AND ".join(where_clauses)
+
+    # Construir ubicacion label de forma segura
+    ubicacion_label = departamento if departamento else 'Nacional'
+
     query = f"""
-        SELECT 
-            '{departamento if departamento else 'Nacional'}' as ubicacion,
-            {ano} as ano,
+        SELECT
+            ? as ubicacion,
+            ? as ano,
             AVG(punt_global) as punt_global,
             AVG(punt_lectura_critica) as punt_lectura,
             AVG(punt_matematicas) as punt_matematicas,
@@ -410,8 +483,11 @@ def get_promedios_ubicacion(ano, departamento=None, municipio=None):
         FROM gold.fact_icfes_analytics
         WHERE {where_clause}
     """
-    
-    df = execute_query(query)
+
+    # Agregar ubicacion_label y ano a params al inicio
+    full_params = [ubicacion_label, ano] + params
+
+    df = execute_query(query, params=full_params)
     return df.iloc[0].to_dict() if not df.empty else {}
 
 
