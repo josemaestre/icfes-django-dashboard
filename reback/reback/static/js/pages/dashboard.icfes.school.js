@@ -104,6 +104,11 @@ async function loadSchoolDetail(school) {
         await loadIndicadoresExcelencia(school.colegio_sk);
     }
 
+    // Load niveles distribution (donut chart)
+    if (typeof loadDistribucionNiveles === 'function') {
+        await loadDistribucionNiveles(school.colegio_sk);
+    }
+
     // Render historical table
     if (typeof renderPerformanceTable === 'function' && historicalData) {
         renderPerformanceTable(historicalData);
@@ -854,3 +859,194 @@ function updateRiesgoAltoCard(actual, anterior) {
 
 // Export function to be called from loadSchoolDetail
 window.loadIndicadoresExcelencia = loadIndicadoresExcelencia;
+
+// ============================================================================
+// DISTRIBUCIÓN DE NIVELES DE DESEMPEÑO (DONUT CHART)
+// ============================================================================
+
+let nivelesDonutChart = null;
+let nivelesData = null;
+
+// Initialize niveles event listeners
+document.addEventListener('DOMContentLoaded', function () {
+    const subjectSelector = document.getElementById('nivelesSubjectSelector');
+    if (subjectSelector) {
+        subjectSelector.addEventListener('change', function () {
+            if (nivelesData && currentSchoolSk) {
+                renderNivelesDonut(this.value);
+            }
+        });
+    }
+});
+
+// Load niveles distribution data for a school
+async function loadDistribucionNiveles(sk) {
+    console.log(`[DEBUG] loadDistribucionNiveles called for sk: ${sk}`);
+    try {
+        const response = await fetch(`/icfes/api/colegio/${sk}/distribucion-niveles/`);
+        console.log(`[DEBUG] fetch response status: ${response.status}`);
+        const data = await response.json();
+
+        if (!data || !data.materias) {
+            console.warn('No data returned for niveles distribution');
+            return;
+        }
+
+        // Store data globally for subject switching
+        nivelesData = data;
+
+        // Render initial chart (default to matematicas)
+        const subjectSelector = document.getElementById('nivelesSubjectSelector');
+        const selectedSubject = subjectSelector ? subjectSelector.value : 'matematicas';
+        renderNivelesDonut(selectedSubject);
+
+        console.log('Niveles distribution loaded successfully');
+    } catch (error) {
+        console.error('Error loading niveles distribution:', error);
+    }
+}
+
+// Render donut chart for selected subject
+function renderNivelesDonut(subject) {
+    if (!nivelesData || !nivelesData.materias || !nivelesData.materias[subject]) {
+        console.warn(`No data for subject: ${subject}`);
+        return;
+    }
+
+    const subjectData = nivelesData.materias[subject];
+
+    // Colors for levels (matching ICFES style)
+    const colores = {
+        nivel_1: '#dc3545', // Rojo - Insuficiente
+        nivel_2: '#ffc107', // Amarillo - Mínimo
+        nivel_3: '#17a2b8', // Azul - Satisfactorio
+        nivel_4: '#28a745'  // Verde - Avanzado
+    };
+
+    // Prepare data for chart
+    const series = [
+        subjectData.nivel_1?.porcentaje || 0,
+        subjectData.nivel_2?.porcentaje || 0,
+        subjectData.nivel_3?.porcentaje || 0,
+        subjectData.nivel_4?.porcentaje || 0
+    ];
+
+    const labels = ['Nivel 1 - Insuficiente', 'Nivel 2 - Mínimo', 'Nivel 3 - Satisfactorio', 'Nivel 4 - Avanzado'];
+
+    // Destroy previous chart if exists
+    if (nivelesDonutChart) {
+        nivelesDonutChart.destroy();
+    }
+
+    const options = {
+        series: series,
+        chart: {
+            type: 'donut',
+            height: 320
+        },
+        labels: labels,
+        colors: [colores.nivel_1, colores.nivel_2, colores.nivel_3, colores.nivel_4],
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '65%',
+                    labels: {
+                        show: true,
+                        name: {
+                            show: true,
+                            fontSize: '14px',
+                            fontWeight: 600
+                        },
+                        value: {
+                            show: true,
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            formatter: function (val) {
+                                return parseFloat(val).toFixed(1) + '%';
+                            }
+                        },
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            fontSize: '14px',
+                            formatter: function (w) {
+                                const total = nivelesData.total_estudiantes ||
+                                    Object.values(subjectData).reduce((sum, n) => sum + (n?.cantidad || 0), 0);
+                                return total + ' estudiantes';
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val, opts) {
+                return parseFloat(val).toFixed(1) + '%';
+            },
+            style: {
+                fontSize: '12px',
+                fontWeight: 600
+            },
+            dropShadow: {
+                enabled: false
+            }
+        },
+        legend: {
+            show: false // We have custom legend
+        },
+        tooltip: {
+            y: {
+                formatter: function (value, { seriesIndex }) {
+                    const niveles = ['nivel_1', 'nivel_2', 'nivel_3', 'nivel_4'];
+                    const count = subjectData[niveles[seriesIndex]]?.cantidad || 0;
+                    return `${value.toFixed(1)}% (${count} estudiantes)`;
+                }
+            }
+        },
+        responsive: [{
+            breakpoint: 480,
+            options: {
+                chart: {
+                    height: 280
+                }
+            }
+        }]
+    };
+
+    nivelesDonutChart = new ApexCharts(document.querySelector("#schoolNivelesDonut"), options);
+    nivelesDonutChart.render();
+
+    // Update legend bars
+    updateNivelesLeyenda(subjectData);
+}
+
+// Update legend progress bars
+function updateNivelesLeyenda(subjectData) {
+    // Nivel 4
+    const nivel4 = subjectData.nivel_4 || { porcentaje: 0, cantidad: 0 };
+    document.getElementById('nivel4-pct').textContent = nivel4.porcentaje.toFixed(1) + '%';
+    document.getElementById('nivel4-bar').style.width = nivel4.porcentaje + '%';
+    document.getElementById('nivel4-count').textContent = nivel4.cantidad;
+
+    // Nivel 3
+    const nivel3 = subjectData.nivel_3 || { porcentaje: 0, cantidad: 0 };
+    document.getElementById('nivel3-pct').textContent = nivel3.porcentaje.toFixed(1) + '%';
+    document.getElementById('nivel3-bar').style.width = nivel3.porcentaje + '%';
+    document.getElementById('nivel3-count').textContent = nivel3.cantidad;
+
+    // Nivel 2
+    const nivel2 = subjectData.nivel_2 || { porcentaje: 0, cantidad: 0 };
+    document.getElementById('nivel2-pct').textContent = nivel2.porcentaje.toFixed(1) + '%';
+    document.getElementById('nivel2-bar').style.width = nivel2.porcentaje + '%';
+    document.getElementById('nivel2-count').textContent = nivel2.cantidad;
+
+    // Nivel 1
+    const nivel1 = subjectData.nivel_1 || { porcentaje: 0, cantidad: 0 };
+    document.getElementById('nivel1-pct').textContent = nivel1.porcentaje.toFixed(1) + '%';
+    document.getElementById('nivel1-bar').style.width = nivel1.porcentaje + '%';
+    document.getElementById('nivel1-count').textContent = nivel1.cantidad;
+}
+
+// Export function to be called from loadSchoolDetail
+window.loadDistribucionNiveles = loadDistribucionNiveles;

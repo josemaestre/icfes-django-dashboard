@@ -1607,16 +1607,11 @@ def api_colegio_comparacion_chart_data(request, colegio_sk):
 def api_colegio_indicadores_excelencia(request, colegio_sk):
     """
     Endpoint: Indicadores de Excelencia Académica por colegio.
-    Retorna los 4 indicadores clave + Riesgo Alto con comparación nacional y rankings.
-
-    Query params: ?ano=2022 (opcional, retorna últimos 5 años si no se especifica)
-
-    Indicadores:
-    - Excelencia Integral: % con nivel 4 en TODAS las materias
-    - Competencia Satisfactoria: % con nivel 3+ en TODAS las materias
-    - Perfil STEM Avanzado: % con nivel 4 en Matemáticas Y Ciencias
-    - Perfil Humanístico Avanzado: % con nivel 4 en Lectura Y Sociales
-    - Riesgo Alto: % con nivel 1 en 2+ materias (INVERTED: lower is better)
+    Retorna los 4 indicadores clave + Riesgo Alto.
+    
+    NOTA: Se calcula dinámicamente desde fact_icfes_analytics porque
+    la tabla pre-calculada fct_indicadores_desempeno aún no existe.
+    Los rankings y promedios nacionales se retornan en 0 temporalmente.
     """
     # Validar colegio_sk
     if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
@@ -1631,86 +1626,113 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
     if ano:
         try:
             ano_int = int(ano)
-            ano_filter = "AND i.ano = ?"
+            ano_filter = "AND ano = ?"
             params.append(ano_int)
         except (ValueError, TypeError):
             return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
 
-    # Query con promedios nacionales y rankings
+    # Query para calcular indicadores al vuelo
     query = f"""
-        WITH indicadores_colegio AS (
-            SELECT
-                i.ano,
-                i.colegio_bk,
-                i.pct_excelencia_integral,
-                i.pct_competencia_satisfactoria_integral,
-                i.pct_perfil_stem_avanzado,
-                i.pct_perfil_humanistico_avanzado,
-                i.pct_riesgo_alto,
-                i.total_estudiantes
-            FROM gold.fct_indicadores_desempeno i
-            WHERE i.colegio_bk = (SELECT DISTINCT codigo_dane FROM gold.fct_colegio_historico WHERE colegio_sk = ? LIMIT 1)
-            {ano_filter}
-        ),
-        promedios_nacionales AS (
-            SELECT
-                ano,
-                AVG(pct_excelencia_integral) as nacional_excelencia,
-                AVG(pct_competencia_satisfactoria_integral) as nacional_competencia,
-                AVG(pct_perfil_stem_avanzado) as nacional_stem,
-                AVG(pct_perfil_humanistico_avanzado) as nacional_humanistico,
-                AVG(pct_riesgo_alto) as nacional_riesgo
-            FROM gold.fct_indicadores_desempeno
-            GROUP BY ano
-        ),
-        rankings AS (
-            SELECT
-                ano,
-                colegio_bk,
-                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_excelencia_integral) * 100 as ranking_excelencia,
-                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_competencia_satisfactoria_integral) * 100 as ranking_competencia,
-                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_stem_avanzado) * 100 as ranking_stem,
-                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_perfil_humanistico_avanzado) * 100 as ranking_humanistico,
-                PERCENT_RANK() OVER (PARTITION BY ano ORDER BY pct_riesgo_alto) * 100 as ranking_riesgo
-            FROM gold.fct_indicadores_desempeno
-        )
         SELECT
-            ic.ano,
-            ic.colegio_bk,
-            ic.pct_excelencia_integral,
-            ic.pct_competencia_satisfactoria_integral,
-            ic.pct_perfil_stem_avanzado,
-            ic.pct_perfil_humanistico_avanzado,
-            ic.pct_riesgo_alto,
-            ic.total_estudiantes,
+            ano,
+            COUNT(*) as total_estudiantes,
+            
+            -- Excelencia Integral: Nivel 4 (>70) en TODAS las materias
+            SUM(CASE WHEN 
+                punt_matematicas > 70 AND 
+                punt_lectura_critica > 70 AND
+                punt_c_naturales > 70 AND
+                punt_sociales_ciudadanas > 70 AND
+                punt_ingles > 70
+            THEN 1 ELSE 0 END) as count_excelencia,
+            
+            -- Competencia Satisfactoria: Nivel 3+ (>55) en TODAS las materias
+            SUM(CASE WHEN 
+                punt_matematicas > 55 AND 
+                punt_lectura_critica > 55 AND
+                punt_c_naturales > 55 AND
+                punt_sociales_ciudadanas > 55 AND
+                punt_ingles > 55
+            THEN 1 ELSE 0 END) as count_satisfactoria,
+            
+            -- Perfil STEM Avanzado: Nivel 4 (>70) en Matematicas y Ciencias
+            SUM(CASE WHEN 
+                punt_matematicas > 70 AND 
+                punt_c_naturales > 70
+            THEN 1 ELSE 0 END) as count_stem,
+            
+            -- Perfil Humanístico Avanzado: Nivel 4 (>70) en Lectura y Sociales
+            SUM(CASE WHEN 
+                punt_lectura_critica > 70 AND 
+                punt_sociales_ciudadanas > 70
+            THEN 1 ELSE 0 END) as count_humanistico,
+            
+            -- Riesgo Alto: Nivel 1 (<=40) en 2+ materias
+            SUM(CASE WHEN (
+                (CASE WHEN punt_matematicas <= 40 THEN 1 ELSE 0 END) +
+                (CASE WHEN punt_lectura_critica <= 40 THEN 1 ELSE 0 END) +
+                (CASE WHEN punt_c_naturales <= 40 THEN 1 ELSE 0 END) +
+                (CASE WHEN punt_sociales_ciudadanas <= 40 THEN 1 ELSE 0 END) +
+                (CASE WHEN punt_ingles <= 40 THEN 1 ELSE 0 END)
+            ) >= 2 THEN 1 ELSE 0 END) as count_riesgo
 
-            pn.nacional_excelencia,
-            pn.nacional_competencia,
-            pn.nacional_stem,
-            pn.nacional_humanistico,
-            pn.nacional_riesgo,
-
-            r.ranking_excelencia,
-            r.ranking_competencia,
-            r.ranking_stem,
-            r.ranking_humanistico,
-            r.ranking_riesgo
-
-        FROM indicadores_colegio ic
-        LEFT JOIN promedios_nacionales pn ON ic.ano = pn.ano
-        LEFT JOIN rankings r ON ic.ano = r.ano AND ic.colegio_bk = r.colegio_bk
-        ORDER BY ic.ano DESC
+        FROM gold.fact_icfes_analytics
+        WHERE colegio_sk = ?
+        {ano_filter}
+        GROUP BY ano
+        ORDER BY ano DESC
         LIMIT 5
     """
 
-    df = execute_query(query, params=params)
+    try:
+        df = execute_query(query, params=params)
 
-    if df.empty:
-        return JsonResponse([], safe=False)
+        if df.empty:
+            return JsonResponse([], safe=False)
 
-    # Convertir a diccionario y retornar
-    data = df.to_dict(orient='records')
-    return JsonResponse(data, safe=False)
+        # Procesar resultados y calcular porcentajes
+        results = []
+        for _, row in df.iterrows():
+            total = row['total_estudiantes']
+            if total == 0: continue
+
+            item = {
+                'ano': int(row['ano']),
+                'colegio_bk': colegio_sk, # Placeholder
+                'total_estudiantes': int(total),
+                
+                # Indicadores calculados
+                'pct_excelencia_integral': round(row['count_excelencia'] / total * 100, 2),
+                'pct_competencia_satisfactoria_integral': round(row['count_satisfactoria'] / total * 100, 2),
+                'pct_perfil_stem_avanzado': round(row['count_stem'] / total * 100, 2),
+                'pct_perfil_humanistico_avanzado': round(row['count_humanistico'] / total * 100, 2),
+                'pct_riesgo_alto': round(row['count_riesgo'] / total * 100, 2),
+                
+                # Placeholders para comparación nacional (no disponible sin tabla agregada)
+                'nacional_excelencia': 0,
+                'nacional_competencia': 0,
+                'nacional_stem': 0,
+                'nacional_humanistico': 0,
+                'nacional_riesgo': 0,
+                
+                # Placeholders para rankings
+                'ranking_excelencia': 0,
+                'ranking_competencia': 0,
+                'ranking_stem': 0,
+                'ranking_humanistico': 0,
+                'ranking_riesgo': 0
+            }
+            results.append(item)
+
+        return JsonResponse(results, safe=False)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'Error calculando indicadores',
+            'details': str(e)
+        }, status=500)
 
 
 @require_http_methods(["GET"])
@@ -2253,3 +2275,103 @@ def api_comparar_colegios(request):
             'details': str(e)
         }, status=500)
 
+
+
+# ============================================================================
+# ENDPOINT API - DISTRIBUCIÓN NIVELES DESEMPEÑO
+# ============================================================================
+
+@require_http_methods(["GET"])
+def api_colegio_distribucion_niveles(request, colegio_sk):
+    """
+    Endpoint: Distribución de estudiantes por niveles de desempeño (1-4).
+    Calculado dinámicamente desde gold.fact_icfes_analytics.
+    """
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    try:
+        ano = int(request.GET.get('ano', 2023))
+    except (ValueError, TypeError):
+        # Default to latest year if invalid
+        ano = 2023
+
+    # Query to get distribution counts
+    query = """
+        SELECT
+            COUNT(*) as total_estudiantes,
+            
+            -- Matemáticas
+            COUNT(CASE WHEN punt_matematicas <= 40 THEN 1 END) as mat_1,
+            COUNT(CASE WHEN punt_matematicas > 40 AND punt_matematicas <= 55 THEN 1 END) as mat_2,
+            COUNT(CASE WHEN punt_matematicas > 55 AND punt_matematicas <= 70 THEN 1 END) as mat_3,
+            COUNT(CASE WHEN punt_matematicas > 70 THEN 1 END) as mat_4,
+            
+            -- Lectura Crítica
+            COUNT(CASE WHEN punt_lectura_critica <= 40 THEN 1 END) as lec_1,
+            COUNT(CASE WHEN punt_lectura_critica > 40 AND punt_lectura_critica <= 55 THEN 1 END) as lec_2,
+            COUNT(CASE WHEN punt_lectura_critica > 55 AND punt_lectura_critica <= 70 THEN 1 END) as lec_3,
+            COUNT(CASE WHEN punt_lectura_critica > 70 THEN 1 END) as lec_4,
+            
+            -- Ciencias Naturales
+            COUNT(CASE WHEN punt_c_naturales <= 40 THEN 1 END) as nat_1,
+            COUNT(CASE WHEN punt_c_naturales > 40 AND punt_c_naturales <= 55 THEN 1 END) as nat_2,
+            COUNT(CASE WHEN punt_c_naturales > 55 AND punt_c_naturales <= 70 THEN 1 END) as nat_3,
+            COUNT(CASE WHEN punt_c_naturales > 70 THEN 1 END) as nat_4,
+            
+            -- Sociales y Ciudadanas
+            COUNT(CASE WHEN punt_sociales_ciudadanas <= 40 THEN 1 END) as soc_1,
+            COUNT(CASE WHEN punt_sociales_ciudadanas > 40 AND punt_sociales_ciudadanas <= 55 THEN 1 END) as soc_2,
+            COUNT(CASE WHEN punt_sociales_ciudadanas > 55 AND punt_sociales_ciudadanas <= 70 THEN 1 END) as soc_3,
+            COUNT(CASE WHEN punt_sociales_ciudadanas > 70 THEN 1 END) as soc_4,
+            
+            -- Inglés
+            COUNT(CASE WHEN punt_ingles <= 40 THEN 1 END) as ing_1,
+            COUNT(CASE WHEN punt_ingles > 40 AND punt_ingles <= 55 THEN 1 END) as ing_2,
+            COUNT(CASE WHEN punt_ingles > 55 AND punt_ingles <= 70 THEN 1 END) as ing_3,
+            COUNT(CASE WHEN punt_ingles > 70 THEN 1 END) as ing_4
+            
+        FROM gold.fact_icfes_analytics
+        WHERE colegio_sk = ? AND ano = ?
+    """
+
+    try:
+        df = execute_query(query, params=[str(colegio_sk), ano])
+        
+        if df.empty or df.iloc[0]['total_estudiantes'] == 0:
+            return JsonResponse({'message': 'No data found', 'materias': {}}, safe=False)
+
+        row = df.iloc[0]
+        total = int(row['total_estudiantes'])
+        
+        # Helper to format subject data
+        def format_subject(prefix):
+            return {
+                'nivel_1': {'cantidad': int(row[f'{prefix}_1']), 'porcentaje': (row[f'{prefix}_1'] / total * 100) if total else 0},
+                'nivel_2': {'cantidad': int(row[f'{prefix}_2']), 'porcentaje': (row[f'{prefix}_2'] / total * 100) if total else 0},
+                'nivel_3': {'cantidad': int(row[f'{prefix}_3']), 'porcentaje': (row[f'{prefix}_3'] / total * 100) if total else 0},
+                'nivel_4': {'cantidad': int(row[f'{prefix}_4']), 'porcentaje': (row[f'{prefix}_4'] / total * 100) if total else 0},
+            }
+
+        response_data = {
+            'colegio_sk': colegio_sk,
+            'ano': ano,
+            'total_estudiantes': total,
+            'materias': {
+                'matematicas': format_subject('mat'),
+                'lectura': format_subject('lec'),
+                'c_naturales': format_subject('nat'),
+                'sociales': format_subject('soc'),
+                'ingles': format_subject('ing')
+            }
+        }
+        
+        return JsonResponse(response_data, safe=False)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': 'Error calculating levels', 
+            'details': str(e)
+        }, status=500)
