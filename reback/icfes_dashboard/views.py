@@ -1713,6 +1713,209 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
     return JsonResponse(data, safe=False)
 
 
+@require_http_methods(["GET"])
+def api_colegio_distribucion_niveles(request, colegio_sk):
+    """
+    Endpoint: Distribución de estudiantes por nivel de desempeño (1-4) para cada materia.
+    Usado para gráficas de torta/donut estilo ICFES Saber 11.
+
+    Query params: ?ano=2023&materia=todas (opcional)
+
+    Niveles de desempeño ICFES:
+    - Nivel 1: Puntaje 0-40 (Insuficiente)
+    - Nivel 2: Puntaje 41-55 (Mínimo)
+    - Nivel 3: Puntaje 56-70 (Satisfactorio)
+    - Nivel 4: Puntaje 71-100 (Avanzado)
+
+    Returns:
+    {
+        "ano": 2023,
+        "total_estudiantes": 150,
+        "materias": {
+            "matematicas": {
+                "nivel_1": {"cantidad": 10, "porcentaje": 6.67},
+                "nivel_2": {"cantidad": 40, "porcentaje": 26.67},
+                "nivel_3": {"cantidad": 70, "porcentaje": 46.67},
+                "nivel_4": {"cantidad": 30, "porcentaje": 20.0}
+            },
+            ...
+        }
+    }
+    """
+    # Validar colegio_sk
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    ano = request.GET.get('ano')
+    colegio_sk_str = str(colegio_sk)
+
+    # Construir filtro de año
+    ano_filter = ""
+    params = [colegio_sk_str]
+    if ano:
+        try:
+            ano_int = int(ano)
+            ano_filter = "AND f.ano = ?"
+            params.append(ano_int)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    # Query para calcular distribución de niveles por materia
+    # Los niveles se calculan según rangos de puntaje ICFES
+    query = f"""
+        WITH estudiantes_colegio AS (
+            SELECT
+                f.ano,
+                f.punt_matematicas,
+                f.punt_lectura_critica,
+                f.punt_c_naturales,
+                f.punt_sociales_ciudadanas,
+                f.punt_ingles,
+                f.punt_global
+            FROM gold.fact_icfes_analytics f
+            WHERE f.colegio_sk = ?
+            {ano_filter}
+        ),
+        niveles_calculados AS (
+            SELECT
+                ano,
+                -- Matemáticas
+                CASE
+                    WHEN punt_matematicas <= 40 THEN 1
+                    WHEN punt_matematicas <= 55 THEN 2
+                    WHEN punt_matematicas <= 70 THEN 3
+                    ELSE 4
+                END as nivel_matematicas,
+                -- Lectura Crítica
+                CASE
+                    WHEN punt_lectura_critica <= 40 THEN 1
+                    WHEN punt_lectura_critica <= 55 THEN 2
+                    WHEN punt_lectura_critica <= 70 THEN 3
+                    ELSE 4
+                END as nivel_lectura,
+                -- Ciencias Naturales
+                CASE
+                    WHEN punt_c_naturales <= 40 THEN 1
+                    WHEN punt_c_naturales <= 55 THEN 2
+                    WHEN punt_c_naturales <= 70 THEN 3
+                    ELSE 4
+                END as nivel_naturales,
+                -- Sociales y Ciudadanas
+                CASE
+                    WHEN punt_sociales_ciudadanas <= 40 THEN 1
+                    WHEN punt_sociales_ciudadanas <= 55 THEN 2
+                    WHEN punt_sociales_ciudadanas <= 70 THEN 3
+                    ELSE 4
+                END as nivel_sociales,
+                -- Inglés
+                CASE
+                    WHEN punt_ingles <= 40 THEN 1
+                    WHEN punt_ingles <= 55 THEN 2
+                    WHEN punt_ingles <= 70 THEN 3
+                    ELSE 4
+                END as nivel_ingles,
+                -- Global
+                CASE
+                    WHEN punt_global <= 160 THEN 1
+                    WHEN punt_global <= 220 THEN 2
+                    WHEN punt_global <= 280 THEN 3
+                    ELSE 4
+                END as nivel_global
+            FROM estudiantes_colegio
+        )
+        SELECT
+            MAX(ano) as ano,
+            COUNT(*) as total_estudiantes,
+
+            -- Matemáticas
+            SUM(CASE WHEN nivel_matematicas = 1 THEN 1 ELSE 0 END) as mat_nivel_1,
+            SUM(CASE WHEN nivel_matematicas = 2 THEN 1 ELSE 0 END) as mat_nivel_2,
+            SUM(CASE WHEN nivel_matematicas = 3 THEN 1 ELSE 0 END) as mat_nivel_3,
+            SUM(CASE WHEN nivel_matematicas = 4 THEN 1 ELSE 0 END) as mat_nivel_4,
+
+            -- Lectura Crítica
+            SUM(CASE WHEN nivel_lectura = 1 THEN 1 ELSE 0 END) as lec_nivel_1,
+            SUM(CASE WHEN nivel_lectura = 2 THEN 1 ELSE 0 END) as lec_nivel_2,
+            SUM(CASE WHEN nivel_lectura = 3 THEN 1 ELSE 0 END) as lec_nivel_3,
+            SUM(CASE WHEN nivel_lectura = 4 THEN 1 ELSE 0 END) as lec_nivel_4,
+
+            -- Ciencias Naturales
+            SUM(CASE WHEN nivel_naturales = 1 THEN 1 ELSE 0 END) as nat_nivel_1,
+            SUM(CASE WHEN nivel_naturales = 2 THEN 1 ELSE 0 END) as nat_nivel_2,
+            SUM(CASE WHEN nivel_naturales = 3 THEN 1 ELSE 0 END) as nat_nivel_3,
+            SUM(CASE WHEN nivel_naturales = 4 THEN 1 ELSE 0 END) as nat_nivel_4,
+
+            -- Sociales y Ciudadanas
+            SUM(CASE WHEN nivel_sociales = 1 THEN 1 ELSE 0 END) as soc_nivel_1,
+            SUM(CASE WHEN nivel_sociales = 2 THEN 1 ELSE 0 END) as soc_nivel_2,
+            SUM(CASE WHEN nivel_sociales = 3 THEN 1 ELSE 0 END) as soc_nivel_3,
+            SUM(CASE WHEN nivel_sociales = 4 THEN 1 ELSE 0 END) as soc_nivel_4,
+
+            -- Inglés
+            SUM(CASE WHEN nivel_ingles = 1 THEN 1 ELSE 0 END) as ing_nivel_1,
+            SUM(CASE WHEN nivel_ingles = 2 THEN 1 ELSE 0 END) as ing_nivel_2,
+            SUM(CASE WHEN nivel_ingles = 3 THEN 1 ELSE 0 END) as ing_nivel_3,
+            SUM(CASE WHEN nivel_ingles = 4 THEN 1 ELSE 0 END) as ing_nivel_4,
+
+            -- Global
+            SUM(CASE WHEN nivel_global = 1 THEN 1 ELSE 0 END) as glo_nivel_1,
+            SUM(CASE WHEN nivel_global = 2 THEN 1 ELSE 0 END) as glo_nivel_2,
+            SUM(CASE WHEN nivel_global = 3 THEN 1 ELSE 0 END) as glo_nivel_3,
+            SUM(CASE WHEN nivel_global = 4 THEN 1 ELSE 0 END) as glo_nivel_4
+        FROM niveles_calculados
+    """
+
+    df = execute_query(query, params=params)
+
+    if df.empty or df.iloc[0]['total_estudiantes'] == 0:
+        return JsonResponse({'error': 'No se encontraron datos para este colegio'}, status=404)
+
+    row = df.iloc[0]
+    total = int(row['total_estudiantes'])
+
+    def build_nivel_data(prefix):
+        """Construye datos de nivel con cantidad y porcentaje."""
+        return {
+            'nivel_1': {
+                'cantidad': int(row[f'{prefix}_nivel_1']),
+                'porcentaje': round(row[f'{prefix}_nivel_1'] / total * 100, 2)
+            },
+            'nivel_2': {
+                'cantidad': int(row[f'{prefix}_nivel_2']),
+                'porcentaje': round(row[f'{prefix}_nivel_2'] / total * 100, 2)
+            },
+            'nivel_3': {
+                'cantidad': int(row[f'{prefix}_nivel_3']),
+                'porcentaje': round(row[f'{prefix}_nivel_3'] / total * 100, 2)
+            },
+            'nivel_4': {
+                'cantidad': int(row[f'{prefix}_nivel_4']),
+                'porcentaje': round(row[f'{prefix}_nivel_4'] / total * 100, 2)
+            }
+        }
+
+    result = {
+        'ano': int(row['ano']) if row['ano'] else None,
+        'total_estudiantes': total,
+        'materias': {
+            'matematicas': build_nivel_data('mat'),
+            'lectura_critica': build_nivel_data('lec'),
+            'ciencias_naturales': build_nivel_data('nat'),
+            'sociales_ciudadanas': build_nivel_data('soc'),
+            'ingles': build_nivel_data('ing'),
+            'global': build_nivel_data('glo')
+        },
+        'niveles_info': {
+            'nivel_1': {'nombre': 'Insuficiente', 'rango': '0-40', 'color': '#E74C3C'},
+            'nivel_2': {'nombre': 'Mínimo', 'rango': '41-55', 'color': '#F39C12'},
+            'nivel_3': {'nombre': 'Satisfactorio', 'rango': '56-70', 'color': '#F1C40F'},
+            'nivel_4': {'nombre': 'Avanzado', 'rango': '71-100', 'color': '#27AE60'}
+        }
+    }
+
+    return JsonResponse(result, safe=False)
+
+
 # ============================================================================
 # ENDPOINTS API - MAPA GEOGRÁFICO
 # ============================================================================

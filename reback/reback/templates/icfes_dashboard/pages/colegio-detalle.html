@@ -266,6 +266,117 @@
             </div>
         </div>
 
+        <!-- Distribución de Niveles de Desempeño (Estilo ICFES Saber 11) -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="ri-pie-chart-2-line"></i> Niveles de Desempeño
+                        </h5>
+                        <select class="form-select form-select-sm" id="selectMateriaNivel" style="width: auto;">
+                            <option value="global">Global</option>
+                            <option value="matematicas">Matemáticas</option>
+                            <option value="lectura_critica">Lectura Crítica</option>
+                            <option value="ciencias_naturales">Ciencias Naturales</option>
+                            <option value="sociales_ciudadanas" selected>Sociales y Ciudadanas</option>
+                            <option value="ingles">Inglés</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Gráfica Donut -->
+                            <div class="col-md-6">
+                                <div id="chartNivelesDonut"></div>
+                            </div>
+                            <!-- Leyenda y detalles -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-3">Distribución de Estudiantes</h6>
+                                    <p class="text-muted small mb-3">
+                                        Los niveles de desempeño son una descripción cualitativa de las habilidades
+                                        y conocimientos que se estima ha desarrollado el evaluado.
+                                    </p>
+                                </div>
+                                <div id="nivelesLeyenda">
+                                    <!-- Nivel 4 -->
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                            <span class="text-white fw-bold">4</span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Avanzado</strong>
+                                                <span class="badge bg-success" id="badgeNivel4">--</span>
+                                            </div>
+                                            <small class="text-muted">Puntaje 71 a 100</small>
+                                            <div class="progress mt-1" style="height: 6px;">
+                                                <div id="barNivel4" class="progress-bar bg-success" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Nivel 3 -->
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #F1C40F 0%, #F39C12 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                            <span class="text-white fw-bold">3</span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Satisfactorio</strong>
+                                                <span class="badge bg-warning text-dark" id="badgeNivel3">--</span>
+                                            </div>
+                                            <small class="text-muted">Puntaje 56 a 70</small>
+                                            <div class="progress mt-1" style="height: 6px;">
+                                                <div id="barNivel3" class="progress-bar bg-warning" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Nivel 2 -->
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                            <span class="text-white fw-bold">2</span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Mínimo</strong>
+                                                <span class="badge" style="background-color: #F39C12;" id="badgeNivel2">--</span>
+                                            </div>
+                                            <small class="text-muted">Puntaje 41 a 55</small>
+                                            <div class="progress mt-1" style="height: 6px;">
+                                                <div id="barNivel2" class="progress-bar" style="width: 0%; background-color: #F39C12;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Nivel 1 -->
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="me-3" style="width: 40px; height: 40px; background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                            <span class="text-white fw-bold">1</span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Insuficiente</strong>
+                                                <span class="badge bg-danger" id="badgeNivel1">--</span>
+                                            </div>
+                                            <small class="text-muted">Puntaje 0 a 40</small>
+                                            <div class="progress mt-1" style="height: 6px;">
+                                                <div id="barNivel1" class="progress-bar bg-danger" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-light mt-3 mb-0">
+                                    <small>
+                                        <i class="ri-information-line"></i>
+                                        Total de estudiantes: <strong id="totalEstudiantesNivel">--</strong>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- NEW: Contexto Comparativo (Brechas, Percentiles, Clasificaciones) -->
         <div class="row mb-4">
             <div class="col-md-12">
@@ -448,6 +559,8 @@
     let chartHistorico = null;
     let chartRadar = null;
     let chartComparacion = null;
+    let chartNivelesDonut = null;
+    let datosNiveles = null; // Almacena datos de niveles para cambio de materia
 
     // Búsqueda de colegios
     $('#searchInput').on('input', debounce(function () {
@@ -532,6 +645,9 @@
 
         // Cargar indicadores de excelencia
         loadIndicadoresExcelencia(schoolSk);
+
+        // Cargar distribución de niveles de desempeño
+        loadDistribucionNiveles(schoolSk);
     }
 
     // Gráfico de evolución histórica
@@ -865,6 +981,154 @@
             </div>
         `);
     }
+
+
+    // ============================================================================
+    // DISTRIBUCIÓN DE NIVELES DE DESEMPEÑO (Gráfica Donut estilo ICFES)
+    // ============================================================================
+
+    // Cargar distribución de niveles
+    function loadDistribucionNiveles(schoolSk) {
+        $.get(`/icfes/api/colegio/${schoolSk}/distribucion-niveles/`, function (data) {
+            datosNiveles = data;
+            const materiaSeleccionada = $('#selectMateriaNivel').val();
+            renderNivelesDonut(data, materiaSeleccionada);
+        }).fail(function () {
+            console.log('No se encontraron datos de niveles de desempeño');
+        });
+    }
+
+    // Renderizar gráfica donut de niveles
+    function renderNivelesDonut(data, materia) {
+        // Destroy previous chart if exists
+        if (chartNivelesDonut) {
+            chartNivelesDonut.destroy();
+        }
+
+        const materiaData = data.materias[materia];
+        if (!materiaData) {
+            console.log('No hay datos para la materia:', materia);
+            return;
+        }
+
+        // Preparar datos para el donut
+        const series = [
+            materiaData.nivel_4.cantidad,
+            materiaData.nivel_3.cantidad,
+            materiaData.nivel_2.cantidad,
+            materiaData.nivel_1.cantidad
+        ];
+
+        const labels = ['Nivel 4 - Avanzado', 'Nivel 3 - Satisfactorio', 'Nivel 2 - Mínimo', 'Nivel 1 - Insuficiente'];
+        const colors = ['#27AE60', '#F1C40F', '#F39C12', '#E74C3C'];
+
+        const options = {
+            series: series,
+            chart: {
+                type: 'donut',
+                height: 350
+            },
+            labels: labels,
+            colors: colors,
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '65%',
+                        labels: {
+                            show: true,
+                            name: {
+                                show: true,
+                                fontSize: '14px',
+                                fontWeight: 600
+                            },
+                            value: {
+                                show: true,
+                                fontSize: '24px',
+                                fontWeight: 700,
+                                formatter: function (val) {
+                                    return val + ' est.';
+                                }
+                            },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                formatter: function (w) {
+                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0) + ' estudiantes';
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val, opts) {
+                    return val.toFixed(1) + '%';
+                },
+                style: {
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                },
+                dropShadow: {
+                    enabled: false
+                }
+            },
+            legend: {
+                show: false
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val, opts) {
+                        const total = opts.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                        const pct = (val / total * 100).toFixed(1);
+                        return val + ' estudiantes (' + pct + '%)';
+                    }
+                }
+            },
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        height: 280
+                    }
+                }
+            }]
+        };
+
+        chartNivelesDonut = new ApexCharts(document.querySelector("#chartNivelesDonut"), options);
+        chartNivelesDonut.render();
+
+        // Actualizar leyenda lateral
+        updateNivelesLeyenda(materiaData, data.total_estudiantes);
+    }
+
+    // Actualizar leyenda de niveles
+    function updateNivelesLeyenda(materiaData, total) {
+        // Actualizar badges
+        $('#badgeNivel4').text(materiaData.nivel_4.cantidad + ' (' + materiaData.nivel_4.porcentaje + '%)');
+        $('#badgeNivel3').text(materiaData.nivel_3.cantidad + ' (' + materiaData.nivel_3.porcentaje + '%)');
+        $('#badgeNivel2').text(materiaData.nivel_2.cantidad + ' (' + materiaData.nivel_2.porcentaje + '%)');
+        $('#badgeNivel1').text(materiaData.nivel_1.cantidad + ' (' + materiaData.nivel_1.porcentaje + '%)');
+
+        // Actualizar barras de progreso
+        $('#barNivel4').css('width', materiaData.nivel_4.porcentaje + '%');
+        $('#barNivel3').css('width', materiaData.nivel_3.porcentaje + '%');
+        $('#barNivel2').css('width', materiaData.nivel_2.porcentaje + '%');
+        $('#barNivel1').css('width', materiaData.nivel_1.porcentaje + '%');
+
+        // Actualizar total
+        $('#totalEstudiantesNivel').text(total);
+    }
+
+    // Listener para cambio de materia
+    $('#selectMateriaNivel').on('change', function () {
+        if (datosNiveles) {
+            const materiaSeleccionada = $(this).val();
+            renderNivelesDonut(datosNiveles, materiaSeleccionada);
+        }
+    });
 
 
     // ============================================================================
