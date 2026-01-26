@@ -204,15 +204,40 @@ def execute_query(query, params=None):
         pandas.DataFrame: Resultado de la query
     """
     with get_duckdb_connection() as con:
-        if params:
-            result = con.execute(query, params).df()
-        else:
-            result = con.execute(query).df()
-        
-        # Limpiar NaN, NaT e infinitos para JSON
-        result = result.replace([pd.NA, np.nan, np.inf, -np.inf], None)
-        
-        return result
+        try:
+            if params:
+                result = con.execute(query, params).df()
+            else:
+                result = con.execute(query).df()
+            
+            # Limpiar NaN, NaT e infinitos para JSON
+            result = result.replace([pd.NA, np.nan, np.inf, -np.inf], None)
+            return result
+            
+        except duckdb.CatalogException as e:
+            # Fallback: Si falla buscando en 'gold' y sugiere 'prod', reintentar cambiando el schema
+            error_msg = str(e)
+            if 'Did you mean "prod.' in error_msg or 'Table with name' in error_msg:
+                import logging
+                logger = logging.getLogger(__name__)
+                
+                # Intentar reemplazar gold. por prod.
+                new_query = query.replace('gold.', 'prod.')
+                if new_query != query:
+                    logger.warning(f"Catalog error using 'gold' schema. Retrying with 'prod' schema. Error: {e}")
+                    try:
+                        if params:
+                            result = con.execute(new_query, params).df()
+                        else:
+                            result = con.execute(new_query).df()
+                        
+                        result = result.replace([pd.NA, np.nan, np.inf, -np.inf], None)
+                        return result
+                    except Exception as retry_e:
+                        logger.error(f"Fallback query failed: {retry_e}")
+                        raise e  # Raise original if fallback fails too
+            
+            raise e
 
 
 def get_table_data(table_name, filters=None, limit=None, order_by=None):
