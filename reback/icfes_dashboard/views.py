@@ -15,6 +15,7 @@ from .db_utils import (
     get_estadisticas_generales,
     get_promedios_ubicacion
 )
+from .views_school_endpoints import *
 
 
 # ============================================================================
@@ -1093,12 +1094,21 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
+    # Cluster Data - usar main directamente
+    query_cluster = """
+        SELECT cluster_id, cluster_name
+        FROM main.dim_colegios_cluster
+        WHERE colegio_sk = ?
+        ORDER BY ano DESC
+        LIMIT 1
+    """
 
     df_basico = execute_query(query_basico, params=[colegio_sk_str])
     df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
     df_zscore = execute_query(query_zscore, params=[colegio_sk_str, colegio_sk_str])
     df_rango = execute_query(query_rango, params=[colegio_sk_str])
     df_fd = execute_query(query_fd, params=[colegio_sk_str])
+    df_cluster = execute_query(query_cluster, params=[colegio_sk_str])
 
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
@@ -1108,7 +1118,8 @@ def api_colegio_resumen(request, colegio_sk):
         'ultimo_ano': df_ultimo.to_dict(orient='records')[0] if not df_ultimo.empty else {},
         'z_score': df_zscore.to_dict(orient='records')[0] if not df_zscore.empty else {},
         'rango_historico': df_rango.to_dict(orient='records')[0] if not df_rango.empty else {},
-        'analisis': df_fd.to_dict(orient='records')[0] if not df_fd.empty else {}
+        'analisis': df_fd.to_dict(orient='records')[0] if not df_fd.empty else {},
+        'cluster': df_cluster.to_dict(orient='records')[0] if not df_cluster.empty else {}
     }
 
     return JsonResponse(resumen, safe=False)

@@ -457,6 +457,51 @@
         </div>
       </div>
 
+      <!-- Clasificación de Cluster y Colegios Similares -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <div class="card border-info h-100">
+            <div class="card-body text-center">
+              <div class="mb-2">
+                <i class="bx bx-category-alt text-info" style="font-size: 2rem;"></i>
+              </div>
+              <h6 class="text-muted mb-2">Clasificación (Cluster)</h6>
+              <h4 class="fw-bold text-info mb-1" id="schoolStatCluster">--</h4>
+              <small class="text-muted" id="schoolStatClusterDesc">Grupo de comparación</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="card h-100">
+            <div class="card-header py-2">
+              <h6 class="card-title mb-0">
+                <i class="bx bx-group me-1"></i> Colegios Similares (mismo cluster)
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Colegio</th>
+                      <th class="text-center">Puntaje</th>
+                      <th class="text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="similarSchoolsTableBody">
+                    <tr>
+                      <td colspan="3" class="text-center text-muted py-3">
+                        <small>Selecciona un colegio para ver similares</small>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- School Performance Gauges -->
       <div class="row mb-3">
         <div class="col-12">

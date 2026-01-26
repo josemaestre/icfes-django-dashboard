@@ -94,10 +94,11 @@ async function loadSchoolDetail(school) {
     document.getElementById('schoolDetailSector').textContent = school.sector;
     document.getElementById('schoolDetailLocation').textContent = `${school.municipio}, ${school.departamento}`;
 
-    // Load data
-    await loadSchoolResumen(school.colegio_sk);
+    // Load data - fetch once and pass to functions that need it
+    const resumenData = await loadSchoolResumen(school.colegio_sk);
     const historicalData = await loadSchoolHistorico(school.colegio_sk);
-    await loadSchoolComparacion(school.colegio_sk);
+    // Pass resumenData and historicalData to avoid duplicate API calls
+    await loadSchoolComparacion(school.colegio_sk, resumenData, historicalData);
 
     // Load excellence indicators
     if (typeof loadIndicadoresExcelencia === 'function') {
@@ -128,6 +129,22 @@ async function loadSchoolResumen(sk) {
                 data.ultimo_ano.ranking_nacional || '--';
             document.getElementById('schoolStatEstudiantes').textContent =
                 data.ultimo_ano.total_estudiantes || '--';
+        }
+
+        // Cluster display
+        if (data.cluster && data.cluster.cluster_name) {
+            document.getElementById('schoolStatCluster').textContent = data.cluster.cluster_name;
+            document.getElementById('schoolStatClusterDesc').textContent = `Grupo ${data.cluster.cluster_id}`;
+            // Load similar schools
+            loadSimilarSchools(sk);
+        } else {
+            document.getElementById('schoolStatCluster').textContent = 'No Clasificado';
+            document.getElementById('schoolStatClusterDesc').textContent = 'Sin cluster asignado';
+            document.getElementById('similarSchoolsTableBody').innerHTML = `
+                <tr><td colspan="3" class="text-center text-muted py-3">
+                    <small>No hay datos de cluster disponibles</small>
+                </td></tr>
+            `;
         }
 
         // Z-Score display with interpretation
@@ -169,8 +186,63 @@ async function loadSchoolResumen(sk) {
             document.getElementById('schoolStatZScore').textContent = '--';
             document.getElementById('schoolStatZScoreInterpretation').innerHTML = '<span class="text-muted">Sin datos</span>';
         }
+
+        return data; // Return data for reuse in other functions
     } catch (error) {
         console.error('Error loading school summary:', error);
+        return null;
+    }
+}
+
+// Load similar schools based on cluster
+async function loadSimilarSchools(sk) {
+    try {
+        const response = await fetch(`/icfes/api/colegio/${sk}/similares/?limit=5`);
+        const data = await response.json();
+
+        const tbody = document.getElementById('similarSchoolsTableBody');
+        if (!tbody) return;
+
+        if (data.error || !data.length) {
+            tbody.innerHTML = `
+                <tr><td colspan="3" class="text-center text-muted py-3">
+                    <small>No se encontraron colegios similares</small>
+                </td></tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        data.forEach(school => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <strong class="d-block text-truncate" style="max-width: 200px;" title="${school.nombre_colegio}">
+                        ${school.nombre_colegio}
+                    </strong>
+                    <small class="text-muted">${school.municipio}</small>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-primary">${school.avg_punt_global ? school.avg_punt_global.toFixed(1) : '--'}</span>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadSchoolDetail({colegio_sk: '${school.colegio_sk}', nombre_colegio: '${school.nombre_colegio.replace(/'/g, "\\'")}', codigo_dane: '', sector: '', municipio: '${school.municipio}', departamento: '${school.departamento || ''}'})">
+                        <i class="bx bx-search-alt"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading similar schools:', error);
+        const tbody = document.getElementById('similarSchoolsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr><td colspan="3" class="text-center text-danger py-3">
+                    <small>Error cargando colegios similares</small>
+                </td></tr>
+            `;
+        }
     }
 }
 
@@ -282,12 +354,15 @@ async function loadSchoolHistorico(sk) {
 }
 
 // Load comparison chart - UPDATED to use new optimized endpoint
-async function loadSchoolComparacion(sk) {
+// Now accepts resumenData and historicalData to avoid duplicate API calls
+async function loadSchoolComparacion(sk, resumenData = null, historicalData = null) {
     try {
-        // Get latest year for this school
-        const resumenResponse = await fetch(`/icfes/api/colegio/${sk}/resumen/`);
-        const resumenData = await resumenResponse.json();
-        const latestYear = resumenData.ultimo_ano?.ano || 2022;
+        // Use passed resumenData or fetch if not provided
+        if (!resumenData) {
+            const resumenResponse = await fetch(`/icfes/api/colegio/${sk}/resumen/`);
+            resumenData = await resumenResponse.json();
+        }
+        const latestYear = resumenData?.ultimo_ano?.ano || 2022;
 
         // Use new optimized endpoint for chart data
         const response = await fetch(`/icfes/api/colegio/${sk}/comparacion-chart-data/?ano=${latestYear}`);
@@ -430,10 +505,13 @@ async function loadSchoolComparacion(sk) {
         // Update strategic insights section (NEW)
         if (typeof window.updateStrategicInsights === 'function') {
             console.log('Calling updateStrategicInsights...');
-            // Get historical data for heatmap
-            const historicalResponse = await fetch(`/icfes/api/colegio/${sk}/historico/`);
-            const historicalData = await historicalResponse.json();
-            window.updateStrategicInsights(contextData, historicalData);
+            // Use passed historicalData or fetch if not provided
+            let histData = historicalData;
+            if (!histData) {
+                const historicalResponse = await fetch(`/icfes/api/colegio/${sk}/historico/`);
+                histData = await historicalResponse.json();
+            }
+            window.updateStrategicInsights(contextData, histData);
         } else {
             console.warn('updateStrategicInsights function not found');
         }

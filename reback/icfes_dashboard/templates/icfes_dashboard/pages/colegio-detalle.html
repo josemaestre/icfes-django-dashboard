@@ -1,0 +1,277 @@
+{% extends 'layout_vertical.html' %}
+{% load static %}
+
+{% block title %}Detalle del Colegio{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Detalle del Colegio' sub_title='Análisis Detallado' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="row">
+    <!-- Panel Izquierdo: Información y Clusters -->
+    <div class="col-xl-4">
+        <!-- Tarjeta de Perfil del Colegio -->
+        <div class="card overflow-hidden">
+            <div class="bg-primary bg-soft">
+                <div class="row">
+                    <div class="col-7">
+                        <div class="text-primary p-3">
+                            <h5 class="text-primary">Colegio</h5>
+                            <p>Detalle Institucional</p>
+                        </div>
+                    </div>
+                    <div class="col-5 align-self-end">
+                        <img src="{% static 'images/profile-img.png' %}" alt="" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="avatar-md profile-user-wid mb-4">
+                            <img src="{% static 'images/companies/img-4.png' %}" alt=""
+                                class="img-thumbnail rounded-circle">
+                        </div>
+                        <h5 class="font-size-15 text-truncate" id="school-name">Cargando...</h5>
+                        <p class="text-muted mb-0 text-truncate" id="school-location">...</p>
+                    </div>
+
+                    <div class="col-sm-8">
+                        <div class="pt-4">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h5 class="font-size-15" id="school-score">--</h5>
+                                    <p class="text-muted mb-0">Puntaje Global</p>
+                                </div>
+                                <div class="col-6">
+                                    <h5 class="font-size-15" id="school-rank">--</h5>
+                                    <p class="text-muted mb-0">Ranking Nac.</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <a href="#" class="btn btn-primary waves-effect waves-light btn-sm"
+                                    id="btn-download-report">Ver Reporte Original</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Clustering (NUEVA) -->
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Clasificación iCFES (Cluster)</h4>
+
+                <div class="text-center mb-4">
+                    <div class="avatar-sm mx-auto mb-4">
+                        <span class="avatar-title rounded-circle bg-info bg-soft text-info font-size-24">
+                            <i class="mdi mdi-google-circles-group"></i>
+                        </span>
+                    </div>
+                    <h5 class="font-size-15 mb-1" id="cluster-name">--</h5>
+                    <p class="text-muted" id="cluster-desc">Grupo de comparación</p>
+                </div>
+
+                <div class="alert alert-info" role="alert">
+                    Este colegio se compara con otros de características similares (tamaño, sector, ubicación).
+                </div>
+            </div>
+        </div>
+
+        <!-- Colegios Similares (NUEVO) -->
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Colegios Similares</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Colegio</th>
+                                <th>Puntaje</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="similar-schools-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Panel Derecho: Estadísticas y Gráficos -->
+    <div class="col-xl-8">
+
+        <!-- KPIs Principales -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mini-stats-wid">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <p class="text-muted fw-medium">Tendencia (3 años)</p>
+                                <h4 class="mb-0" id="trend-classification">--</h4>
+                            </div>
+                            <div class="flex-shrink-0 align-self-center">
+                                <div class="avatar-sm rounded-circle bg-mini-stat-icon-1 mini-stat-icon">
+                                    <span class="avatar-title rounded-circle bg-primary">
+                                        <i class="bx bx-line-chart font-size-24"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mini-stats-wid">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <p class="text-muted fw-medium">Estudiantes</p>
+                                <h4 class="mb-0" id="total-students">--</h4>
+                            </div>
+                            <div class="flex-shrink-0 align-self-center">
+                                <div class="avatar-sm rounded-circle bg-mini-stat-icon-2 mini-stat-icon">
+                                    <span class="avatar-title rounded-circle bg-success">
+                                        <i class="bx bx-user-voice font-size-24"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mini-stats-wid">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <p class="text-muted fw-medium">Z-Score Global</p>
+                                <h4 class="mb-0" id="z-score">--</h4>
+                            </div>
+                            <div class="flex-shrink-0 align-self-center">
+                                <div class="avatar-sm rounded-circle bg-mini-stat-icon-3 mini-stat-icon">
+                                    <span class="avatar-title rounded-circle bg-warning">
+                                        <i class="bx bx-target-lock font-size-24"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs de Análisis -->
+        <div class="card">
+            <div class="card-body">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs nav-tabs-custom nav-justified" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#historico" role="tab">
+                            <span class="d-block d-sm-none"><i class="fas fa-home"></i></span>
+                            <span class="d-none d-sm-block">Histórico</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#analisis" role="tab">
+                            <span class="d-block d-sm-none"><i class="far fa-user"></i></span>
+                            <span class="d-none d-sm-block">Fortalezas</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#ia-recommendations" role="tab">
+                            <span class="d-block d-sm-none"><i class="far fa-envelope"></i></span>
+                            <span class="d-none d-sm-block">Análisis IA</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content state text-muted">
+
+                    <!-- Tab Histórico -->
+                    <div class="tab-pane active" id="historico" role="tabpanel">
+                        <div class="mt-4">
+                            <h4 class="card-title">Evolución del Puntaje Global</h4>
+                            <div id="chart-historico" style="height: 350px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Fortalezas -->
+                    <div class="tab-pane" id="analisis" role="tabpanel">
+                        <div class="mt-4">
+                            <h4 class="card-title">Análisis de Materias</h4>
+                            <p class="mb-4">Comparativa de desempeño por asignatura vs promedio nacional.</p>
+
+                            <div class="table-responsive">
+                                <table class="table table-nowrap mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th scope="row">Fortaleza Principal</th>
+                                            <td id="strength-subject">--</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Debilidad Principal</th>
+                                            <td id="weakness-subject">--</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Radar Chart placeholder -->
+                            <canvas id="radarChart" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tab IA Recommendations -->
+                    <div class="tab-pane" id="ia-recommendations" role="tabpanel">
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="avatar-sm me-3">
+                                    <span class="avatar-title rounded-circle bg-soft-primary text-primary font-size-20">
+                                        <i class="bx bx-bot"></i>
+                                    </span>
+                                </div>
+                                <h4 class="card-title mb-0">Recomendaciones de IA (Claude)</h4>
+                            </div>
+
+                            <div id="ai-loading" class="text-center py-5" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Generando análisis inteligente...</p>
+                            </div>
+
+                            <div id="ai-content" style="display: none;">
+                                <!-- AI Content will be injected here -->
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <button class="btn btn-primary" id="btn-generate-ai">Generar Análisis</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_javascript %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<!-- ApexCharts (usado para gráfico histórico) -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<!-- Custom JS -->
+<script src="{% static 'js/pages/colegio-detalle.js' %}"></script>
+{% endblock %}

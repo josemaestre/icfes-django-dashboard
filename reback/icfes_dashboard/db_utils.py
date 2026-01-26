@@ -169,6 +169,8 @@ def get_duckdb_connection(read_only=True):
             con = duckdb.connect(local_path, read_only=read_only)
         else:
             # Conexión local tradicional
+            # Crear vistas gold si no existen
+            _ensure_gold_views_exist(db_path)
             con = duckdb.connect(db_path, read_only=read_only)
         
         yield con

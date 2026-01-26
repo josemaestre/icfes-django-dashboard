@@ -60,6 +60,9 @@ urlpatterns = [
     path('api/colegio/<str:colegio_sk>/comparacion-chart-data/', views.api_colegio_comparacion_chart_data, name='api_colegio_comparacion_chart_data'),
     path('api/colegio/<str:colegio_sk>/comparacion-chart-data/', views.api_colegio_comparacion_chart_data, name='api_colegio_comparacion_chart_data'),
     
+    # Endpoint de Colegios Similares (Clustering)
+    path('api/colegio/<str:colegio_sk>/similares/', views.api_colegios_similares, name='api_colegios_similares'),
+    
     # Endpoint de Indicadores de Excelencia (NUEVO - usando fct_indicadores_desempeno)
     path('api/colegio/<str:colegio_sk>/indicadores-excelencia/', views.api_colegio_indicadores_excelencia, name='api_colegio_indicadores_excelencia'),
 

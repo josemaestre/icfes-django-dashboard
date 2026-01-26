@@ -400,3 +400,21 @@ class FctColegioFortalezasDebilidades(models.Model):
         db_table = 'gold.fct_colegio_fortalezas_debilidades'
         ordering = ['colegio_sk', 'ranking_materia']
 
+
+class DimColegiosCluster(models.Model):
+    """
+    Dimensión de clusters de colegios.
+    Mapea a: gold.dim_colegios_cluster
+    Uso: Segmentación y comparación de colegios similares
+    """
+    colegio_sk = models.BigIntegerField()
+    ano = models.IntegerField()
+    cluster_id = models.IntegerField()
+    cluster_name = models.CharField(max_length=100)
+    created_at = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'gold.dim_colegios_cluster'
+        unique_together = [['colegio_sk', 'ano']]
+        ordering = ['ano', 'cluster_id']
