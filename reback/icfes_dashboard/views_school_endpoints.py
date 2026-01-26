@@ -176,8 +176,8 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
-    # Cluster Data - Intentar gold primero, luego main como fallback
-    query_cluster_gold = """
+    # Cluster Data
+    query_cluster = """
         SELECT cluster_id, cluster_name
         FROM gold.dim_colegios_cluster
         WHERE colegio_sk = ?
@@ -185,31 +185,11 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
-    query_cluster_main = """
-        SELECT cluster_id, cluster_name
-        FROM main.dim_colegios_cluster
-        WHERE colegio_sk = ?
-        ORDER BY ano DESC
-        LIMIT 1
-    """
-
-    df_basico = execute_query(query_basico, params=[colegio_sk_str])
-    df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
-    df_zscore = execute_query(query_zscore, params=[colegio_sk_str, colegio_sk_str])
-    df_rango = execute_query(query_rango, params=[colegio_sk_str])
-    df_fd = execute_query(query_fd, params=[colegio_sk_str])
-
-    # Intentar gold primero, si falla usar main
     try:
-        df_cluster = execute_query(query_cluster_gold, params=[colegio_sk_str])
-        print(f"[DEBUG] Gold cluster query result: {df_cluster.to_dict() if not df_cluster.empty else 'EMPTY'}")
-        if df_cluster.empty:
-            df_cluster = execute_query(query_cluster_main, params=[colegio_sk_str])
-            print(f"[DEBUG] Main cluster query result: {df_cluster.to_dict() if not df_cluster.empty else 'EMPTY'}")
+        df_cluster = execute_query(query_cluster, params=[colegio_sk_str])
     except Exception as e:
-        print(f"[DEBUG] Gold query failed with: {e}")
-        df_cluster = execute_query(query_cluster_main, params=[colegio_sk_str])
-        print(f"[DEBUG] Fallback main cluster result: {df_cluster.to_dict() if not df_cluster.empty else 'EMPTY'}")
+        print(f"[DEBUG] Cluster query failed: {e}")
+        df_cluster = pd.DataFrame()
 
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
@@ -245,28 +225,18 @@ def api_colegios_similares(request, colegio_sk):
     colegio_sk_str = str(colegio_sk)
 
     # 1. Obtener cluster y año del colegio objetivo (último disponible)
-    # Intentar gold primero, luego main como fallback
-    query_target_gold = """
+    query_target = """
         SELECT cluster_id, ano
         FROM gold.dim_colegios_cluster
         WHERE colegio_sk = ?
         ORDER BY ano DESC
         LIMIT 1
     """
-    query_target_main = """
-        SELECT cluster_id, ano
-        FROM main.dim_colegios_cluster
-        WHERE colegio_sk = ?
-        ORDER BY ano DESC
-        LIMIT 1
-    """
 
     try:
-        df_target = execute_query(query_target_gold, params=[colegio_sk_str])
-        if df_target.empty:
-            df_target = execute_query(query_target_main, params=[colegio_sk_str])
+        df_target = execute_query(query_target, params=[colegio_sk_str])
     except Exception:
-        df_target = execute_query(query_target_main, params=[colegio_sk_str])
+        return JsonResponse({'error': 'Error consultando cluster'}, status=500)
 
     if df_target.empty:
          return JsonResponse({'error': 'No se encontró clasificación de cluster para este colegio'}, status=404)
@@ -276,8 +246,7 @@ def api_colegios_similares(request, colegio_sk):
 
     # 2. Buscar colegios del mismo cluster y año
     # Ordenados por diferencia de puntaje global absoluto (los más parecidos en desempeño)
-    # Usar main directamente ya que gold puede no existir
-
+    
     query_similares = """
         WITH target_score AS (
             SELECT avg_punt_global
@@ -292,7 +261,7 @@ def api_colegios_similares(request, colegio_sk):
             f.avg_punt_global,
             f.total_estudiantes,
             ABS(f.avg_punt_global - (SELECT avg_punt_global FROM target_score)) as diff_score
-        FROM main.dim_colegios_cluster c
+        FROM gold.dim_colegios_cluster c
         JOIN gold.fct_agg_colegios_ano f ON c.colegio_sk = f.colegio_sk AND c.ano = f.ano
         WHERE c.cluster_id = ?
           AND c.ano = ?

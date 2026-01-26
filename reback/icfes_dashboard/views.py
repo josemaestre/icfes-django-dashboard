@@ -1094,21 +1094,33 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
-    # Cluster Data - usar main directamente
+    # Cluster Data
     query_cluster = """
         SELECT cluster_id, cluster_name
-        FROM main.dim_colegios_cluster
+        FROM gold.dim_colegios_cluster
         WHERE colegio_sk = ?
         ORDER BY ano DESC
         LIMIT 1
     """
 
-    df_basico = execute_query(query_basico, params=[colegio_sk_str])
-    df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
-    df_zscore = execute_query(query_zscore, params=[colegio_sk_str, colegio_sk_str])
-    df_rango = execute_query(query_rango, params=[colegio_sk_str])
-    df_fd = execute_query(query_fd, params=[colegio_sk_str])
-    df_cluster = execute_query(query_cluster, params=[colegio_sk_str])
+    try:
+        df_basico = execute_query(query_basico, params=[colegio_sk_str])
+        df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
+        df_zscore = execute_query(query_zscore, params=[colegio_sk_str, colegio_sk_str])
+        df_rango = execute_query(query_rango, params=[colegio_sk_str])
+        df_fd = execute_query(query_fd, params=[colegio_sk_str])
+        
+        df_cluster = execute_query(query_cluster, params=[colegio_sk_str])
+    except Exception as e:
+        # Fallback partial loading if some non-critical queries fail
+        import traceback
+        traceback.print_exc()
+        if 'df_basico' not in locals(): df_basico = pd.DataFrame()
+        if 'df_ultimo' not in locals(): df_ultimo = pd.DataFrame()
+        if 'df_zscore' not in locals(): df_zscore = pd.DataFrame()
+        if 'df_rango' not in locals(): df_rango = pd.DataFrame()
+        if 'df_fd' not in locals(): df_fd = pd.DataFrame()
+        df_cluster = pd.DataFrame()
 
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)

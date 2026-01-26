@@ -223,8 +223,13 @@ def execute_query(query, params=None):
                 
                 # Intentar reemplazar gold. por prod.
                 new_query = query.replace('gold.', 'prod.')
+                
+                # Si no hubo cambios (no había gold), intentar reemplazar main. por prod.
+                if new_query == query:
+                    new_query = query.replace('main.', 'prod.')
+                
                 if new_query != query:
-                    logger.warning(f"Catalog error using 'gold' schema. Retrying with 'prod' schema. Error: {e}")
+                    logger.warning(f"Catalog error using 'gold/main' schema. Retrying with 'prod' schema. Error: {e}")
                     try:
                         if params:
                             result = con.execute(new_query, params).df()
