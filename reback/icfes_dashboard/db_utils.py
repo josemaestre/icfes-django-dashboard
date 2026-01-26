@@ -34,21 +34,31 @@ def _ensure_gold_views_exist(db_path):
             # Crear schema gold
             temp_conn.execute("CREATE SCHEMA IF NOT EXISTS gold;")
             
-            # Obtener tablas del schema main
-            tables = temp_conn.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'").fetchall()
-            logger.info(f"Found {len(tables)} tables in main schema")
+            # Check schemas in priority order
+            source_schema = 'main'
+            tables_query = "SELECT table_name FROM information_schema.tables WHERE table_schema = ?"
+            tables = temp_conn.execute(tables_query, [source_schema]).fetchall()
             
-            # Crear vistas gold.* -> main.*
+            if not tables:
+                # Try 'prod' schema if main is empty
+                logger.info("No tables found in 'main' schema, checking 'prod' schema...")
+                tables = temp_conn.execute(tables_query, ['prod']).fetchall()
+                if tables:
+                    source_schema = 'prod'
+            
+            logger.info(f"Found {len(tables)} tables in {source_schema} schema")
+            
+            # Crear vistas gold.* -> source_schema.*
             views_created = 0
             for (table_name,) in tables:
                 try:
-                    temp_conn.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM main.{table_name}")
+                    temp_conn.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM {source_schema}.{table_name}")
                     views_created += 1
                 except Exception as e:
                     logger.warning(f"Failed to create view for {table_name}: {e}")
             
             temp_conn.close()
-            logger.info(f"Successfully created {views_created} gold schema views")
+            logger.info(f"Successfully created {views_created} gold schema views from {source_schema}")
             
             # Marcar como creado
             _views_created.add(db_path)
@@ -110,10 +120,13 @@ def get_duckdb_connection(read_only=True):
                 # Verificar si tiene tablas (archivo podría estar corrupto)
                 try:
                     test_conn = duckdb.connect(local_path, read_only=True)
-                    # Las tablas están en schema 'main', no 'prod' (prod es el database name)
-                    table_count = test_conn.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main'").fetchone()[0]
+                    # Check main or prod schemas
+                    table_count = test_conn.execute("""
+                        SELECT COUNT(*) FROM information_schema.tables 
+                        WHERE table_schema IN ('main', 'prod')
+                    """).fetchone()[0]
                     test_conn.close()
-                    logger.info(f"File has {table_count} tables in main schema")
+                    logger.info(f"File has {table_count} tables in main/prod schemas")
                     
                     if table_count == 0:
                         logger.warning("File exists but has 0 tables - deleting corrupted file")

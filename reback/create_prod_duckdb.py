@@ -9,8 +9,10 @@ import shutil
 from pathlib import Path
 
 # Configuration
-DEV_DB_PATH = r"C:\Proyectos\dbt\icfes_processing\dev.duckdb"
-PROD_DB_PATH = r"C:\Proyectos\dbt\icfes_processing\prod.duckdb"
+# Path resolution for cross-platform support (Windows/EC2)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent # c:/proyectos
+DEV_DB_PATH = os.getenv("DEV_DB_PATH", str(BASE_DIR / "dbt" / "icfes_processing" / "dev.duckdb"))
+PROD_DB_PATH = os.getenv("PROD_DB_PATH", str(BASE_DIR / "dbt" / "icfes_processing" / "prod.duckdb"))
 
 def get_gold_tables(conn):
     """Get list of all tables from the gold schema."""
