@@ -118,9 +118,12 @@ async function loadSchoolDetail(school) {
 
 // Load school summary
 async function loadSchoolResumen(sk) {
+    console.log('[DEBUG] loadSchoolResumen called for sk:', sk);
     try {
         const response = await fetch(`/icfes/api/colegio/${sk}/resumen/`);
         const data = await response.json();
+        console.log('[DEBUG] Resumen data received:', data);
+        console.log('[DEBUG] Cluster data:', data.cluster);
 
         if (data.ultimo_ano) {
             document.getElementById('schoolStatPuntaje').textContent =
@@ -132,12 +135,15 @@ async function loadSchoolResumen(sk) {
         }
 
         // Cluster display
+        console.log('[DEBUG] Checking cluster condition:', data.cluster, data.cluster?.cluster_name);
         if (data.cluster && data.cluster.cluster_name) {
+            console.log('[DEBUG] Setting cluster to:', data.cluster.cluster_name);
             document.getElementById('schoolStatCluster').textContent = data.cluster.cluster_name;
             document.getElementById('schoolStatClusterDesc').textContent = `Grupo ${data.cluster.cluster_id}`;
             // Load similar schools
             loadSimilarSchools(sk);
         } else {
+            console.log('[DEBUG] No cluster data, setting to No Clasificado');
             document.getElementById('schoolStatCluster').textContent = 'No Clasificado';
             document.getElementById('schoolStatClusterDesc').textContent = 'Sin cluster asignado';
             document.getElementById('similarSchoolsTableBody').innerHTML = `
