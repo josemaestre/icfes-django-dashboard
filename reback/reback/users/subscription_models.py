@@ -107,9 +107,13 @@ class UserSubscription(models.Model):
     )
     is_active = models.BooleanField(default=True)
     
-    # Información de pago (para integración futura con Stripe)
+    # Información de pago Stripe
     stripe_customer_id = models.CharField(max_length=255, blank=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True)
+    
+    # Información de pago Wompi (Colombia)
+    wompi_subscription_id = models.CharField(max_length=255, blank=True, default="")
+    wompi_payment_method_id = models.CharField(max_length=255, blank=True, default="")
     
     # Tracking de uso diario
     queries_today = models.IntegerField(default=0)

@@ -92,7 +92,9 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.mfa",
     "allauth.socialaccount",
+    # TODO: Add django_celery_beat after Celery is properly installed
 ]
+
 
 LOCAL_APPS = [
     "reback.users",
@@ -297,3 +299,25 @@ SOCIALACCOUNT_FORMS = {"signup": "reback.users.forms.UserSocialSignupForm"}
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+# STRIPE
+# ------------------------------------------------------------------------------
+STRIPE_PUBLIC_KEY = env("STRIPE_PUBLIC_KEY", default="")
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+
+# WOMPI (Colombia)
+# ------------------------------------------------------------------------------
+WOMPI_PUBLIC_KEY = env("WOMPI_PUBLIC_KEY", default="")
+WOMPI_PRIVATE_KEY = env("WOMPI_PRIVATE_KEY", default="")
+WOMPI_EVENTS_SECRET = env("WOMPI_EVENTS_SECRET", default="")
+WOMPI_BASE_URL = env("WOMPI_BASE_URL", default="https://production.wompi.co/v1")
+
+# CELERY
+# ------------------------------------------------------------------------------
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "America/Bogota"

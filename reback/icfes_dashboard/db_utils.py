@@ -48,9 +48,27 @@ def _ensure_gold_views_exist(db_path):
             
             logger.info(f"Found {len(tables)} tables in {source_schema} schema")
             
-            # Crear vistas gold.* -> source_schema.*
+            # Get existing tables in gold schema to avoid conflicts
+            existing_gold_tables = set()
+            try:
+                gold_tables = temp_conn.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'gold'
+                """).fetchall()
+                existing_gold_tables = {table[0] for table in gold_tables}
+                logger.info(f"Found {len(existing_gold_tables)} existing tables in gold schema")
+            except Exception as e:
+                logger.warning(f"Could not check existing gold tables: {e}")
+            
+            # Crear vistas gold.* -> source_schema.* (skip if already exists in gold)
             views_created = 0
+            views_skipped = 0
             for (table_name,) in tables:
+                # Skip if table already exists in gold
+                if table_name in existing_gold_tables:
+                    views_skipped += 1
+                    continue
                 try:
                     temp_conn.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM {source_schema}.{table_name}")
                     views_created += 1
@@ -58,7 +76,7 @@ def _ensure_gold_views_exist(db_path):
                     logger.warning(f"Failed to create view for {table_name}: {e}")
             
             temp_conn.close()
-            logger.info(f"Successfully created {views_created} gold schema views from {source_schema}")
+            logger.info(f"Successfully created {views_created} gold schema views from {source_schema}, skipped {views_skipped} existing tables")
             
             # Marcar como creado
             _views_created.add(db_path)

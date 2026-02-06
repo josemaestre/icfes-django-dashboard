@@ -16,6 +16,7 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("", include("reback.pages.urls", namespace="pages")),
     path('icfes/', include('icfes_dashboard.urls')),  # 👈 conexión al dashboard
+    path('payments/', include('reback.users.stripe_urls', namespace='payments')),  # 👈 Stripe payments
     
     # Your stuff: custom urls includes go here
     # ...

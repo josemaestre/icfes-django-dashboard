@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+
+{% block extra_head %}
+<!-- SEO Meta Tags -->
+<meta name="description" content="{{ meta.description }}">
+<meta name="keywords" content="{{ meta.keywords }}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:title" content="{{ meta.title }}">
+<meta property="og:description" content="{{ meta.description }}">
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="{{ request.build_absolute_uri }}">
+<meta property="twitter:title" content="{{ meta.title }}">
+<meta property="twitter:description" content="{{ meta.description }}">
+
+<!-- Schema.org markup -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "{{ school.nombre_colegio }}",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "{{ school.municipio }}",
+    "addressRegion": "{{ school.departamento }}",
+    "addressCountry": "CO"
+  }
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin: 10px 0;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+
+    .insight-card {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+
+    .insight-card.strength {
+        border-left-color: #28a745;
+    }
+
+    .insight-card.opportunity {
+        border-left-color: #ffc107;
+    }
+
+    .cta-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0;
+        margin-top: 60px;
+        text-align: center;
+    }
+
+    .cta-btn {
+        background: white;
+        color: #667eea;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+    }
+
+    .cta-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">{{ school.nombre_colegio }}</h1>
+                <p class="lead mb-2">
+                    <i class="bi bi-geo-alt-fill"></i> {{ school.municipio }}, {{ school.departamento }}
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <span class="badge bg-light text-dark">{{ school.sector }}</span>
+                    <span class="badge bg-light text-dark">{{ school.jornada }}</span>
+                    <span class="badge bg-light text-dark">{{ school.area }}</span>
+                    {% if cluster %}
+                    <span class="badge bg-warning text-dark">{{ cluster.cluster_nombre }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="container mb-5">
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-label">Puntaje Global 2024</div>
+                <div class="stat-value">{{ stats_2024.punt_global|floatformat:0 }}</div>
+                <small class="text-muted">Puntos</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-label">Ranking Nacional</div>
+                <div class="stat-value">#{{ ranking.rank|default:"N/A" }}</div>
+                <small class="text-muted">de {{ ranking.total|floatformat:0 }} colegios</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-label">Percentil</div>
+                <div class="stat-value">Top {{ ranking.percentile|default:"N/A" }}%</div>
+                <small class="text-muted">Nacional</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-label">vs Promedio Municipal</div>
+                <div class="stat-value">
+                    {% if comparacion.brecha_global_municipal > 0 %}+{% endif %}
+                    {{ comparacion.brecha_global_municipal|floatformat:0 }}
+                </div>
+                <small class="text-muted">Puntos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="container mb-5">
+    <div class="row">
+        <!-- Historical Trend -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h4 class="mb-4"><i class="bi bi-graph-up"></i> Evolución Histórica</h4>
+                <canvas id="historicoChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Radar Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h4 class="mb-4"><i class="bi bi-pie-chart"></i> Rendimiento por Materia</h4>
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Comparison Chart -->
+        <div class="col-12 mb-4">
+            <div class="chart-container">
+                <h4 class="mb-4"><i class="bi bi-bar-chart"></i> Comparación Contextual</h4>
+                <canvas id="comparacionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Insights -->
+<div class="container mb-5">
+    <h3 class="mb-4"><i class="bi bi-lightbulb"></i> Análisis Inteligente</h3>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h5 class="text-success mb-3">💡 Fortalezas Identificadas</h5>
+            {% for strength in insights.strengths %}
+            <div class="insight-card strength">
+                {{ strength }}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="text-warning mb-3">⚠️ Oportunidades de Mejora</h5>
+            {% for opportunity in insights.opportunities %}
+            <div class="insight-card opportunity">
+                {{ opportunity }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="cta-section">
+    <div class="container">
+        <h2 class="display-5 fw-bold mb-4">🎯 Accede al Análisis Completo</h2>
+        <p class="lead mb-4">Con ICFES Analytics Enterprise obtienes:</p>
+
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-8">
+                <ul class="list-unstyled text-start" style="font-size: 1.1rem;">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-warning"></i> 29 años de datos históricos
+                        completos</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-warning"></i> Comparación con 15,000
+                        colegios</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-warning"></i> Recomendaciones personalizadas
+                        con IA</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-warning"></i> Exportación PDF profesional
+                    </li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-warning"></i> Dashboard para múltiples
+                        usuarios</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-warning"></i> Soporte prioritario</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="{% url 'pages:pricing' %}" class="btn cta-btn">
+                Ver Planes y Precios
+            </a>
+            <a href="mailto:contacto@icfes-analytics.com?subject=Demo Enterprise - {{ school.nombre_colegio }}"
+                class="btn btn-outline-light btn-lg">
+                Solicitar Demo
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Historical Trend Chart
+    const historicoCtx = document.getElementById('historicoChart').getContext('2d');
+    new Chart(historicoCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_data.historico.labels | safe }},
+        datasets: [{
+            label: 'Puntaje Global',
+            data: {{ chart_data.historico.data | safe }},
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        tension: 0.4,
+        fill: true
+            }]
+        },
+        options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                min: 200,
+                max: 400
+            }
+        }
+    }
+    });
+
+    // Radar Chart
+    const radarCtx = document.getElementById('radarChart').getContext('2d');
+    new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+            labels: {{ chart_data.radar.labels | safe }},
+        datasets: [{
+            label: '{{ school.nombre_colegio }}',
+            data: {{ chart_data.radar.data | safe }},
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+        pointBackgroundColor: '#667eea'
+            }]
+        },
+        options: {
+        responsive: true,
+        scales: {
+            r: {
+                beginAtZero: false,
+                min: 0,
+                max: 100
+            }
+        }
+    }
+    });
+
+    // Comparison Chart
+    const comparacionCtx = document.getElementById('comparacionChart').getContext('2d');
+    new Chart(comparacionCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_data.comparacion.labels | safe }},
+        datasets: [{
+            label: 'Puntaje Global',
+            data: {{ chart_data.comparacion.data | safe }},
+        backgroundColor: [
+            '#667eea',
+            '#48bb78',
+            '#ed8936',
+            '#4299e1'
+        ]
+            }]
+        },
+        options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                min: 200,
+                max: 400
+            }
+        }
+    }
+    });
+</script>
+{% endblock %}

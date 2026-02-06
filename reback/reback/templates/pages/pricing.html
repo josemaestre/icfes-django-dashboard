@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Planes y Precios - ICFES Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pricing-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .pricing-card.featured {
+        border: 3px solid #0d6efd;
+        position: relative;
+    }
+
+    .pricing-card.featured::before {
+        content: "MÁS POPULAR";
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #0d6efd;
+        color: white;
+        padding: 5px 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        border-bottom-left-radius: 10px;
+    }
+
+    .price {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #0d6efd;
+    }
+
+    .feature-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .feature-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feature-list i {
+        color: #28a745;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Planes y Precios</h1>
+        <p class="lead text-muted">Elige el plan que mejor se adapte a tus necesidades</p>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="row g-4">
+        <!-- Free Plan -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card pricing-card h-100">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-3">Free</h3>
+                    <div class="text-center mb-4">
+                        <span class="price">$0</span>
+                        <span class="text-muted">COP/mes</span>
+                    </div>
+
+                    <ul class="feature-list">
+                        <li><i class="bi bi-check-circle-fill"></i> 10 consultas/día</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 3 años de datos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Datos regionales</li>
+                        <li><i class="bi bi-x-circle-fill text-muted"></i> Exportación</li>
+                        <li><i class="bi bi-x-circle-fill text-muted"></i> API access</li>
+                    </ul>
+
+                    <div class="d-grid mt-4">
+                        {% if user.is_authenticated and user.subscription.plan.tier == 'free' %}
+                        <button class="btn btn-outline-secondary" disabled>Plan Actual</button>
+                        {% else %}
+                        <a href="{% url 'account_signup' %}" class="btn btn-outline-primary">Comenzar Gratis</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Plan -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card pricing-card h-100">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-3">Basic</h3>
+                    <div class="text-center mb-4">
+                        <span class="price">$39,900</span>
+                        <span class="text-muted">COP/mes</span>
+                    </div>
+
+                    <ul class="feature-list">
+                        <li><i class="bi bi-check-circle-fill"></i> 100 consultas/día</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 10 años de datos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Datos municipales</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Exportación CSV</li>
+                        <li><i class="bi bi-x-circle-fill text-muted"></i> API access</li>
+                    </ul>
+
+                    <div class="d-grid mt-4">
+                        {% if user.is_authenticated %}
+                        {% if user.subscription.plan.tier == 'basic' %}
+                        <button class="btn btn-outline-secondary" disabled>Plan Actual</button>
+                        {% else %}
+                        <a href="{% url 'payments:wompi_checkout' %}?plan=basic" class="btn btn-primary">Seleccionar
+                            Plan</a>
+                        {% endif %}
+                        {% else %}
+                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}"
+                            class="btn btn-primary">Iniciar Sesión</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Premium Plan (Featured) -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card pricing-card featured h-100">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-3">Premium</h3>
+                    <div class="text-center mb-4">
+                        <span class="price">$100,000</span>
+                        <span class="text-muted">COP/mes</span>
+                    </div>
+
+                    <ul class="feature-list">
+                        <li><i class="bi bi-check-circle-fill"></i> Consultas ilimitadas</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 29 años de datos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Datos de colegios</li>
+                        <li><i class="bi bi-check-circle-fill"></i> CSV + Excel + PDF</li>
+                        <li><i class="bi bi-check-circle-fill"></i> API access</li>
+                    </ul>
+
+                    <div class="d-grid mt-4">
+                        {% if user.is_authenticated %}
+                        {% if user.subscription.plan.tier == 'premium' %}
+                        <button class="btn btn-outline-secondary" disabled>Plan Actual</button>
+                        {% else %}
+                        <a href="{% url 'payments:wompi_checkout' %}?plan=premium" class="btn btn-primary">Seleccionar
+                            Plan</a>
+                        {% endif %}
+                        {% else %}
+                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}"
+                            class="btn btn-primary">Iniciar Sesión</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card pricing-card h-100 bg-dark text-white">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-3">Enterprise</h3>
+                    <div class="text-center mb-4">
+                        <span class="price text-white">$500,000</span>
+                        <span class="text-light">COP/mes</span>
+                    </div>
+
+                    <ul class="feature-list">
+                        <li><i class="bi bi-check-circle-fill"></i> Todo ilimitado</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Soporte prioritario</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Múltiples usuarios</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Todas las exportaciones</li>
+                        <li><i class="bi bi-check-circle-fill"></i> API sin límites</li>
+                    </ul>
+
+                    <div class="d-grid mt-4">
+                        {% if user.is_authenticated %}
+                        {% if user.subscription.plan.tier == 'enterprise' %}
+                        <button class="btn btn-outline-light" disabled>Plan Actual</button>
+                        {% else %}
+                        <a href="{% url 'payments:wompi_checkout' %}?plan=enterprise" class="btn btn-light">Seleccionar
+                            Plan</a>
+                        {% endif %}
+                        {% else %}
+                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-light">Iniciar
+                            Sesión</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <h2 class="text-center mb-4">Preguntas Frecuentes</h2>
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            ¿Puedo cambiar de plan en cualquier momento?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Sí, puedes actualizar o degradar tu plan en cualquier momento. Los cambios se aplicarán
+                            inmediatamente.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#faq2">
+                            ¿Qué métodos de pago aceptan?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Aceptamos PSE, Nequi y tarjetas de crédito/débito a través de Wompi.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

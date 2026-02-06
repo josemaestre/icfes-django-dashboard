@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pago Cancelado - ICFES Analytics{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg">
+                <div class="card-body text-center p-5">
+                    <!-- Warning Icon -->
+                    <div class="mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor"
+                            class="bi bi-x-circle-fill text-warning" viewBox="0 0 16 16">
+                            <path
+                                d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
+                        </svg>
+                    </div>
+
+                    <!-- Title -->
+                    <h1 class="display-5 fw-bold text-warning mb-3">{{ title }}</h1>
+
+                    <!-- Message -->
+                    <p class="lead text-muted mb-4">{{ message }}</p>
+
+                    <!-- CTA Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'pages:pricing' %}" class="btn btn-primary btn-lg px-4">
+                            <i class="bi bi-arrow-repeat me-2"></i>
+                            Intentar Nuevamente
+                        </a>
+                        <a href="{% url 'icfes_dashboard:dashboard' %}" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="bi bi-speedometer2 me-2"></i>
+                            Volver al Dashboard
+                        </a>
+                    </div>
+
+                    <!-- Help Info -->
+                    <div class="alert alert-light mt-4" role="alert">
+                        <i class="bi bi-question-circle me-2"></i>
+                        ¿Necesitas ayuda? Contáctanos en <a
+                            href="mailto:support@icfes-analytics.com">support@icfes-analytics.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@
 URLs para el dashboard ICFES.
 """
 from django.urls import path
-from . import views
+from . import views, landing_views_simple as landing_views
 
 app_name = 'icfes_dashboard'
 
@@ -11,6 +11,9 @@ urlpatterns = [
     path('', views.icfes_dashboard, name='dashboard'),
     path('charts/', views.dashboard_charts, name='dashboard_charts'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
+    
+    # Dynamic school landing pages (SEO)
+    path('colegio/<slug:slug>/', landing_views.school_landing_page, name='school_landing'),
     
     # Endpoints de datos generales
     path('api/estadisticas/', views.icfes_estadisticas_generales, name='estadisticas_generales'),

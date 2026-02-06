@@ -521,6 +521,37 @@ python manage.py sqlmigrate <app> <migration_number>
 
 ---
 
+---
+
+## 📈 Estrategia SEO (Programmatic SEO)
+
+El verdadero potencial de tráfico de la aplicación reside en las **Landing Pages de Colegios** (`/icfes/colegio/<slug>/`), no solo en la home.
+
+### 1. El Concepto: Programmatic SEO
+En lugar de escribir manualmente 10 artículos de blog, generamos automáticamente **22,000+ páginas únicas**, una por cada colegio en la base de datos.
+- **Query de búsqueda**: "Resultados ICFES Colegio Javiera Londoño", "Mejor colegio en Medellín", "Puntaje ICFES colegio X".
+- **Volumen**: Si cada colegio recibe solo 10 visitas/mes → **220,000 visitas/mes** de tráfico orgánico altamente cualificado.
+
+### 2. Estructura de Indexación
+Para que Google indexe estas miles de páginas sin considerarlas "Thin Content":
+- **Contenido Único**: Cada página tiene datos específicos (gráficos, rankings, brechas) que no existen en otro lugar.
+- **Sitemap Dinámico**: Un `sitemap.xml` que lista todas las URLs de colegios (ya tenemos la tabla `dim_colegios_slugs` para esto).
+- **Schema.org**: Implementar datos estructurados `School` y `EducationalOrganization` para aparecer en Rich Snippets.
+
+### 3. El Funnel de Conversión
+Estas páginas actúan como la "parte ancha" del embudo:
+1.  **Atracción**: Padre/Rector busca su colegio → Llega a nuestra Landing Page Gratuita.
+2.  **Valor**: Ve los datos básicos (2024) y se impresiona con la calidad visual.
+3.  **Conversión**: Ve un CTA "Ver histórico 10 años" o "Comparar con competencia".
+4.  **Venta**: Se registra en el Plan Freemium/Premium.
+
+### 4. Implementación Técnica
+- **Slugs**: URLs amigables SEO (`/colegio/liceo-nacional-agustin-codazzi/`) en lugar de IDs (`/colegio/12345/`).
+- **Meta Tags Dinámicos**: `<title>Resultados ICFES 2024 - Colegio X | Ranking y Análisis</title>`.
+- **Performance**: Las páginas deben cargar en <1s (DuckDB + Vistas Materializadas) para pasar los Core Web Vitals.
+
+---
+
 ## 📚 Documentación Adicional
 
 - [TODO de Integración](../TODO_INTEGRACION_WEB_ICFES.md)

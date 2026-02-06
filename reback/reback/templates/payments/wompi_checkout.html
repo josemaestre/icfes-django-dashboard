@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Checkout - {{ plan.name }} - ICFES Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkout-container {
+        max-width: 600px;
+        margin: 50px auto;
+    }
+
+    .plan-summary {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container checkout-container">
+    <h2 class="text-center mb-4">Finalizar Suscripción</h2>
+
+    <!-- Plan Summary -->
+    <div class="plan-summary">
+        <h4>{{ plan.name }}</h4>
+        <p class="text-muted">{{ plan.description }}</p>
+        <hr>
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="h5">Total:</span>
+            <span class="h3 text-primary">${{ plan.price_monthly|floatformat:0 }} COP/mes</span>
+        </div>
+    </div>
+
+    <!-- Wompi Checkout Widget -->
+    <div id="wompi-widget-container"></div>
+
+    <!-- Loading State -->
+    <div id="loading" class="text-center" style="display:none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Procesando pago...</span>
+        </div>
+        <p class="mt-3">Procesando tu pago de forma segura...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.wompi.co/widget.js"></script>
+<script>
+    // Initialize Wompi Checkout Widget
+    const checkout = new WidgetCheckout({
+        currency: 'COP',
+        amountInCents: {{ amount_in_cents }},
+    reference: '{{ reference }}',
+        publicKey: '{{ wompi_public_key }}',
+            redirectUrl: '{{ success_url }}',
+                customerData: {
+        email: '{{ customer_email }}',
+            fullName: '{{ request.user.name|default:customer_email }}'
+    }
+    });
+
+    // Render widget
+    checkout.open(function (result) {
+        // Callback when widget closes
+        if (result.transaction) {
+            document.getElementById('loading').style.display = 'block';
+            // Redirect will happen automatically via redirectUrl
+        }
+    });
+</script>
+{% endblock %}

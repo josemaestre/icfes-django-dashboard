@@ -1,0 +1,102 @@
+[
+    {
+        "model": "users.subscriptionplan",
+        "pk": 1,
+        "fields": {
+            "tier": "free",
+            "name": "Free",
+            "description": "Plan gratuito para explorar la plataforma. Acceso limitado a datos básicos.",
+            "price_monthly": "0.00",
+            "max_queries_per_day": 10,
+            "max_export_rows": 100,
+            "api_access": false,
+            "api_rate_limit": null,
+            "access_regions": true,
+            "access_departments": false,
+            "access_municipalities": false,
+            "access_schools": false,
+            "years_of_data": 3,
+            "export_csv": false,
+            "export_excel": false,
+            "export_pdf": false,
+            "is_active": true,
+            "created_at": "2026-02-01T20:00:00Z",
+            "updated_at": "2026-02-01T20:00:00Z"
+        }
+    },
+    {
+        "model": "users.subscriptionplan",
+        "pk": 2,
+        "fields": {
+            "tier": "basic",
+            "name": "Basic",
+            "description": "Plan ideal para estudiantes y padres de familia. Acceso a datos departamentales y municipales.",
+            "price_monthly": "39900",
+            "max_queries_per_day": 100,
+            "max_export_rows": 1000,
+            "api_access": false,
+            "api_rate_limit": null,
+            "access_regions": true,
+            "access_departments": true,
+            "access_municipalities": true,
+            "access_schools": false,
+            "years_of_data": 10,
+            "export_csv": true,
+            "export_excel": false,
+            "export_pdf": false,
+            "is_active": true,
+            "created_at": "2026-02-01T20:00:00Z",
+            "updated_at": "2026-02-01T20:00:00Z"
+        }
+    },
+    {
+        "model": "users.subscriptionplan",
+        "pk": 3,
+        "fields": {
+            "tier": "premium",
+            "name": "Premium",
+            "description": "Plan completo para colegios y profesionales. Acceso ilimitado a todos los datos y exportaciones.",
+            "price_monthly": "100000",
+            "max_queries_per_day": 999999,
+            "max_export_rows": null,
+            "api_access": true,
+            "api_rate_limit": 1000,
+            "access_regions": true,
+            "access_departments": true,
+            "access_municipalities": true,
+            "access_schools": true,
+            "years_of_data": 29,
+            "export_csv": true,
+            "export_excel": true,
+            "export_pdf": true,
+            "is_active": true,
+            "created_at": "2026-02-01T20:00:00Z",
+            "updated_at": "2026-02-01T20:00:00Z"
+        }
+    },
+    {
+        "model": "users.subscriptionplan",
+        "pk": 4,
+        "fields": {
+            "tier": "enterprise",
+            "name": "Enterprise",
+            "description": "Plan para secretarías de educación e instituciones. Todo ilimitado + soporte prioritario.",
+            "price_monthly": "500000",
+            "max_queries_per_day": 999999,
+            "max_export_rows": null,
+            "api_access": true,
+            "api_rate_limit": null,
+            "access_regions": true,
+            "access_departments": true,
+            "access_municipalities": true,
+            "access_schools": true,
+            "years_of_data": 29,
+            "export_csv": true,
+            "export_excel": true,
+            "export_pdf": true,
+            "is_active": true,
+            "created_at": "2026-02-01T20:00:00Z",
+            "updated_at": "2026-02-01T20:00:00Z"
+        }
+    }
+]
