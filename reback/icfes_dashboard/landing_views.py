@@ -6,7 +6,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.decorators.cache import cache_page
 from django.http import Http404
 
-from icfes_dashboard.db_utils import get_duckdb_connection
+from icfes_dashboard.db_utils import get_duckdb_connection, resolve_schema
 from icfes_dashboard.landing_utils import (
     generate_school_slug,
     calculate_ranking,
@@ -39,7 +39,7 @@ def school_landing_page(request, slug):
                 LIMIT 1
             """
             
-            school_result = conn.execute(school_query, [slug]).fetchone()
+            school_result = conn.execute(resolve_schema(school_query), [slug]).fetchone()
             
             if not school_result:
                 raise Http404("Colegio no encontrado")
@@ -71,7 +71,7 @@ def school_landing_page(request, slug):
                 LIMIT 1
             """
             
-            stats_2024 = conn.execute(stats_2024_query, [codigo]).fetchone()
+            stats_2024 = conn.execute(resolve_schema(stats_2024_query), [codigo]).fetchone()
             
             # Get historical data (last 10 years)
             historico_query = """
@@ -89,7 +89,7 @@ def school_landing_page(request, slug):
                 ORDER BY ano ASC
             """
             
-            historico = conn.execute(historico_query, [codigo]).fetchdf()
+            historico = conn.execute(resolve_schema(historico_query), [codigo]).fetchdf()
             
             # Get comparison data
             comparacion_query = """
@@ -111,7 +111,7 @@ def school_landing_page(request, slug):
                 LIMIT 1
             """
             
-            comparacion = conn.execute(comparacion_query, [codigo]).fetchone()
+            comparacion = conn.execute(resolve_schema(comparacion_query), [codigo]).fetchone()
             
             # Get cluster info (if table exists)
             cluster = None
@@ -123,7 +123,7 @@ def school_landing_page(request, slug):
                     WHERE codigo_dane = ?
                     LIMIT 1
                 """
-                sk_result = conn.execute(sk_query, [codigo]).fetchone()
+                sk_result = conn.execute(resolve_schema(sk_query), [codigo]).fetchone()
                 
                 if sk_result:
                     colegio_sk = sk_result[0]
@@ -137,7 +137,7 @@ def school_landing_page(request, slug):
                         AND ano = 2024
                         LIMIT 1
                     """
-                    cluster = conn.execute(cluster_query, [colegio_sk]).fetchone()
+                    cluster = conn.execute(resolve_schema(cluster_query), [colegio_sk]).fetchone()
             except:
                 pass  # Table may not exist yet
             

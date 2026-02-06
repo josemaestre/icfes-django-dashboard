@@ -4,7 +4,7 @@ Shows basic information and 2024 statistics
 """
 from django.shortcuts import render
 from django.http import Http404
-from .db_utils import get_duckdb_connection
+from .db_utils import get_duckdb_connection, resolve_schema
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def school_landing_page(request, slug):
                 LIMIT 1
             """
             
-            school_result = conn.execute(school_query, [slug]).fetchone()
+            school_result = conn.execute(resolve_schema(school_query), [slug]).fetchone()
             
             if not school_result:
                 raise Http404("Colegio no encontrado")
@@ -63,7 +63,7 @@ def school_landing_page(request, slug):
                 LIMIT 1
             """
             
-            stats = conn.execute(stats_query, [codigo]).fetchone()
+            stats = conn.execute(resolve_schema(stats_query), [codigo]).fetchone()
             
             # Get historical data (last 10 years)
             historical_query = """
@@ -81,7 +81,7 @@ def school_landing_page(request, slug):
                 ORDER BY ano ASC
             """
             
-            historical_data = conn.execute(historical_query, [codigo]).fetchall()
+            historical_data = conn.execute(resolve_schema(historical_query), [codigo]).fetchall()
             
             colegio_sk = stats[7] if stats else None
             comparison_data = None
@@ -102,7 +102,7 @@ def school_landing_page(request, slug):
                     LIMIT 1
                 """
                 
-                comparison_data = conn.execute(comparison_query, [colegio_sk]).fetchone()
+                comparison_data = conn.execute(resolve_schema(comparison_query), [colegio_sk]).fetchone()
             
             # Prepare context
             context = {

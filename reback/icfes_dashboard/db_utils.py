@@ -8,6 +8,28 @@ from django.conf import settings
 from contextlib import contextmanager
 import threading
 
+# Schema configuration: 'gold' for dev (dev.duckdb), 'main' for prod (prod.duckdb)
+# Detection: explicit setting > DB path check > default 'gold'
+def _detect_schema():
+    explicit = getattr(settings, 'ICFES_DB_SCHEMA', None)
+    if explicit:
+        return explicit
+    db_path = getattr(settings, 'ICFES_DUCKDB_PATH', '')
+    if db_path.startswith('s3://') or 'prod.duckdb' in db_path:
+        return 'main'
+    return 'gold'
+
+
+SCHEMA = _detect_schema()
+
+
+def resolve_schema(query):
+    """Replace gold. prefix with the correct schema for the current environment."""
+    if SCHEMA != 'gold':
+        return query.replace('gold.', f'{SCHEMA}.')
+    return query
+
+
 # Lock para crear vistas solo una vez
 _views_lock = threading.Lock()
 _views_created = set()
@@ -192,16 +214,10 @@ def get_duckdb_connection(read_only=True):
                 
                 logger.info(f"Successfully downloaded {db_path}")
             
-            # Conectar al archivo local
-            # Crear vistas una sola vez si no existen
-            _ensure_gold_views_exist(local_path)
-            
-            # Ahora conectar en modo read-only para queries
+            # Conectar al archivo local en modo read-only para queries
             con = duckdb.connect(local_path, read_only=read_only)
         else:
             # Conexión local tradicional
-            # Crear vistas gold si no existen
-            _ensure_gold_views_exist(db_path)
             con = duckdb.connect(db_path, read_only=read_only)
         
         yield con
@@ -223,10 +239,11 @@ def execute_query(query, params=None):
     """
     with get_duckdb_connection() as con:
         try:
+            resolved = resolve_schema(query)
             if params:
-                result = con.execute(query, params).df()
+                result = con.execute(resolved, params).df()
             else:
-                result = con.execute(query).df()
+                result = con.execute(resolved).df()
             
             # Limpiar NaN, NaT e infinitos para JSON
             result = result.replace([pd.NA, np.nan, np.inf, -np.inf], None)
