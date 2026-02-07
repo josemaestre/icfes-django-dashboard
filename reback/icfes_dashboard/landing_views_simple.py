@@ -2,12 +2,74 @@
 Simplified landing page view for schools
 Shows basic information and 2024 statistics
 """
+import duckdb
 from django.shortcuts import render
 from django.http import Http404
 from .db_utils import get_duckdb_connection, resolve_schema
+from .landing_utils import generate_school_slug
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_text(value):
+    if value is None:
+        return ""
+    return str(value).strip().lower()
+
+
+def _extract_municipio_hint(slug):
+    parts = slug.split("-")
+    # Last token generally matches municipality in generated slugs.
+    return parts[-1] if parts else ""
+
+
+def _find_school_by_slug(conn, slug):
+    school_query = """
+        SELECT 
+            codigo,
+            nombre_colegio,
+            municipio,
+            departamento,
+            sector
+        FROM gold.dim_colegios_slugs
+        WHERE slug = ?
+        LIMIT 1
+    """
+
+    try:
+        school_result = conn.execute(resolve_schema(school_query), [slug]).fetchone()
+        if school_result:
+            return school_result
+    except duckdb.CatalogException as e:
+        # Fallback when slugs table does not exist in the running DB.
+        logger.warning("dim_colegios_slugs unavailable, using fallback lookup: %s", e)
+
+    municipio_hint = _extract_municipio_hint(slug)
+    fallback_query = """
+        SELECT DISTINCT
+            codigo_dane AS codigo,
+            nombre_colegio,
+            municipio,
+            departamento,
+            sector
+        FROM gold.fct_colegio_historico
+        WHERE codigo_dane IS NOT NULL
+          AND nombre_colegio IS NOT NULL
+          AND municipio IS NOT NULL
+          AND LOWER(municipio) LIKE ?
+    """
+    candidates = conn.execute(
+        resolve_schema(fallback_query),
+        [f"%{_normalize_text(municipio_hint)}%"],
+    ).fetchall()
+
+    for candidate in candidates:
+        if generate_school_slug(candidate[1], candidate[2]) == slug:
+            return candidate
+
+    return None
+
 
 def school_landing_page(request, slug):
     """
@@ -16,20 +78,7 @@ def school_landing_page(request, slug):
     """
     try:
         with get_duckdb_connection() as conn:
-            # Get school basic info from slugs table
-            school_query = """
-                SELECT 
-                    codigo,
-                    nombre_colegio,
-                    municipio,
-                    departamento,
-                    sector
-                FROM gold.dim_colegios_slugs
-                WHERE slug = ?
-                LIMIT 1
-            """
-            
-            school_result = conn.execute(resolve_schema(school_query), [slug]).fetchone()
+            school_result = _find_school_by_slug(conn, slug)
             
             if not school_result:
                 raise Http404("Colegio no encontrado")
