@@ -13,12 +13,14 @@ from .base import env
 # TODO: Fix static files deployment and set back to False
 DEBUG = True
 SECRET_KEY = env("DJANGO_SECRET_KEY")
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[".railway.app", "localhost", "*"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[
+                         ".railway.app", "localhost", "*"])
 
 # MIDDLEWARE - Add auto-create admin middleware
 # ------------------------------------------------------------------------------
 MIDDLEWARE = [
-    "django.middleware.gzip.GZipMiddleware",  # Compress responses (cost optimization)
+    # Compress responses (cost optimization)
+    "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -145,5 +147,8 @@ LOGGING = {
 # DuckDB Configuration
 # ------------------------------------------------------------------------------
 # Use S3 path if DUCKDB_S3_PATH is set, otherwise use local path (for dev)
-ICFES_DUCKDB_PATH = env("DUCKDB_S3_PATH", default=env("DUCKDB_PATH", default="/app/data/dev.duckdb"))
+ICFES_DUCKDB_PATH = env("DUCKDB_S3_PATH", default=env(
+    "DUCKDB_PATH", default="/app/data/dev.duckdb"))
 # ------------------------------------------------------------------------------
+
+print("BOOT railway settings loaded", __file__)
