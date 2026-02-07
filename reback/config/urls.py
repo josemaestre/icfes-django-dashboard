@@ -6,6 +6,8 @@ from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
+from icfes_dashboard import sitemap_views
+from reback import seo_views
 
 urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
@@ -17,6 +19,12 @@ urlpatterns = [
     path("", include("reback.pages.urls", namespace="pages")),
     path('icfes/', include('icfes_dashboard.urls')),  # 👈 conexión al dashboard
     path('payments/', include('reback.users.stripe_urls', namespace='payments')),  # 👈 Stripe payments
+
+    # SEO
+    path("robots.txt", seo_views.robots_txt),
+    path("sitemap.xml", sitemap_views.sitemap_index),
+    path("sitemap-static.xml", sitemap_views.sitemap_static),
+    path("sitemap-icfes-<int:page>.xml", sitemap_views.sitemap_icfes),
     
     # Your stuff: custom urls includes go here
     # ...
