@@ -91,6 +91,48 @@
           </div>
         </div>
 
+        <!-- Panorama de Riesgo (Data Science P2) -->
+        <div class="row mt-4" id="panorama-riesgo-section" style="display: none;">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <h4 class="card-title mb-3">
+                  <i class="bx bx-shield-quarter me-2"></i>Panorama de Riesgo Academico
+                  <span class="badge bg-soft-info text-info ms-2" style="font-size: 0.65rem;">ML Model</span>
+                </h4>
+                <p class="text-muted mb-4">Prediccion basada en modelo XGBoost: probabilidad de que un colegio baje su promedio global >2% el proximo ano.</p>
+
+                <div class="row" id="riesgo-cards">
+                  <!-- Risk level cards injected by JS -->
+                </div>
+
+                <div class="row mt-3">
+                  <div class="col-md-6">
+                    <canvas id="graficoRiesgoDistribucion" height="200"></canvas>
+                  </div>
+                  <div class="col-md-6">
+                    <h6 class="mb-3">Top 5 Colegios en Mayor Riesgo</h6>
+                    <div class="table-responsive">
+                      <table class="table table-sm table-striped" id="tabla-top-riesgo">
+                        <thead>
+                          <tr>
+                            <th>Colegio</th>
+                            <th>Depto</th>
+                            <th>Sector</th>
+                            <th>Puntaje</th>
+                            <th>Prob. Declive</th>
+                          </tr>
+                        </thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="row mt-4">
           <div class="col-12 text-center">
             <button onclick="$('a[href=\'#busqueda\']').tab('show');" class="btn btn-outline-primary">
@@ -233,7 +275,7 @@
                 <div class="card-body">
                   <div class="d-flex">
                     <div class="flex-grow-1">
-                      <p class="text-muted fw-medium mb-2">Clasificación (Cluster)</p>
+                      <p class="text-muted fw-medium mb-2">Clasificacion (Cluster)</p>
                       <h5 class="mb-0 text-info" id="res-cluster">--</h5>
                       <small class="text-muted" id="res-cluster-desc">--</small>
                     </div>
@@ -250,10 +292,44 @@
             </div>
           </div>
 
+          <!-- Risk Card Row (Data Science P2) -->
+          <div class="row" id="res-riesgo-row" style="display: none;">
+            <div class="col-12">
+              <div class="card" id="res-riesgo-card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-3">
+                    <h5 class="card-title mb-0 me-2">
+                      <i class="bx bx-shield-quarter me-1"></i>Prediccion de Riesgo
+                    </h5>
+                    <span class="badge bg-soft-info text-info" style="font-size: 0.65rem;">ML Model</span>
+                  </div>
+                  <div class="row align-items-center">
+                    <div class="col-md-3 text-center">
+                      <div class="mb-1">
+                        <span class="badge rounded-pill fs-6 px-3 py-2" id="res-riesgo-badge">--</span>
+                      </div>
+                      <small class="text-muted">Nivel de Riesgo</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                      <h4 class="mb-0" id="res-riesgo-prob">--</h4>
+                      <small class="text-muted">Probabilidad de Declive</small>
+                    </div>
+                    <div class="col-md-6">
+                      <p class="text-muted mb-1"><small>Factores principales:</small></p>
+                      <ul class="list-unstyled mb-0" id="res-riesgo-factores">
+                        <li class="text-muted">--</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="row">
             <div class="col-12 text-center">
               <a href="#" id="btn-ver-detalle-completo" class="btn btn-outline-primary waves-effect waves-light mt-3">
-                Ver Análisis Completo y Similares <i class="bx bx-right-arrow-alt"></i>
+                Ver Analisis Completo y Similares <i class="bx bx-right-arrow-alt"></i>
               </a>
             </div>
           </div>

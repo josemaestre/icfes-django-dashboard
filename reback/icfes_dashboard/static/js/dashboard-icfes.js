@@ -101,7 +101,97 @@ fetch('/icfes/resumen/')
 
 
 // ==========================================
-// LÓGICA DE BÚSQUEDA DE COLEGIO
+// PANORAMA DE RIESGO (Data Science P2)
+// ==========================================
+
+fetch('/icfes/api/panorama-riesgo/')
+  .then(resp => resp.json())
+  .then(data => {
+    if (!data.disponible) return;
+
+    const section = document.getElementById('panorama-riesgo-section');
+    section.style.display = '';
+
+    // Risk level cards
+    const cardsContainer = document.getElementById('riesgo-cards');
+    const colorMap = {
+      'Alto': { bg: 'danger', icon: 'bx-error-circle' },
+      'Medio': { bg: 'warning', icon: 'bx-error' },
+      'Bajo': { bg: 'success', icon: 'bx-check-circle' }
+    };
+
+    data.distribucion.forEach(d => {
+      const cfg = colorMap[d.nivel_riesgo] || { bg: 'secondary', icon: 'bx-question-mark' };
+      const col = document.createElement('div');
+      col.className = 'col-md-4';
+      col.innerHTML = `
+        <div class="card mini-stats-wid border-start border-${cfg.bg} border-3">
+          <div class="card-body">
+            <div class="d-flex">
+              <div class="flex-grow-1">
+                <p class="text-muted fw-medium mb-1">Riesgo ${d.nivel_riesgo}</p>
+                <h4 class="mb-0">${d.total_colegios.toLocaleString()}</h4>
+                <small class="text-muted">${d.porcentaje}% del total</small>
+              </div>
+              <div class="flex-shrink-0 align-self-center">
+                <div class="avatar-sm">
+                  <span class="avatar-title rounded-circle bg-${cfg.bg}">
+                    <i class="bx ${cfg.icon} text-white"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      cardsContainer.appendChild(col);
+    });
+
+    // Doughnut chart
+    const ctxRiesgo = document.getElementById('graficoRiesgoDistribucion');
+    if (ctxRiesgo) {
+      new Chart(ctxRiesgo, {
+        type: 'doughnut',
+        data: {
+          labels: data.distribucion.map(d => `Riesgo ${d.nivel_riesgo}`),
+          datasets: [{
+            data: data.distribucion.map(d => d.total_colegios),
+            backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' },
+            title: {
+              display: true,
+              text: `Distribucion de Riesgo (${data.total_colegios_analizados.toLocaleString()} colegios)`
+            }
+          }
+        }
+      });
+    }
+
+    // Top risk table
+    const tbody = document.querySelector('#tabla-top-riesgo tbody');
+    if (tbody && data.top_riesgo) {
+      data.top_riesgo.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><small>${r.nombre_colegio}</small></td>
+          <td><small>${r.departamento}</small></td>
+          <td><small>${r.sector}</small></td>
+          <td>${r.puntaje_actual}</td>
+          <td><span class="badge bg-danger">${(r.prob_declive * 100).toFixed(1)}%</span></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  })
+  .catch(err => console.log('Panorama riesgo not available:', err.message));
+
+
+// ==========================================
+// LOGICA DE BUSQUEDA DE COLEGIO
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -147,8 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (searchBtn) {
     searchBtn.addEventListener('click', () => {
-      // Acción manual de búsqueda (puede tomar el primer resultado)
-      // Por simplicidad, dejamos que el usuario seleccione de la lista o si escribe exacto
+      // Accion manual de busqueda
     });
   }
 
@@ -161,15 +250,34 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(r => r.json())
       .then(data => {
         if (data.error) { alert(data.error); return; }
-
         renderSchoolCard(data);
       });
+  }
+
+  // Helper: human-readable feature names
+  function formatFeatureName(feat) {
+    const names = {
+      'cambio_ranking_nacional': 'Cambio en ranking',
+      'ranking_nacional': 'Posicion en ranking',
+      'avg_punt_global': 'Puntaje global',
+      'cambio_porcentual_global': 'Cambio % global',
+      'cambio_absoluto_global': 'Cambio absoluto',
+      'volatilidad_global': 'Volatilidad historica',
+      'tendencia_global': 'Tendencia historica',
+      'brecha_nacional_global': 'Brecha vs nacional',
+      'fd_potencial_mejora': 'Potencial de mejora',
+      'dispersion_materias': 'Dispersion entre materias',
+      'fd_brecha_pct_mat': 'Brecha en matematicas',
+      'fd_brecha_pct_lec': 'Brecha en lectura',
+    };
+    return names[feat] || feat.replace(/_/g, ' ');
   }
 
   function renderSchoolCard(data) {
     const info = data.info_basica;
     const ultimo = data.ultimo_ano;
     const cluster = data.cluster;
+    const riesgo = data.riesgo;
 
     // Header
     document.getElementById('res-nombre-colegio').textContent = info.nombre_colegio;
@@ -184,13 +292,49 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('res-estudiantes').textContent = ultimo.total_estudiantes || '--';
     }
 
-    // Cluster Info (LA PARTE SOLICITADA)
+    // Cluster Info
     if (cluster && cluster.cluster_name) {
       document.getElementById('res-cluster').textContent = cluster.cluster_name;
-      document.getElementById('res-cluster-desc').textContent = `Grupo Cluster`;
+      document.getElementById('res-cluster-desc').textContent = 'Grupo Cluster';
     } else {
       document.getElementById('res-cluster').textContent = 'No Clasificado';
       document.getElementById('res-cluster-desc').textContent = '--';
+    }
+
+    // Risk Info (P2)
+    const riesgoRow = document.getElementById('res-riesgo-row');
+    if (riesgo && riesgo.nivel_riesgo) {
+      riesgoRow.style.display = '';
+
+      // Badge color
+      const badge = document.getElementById('res-riesgo-badge');
+      const riskColors = { 'Alto': 'bg-danger', 'Medio': 'bg-warning text-dark', 'Bajo': 'bg-success' };
+      badge.className = `badge rounded-pill fs-6 px-3 py-2 ${riskColors[riesgo.nivel_riesgo] || 'bg-secondary'}`;
+      badge.textContent = riesgo.nivel_riesgo;
+
+      // Card border color
+      const card = document.getElementById('res-riesgo-card');
+      card.className = 'card';
+      const borderColors = { 'Alto': 'border-danger', 'Medio': 'border-warning', 'Bajo': 'border-success' };
+      card.classList.add('border', borderColors[riesgo.nivel_riesgo] || '');
+
+      // Probability
+      document.getElementById('res-riesgo-prob').textContent = `${(riesgo.prob_declive * 100).toFixed(1)}%`;
+
+      // Factors
+      const factoresEl = document.getElementById('res-riesgo-factores');
+      factoresEl.innerHTML = '';
+      if (riesgo.factores_principales && riesgo.factores_principales.length > 0) {
+        riesgo.factores_principales.forEach(f => {
+          const li = document.createElement('li');
+          li.innerHTML = `<small><i class="bx bx-right-arrow-alt me-1"></i>${formatFeatureName(f.feature)}</small>`;
+          factoresEl.appendChild(li);
+        });
+      } else {
+        factoresEl.innerHTML = '<li class="text-muted"><small>Sin factores disponibles</small></li>';
+      }
+    } else {
+      riesgoRow.style.display = 'none';
     }
 
     // Link detalle completo

@@ -328,6 +328,48 @@
       </div>
     </div>
 
+    <!-- Panorama de Riesgo Académico (Data Science P2) -->
+    <div class="row" id="panorama-riesgo-section" style="display: none;">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="bx bx-shield-quarter me-1"></i> Panorama de Riesgo Académico
+              <span class="badge bg-info-subtle text-info ms-2" style="font-size: 0.65rem;">ML Model</span>
+            </h5>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">Predicción basada en modelo XGBoost: probabilidad de que un colegio baje su promedio global &gt;2% el próximo año.</p>
+            <div class="row mb-3" id="riesgo-cards">
+              <!-- Risk level cards injected by JS -->
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div id="chart-riesgo-distribucion"></div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="mb-3">Top 5 Colegios en Mayor Riesgo</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-striped" id="tabla-top-riesgo">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Colegio</th>
+                        <th>Depto</th>
+                        <th>Sector</th>
+                        <th>Puntaje</th>
+                        <th>Prob. Declive</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Top Colegios Table -->
     <div class="row">
       <div class="col-12">

@@ -35,8 +35,9 @@ class SubscriptionMiddleware:
             '/icfes/api/colegios/destacados/',  # Colegios destacados
             '/icfes/api/colegio/',  # Detalles de colegio (incluye AI recommendations)
             '/icfes/api/comparar-colegios/',  # Comparación de colegios
+            '/icfes/api/panorama-riesgo/',  # Panorama de riesgo (ML)
         ]
-        
+
         # Solo aplicar a endpoints de ICFES API
         if request.path.startswith('/icfes/api/'):
             # Verificar si es un endpoint exento
@@ -99,6 +100,7 @@ class SubscriptionMiddleware:
                 '/icfes/api/colegios/destacados/',
                 '/icfes/api/colegio/',
                 '/icfes/api/comparar-colegios/',
+                '/icfes/api/panorama-riesgo/',
             ])
             
             if 200 <= response.status_code < 300 and not is_exempt:

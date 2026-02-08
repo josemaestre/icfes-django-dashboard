@@ -1103,13 +1103,23 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
+    # Risk Data (P2 - Data Science)
+    query_riesgo = """
+        SELECT ano, prob_declive, nivel_riesgo, prediccion_declive,
+               factores_principales
+        FROM gold.fct_riesgo_colegios
+        WHERE colegio_sk = ?
+        ORDER BY ano DESC
+        LIMIT 1
+    """
+
     try:
         df_basico = execute_query(query_basico, params=[colegio_sk_str])
         df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
         df_zscore = execute_query(query_zscore, params=[colegio_sk_str, colegio_sk_str])
         df_rango = execute_query(query_rango, params=[colegio_sk_str])
         df_fd = execute_query(query_fd, params=[colegio_sk_str])
-        
+
         df_cluster = execute_query(query_cluster, params=[colegio_sk_str])
     except Exception as e:
         # Fallback partial loading if some non-critical queries fail
@@ -1122,8 +1132,31 @@ def api_colegio_resumen(request, colegio_sk):
         if 'df_fd' not in locals(): df_fd = pd.DataFrame()
         df_cluster = pd.DataFrame()
 
+    # Risk query - separate try/catch (table may not exist in prod)
+    df_riesgo = pd.DataFrame()
+    try:
+        df_riesgo = execute_query(query_riesgo, params=[colegio_sk_str])
+    except Exception:
+        pass
+
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
+
+    # Build risk data
+    riesgo_data = {}
+    if not df_riesgo.empty:
+        row_r = df_riesgo.iloc[0]
+        factores = []
+        try:
+            factores = json.loads(row_r['factores_principales']) if row_r['factores_principales'] else []
+        except (json.JSONDecodeError, TypeError):
+            pass
+        riesgo_data = {
+            'ano': int(row_r['ano']),
+            'prob_declive': round(float(row_r['prob_declive']), 3),
+            'nivel_riesgo': row_r['nivel_riesgo'],
+            'factores_principales': factores,
+        }
 
     resumen = {
         'info_basica': df_basico.to_dict(orient='records')[0],
@@ -1131,7 +1164,8 @@ def api_colegio_resumen(request, colegio_sk):
         'z_score': df_zscore.to_dict(orient='records')[0] if not df_zscore.empty else {},
         'rango_historico': df_rango.to_dict(orient='records')[0] if not df_rango.empty else {},
         'analisis': df_fd.to_dict(orient='records')[0] if not df_fd.empty else {},
-        'cluster': df_cluster.to_dict(orient='records')[0] if not df_cluster.empty else {}
+        'cluster': df_cluster.to_dict(orient='records')[0] if not df_cluster.empty else {},
+        'riesgo': riesgo_data,
     }
 
     return JsonResponse(resumen, safe=False)
@@ -2395,6 +2429,128 @@ def api_colegio_distribucion_niveles(request, colegio_sk):
         import traceback
         traceback.print_exc()
         return JsonResponse({
-            'error': 'Error calculating levels', 
+            'error': 'Error calculating levels',
             'details': str(e)
         }, status=500)
+
+
+# ============================================================================
+# ENDPOINTS - RIESGO DE DECLIVE (Data Science P2)
+# ============================================================================
+
+@require_http_methods(["GET"])
+def api_colegio_riesgo(request, colegio_sk):
+    """
+    Risk prediction for a specific school.
+    Returns probability of decline, risk level, and contributing factors.
+    Source: gold.fct_riesgo_colegios (XGBoost model output)
+    """
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk invalido'}, status=400)
+
+    colegio_sk_str = str(colegio_sk)
+
+    query = """
+        SELECT
+            colegio_sk, codigo_dane, nombre_colegio, sector, departamento,
+            ano, avg_punt_global_actual, prob_declive, prediccion_declive,
+            nivel_riesgo, factores_principales, modelo_version
+        FROM gold.fct_riesgo_colegios
+        WHERE colegio_sk = ?
+        ORDER BY ano DESC
+        LIMIT 1
+    """
+
+    try:
+        df = execute_query(query, params=[colegio_sk_str])
+    except Exception:
+        return JsonResponse({'riesgo': None, 'disponible': False})
+
+    if df.empty:
+        return JsonResponse({'riesgo': None, 'disponible': False})
+
+    row = df.iloc[0]
+    factores = []
+    try:
+        factores = json.loads(row['factores_principales']) if row['factores_principales'] else []
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    return JsonResponse({
+        'disponible': True,
+        'riesgo': {
+            'ano': int(row['ano']),
+            'prob_declive': round(float(row['prob_declive']), 3),
+            'nivel_riesgo': row['nivel_riesgo'],
+            'prediccion_declive': int(row['prediccion_declive']),
+            'avg_punt_global_actual': round(float(row['avg_punt_global_actual']), 1),
+            'factores_principales': factores,
+            'modelo_version': row['modelo_version'],
+        }
+    })
+
+
+@require_http_methods(["GET"])
+def api_panorama_riesgo(request):
+    """
+    Aggregated risk panorama for the general overview tab.
+    Returns risk distribution across all schools.
+    """
+    query = """
+        SELECT
+            nivel_riesgo,
+            COUNT(*) as total_colegios,
+            ROUND(AVG(prob_declive), 3) as prob_promedio,
+            ROUND(AVG(avg_punt_global_actual), 1) as puntaje_promedio
+        FROM gold.fct_riesgo_colegios
+        GROUP BY nivel_riesgo
+        ORDER BY
+            CASE nivel_riesgo
+                WHEN 'Alto' THEN 1
+                WHEN 'Medio' THEN 2
+                WHEN 'Bajo' THEN 3
+            END
+    """
+
+    try:
+        df = execute_query(query)
+    except Exception:
+        return JsonResponse({'disponible': False, 'distribucion': []})
+
+    if df.empty:
+        return JsonResponse({'disponible': False, 'distribucion': []})
+
+    total = int(df['total_colegios'].sum())
+    distribucion = []
+    for _, row in df.iterrows():
+        distribucion.append({
+            'nivel_riesgo': row['nivel_riesgo'],
+            'total_colegios': int(row['total_colegios']),
+            'porcentaje': round(int(row['total_colegios']) / total * 100, 1),
+            'prob_promedio': float(row['prob_promedio']),
+            'puntaje_promedio': float(row['puntaje_promedio']),
+        })
+
+    # Top 5 colegios en mayor riesgo
+    query_top = """
+        SELECT nombre_colegio, departamento, sector,
+               ROUND(prob_declive, 3) as prob_declive,
+               ROUND(avg_punt_global_actual, 1) as puntaje_actual
+        FROM gold.fct_riesgo_colegios
+        WHERE nivel_riesgo = 'Alto'
+        ORDER BY prob_declive DESC
+        LIMIT 5
+    """
+
+    try:
+        df_top = execute_query(query_top)
+        top_riesgo = df_top.to_dict(orient='records')
+    except Exception:
+        top_riesgo = []
+
+    return JsonResponse({
+        'disponible': True,
+        'total_colegios_analizados': total,
+        'distribucion': distribucion,
+        'top_riesgo': top_riesgo,
+    })

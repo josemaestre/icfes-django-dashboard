@@ -112,6 +112,12 @@ urlpatterns = [
     # Endpoint de Comparación de Colegios (NUEVO - requiere autenticación)
     path('api/comparar-colegios/', views.api_comparar_colegios,
          name='api_comparar_colegios'),
+
+    # Endpoints de Riesgo de Declive (Data Science P2)
+    path('api/colegio/<str:colegio_sk>/riesgo/',
+         views.api_colegio_riesgo, name='api_colegio_riesgo'),
+    path('api/panorama-riesgo/',
+         views.api_panorama_riesgo, name='api_panorama_riesgo'),
 ]
 
 
