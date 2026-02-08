@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadDepartamentosChart();
     loadRegionalChart();
     loadColegiosTable();
+    loadPanoramaRiesgo();
 
     // Year selector event listener
     document.getElementById('year-selector').addEventListener('change', function () {
@@ -483,6 +484,127 @@ async function loadColegiosTable() {
         console.error('Error loading colegios table:', error);
         document.getElementById('table-colegios-body').innerHTML =
             '<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar datos</td></tr>';
+    }
+}
+
+// ============================================================================
+// PANORAMA DE RIESGO ACADÉMICO (Data Science P2)
+// ============================================================================
+
+async function loadPanoramaRiesgo() {
+    try {
+        const response = await fetch('/icfes/api/panorama-riesgo/');
+        const data = await response.json();
+
+        if (!data.disponible) return;
+
+        const section = document.getElementById('panorama-riesgo-section');
+        if (!section) return;
+        section.style.display = '';
+
+        // Risk level cards
+        const cardsContainer = document.getElementById('riesgo-cards');
+        if (cardsContainer) {
+            const colorMap = {
+                'Alto': { bg: 'danger', icon: 'bx-error-circle' },
+                'Medio': { bg: 'warning', icon: 'bx-error' },
+                'Bajo': { bg: 'success', icon: 'bx-check-circle' }
+            };
+
+            cardsContainer.innerHTML = '';
+            data.distribucion.forEach(d => {
+                const cfg = colorMap[d.nivel_riesgo] || { bg: 'secondary', icon: 'bx-question-mark' };
+                const col = document.createElement('div');
+                col.className = 'col-md-4';
+                col.innerHTML = `
+                    <div class="card mini-stats-wid border-start border-${cfg.bg} border-3 mb-0">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="flex-grow-1">
+                                    <p class="text-muted fw-medium mb-1">Riesgo ${d.nivel_riesgo}</p>
+                                    <h4 class="mb-0">${d.total_colegios.toLocaleString()}</h4>
+                                    <small class="text-muted">${d.porcentaje}% del total</small>
+                                </div>
+                                <div class="flex-shrink-0 align-self-center">
+                                    <div class="avatar-sm">
+                                        <span class="avatar-title rounded-circle bg-${cfg.bg}">
+                                            <i class="bx ${cfg.icon} text-white"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                cardsContainer.appendChild(col);
+            });
+        }
+
+        // Donut chart (ApexCharts)
+        const chartEl = document.querySelector('#chart-riesgo-distribucion');
+        if (chartEl) {
+            const chartOptions = {
+                chart: {
+                    height: 280,
+                    type: 'donut',
+                },
+                series: data.distribucion.map(d => d.total_colegios),
+                labels: data.distribucion.map(d => `Riesgo ${d.nivel_riesgo}`),
+                colors: [colors.danger, colors.warning, colors.success],
+                legend: {
+                    show: true,
+                    position: 'bottom',
+                },
+                stroke: { width: 0 },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '70%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    showAlways: true,
+                                    show: true,
+                                    label: 'Analizados',
+                                    formatter: function () {
+                                        return data.total_colegios_analizados.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                dataLabels: { enabled: false },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return val.toLocaleString() + ' colegios';
+                        }
+                    }
+                }
+            };
+
+            if (charts.riesgo) charts.riesgo.destroy();
+            charts.riesgo = new ApexCharts(chartEl, chartOptions);
+            charts.riesgo.render();
+        }
+
+        // Top risk table
+        const tbody = document.querySelector('#tabla-top-riesgo tbody');
+        if (tbody && data.top_riesgo) {
+            tbody.innerHTML = '';
+            data.top_riesgo.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><small>${r.nombre_colegio}</small></td>
+                    <td><small>${r.departamento}</small></td>
+                    <td><small>${r.sector}</small></td>
+                    <td>${r.puntaje_actual}</td>
+                    <td><span class="badge bg-danger">${(r.prob_declive * 100).toFixed(1)}%</span></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.log('Panorama riesgo not available:', err.message);
     }
 }
 

@@ -86,8 +86,6 @@ urlpatterns = [
          views.api_colegio_comparacion_contexto, name='api_colegio_comparacion_contexto'),
     path('api/colegio/<str:colegio_sk>/comparacion-chart-data/',
          views.api_colegio_comparacion_chart_data, name='api_colegio_comparacion_chart_data'),
-    path('api/colegio/<str:colegio_sk>/comparacion-chart-data/',
-         views.api_colegio_comparacion_chart_data, name='api_colegio_comparacion_chart_data'),
 
     # Endpoint de Colegios Similares (Clustering)
     path('api/colegio/<str:colegio_sk>/similares/',

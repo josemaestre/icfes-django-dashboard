@@ -544,6 +544,36 @@
         </div>
       </div>
 
+      <!-- Riesgo de Declive (Data Science P2) -->
+      <div class="row mb-3" id="schoolRiesgoRow" style="display: none;">
+        <div class="col-12">
+          <div class="card" id="schoolRiesgoCard">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                  <div class="avatar-sm">
+                    <span class="avatar-title rounded-circle bg-soft-danger text-danger" id="schoolRiesgoIcon">
+                      <i class="bx bx-shield-quarter fs-4"></i>
+                    </span>
+                  </div>
+                </div>
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">Predicción de Riesgo Académico
+                    <span class="badge bg-info-subtle text-info ms-1" style="font-size: 0.6rem;">ML</span>
+                  </h6>
+                  <div class="d-flex align-items-center gap-3">
+                    <span class="badge rounded-pill fs-6 px-3 py-2" id="schoolRiesgoBadge">--</span>
+                    <span class="text-muted">Prob. declive: <strong id="schoolRiesgoProb">--</strong></span>
+                  </div>
+                  <ul class="list-unstyled mb-0 mt-2" id="schoolRiesgoFactores">
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- School Performance Gauges -->
       <div class="row mb-3">
         <div class="col-12">
@@ -1716,10 +1746,10 @@
 <script src="{% static '/vendor/apexcharts/apexcharts.min.js' %}"></script>
 <!-- API Cache (must load before dashboard scripts) -->
 <script src="{% static 'js/utils/api-cache.js' %}"></script>
-<script src="{% static 'js/pages/dashboard.icfes.js' %}?v=6"></script>
+<script src="{% static 'js/pages/dashboard.icfes.js' %}?v=7"></script>
 <script src="{% static 'js/pages/dashboard.icfes.gauges.js' %}?v=2"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.gauges.js' %}?v=2"></script>
-<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=8"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=9"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.table.js' %}?v=5"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.insights.js' %}?v=2"></script>
 <script src="{% static 'js/pages/dashboard.icfes.compare.js' %}?v=7"></script>

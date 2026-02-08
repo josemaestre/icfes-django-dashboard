@@ -6,6 +6,25 @@
 let currentSchoolSk = null;
 let schoolCharts = {};
 
+// Human-readable names for ML risk features
+function formatRiskFeatureName(feat) {
+    const names = {
+        'cambio_ranking_nacional': 'Cambio en ranking',
+        'ranking_nacional': 'Posición en ranking',
+        'avg_punt_global': 'Puntaje global',
+        'cambio_porcentual_global': 'Cambio % global',
+        'cambio_absoluto_global': 'Cambio absoluto',
+        'volatilidad_global': 'Volatilidad histórica',
+        'tendencia_global': 'Tendencia histórica',
+        'brecha_nacional_global': 'Brecha vs nacional',
+        'fd_potencial_mejora': 'Potencial de mejora',
+        'dispersion_materias': 'Dispersión entre materias',
+        'fd_brecha_pct_mat': 'Brecha en matemáticas',
+        'fd_brecha_pct_lec': 'Brecha en lectura',
+    };
+    return names[feat] || feat.replace(/_/g, ' ');
+}
+
 // Initialize school search when tab is shown
 document.addEventListener('DOMContentLoaded', function () {
     // Use event delegation since elements are in a tab
@@ -118,12 +137,9 @@ async function loadSchoolDetail(school) {
 
 // Load school summary
 async function loadSchoolResumen(sk) {
-    console.log('[DEBUG] loadSchoolResumen called for sk:', sk);
     try {
         const response = await fetch(`/icfes/api/colegio/${sk}/resumen/`);
         const data = await response.json();
-        console.log('[DEBUG] Resumen data received:', data);
-        console.log('[DEBUG] Cluster data:', data.cluster);
 
         if (data.ultimo_ano) {
             document.getElementById('schoolStatPuntaje').textContent =
@@ -135,15 +151,12 @@ async function loadSchoolResumen(sk) {
         }
 
         // Cluster display
-        console.log('[DEBUG] Checking cluster condition:', data.cluster, data.cluster?.cluster_name);
         if (data.cluster && data.cluster.cluster_name) {
-            console.log('[DEBUG] Setting cluster to:', data.cluster.cluster_name);
             document.getElementById('schoolStatCluster').textContent = data.cluster.cluster_name;
             document.getElementById('schoolStatClusterDesc').textContent = `Grupo ${data.cluster.cluster_id}`;
             // Load similar schools
             loadSimilarSchools(sk);
         } else {
-            console.log('[DEBUG] No cluster data, setting to No Clasificado');
             document.getElementById('schoolStatCluster').textContent = 'No Clasificado';
             document.getElementById('schoolStatClusterDesc').textContent = 'Sin cluster asignado';
             document.getElementById('similarSchoolsTableBody').innerHTML = `
@@ -191,6 +204,38 @@ async function loadSchoolResumen(sk) {
         } else {
             document.getElementById('schoolStatZScore').textContent = '--';
             document.getElementById('schoolStatZScoreInterpretation').innerHTML = '<span class="text-muted">Sin datos</span>';
+        }
+
+        // Risk display (P2 Data Science)
+        const riesgoRow = document.getElementById('schoolRiesgoRow');
+        if (riesgoRow) {
+            if (data.riesgo && data.riesgo.nivel_riesgo) {
+                riesgoRow.style.display = '';
+
+                const badge = document.getElementById('schoolRiesgoBadge');
+                const riskColors = { 'Alto': 'bg-danger', 'Medio': 'bg-warning text-dark', 'Bajo': 'bg-success' };
+                badge.className = `badge rounded-pill fs-6 px-3 py-2 ${riskColors[data.riesgo.nivel_riesgo] || 'bg-secondary'}`;
+                badge.textContent = `Riesgo ${data.riesgo.nivel_riesgo}`;
+
+                const card = document.getElementById('schoolRiesgoCard');
+                const borderColors = { 'Alto': 'border-danger', 'Medio': 'border-warning', 'Bajo': 'border-success' };
+                card.className = `card border ${borderColors[data.riesgo.nivel_riesgo] || ''}`;
+
+                document.getElementById('schoolRiesgoProb').textContent =
+                    `${(data.riesgo.prob_declive * 100).toFixed(1)}%`;
+
+                const factoresEl = document.getElementById('schoolRiesgoFactores');
+                factoresEl.innerHTML = '';
+                if (data.riesgo.factores_principales && data.riesgo.factores_principales.length > 0) {
+                    data.riesgo.factores_principales.slice(0, 3).forEach(f => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<small class="text-muted"><i class="bx bx-right-arrow-alt me-1"></i>${formatRiskFeatureName(f.feature)}</small>`;
+                        factoresEl.appendChild(li);
+                    });
+                }
+            } else {
+                riesgoRow.style.display = 'none';
+            }
         }
 
         return data; // Return data for reuse in other functions
