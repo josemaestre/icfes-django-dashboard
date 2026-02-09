@@ -55,11 +55,17 @@ DATABASES["duckdb"] = {
 
 # CACHES
 # ------------------------------------------------------------------------------
-# Use simple cache for Railway (no Redis required initially)
+# Use Redis for caching in production
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,  # Don't crash if Redis is down
+        },
+        "KEY_PREFIX": "icfes",
+        "TIMEOUT": 60 * 15,  # 15 minutes default
     }
 }
 
