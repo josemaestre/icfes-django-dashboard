@@ -45,11 +45,13 @@ def dashboard_charts(request):
 # ENDPOINTS API - DATOS GENERALES
 # ============================================================================
 
+@cache_page(60 * 15)  # 15 minutos - estadísticas generales
 @require_http_methods(["GET"])
 def icfes_estadisticas_generales(request):
     """
     Endpoint: Estadísticas generales del sistema.
     Query params: ?ano=2023 (opcional)
+    CACHED: 15 minutos
     """
     ano = request.GET.get('ano')
     ano = int(ano) if ano else None
@@ -58,9 +60,12 @@ def icfes_estadisticas_generales(request):
     return JsonResponse(stats, safe=False)
 
 
+@cache_page(60 * 60 * 24)  # 24 horas - lista de años cambia raramente
 @require_http_methods(["GET"])
 def icfes_anos_disponibles(request):
-    """Endpoint: Lista de años disponibles."""
+    """Endpoint: Lista de años disponibles.
+    CACHED: 24 horas
+    """
     anos = get_anos_disponibles()
     return JsonResponse({'anos': anos})
 
@@ -69,11 +74,13 @@ def icfes_anos_disponibles(request):
 # ENDPOINTS API - TENDENCIAS REGIONALES
 # ============================================================================
 
+@cache_page(60 * 60)  # 1 hora - tendencias regionales
 @require_http_methods(["GET"])
 def tendencias_regionales(request):
     """
     Endpoint: Tendencias regionales por año.
     Query params: ?ano=2023&region=ANDINA (opcionales)
+    CACHED: 1 hora
     """
     ano = request.GET.get('ano')
     region = request.GET.get('region')
@@ -128,12 +135,14 @@ def colegios_agregados(request):
     return JsonResponse(data, safe=False)
 
 
+@cache_page(60 * 30)  # 30 minutos - top colegios
 @require_http_methods(["GET"])
 def colegios_destacados(request):
     """
     Endpoint: Top colegios destacados.
     Query params: ?ano=2023&limit=50 (opcionales)
     Genera el ranking dinámicamente desde fct_agg_colegios_ano
+    CACHED: 30 minutos
     """
     # Validar y sanitizar parámetros
     try:
@@ -224,6 +233,7 @@ def colegio_detalle(request, colegio_sk):
 # ENDPOINTS API - BRECHAS EDUCATIVAS
 # ============================================================================
 
+@cache_page(60 * 60)  # 1 hora - brechas educativas
 @require_http_methods(["GET"])
 def brechas_educativas(request):
     """
@@ -231,6 +241,7 @@ def brechas_educativas(request):
     Query params: ?ano=2023&tipo_brecha=Sector (opcionales)
     Nota: Esta tabla contiene brechas agregadas (sector, urbano/rural, materias, regional).
     Para análisis por departamento, usar fct_agg_colegios_ano directamente.
+    CACHED: 1 hora
     """
     ano = request.GET.get('ano')
     tipo_brecha = request.GET.get('tipo_brecha')
@@ -255,11 +266,13 @@ def brechas_educativas(request):
 # ENDPOINTS API - ANÁLISIS COMPARATIVOS
 # ============================================================================
 
+@cache_page(60 * 30)  # 30 minutos - comparación sectores
 @require_http_methods(["GET"])
 def comparacion_sectores(request):
     """
     Endpoint: Comparación entre sector oficial y no oficial.
     Query params: ?ano=2023 (opcional)
+    CACHED: 30 minutos
     """
     try:
         ano = int(request.GET.get('ano', 2023))
@@ -288,11 +301,13 @@ def comparacion_sectores(request):
     return JsonResponse(data, safe=False)
 
 
+@cache_page(60 * 60)  # 1 hora - ranking departamental
 @require_http_methods(["GET"])
 def ranking_departamental(request):
     """
     Endpoint: Ranking de departamentos por promedio.
     Query params: ?ano=2023 (opcional)
+    CACHED: 1 hora
     """
     try:
         ano = int(request.GET.get('ano', 2023))
@@ -443,11 +458,13 @@ def api_comparacion_sectores_chart(request):
     return JsonResponse(data, safe=False)
 
 
+@cache_page(60 * 60)  # 1 hora - ranking departamental
 @require_http_methods(["GET"])
 def api_ranking_departamentos(request):
     """
     Endpoint: Ranking de departamentos para gráfico de barras.
     Query params: ?ano=2023&limit=10 (opcionales)
+    CACHED: 1 hora
     """
     try:
         ano = int(request.GET.get('ano', 2023))
