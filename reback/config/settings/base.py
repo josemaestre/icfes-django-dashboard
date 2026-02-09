@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 APPS_DIR = BASE_DIR / "reback"
 env = environ.Env()
 
-READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=False)
+READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=True)
 if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
     env.read_env(str(BASE_DIR / ".env"))
@@ -311,6 +311,7 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 WOMPI_PUBLIC_KEY = env("WOMPI_PUBLIC_KEY", default="")
 WOMPI_PRIVATE_KEY = env("WOMPI_PRIVATE_KEY", default="")
 WOMPI_EVENTS_SECRET = env("WOMPI_EVENTS_SECRET", default="")
+WOMPI_INTEGRITY_SECRET = env("WOMPI_INTEGRITY_SECRET", default="")
 WOMPI_BASE_URL = env("WOMPI_BASE_URL", default="https://production.wompi.co/v1")
 
 # CELERY

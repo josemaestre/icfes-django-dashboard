@@ -21,7 +21,7 @@ class SubscriptionPlan(models.Model):
     tier = models.CharField(max_length=20, choices=TIER_CHOICES, unique=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    price_monthly = models.DecimalField(max_digits=6, decimal_places=2)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2)
     
     # Límites de uso
     max_queries_per_day = models.IntegerField(

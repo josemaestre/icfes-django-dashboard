@@ -34,18 +34,43 @@ def wompi_checkout(request):
         if plan.tier == 'free':
             return redirect('pages:pricing')
         
-        # Generate unique reference
-        reference = f"sub-{plan.tier}-{request.user.id}-{timezone.now().timestamp()}"
+        # Generate unique reference (Use int timestamp to avoid float precision issues)
+        reference = f"sub-{plan.tier}-{request.user.id}-{int(timezone.now().timestamp())}"
         
         # Amount in cents
         amount_in_cents = int(float(plan.price_monthly) * 100)
+        
+        # Get Public Key from settings
+        public_key = settings.WOMPI_PUBLIC_KEY
+        
+        # Get Integrity Secret from settings
+        # Note: Use WOMPI_EVENTS_SECRET if WOMPI_INTEGRITY_SECRET doesn't work
+        integrity_secret = settings.WOMPI_EVENTS_SECRET or settings.WOMPI_INTEGRITY_SECRET
+        
+        # Generate Signature: SHA256(Reference + AmountInCents + Currency + IntegritySecret)
+        import hashlib
+        signature_source = f"{reference}{amount_in_cents}COP{integrity_secret}"
+        integrity_signature = hashlib.sha256(signature_source.encode('utf-8')).hexdigest()
+        
+        # LOGS DETALLADOS SOLICITADOS POR EL USUARIO
+        print("="*50)
+        print("DEBUG WOMPI PARAMETERS (TRYING EVENTS SECRET):")
+        print(f"Reference: {reference}")
+        print(f"Amount (Cents): {amount_in_cents}")
+        print(f"Currency: COP")
+        print(f"Integrity Secret (Events): {integrity_secret}")
+        print(f"Public Key: {public_key}")
+        print(f"Signature Source (Concatenation): {signature_source}")
+        print(f"Generated Signature: {integrity_signature}")
+        print("="*50)
         
         context = {
             'plan': plan,
             'reference': reference,
             'amount_in_cents': amount_in_cents,
+            'integrity_signature': integrity_signature, # NEW
             'customer_email': request.user.email,
-            'wompi_public_key': settings.WOMPI_PUBLIC_KEY,
+            'wompi_public_key': public_key,
             'success_url': request.build_absolute_uri(reverse('payments:wompi_success')),
             'cancel_url': request.build_absolute_uri(reverse('payments:cancel')),
         }
@@ -136,7 +161,6 @@ def handle_transaction_updated(transaction):
 
 
 @login_required
-@require_GET
 def wompi_success(request):
     """Display success page after Wompi payment."""
     transaction_id = request.GET.get('id')

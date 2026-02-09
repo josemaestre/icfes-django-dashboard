@@ -1,6 +1,6 @@
 from django.urls import path
 from django.shortcuts import render
-from pages.views import (root_page_view, dynamic_pages_view, landing_page_view)
+from .views import (root_page_view, dynamic_pages_view, landing_page_view)
 
 
 app_name = 'pages'
