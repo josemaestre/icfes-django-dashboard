@@ -115,6 +115,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "reback.users",
     "reback.pages",
+    "reback.middleware",  # Redis logging
     "icfes_dashboard",
     # Your stuff: custom apps go here
 ]
@@ -165,6 +166,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -173,7 +175,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
-    "reback.users.subscription_middleware.SubscriptionMiddleware",
+    "reback.users.middleware.SubscriptionMiddleware",
+    "reback.middleware.redis_logging.RedisCacheLoggingMiddleware",  # Redis logging
 ]
 
 # STATIC
@@ -280,12 +283,41 @@ LOGGING = {
         "verbose": {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
+        "simple": {
+            "format": "%(levelname)s %(message)s",
+        },
     },
     "handlers": {
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        # Redis cache logging
+        "redis_cache": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django Redis backend
+        "django_redis": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Celery logging
+        "celery": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django cache framework
+        "django.core.cache": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
         },
     },
     "root": {"level": "INFO", "handlers": ["console"]},
