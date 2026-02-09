@@ -5,6 +5,7 @@ Conecta con la base de datos DuckDB del proyecto dbt.
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import cache_page
 import pandas as pd
 import json
 from .db_utils import (
@@ -380,11 +381,13 @@ def icfes_resumen(request):
 # ENDPOINTS API - CHARTS DATA
 # ============================================================================
 
+@cache_page(60 * 60 * 24)  # Cache 24 horas - datos históricos no cambian
 @require_http_methods(["GET"])
 def api_tendencias_nacionales(request):
     """
     Endpoint: Tendencias nacionales por año (para gráfico de líneas).
     Retorna evolución de puntajes promedio por materia.
+    CACHED: 24 horas
     """
     query = """
         SELECT 
@@ -405,11 +408,13 @@ def api_tendencias_nacionales(request):
     return JsonResponse(data, safe=False)
 
 
+@cache_page(60 * 30)  # Cache 30 minutos
 @require_http_methods(["GET"])
 def api_comparacion_sectores_chart(request):
     """
     Endpoint: Comparación de sectores para gráfico de barras.
     Query params: ?ano=2023 (opcional)
+    CACHED: 30 minutos
     """
     try:
         ano = int(request.GET.get('ano', 2023))
@@ -469,11 +474,13 @@ def api_ranking_departamentos(request):
     return JsonResponse(data, safe=False)
 
 
+@cache_page(60 * 60)  # Cache 1 hora
 @require_http_methods(["GET"])
 def api_distribucion_regional(request):
     """
     Endpoint: Distribución de estudiantes por región.
     Query params: ?ano=2023 (opcional)
+    CACHED: 1 hora
     """
     try:
         ano = int(request.GET.get('ano', 2023))

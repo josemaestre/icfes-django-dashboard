@@ -65,6 +65,22 @@ ICFES_DUCKDB_PATH = str(BASE_DIR.parent.parent / 'dbt' / 'icfes_processing' / 'd
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# CACHES
+# ------------------------------------------------------------------------------
+# https://docs.djangoproject.com/en/dev/ref/settings/#caches
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,  # Don't crash if Redis is down
+        },
+        "KEY_PREFIX": "icfes",
+        "TIMEOUT": 60 * 15,  # 15 minutes default
+    }
+}
+
 # URLS
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
@@ -92,7 +108,7 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.mfa",
     "allauth.socialaccount",
-    # TODO: Add django_celery_beat after Celery is properly installed
+    "django_celery_beat",  # Celery periodic tasks
 ]
 
 
@@ -322,3 +338,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "America/Bogota"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes soft limit
