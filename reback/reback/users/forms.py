@@ -80,15 +80,15 @@ class UserSignupForm(SignupForm):
     )
     
     # Geographic Location
-    department = CharField(
-        max_length=100,
+    department = ChoiceField(
+        choices=[('', 'Selecciona un departamento...')],
         required=False,
         label=_("Departamento"),
         widget=Select(attrs={'class': 'form-select', 'id': 'id_department'})
     )
     
-    municipality = CharField(
-        max_length=100,
+    municipality = ChoiceField(
+        choices=[('', 'Primero selecciona un departamento')],
         required=False,
         label=_("Municipio"),
         widget=Select(attrs={'class': 'form-select', 'id': 'id_municipality'})
@@ -203,15 +203,15 @@ class UserSocialSignupForm(SocialSignupForm):
     )
     
     # Geographic Location
-    department = CharField(
-        max_length=100,
+    department = ChoiceField(
+        choices=[('', 'Selecciona un departamento...')],
         required=False,
         label=_("Departamento"),
         widget=Select(attrs={'class': 'form-select', 'id': 'id_department'})
     )
     
-    municipality = CharField(
-        max_length=100,
+    municipality = ChoiceField(
+        choices=[('', 'Primero selecciona un departamento')],
         required=False,
         label=_("Municipio"),
         widget=Select(attrs={'class': 'form-select', 'id': 'id_municipality'})

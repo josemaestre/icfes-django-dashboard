@@ -102,34 +102,258 @@
     </div>
 </div>
 
+<style>
+    #school_results {
+        max-height: 300px;
+        overflow-y: auto;
+        position: absolute;
+        z-index: 1000;
+        width: 100%;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-top: 2px;
+    }
+
+    #school_results .list-group-item {
+        cursor: pointer;
+        padding: 10px;
+        border: none;
+        border-bottom: 1px solid #eee;
+    }
+
+    #school_results .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    #selected_school {
+        margin-top: 10px;
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const userTypeSelect = document.getElementById('id_user_type');
-        const organizationField = document.getElementById('div_id_organization_name');
+        // User types that need school selection (principals/teachers)
+        const schoolTypes = ['principal', 'teacher'];
 
-        // B2B user types that should show organization field
+        // B2B types that need organization name
         const b2bTypes = ['principal', 'government', 'researcher', 'preicfes', 'language_academy', 'consultant'];
 
-        function toggleOrganizationField() {
-            if (userTypeSelect && organizationField) {
-                const selectedType = userTypeSelect.value;
-                if (b2bTypes.includes(selectedType)) {
-                    organizationField.style.display = 'block';
+        // Get form elements
+        const userTypeSelect = document.getElementById('id_user_type');
+        const organizationField = document.getElementById('div_id_organization_name');
+        const departmentSelect = document.getElementById('id_department');
+        const municipalitySelect = document.getElementById('id_municipality');
+
+        // School search elements (will be added dynamically)
+        let schoolSearchContainer = null;
+        let schoolSearchInput = null;
+        let schoolResults = null;
+        let selectedSchoolDiv = null;
+
+        // Hidden fields for school data
+        const schoolCodeInput = document.getElementById('id_school_code');
+        const schoolNameInput = document.getElementById('id_school_name');
+
+        // Create school search UI
+        function createSchoolSearchUI() {
+            if (schoolSearchContainer) return; // Already created
+
+            const container = document.createElement('div');
+            container.id = 'school_search_container';
+            container.className = 'mb-3';
+            container.style.display = 'none';
+            container.innerHTML = `
+            <label for="school_search" class="form-label">Buscar tu Colegio</label>
+            <div style="position: relative;">
+                <input type="text" id="school_search" class="form-control" 
+                       placeholder="Escribe el nombre o código DANE del colegio...">
+                <div id="school_results" class="list-group" style="display: none;"></div>
+            </div>
+            <div id="selected_school" class="alert alert-info mt-2" style="display: none;">
+                <strong>Colegio seleccionado:</strong> <span id="selected_school_name"></span>
+                <button type="button" class="btn-close float-end" onclick="clearSchoolSelection()"></button>
+            </div>
+        `;
+
+            // Insert after user_type field
+            const userTypeField = document.getElementById('div_id_user_type');
+            userTypeField.parentNode.insertBefore(container, userTypeField.nextSibling);
+
+            schoolSearchContainer = container;
+            schoolSearchInput = document.getElementById('school_search');
+            schoolResults = document.getElementById('school_results');
+            selectedSchoolDiv = document.getElementById('selected_school');
+
+            // Add school search event listener
+            let searchTimeout;
+            schoolSearchInput.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+
+                if (query.length < 3) {
+                    schoolResults.style.display = 'none';
+                    schoolResults.innerHTML = '';
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    fetch(`/dashboard/api/schools/search/?q=${encodeURIComponent(query)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.results && data.results.length > 0) {
+                                schoolResults.innerHTML = data.results.map(school => `
+                                <a href="#" class="list-group-item school-option"
+                                   data-code="${school.code}" data-name="${school.name}">
+                                    <strong>${school.name}</strong><br>
+                                    <small class="text-muted">${school.department}, ${school.municipality} - Código: ${school.code}</small>
+                                </a>
+                            `).join('');
+                                schoolResults.style.display = 'block';
+
+                                // Add click handlers
+                                document.querySelectorAll('.school-option').forEach(el => {
+                                    el.addEventListener('click', function (e) {
+                                        e.preventDefault();
+                                        selectSchool(this.dataset.code, this.dataset.name);
+                                    });
+                                });
+                            } else {
+                                schoolResults.innerHTML = '<div class="list-group-item">No se encontraron colegios</div>';
+                                schoolResults.style.display = 'block';
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error searching schools:', err);
+                            schoolResults.style.display = 'none';
+                        });
+                }, 300);
+            });
+        }
+
+        // Select school
+        window.selectSchool = function (code, name) {
+            schoolCodeInput.value = code;
+            schoolNameInput.value = name;
+            document.getElementById('selected_school_name').textContent = name;
+            selectedSchoolDiv.style.display = 'block';
+            schoolResults.style.display = 'none';
+            schoolSearchInput.value = '';
+        };
+
+        // Clear school selection
+        window.clearSchoolSelection = function () {
+            schoolCodeInput.value = '';
+            schoolNameInput.value = '';
+            selectedSchoolDiv.style.display = 'none';
+        };
+
+        // Toggle field visibility based on user type
+        function toggleFieldVisibility() {
+            if (!userTypeSelect) return;
+
+            const selectedType = userTypeSelect.value;
+
+            // Create school search UI if needed
+            if (schoolTypes.includes(selectedType)) {
+                createSchoolSearchUI();
+            }
+
+            // Show/hide school selector for principals/teachers
+            if (schoolSearchContainer) {
+                if (schoolTypes.includes(selectedType)) {
+                    schoolSearchContainer.style.display = 'block';
+                    if (organizationField) organizationField.style.display = 'none';
                 } else {
+                    schoolSearchContainer.style.display = 'none';
+                    clearSchoolSelection();
+                }
+            }
+
+            // Show/hide organization field for other B2B types
+            if (organizationField) {
+                if (b2bTypes.includes(selectedType) && !schoolTypes.includes(selectedType)) {
+                    organizationField.style.display = 'block';
+                } else if (!schoolTypes.includes(selectedType)) {
                     organizationField.style.display = 'none';
                 }
             }
         }
+
+        // Load departments
+        function loadDepartments() {
+            if (!departmentSelect) return;
+
+            fetch('/dashboard/api/departments/')
+                .then(r => r.json())
+                .then(data => {
+                    departmentSelect.innerHTML = '<option value="">Selecciona un departamento...</option>';
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept;
+                        option.textContent = dept;
+                        departmentSelect.appendChild(option);
+                    });
+                })
+                .catch(err => console.error('Error loading departments:', err));
+        }
+
+        // Load municipalities when department changes
+        function loadMunicipalities(department) {
+            if (!municipalitySelect || !department) {
+                if (municipalitySelect) {
+                    municipalitySelect.innerHTML = '<option value="">Primero selecciona un departamento</option>';
+                    municipalitySelect.disabled = true;
+                }
+                return;
+            }
+
+            municipalitySelect.disabled = true;
+            municipalitySelect.innerHTML = '<option value="">Cargando...</option>';
+
+            fetch(`/dashboard/api/municipalities/?dept=${encodeURIComponent(department)}`)
+                .then(r => r.json())
+                .then(data => {
+                    municipalitySelect.innerHTML = '<option value="">Selecciona un municipio...</option>';
+                    data.municipalities.forEach(mun => {
+                        const option = document.createElement('option');
+                        option.value = mun;
+                        option.textContent = mun;
+                        municipalitySelect.appendChild(option);
+                    });
+                    municipalitySelect.disabled = false;
+                })
+                .catch(err => {
+                    console.error('Error loading municipalities:', err);
+                    municipalitySelect.innerHTML = '<option value="">Error cargando municipios</option>';
+                });
+        }
+
+        // Initialize
+        loadDepartments();
 
         // Initial state
         if (organizationField) {
             organizationField.style.display = 'none';
         }
 
-        // Listen for changes
+        // Event listeners
         if (userTypeSelect) {
-            userTypeSelect.addEventListener('change', toggleOrganizationField);
+            userTypeSelect.addEventListener('change', toggleFieldVisibility);
         }
+
+        if (departmentSelect) {
+            departmentSelect.addEventListener('change', function () {
+                loadMunicipalities(this.value);
+            });
+        }
+
+        // Close school results when clicking outside
+        document.addEventListener('click', function (e) {
+            if (schoolResults && !schoolSearchInput?.contains(e.target) && !schoolResults.contains(e.target)) {
+                schoolResults.style.display = 'none';
+            }
+        });
     });
 </script>
 {% endblock content %}
