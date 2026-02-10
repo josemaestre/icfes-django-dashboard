@@ -19,3 +19,7 @@ django-redis==5.4.0  # https://github.com/jazzband/django-redis
 duckdb==1.1.3  # https://github.com/duckdb/duckdb
 pandas==2.2.3  # https://github.com/pandas-dev/pandas
 numpy==1.26.4  # https://github.com/numpy/numpy
+
+# Export Functionality
+# ------------------------------------------------------------------------------
+reportlab==4.0.9  # https://www.reportlab.com/ - PDF generation

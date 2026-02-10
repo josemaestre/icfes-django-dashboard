@@ -100,7 +100,8 @@
                   <i class="bx bx-shield-quarter me-2"></i>Panorama de Riesgo Academico
                   <span class="badge bg-soft-info text-info ms-2" style="font-size: 0.65rem;">ML Model</span>
                 </h4>
-                <p class="text-muted mb-4">Prediccion basada en modelo XGBoost: probabilidad de que un colegio baje su promedio global >2% el proximo ano.</p>
+                <p class="text-muted mb-4">Prediccion basada en modelo XGBoost: probabilidad de que un colegio baje su
+                  promedio global >2% el proximo ano.</p>
 
                 <div class="row" id="riesgo-cards">
                   <!-- Risk level cards injected by JS -->
@@ -173,7 +174,13 @@
           <div class="col-lg-12">
             <div class="card">
               <div class="card-body">
-                <h4 class="card-title mb-3">Buscar Colegio</h4>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h4 class="card-title mb-0">Buscar Colegio</h4>
+                  <!-- Export Button (Basic Plan) -->
+                  <a href="#" id="btn-export-search-csv" class="btn btn-success btn-sm" style="display: none;">
+                    <i class="fas fa-file-csv me-1"></i> Exportar CSV
+                  </a>
+                </div>
                 <div class="input-group">
                   <input type="text" class="form-control" id="search-input"
                     placeholder="Escribe el nombre del colegio o código DANE...">
@@ -330,6 +337,11 @@
             <div class="col-12 text-center">
               <a href="#" id="btn-ver-detalle-completo" class="btn btn-outline-primary waves-effect waves-light mt-3">
                 Ver Analisis Completo y Similares <i class="bx bx-right-arrow-alt"></i>
+              </a>
+              <!-- Export PDF Button (Premium Plan) -->
+              <a href="#" id="btn-export-school-pdf" class="btn btn-danger waves-effect waves-light mt-3 ms-2"
+                style="display: none;">
+                <i class="fas fa-file-pdf me-1"></i> Exportar PDF
               </a>
             </div>
           </div>

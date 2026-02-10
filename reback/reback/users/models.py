@@ -26,6 +26,34 @@ class User(AbstractUser):
     
     # Stripe integration
     stripe_customer_id = CharField(max_length=255, blank=True, default="")
+    
+    # User segmentation
+    USER_TYPE_CHOICES = [
+        ('parent', 'Padre/Tutor de Estudiante'),
+        ('principal', 'Rector/Director de Colegio'),
+        ('teacher', 'Docente/Coordinador Académico'),
+        ('government', 'Entidad Pública Educativa'),
+        ('researcher', 'Investigador/Académico'),
+        ('preicfes', 'Empresa de Preparación Pre-ICFES'),
+        ('language_academy', 'Academia de Idiomas'),
+        ('consultant', 'Consultoría Educativa'),
+        ('student', 'Estudiante'),
+    ]
+    
+    user_type = CharField(
+        max_length=50,
+        choices=USER_TYPE_CHOICES,
+        blank=True,
+        verbose_name="Tipo de Usuario",
+        help_text="¿Cómo planeas usar esta plataforma?"
+    )
+    
+    organization_name = CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Nombre de Institución/Empresa",
+        help_text="Opcional, para usuarios institucionales"
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

@@ -1,7 +1,7 @@
 from allauth.account.forms import SignupForm
 from allauth.socialaccount.forms import SignupForm as SocialSignupForm
 from django.contrib.auth import forms as admin_forms
-from django.forms import EmailField
+from django.forms import EmailField, CharField, ChoiceField, Select, TextInput
 from django.utils.translation import gettext_lazy as _
 
 from .models import User
@@ -34,6 +34,34 @@ class UserSignupForm(SignupForm):
     Default fields will be added automatically.
     Check UserSocialSignupForm for accounts created from social.
     """
+    
+    user_type = ChoiceField(
+        choices=User.USER_TYPE_CHOICES,
+        required=False,
+        label=_("¿Cómo planeas usar esta plataforma?"),
+        widget=Select(attrs={
+            'class': 'form-select',
+            'id': 'id_user_type'
+        })
+    )
+    
+    organization_name = CharField(
+        max_length=255,
+        required=False,
+        label=_("Nombre de tu Institución/Empresa (opcional)"),
+        widget=TextInput(attrs={
+            'class': 'form-control',
+            'id': 'id_organization_name',
+            'placeholder': 'Ej: Colegio San José'
+        })
+    )
+    
+    def save(self, request):
+        user = super().save(request)
+        user.user_type = self.cleaned_data.get('user_type', '')
+        user.organization_name = self.cleaned_data.get('organization_name', '')
+        user.save()
+        return user
 
 
 class UserSocialSignupForm(SocialSignupForm):
@@ -42,3 +70,31 @@ class UserSocialSignupForm(SocialSignupForm):
     Default fields will be added automatically.
     See UserSignupForm otherwise.
     """
+    
+    user_type = ChoiceField(
+        choices=User.USER_TYPE_CHOICES,
+        required=False,
+        label=_("¿Cómo planeas usar esta plataforma?"),
+        widget=Select(attrs={
+            'class': 'form-select',
+            'id': 'id_user_type'
+        })
+    )
+    
+    organization_name = CharField(
+        max_length=255,
+        required=False,
+        label=_("Nombre de tu Institución/Empresa (opcional)"),
+        widget=TextInput(attrs={
+            'class': 'form-control',
+            'id': 'id_organization_name',
+            'placeholder': 'Ej: Colegio San José'
+        })
+    )
+    
+    def save(self, request):
+        user = super().save(request)
+        user.user_type = self.cleaned_data.get('user_type', '')
+        user.organization_name = self.cleaned_data.get('organization_name', '')
+        user.save()
+        return user

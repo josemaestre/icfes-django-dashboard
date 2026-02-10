@@ -34,6 +34,28 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Información Adicional</h5>
+            <p class="text-muted small">Ayúdanos a personalizar tu experiencia</p>
+
+            <div class="mb-3">
+                <label for="user_type" class="form-label">¿Cómo planeas usar esta plataforma?</label>
+                <select id="user_type" class="form-select">
+                    <option value="">Selecciona una opción...</option>
+                    {% for value, label in user_type_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="organization_field" class="mb-3" style="display: none;">
+                <label for="organization_name" class="form-label">Nombre de tu Institución/Empresa</label>
+                <input type="text" id="organization_name" class="form-control" placeholder="Ej: Colegio San José">
+            </div>
+        </div>
+    </div>
+
     <div class="text-center">
         <button id="pay-button" class="btn btn-primary btn-lg">Pagar con Wompi</button>
     </div>
@@ -50,8 +72,23 @@
 {% block extra_javascript %}
 <script src="https://checkout.wompi.co/widget.js"></script>
 <script>
+    // B2B user types that should show organization field
+    const b2bTypes = ['principal', 'government', 'researcher', 'preicfes', 'language_academy', 'consultant'];
+
     document.addEventListener('DOMContentLoaded', function () {
         console.log('1. DOM cargado.');
+
+        // Handle organization field visibility
+        const userTypeSelect = document.getElementById('user_type');
+        const organizationField = document.getElementById('organization_field');
+
+        userTypeSelect.addEventListener('change', function () {
+            if (b2bTypes.includes(this.value)) {
+                organizationField.style.display = 'block';
+            } else {
+                organizationField.style.display = 'none';
+            }
+        });
 
         var payButton = document.getElementById('pay-button');
         if (!payButton) { console.error('No button'); return; }
@@ -83,8 +120,22 @@
             if (transaction.status === 'APPROVED') {
                 document.getElementById('loading').style.display = 'block';
                 payButton.style.display = 'none';
+
+                // Get user_type and organization_name
+                var userType = document.getElementById('user_type').value;
+                var organizationName = document.getElementById('organization_name').value;
+
+                // Build success URL with user_type params
+                var successUrl = '{{ success_url }}' + '?id=' + transaction.id;
+                if (userType) {
+                    successUrl += '&user_type=' + encodeURIComponent(userType);
+                    if (organizationName) {
+                        successUrl += '&organization_name=' + encodeURIComponent(organizationName);
+                    }
+                }
+
                 // Manual redirect ONLY on success
-                window.location.href = '{{ success_url }}' + '?id=' + transaction.id;
+                window.location.href = successUrl;
             } else if (transaction.status === 'DECLINED' || transaction.status === 'ERROR') {
                 document.getElementById('error-msg').innerText = "Pago " + transaction.status;
                 document.getElementById('error-msg').style.display = 'block';
@@ -97,5 +148,6 @@
         alert('Error: ' + e);
     }
     });
+
 </script>
 {% endblock %}

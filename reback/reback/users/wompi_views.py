@@ -44,25 +44,26 @@ def wompi_checkout(request):
         public_key = settings.WOMPI_PUBLIC_KEY
         
         # Get Integrity Secret from settings
-        # Note: Use WOMPI_EVENTS_SECRET if WOMPI_INTEGRITY_SECRET doesn't work
-        integrity_secret = settings.WOMPI_EVENTS_SECRET or settings.WOMPI_INTEGRITY_SECRET
+        # IMPORTANT: Use WOMPI_INTEGRITY_SECRET for widget signature
+        # WOMPI_EVENTS_SECRET is ONLY for webhook verification
+        integrity_secret = settings.WOMPI_INTEGRITY_SECRET
         
         # Generate Signature: SHA256(Reference + AmountInCents + Currency + IntegritySecret)
         import hashlib
         signature_source = f"{reference}{amount_in_cents}COP{integrity_secret}"
         integrity_signature = hashlib.sha256(signature_source.encode('utf-8')).hexdigest()
         
-        # LOGS DETALLADOS SOLICITADOS POR EL USUARIO
-        print("="*50)
-        print("DEBUG WOMPI PARAMETERS (TRYING EVENTS SECRET):")
-        print(f"Reference: {reference}")
-        print(f"Amount (Cents): {amount_in_cents}")
-        print(f"Currency: COP")
-        print(f"Integrity Secret (Events): {integrity_secret}")
-        print(f"Public Key: {public_key}")
-        print(f"Signature Source (Concatenation): {signature_source}")
-        print(f"Generated Signature: {integrity_signature}")
-        print("="*50)
+        # LOGS DETALLADOS PARA DEBUG
+        logger.info("="*50)
+        logger.info("WOMPI CHECKOUT PARAMETERS:")
+        logger.info(f"Reference: {reference}")
+        logger.info(f"Amount (Cents): {amount_in_cents}")
+        logger.info(f"Currency: COP")
+        logger.info(f"Integrity Secret: {integrity_secret[:20]}...")
+        logger.info(f"Public Key: {public_key[:20]}...")
+        logger.info(f"Signature Source: {signature_source}")
+        logger.info(f"Generated Signature: {integrity_signature}")
+        logger.info("="*50)
         
         context = {
             'plan': plan,
@@ -73,6 +74,7 @@ def wompi_checkout(request):
             'wompi_public_key': public_key,
             'success_url': request.build_absolute_uri(reverse('payments:wompi_success')),
             'cancel_url': request.build_absolute_uri(reverse('payments:cancel')),
+            'user_type_choices': User.USER_TYPE_CHOICES,
         }
         
         return render(request, 'payments/wompi_checkout.html', context)
@@ -164,6 +166,17 @@ def handle_transaction_updated(transaction):
 def wompi_success(request):
     """Display success page after Wompi payment."""
     transaction_id = request.GET.get('id')
+    
+    # Save user_type and organization_name if provided
+    user_type = request.GET.get('user_type', '')
+    organization_name = request.GET.get('organization_name', '')
+    
+    if user_type:
+        request.user.user_type = user_type
+        if organization_name:
+            request.user.organization_name = organization_name
+        request.user.save()
+        logger.info(f"Updated user {request.user.email} with user_type: {user_type}")
     
     context = {
         'transaction_id': transaction_id,

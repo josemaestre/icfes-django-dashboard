@@ -175,7 +175,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
-    "reback.users.middleware.SubscriptionMiddleware",
+    "reback.users.subscription_middleware.SubscriptionMiddleware",  # Fixed path
     "reback.middleware.redis_logging.RedisCacheLoggingMiddleware",  # Redis logging
 ]
 

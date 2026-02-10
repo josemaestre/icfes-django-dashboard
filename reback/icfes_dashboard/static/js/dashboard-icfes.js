@@ -351,4 +351,56 @@ document.addEventListener('DOMContentLoaded', function () {
       resultsList.style.display = 'none';
     }
   });
+
+  // ==========================================
+  // EXPORT FUNCTIONALITY
+  // ==========================================
+
+  let currentSchoolSK = null;
+  let currentSearchQuery = '';
+
+  // Update export buttons when school is selected
+  function updateExportButtons(schoolSK, searchQuery = '') {
+    currentSchoolSK = schoolSK;
+    currentSearchQuery = searchQuery;
+
+    // Show CSV export button (Basic plan)
+    const btnCSV = document.getElementById('btn-export-search-csv');
+    if (btnCSV && searchQuery) {
+      btnCSV.style.display = 'inline-block';
+      btnCSV.href = `/icfes/export/schools/csv/?query=${encodeURIComponent(searchQuery)}&ano=2024`;
+    }
+
+    // Show PDF export button (Premium plan)
+    const btnPDF = document.getElementById('btn-export-school-pdf');
+    if (btnPDF && schoolSK) {
+      btnPDF.style.display = 'inline-block';
+      btnPDF.href = `/icfes/export/school/${schoolSK}/pdf/`;
+    }
+  }
+
+  // Update renderSchoolCard to enable export buttons
+  const originalRenderSchoolCard = renderSchoolCard;
+  renderSchoolCard = function (data) {
+    originalRenderSchoolCard(data);
+
+    // Enable export buttons
+    if (data.info_basica && data.info_basica.colegio_sk) {
+      updateExportButtons(data.info_basica.colegio_sk, searchInput.value);
+    }
+  };
+
+  // Update search input to show CSV export when typing
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      const query = this.value;
+      if (query.length >= 3) {
+        updateExportButtons(currentSchoolSK, query);
+      } else {
+        // Hide CSV button if query too short
+        const btnCSV = document.getElementById('btn-export-search-csv');
+        if (btnCSV) btnCSV.style.display = 'none';
+      }
+    });
+  }
 });

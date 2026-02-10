@@ -27,13 +27,15 @@
                                         <a href="/" class="logo-dark">
                                             <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1"
                                                 alt="logo sm" />
-                                            <img src="{% static '/images/logo-dark.png' %}" height="24" alt="logo dark" />
+                                            <img src="{% static '/images/logo-dark.png' %}" height="24"
+                                                alt="logo dark" />
                                         </a>
 
                                         <a href="/" class="logo-light">
                                             <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1"
                                                 alt="logo sm" />
-                                            <img src="{% static '/images/logo-light.png' %}" height="24" alt="logo light" />
+                                            <img src="{% static '/images/logo-light.png' %}" height="24"
+                                                alt="logo light" />
                                         </a>
                                     </div>
 
@@ -47,12 +49,14 @@
 
                                     <div class="row justify-content-center">
                                         <div class="col-12 col-md-8">
-                                            <form id="signup_form" method="post" action="{% url 'account_signup' %}" class="authentication-form">
+                                            <form id="signup_form" method="post" action="{% url 'account_signup' %}"
+                                                class="authentication-form">
 
                                                 {% csrf_token %}
                                                 {{ form|crispy }}
                                                 {% if redirect_field_value %}
-                                                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                                                <input type="hidden" name="{{ redirect_field_name }}"
+                                                    value="{{ redirect_field_value }}" />
                                                 {% endif %}
 
                                                 <div class="mb-1 text-center d-grid">
@@ -97,4 +101,35 @@
         <!-- end row -->
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const userTypeSelect = document.getElementById('id_user_type');
+        const organizationField = document.getElementById('div_id_organization_name');
+
+        // B2B user types that should show organization field
+        const b2bTypes = ['principal', 'government', 'researcher', 'preicfes', 'language_academy', 'consultant'];
+
+        function toggleOrganizationField() {
+            if (userTypeSelect && organizationField) {
+                const selectedType = userTypeSelect.value;
+                if (b2bTypes.includes(selectedType)) {
+                    organizationField.style.display = 'block';
+                } else {
+                    organizationField.style.display = 'none';
+                }
+            }
+        }
+
+        // Initial state
+        if (organizationField) {
+            organizationField.style.display = 'none';
+        }
+
+        // Listen for changes
+        if (userTypeSelect) {
+            userTypeSelect.addEventListener('change', toggleOrganizationField);
+        }
+    });
+</script>
 {% endblock content %}

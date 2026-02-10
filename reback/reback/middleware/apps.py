@@ -35,27 +35,23 @@ class MiddlewareConfig(AppConfig):
             
             if 'redis' in backend.lower():
                 logger.info("✅ Redis backend configurado")
+                logger.info("   (Test de conexión deshabilitado para evitar bloqueo en startup)")
                 
-                # Intentar conectar a Redis
-                try:
-                    from django.core.cache import cache
-                    
-                    # Test de conexión
-                    test_key = '_django_startup_test'
-                    test_value = 'startup_ok'
-                    
-                    cache.set(test_key, test_value, 10)
-                    result = cache.get(test_key)
-                    
-                    if result == test_value:
-                        logger.info("✅ Redis conectado exitosamente")
-                        logger.info(f"   Test: set('{test_key}') → get() = '{result}'")
-                    else:
-                        logger.error(f"❌ Redis test falló: esperado '{test_value}', obtenido '{result}'")
-                        
-                except Exception as e:
-                    logger.error(f"❌ Error conectando a Redis: {e}")
-                    logger.error(f"   Tipo: {type(e).__name__}")
+                # NOTA: Test de conexión comentado porque puede bloquear el startup
+                # Si Redis no está accesible, Django usará LocMemCache automáticamente
+                # gracias a IGNORE_EXCEPTIONS=True en settings
+                
+                # try:
+                #     from django.core.cache import cache
+                #     test_key = '_django_startup_test'
+                #     test_value = 'startup_ok'
+                #     cache.set(test_key, test_value, 10)
+                #     result = cache.get(test_key)
+                #     if result == test_value:
+                #         logger.info("✅ Redis conectado exitosamente")
+                # except Exception as e:
+                #     logger.warning(f"⚠️  Redis no accesible: {e}")
+                
             else:
                 logger.warning(f"⚠️  Backend no es Redis: {backend}")
         else:
