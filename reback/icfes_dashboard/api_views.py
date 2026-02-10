@@ -12,7 +12,6 @@ from icfes_dashboard.db_utils import get_duckdb_connection
 logger = logging.getLogger(__name__)
 
 
-@login_required
 @require_GET
 def search_schools(request):
     """
@@ -76,7 +75,6 @@ def search_schools(request):
         return JsonResponse({'error': 'Error searching schools'}, status=500)
 
 
-@login_required
 @require_GET
 def get_departments(request):
     """
@@ -107,7 +105,6 @@ def get_departments(request):
         return JsonResponse({'error': 'Error getting departments'}, status=500)
 
 
-@login_required
 @require_GET
 def get_municipalities(request):
     """
