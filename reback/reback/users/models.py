@@ -2,8 +2,8 @@
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import CharField
-from django.db.models import EmailField
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import CharField, EmailField, IntegerField
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -19,8 +19,9 @@ class User(AbstractUser):
 
     # First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)
-    first_name = None  # type: ignore[assignment]
-    last_name = None  # type: ignore[assignment]
+    # first_name and last_name are redefined below as CharField
+    # first_name = None  # type: ignore[assignment]
+    # last_name = None  # type: ignore[assignment]
     email = EmailField(_("email address"), unique=True)
     username = None  # type: ignore[assignment]
     
@@ -40,6 +41,14 @@ class User(AbstractUser):
         ('student', 'Estudiante'),
     ]
     
+    GENDER_CHOICES = [
+        ('M', 'Masculino'),
+        ('F', 'Femenino'),
+        ('O', 'Otro'),
+        ('N', 'Prefiero no decir'),
+    ]
+    
+    # User Type & Organization
     user_type = CharField(
         max_length=50,
         choices=USER_TYPE_CHOICES,
@@ -51,8 +60,71 @@ class User(AbstractUser):
     organization_name = CharField(
         max_length=255,
         blank=True,
-        verbose_name="Nombre de Institución/Empresa",
-        help_text="Opcional, para usuarios institucionales"
+        verbose_name="Nombre de Organización",
+        help_text="Nombre de tu institución o empresa (opcional)"
+    )
+    
+    # Personal Information
+    first_name = CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Nombre(s)"
+    )
+    
+    last_name = CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Apellido(s)"
+    )
+    
+    gender = CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        blank=True,
+        verbose_name="Sexo"
+    )
+    
+    birth_year = IntegerField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(1940),
+            MaxValueValidator(2015)
+        ],
+        verbose_name="Año de Nacimiento"
+    )
+    
+    phone = CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Teléfono/Celular"
+    )
+    
+    # Geographic Location
+    department = CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Departamento"
+    )
+    
+    municipality = CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Municipio"
+    )
+    
+    # School Affiliation (for principals/teachers)
+    school_code = CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Código DANE",
+        help_text="Código DANE del colegio"
+    )
+    
+    school_name = CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Nombre del Colegio"
     )
 
     USERNAME_FIELD = "email"

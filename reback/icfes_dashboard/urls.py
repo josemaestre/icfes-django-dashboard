@@ -2,7 +2,7 @@
 URLs para el dashboard ICFES.
 """
 from django.urls import path
-from . import views, landing_views_simple as landing_views, export_views
+from . import views, landing_views_simple as landing_views, export_views, api_views
 
 app_name = 'icfes_dashboard'
 
@@ -116,6 +116,11 @@ urlpatterns = [
          views.api_colegio_riesgo, name='api_colegio_riesgo'),
     path('api/panorama-riesgo/',
          views.api_panorama_riesgo, name='api_panorama_riesgo'),
+    
+    # API endpoints for enhanced user profile
+    path('api/schools/search/', api_views.search_schools, name='search_schools'),
+    path('api/departments/', api_views.get_departments, name='get_departments'),
+    path('api/municipalities/', api_views.get_municipalities, name='get_municipalities'),
     
     # Export Endpoints
     # CSV Exports (Basic Plan)
