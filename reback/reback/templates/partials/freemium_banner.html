@@ -1,0 +1,89 @@
+{% load subscription_tags %}
+
+<!-- Freemium Banner - Solo visible para usuarios sin plan -->
+{% get_user_plan as user_plan %}
+
+{% if user_plan == 'free' %}
+<div class="freemium-banner bg-gradient-info text-white py-2 px-3 sticky-top" id="freemiumBanner"
+    style="z-index: 1000;">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-9 col-lg-10">
+                <div class="d-flex align-items-center">
+                    <i class="bx bx-info-circle fs-5 me-2"></i>
+                    <div>
+                        <strong>Estás usando el Plan Gratuito.</strong>
+                        <span class="d-none d-md-inline">
+                            Desbloquea análisis departamental, comparaciones entre colegios y exportaciones avanzadas.
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-lg-2 text-end">
+                <button class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                    <i class="bx bx-rocket me-1"></i>
+                    Ver Planes
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="dismissFreemiumBanner()" aria-label="Cerrar">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function dismissFreemiumBanner() {
+        const banner = document.getElementById('freemiumBanner');
+        if (banner) {
+            banner.style.transition = 'all 0.3s ease';
+            banner.style.opacity = '0';
+            banner.style.transform = 'translateY(-100%)';
+            setTimeout(() => {
+                banner.style.display = 'none';
+                // Save to localStorage to remember dismissal
+                localStorage.setItem('freemiumBannerDismissed', 'true');
+            }, 300);
+        }
+    }
+
+    // Check if banner was previously dismissed
+    document.addEventListener('DOMContentLoaded', function () {
+        const wasDismissed = localStorage.getItem('freemiumBannerDismissed');
+        if (wasDismissed === 'true') {
+            const banner = document.getElementById('freemiumBanner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+        }
+    });
+</script>
+
+<style>
+    .freemium-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .freemium-banner .btn-light {
+        font-weight: 600;
+    }
+
+    .freemium-banner .btn-light:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .freemium-banner {
+            font-size: 0.9rem;
+        }
+
+        .freemium-banner .btn {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+    }
+</style>
+{% endif %}

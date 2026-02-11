@@ -1,0 +1,192 @@
+{% load static subscription_tags %}
+
+<!-- Modal de Upgrade - Comparativa de Planes -->
+<div class="modal fade" id="upgradeModal" tabindex="-1" aria-labelledby="upgradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-5">
+                <!-- Header -->
+                <div class="mb-5">
+                    <i class="bx bx-lock-open display-1 text-primary mb-3"></i>
+                    <h2 class="fw-bold">Desbloquea Todo el Potencial de ICFES Analytics</h2>
+                    <p class="text-muted fs-5">
+                        Accede a análisis avanzados, comparaciones detalladas y exportaciones ilimitadas
+                    </p>
+                </div>
+
+                <!-- Plan Comparison -->
+                <div class="row g-4 mb-4">
+                    <!-- Plan Básico -->
+                    <div class="col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition">
+                            <div class="card-body p-4">
+                                <div class="mb-3">
+                                    <span class="badge bg-info-subtle text-info fs-6 px-3 py-2">Plan Básico</span>
+                                </div>
+                                <h2 class="text-info mb-1">
+                                    $49,900<small class="text-muted fs-6">/mes</small>
+                                </h2>
+                                <p class="text-muted small mb-4">Ideal para docentes y coordinadores</p>
+
+                                <ul class="list-unstyled text-start mb-4">
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        <strong>Análisis departamental y municipal</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Búsqueda ilimitada de colegios
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Datos de rendimiento completos
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Exportar reportes CSV
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Histórico de 5 años
+                                    </li>
+                                </ul>
+
+                                <a href="{% url 'subscriptions:checkout' tier='basic' %}"
+                                    class="btn btn-info w-100 btn-lg">
+                                    Elegir Plan Básico
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plan Premium (Destacado) -->
+                    <div class="col-lg-4">
+                        <div class="card h-100 border-primary border-2 shadow-lg position-relative">
+                            <div class="position-absolute top-0 start-50 translate-middle">
+                                <span class="badge bg-primary fs-6 px-4 py-2">Más Popular</span>
+                            </div>
+                            <div class="card-body p-4 pt-5">
+                                <div class="mb-3">
+                                    <span class="badge bg-primary-subtle text-primary fs-6 px-3 py-2">Plan
+                                        Premium</span>
+                                </div>
+                                <h2 class="text-primary mb-1">
+                                    $99,900<small class="text-muted fs-6">/mes</small>
+                                </h2>
+                                <p class="text-muted small mb-4">Perfecto para rectores y analistas</p>
+
+                                <ul class="list-unstyled text-start mb-4">
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        <strong>Todo lo de Plan Básico +</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        <strong>Comparar colegios similares</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Rankings personalizados
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Análisis de clustering
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Exportar Excel y PDF
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Análisis de brechas educativas
+                                    </li>
+                                </ul>
+
+                                <a href="{% url 'subscriptions:checkout' tier='premium' %}"
+                                    class="btn btn-primary w-100 btn-lg">
+                                    Elegir Plan Premium
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plan Enterprise -->
+                    <div class="col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition">
+                            <div class="card-body p-4">
+                                <div class="mb-3">
+                                    <span class="badge bg-success-subtle text-success fs-6 px-3 py-2">Plan
+                                        Enterprise</span>
+                                </div>
+                                <h2 class="text-success mb-1">
+                                    Personalizado
+                                </h2>
+                                <p class="text-muted small mb-4">Para secretarías e instituciones</p>
+
+                                <ul class="list-unstyled text-start mb-4">
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        <strong>Todo lo de Plan Premium +</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        <strong>Acceso API completo</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Dashboards personalizados
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Soporte dedicado
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        Capacitación del equipo
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bx bx-check-circle text-success me-2"></i>
+                                        SLA garantizado
+                                    </li>
+                                </ul>
+
+                                <a href="{% url 'pages:contact' %}" class="btn btn-success w-100 btn-lg">
+                                    Contactar Ventas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center">
+                    <p class="text-muted mb-2">
+                        <i class="bx bx-shield-quarter me-1"></i>
+                        Todos los planes incluyen actualizaciones automáticas y soporte por email
+                    </p>
+                    <a href="{% url 'pages:pricing' %}" class="text-primary text-decoration-none">
+                        Ver comparativa completa de planes <i class="bx bx-right-arrow-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .transition {
+        transition: all 0.3s ease;
+    }
+</style>
