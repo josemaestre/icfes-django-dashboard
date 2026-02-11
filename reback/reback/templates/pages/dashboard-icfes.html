@@ -1,6 +1,6 @@
 {% extends 'layout_vertical.html' %}
 
-{% load static i18n %}
+{% load static i18n subscription_tags %}
 
 {% block title %}ICFES Dashboard{% endblock title %}
 
@@ -9,32 +9,70 @@
 {% endblock page_title %}
 
 {% block page_content %}
+{% include 'partials/freemium_banner.html' %}
+
 <!-- Tab Navigation -->
+{% has_plan 'basic' as has_basic %}
+{% has_plan 'premium' as has_premium %}
+
 <ul class="nav nav-tabs nav-tabs-custom mb-3" role="tablist">
+  <!-- Vista General - FREE -->
   <li class="nav-item">
     <a class="nav-link active" data-bs-toggle="tab" href="#vista-general" role="tab">
       <i class="bx bx-bar-chart me-1"></i> Vista General
     </a>
   </li>
+
+  <!-- Búsqueda de Colegio - FREE (basic info) -->
   <li class="nav-item">
     <a class="nav-link" data-bs-toggle="tab" href="#busqueda-colegio" role="tab">
       <i class="bx bx-search me-1"></i> Búsqueda de Colegio
     </a>
   </li>
+
+  <!-- Explorador Jerárquico - BASIC PLAN -->
   <li class="nav-item">
+    {% if has_basic %}
     <a class="nav-link" data-bs-toggle="tab" href="#explorador" role="tab">
       <i class="bx bx-list-ul me-1"></i> Explorador Jerárquico
     </a>
+    {% else %}
+    <a class="nav-link disabled locked-shake" href="#" data-bs-toggle="modal" data-bs-target="#upgradeModal"
+      data-bs-original-title="Requiere Plan Básico" title="Requiere Plan Básico">
+      <i class="bx bx-lock-alt me-1"></i> Explorador Jerárquico
+      <span class="badge bg-info-subtle text-info ms-1" style="font-size: 0.65rem;">Básico</span>
+    </a>
+    {% endif %}
   </li>
+
+  <!-- Mapa Geográfico - BASIC PLAN -->
   <li class="nav-item">
+    {% if has_basic %}
     <a class="nav-link" data-bs-toggle="tab" href="#mapa-geografico" role="tab" id="mapa-tab">
       <i class="bx bx-map me-1"></i> Mapa Geográfico
     </a>
+    {% else %}
+    <a class="nav-link disabled locked-shake" href="#" data-bs-toggle="modal" data-bs-target="#upgradeModal"
+      data-bs-original-title="Requiere Plan Básico" title="Requiere Plan Básico">
+      <i class="bx bx-lock-alt me-1"></i> Mapa Geográfico
+      <span class="badge bg-info-subtle text-info ms-1" style="font-size: 0.65rem;">Básico</span>
+    </a>
+    {% endif %}
   </li>
+
+  <!-- Comparar Colegios - PREMIUM PLAN -->
   <li class="nav-item">
+    {% if has_premium %}
     <a class="nav-link" data-bs-toggle="tab" href="#comparar-colegios" role="tab">
       <i class="bx bx-git-compare me-1"></i> Comparar Colegios
     </a>
+    {% else %}
+    <a class="nav-link disabled locked-shake" href="#" data-bs-toggle="modal" data-bs-target="#upgradeModal"
+      data-bs-original-title="Requiere Plan Premium" title="Requiere Plan Premium">
+      <i class="bx bx-lock-alt me-1"></i> Comparar Colegios
+      <span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Premium</span>
+    </a>
+    {% endif %}
   </li>
 </ul>
 
@@ -339,7 +377,8 @@
             </h5>
           </div>
           <div class="card-body">
-            <p class="text-muted mb-3">Predicción basada en modelo XGBoost: probabilidad de que un colegio baje su promedio global &gt;2% el próximo año.</p>
+            <p class="text-muted mb-3">Predicción basada en modelo XGBoost: probabilidad de que un colegio baje su
+              promedio global &gt;2% el próximo año.</p>
             <div class="row mb-3" id="riesgo-cards">
               <!-- Risk level cards injected by JS -->
             </div>
@@ -459,6 +498,8 @@
       </div>
 
       <!-- Stats Cards -->
+      {% if has_basic %}
+      <!-- Full stats for Basic+ users -->
       <div class="row mb-3">
         <div class="col-md-3">
           <div class="card">
@@ -498,6 +539,26 @@
           </div>
         </div>
       </div>
+      {% else %}
+      <!-- Locked section for Free users -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="locked-section p-4">
+            <div class="text-center">
+              <i class="bx bx-lock-alt lock-icon mb-3"></i>
+              <h5 class="mb-2">Datos de Rendimiento Bloqueados</h5>
+              <p class="text-muted mb-3">
+                Accede a puntajes, rankings, estadísticas completas y análisis detallado de cada colegio
+              </p>
+              <button class="btn btn-upgrade" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                <i class="bx bx-rocket"></i>
+                Desbloquear con Plan Básico - Desde $49,900/mes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       <!-- Clasificación de Cluster y Colegios Similares -->
       <div class="row mb-3">
