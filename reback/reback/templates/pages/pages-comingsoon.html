@@ -13,15 +13,10 @@
             <div class="col-lg-10">
                 <div class="card auth-card text-center">
                     <div class="card-body">
-                        <div class="mx-auto text-center auth-logo my-5">
-                            <a href="/" class="logo-dark">
-                                <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1" alt="logo sm" />
-                                <img src="{% static '/images/logo-dark.png' %}" height="24" alt="logo dark" />
-                            </a>
-
-                            <a href="/" class="logo-light">
-                                <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1" alt="logo sm" />
-                                <img src="{% static '/images/logo-light.png' %}" height="24" alt="logo light" />
+                        <div class="mb-4 text-center">
+                            <a href="/" class="auth-logo">
+                                <img src="{% static 'images/logo-icfes-dark.svg' %}" alt="logo-dark" class="mx-auto"
+                                    height="28" />
                             </a>
                         </div>
 
@@ -72,7 +67,8 @@
                             </div>
                         </div>
 
-                        <a href="{% url 'pages:dynamic_pages' template_name='pages-contact-us' %}" class="btn btn-success mb-5">Contact Us</a>
+                        <a href="{% url 'pages:dynamic_pages' template_name='pages-contact-us' %}"
+                            class="btn btn-success mb-5">Contact Us</a>
                     </div>
                 </div>
             </div>

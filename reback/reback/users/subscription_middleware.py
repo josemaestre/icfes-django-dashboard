@@ -30,7 +30,10 @@ class SubscriptionMiddleware:
             '/icfes/api/charts/',
             '/icfes/api/promedios-ubicacion/',  # Promedios por ubicación para gauges
             '/icfes/api/hierarchy/',
-            '/icfes/api/search/colegios/',  # Búsqueda de colegios
+            '/icfes/api/search/colegios/',  # Búsqueda de colegios (Legacy?)
+            '/icfes/api/schools/search/',  # Búsqueda de colegios (Nuevo)
+            '/icfes/api/departments/',  # Lista de departamentos (Signup)
+            '/icfes/api/municipalities/',  # Lista de municipios (Signup)
             '/icfes/api/generate-ai-analysis/',  # Análisis de IA
             '/icfes/api/colegios/destacados/',  # Colegios destacados
             '/icfes/api/colegio/',  # Detalles de colegio (incluye AI recommendations)

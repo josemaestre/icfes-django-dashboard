@@ -15,13 +15,15 @@
                     <div class="card-body px-3 py-5">
                         <div class="mx-auto mb-4 text-center auth-logo">
                             <a href="/" class="logo-dark">
-                                <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1" alt="logo sm" />
-                                <img src="{% static '/images/logo-dark.png' %}" height="24" alt="logo dark" />
+                                <img src="{% static 'images/logo-icfes-sm.svg' %}" height="30" class="me-1"
+                                    alt="logo sm" />
+                                <img src="{% static 'images/logo-icfes-dark.svg' %}" height="24" alt="logo dark" />
                             </a>
 
                             <a href="/" class="logo-light">
-                                <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1" alt="logo sm" />
-                                <img src="{% static '/images/logo-light.png' %}" height="24" alt="logo light" />
+                                <img src="{% static 'images/logo-icfes-sm.svg' %}" height="30" class="me-1"
+                                    alt="logo sm" />
+                                <img src="{% static 'images/logo-icfes-light.svg' %}" height="24" alt="logo light" />
                             </a>
                         </div>
 
@@ -82,7 +84,8 @@
 
                 <p class="text-white mb-0 text-center">
                     New here?
-                    <a href="{% url 'pages:dynamic_pages' template_name='auth-signup2' %}" class="text-white fw-bold ms-1">Sign Up</a>
+                    <a href="{% url 'pages:dynamic_pages' template_name='auth-signup2' %}"
+                        class="text-white fw-bold ms-1">Sign Up</a>
                 </p>
             </div>
             <!-- end col -->

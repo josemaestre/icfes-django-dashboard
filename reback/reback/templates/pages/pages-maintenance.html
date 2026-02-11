@@ -21,17 +21,10 @@
                             </div>
                             <div class="col-lg-6">
                                 <div class="p-4">
-                                    <div class="mx-auto mb-4 text-center auth-logo">
-                                        <a href="/" class="logo-dark">
-                                            <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1"
-                                                alt="logo sm" />
-                                            <img src="{% static '/images/logo-dark.png' %}" height="24" alt="logo dark" />
-                                        </a>
-
-                                        <a href="/" class="logo-light">
-                                            <img src="{% static '/images/logo-sm.png' %}" height="30" class="me-1"
-                                                alt="logo sm" />
-                                            <img src="{% static '/images/logo-light.png' %}" height="24" alt="logo light" />
+                                    <div class="mb-4 text-center">
+                                        <a href="/" class="auth-logo">
+                                            <img src="{% static 'images/logo-icfes-dark.svg' %}" alt="logo-dark"
+                                                class="mx-auto" height="28" />
                                         </a>
                                     </div>
                                     <h2 class="fw-bold text-center lh-base">
@@ -44,7 +37,8 @@
                                     </p>
 
                                     <div class="text-center">
-                                        <a href="{% url 'pages:dynamic_pages' template_name='pages-contact-us' %}" class="btn btn-success">Contact Us</a>
+                                        <a href="{% url 'pages:dynamic_pages' template_name='pages-contact-us' %}"
+                                            class="btn btn-success">Contact Us</a>
                                     </div>
                                 </div>
                             </div>
