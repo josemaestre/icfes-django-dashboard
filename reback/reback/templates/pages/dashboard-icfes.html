@@ -30,19 +30,15 @@
     </a>
   </li>
 
-  <!-- Explorador Jerárquico - BASIC PLAN -->
+
+  <!-- Explorador Jerárquico - FREE (limited to current year, no drill-down) -->
   <li class="nav-item">
-    {% if has_basic %}
     <a class="nav-link" data-bs-toggle="tab" href="#explorador" role="tab">
       <i class="bx bx-list-ul me-1"></i> Explorador Jerárquico
+      {% if not has_basic %}
+      <span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size: 0.6rem;">Vista Limitada</span>
+      {% endif %}
     </a>
-    {% else %}
-    <a class="nav-link disabled locked-shake" href="#" data-bs-toggle="modal" data-bs-target="#upgradeModal"
-      data-bs-original-title="Requiere Plan Básico" title="Requiere Plan Básico">
-      <i class="bx bx-lock-alt me-1"></i> Explorador Jerárquico
-      <span class="badge bg-info-subtle text-info ms-1" style="font-size: 0.65rem;">Básico</span>
-    </a>
-    {% endif %}
   </li>
 
   <!-- Mapa Geográfico - BASIC PLAN -->
@@ -561,6 +557,8 @@
       {% endif %}
 
       <!-- Clasificación de Cluster y Colegios Similares -->
+      {% if has_basic %}
+      <!-- Full cluster section for Basic+ users -->
       <div class="row mb-3">
         <div class="col-md-4">
           <div class="card border-info h-100">
@@ -604,6 +602,42 @@
           </div>
         </div>
       </div>
+      {% else %}
+      <!-- Locked cluster section for Free users -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="locked-section p-4">
+            <div class="row align-items-center">
+              <div class="col-md-2 text-center mb-3 mb-md-0">
+                <i class="bx bx-category-alt lock-icon"></i>
+              </div>
+              <div class="col-md-7">
+                <h5 class="mb-2">
+                  <i class="bx bx-lock-alt me-2"></i>Análisis de Clustering Bloqueado
+                  <span class="badge bg-info-subtle text-info ms-2" style="font-size: 0.65rem;">Básico</span>
+                </h5>
+                <p class="text-muted mb-2">
+                  Descubre colegios similares basados en análisis de clustering con machine learning
+                </p>
+                <ul class="list-unstyled text-muted small mb-0">
+                  <li><i class="bx bx-check text-success me-1"></i> Clasificación automática por rendimiento y contexto
+                  </li>
+                  <li><i class="bx bx-check text-success me-1"></i> Lista de colegios similares para comparar</li>
+                  <li><i class="bx bx-check text-success me-1"></i> Identificación de pares académicos</li>
+                </ul>
+              </div>
+              <div class="col-md-3 text-center">
+                <button class="btn btn-upgrade w-100" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                  <i class="bx bx-rocket"></i>
+                  Desbloquear con Plan Básico
+                </button>
+                <small class="text-muted d-block mt-2">Desde $49,900/mes</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       <!-- Riesgo de Declive (Data Science P2) -->
       <div class="row mb-3" id="schoolRiesgoRow" style="display: none;">
@@ -746,7 +780,11 @@
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="card-title mb-0">
                 <i class="bx bx-pie-chart-alt-2 me-1"></i> Distribución de Niveles de Desempeño
+                {% if not has_basic %}
+                <span class="badge bg-info-subtle text-info ms-2" style="font-size: 0.65rem;">Básico</span>
+                {% endif %}
               </h5>
+              {% if has_basic %}
               <select id="nivelesSubjectSelector" class="form-select form-select-sm"
                 style="width: auto; min-width: 180px;">
                 <option value="matematicas">Matemáticas</option>
@@ -755,6 +793,12 @@
                 <option value="sociales">Sociales y Ciudadanas</option>
                 <option value="ingles">Inglés</option>
               </select>
+              {% else %}
+              <select id="nivelesSubjectSelector" class="form-select form-select-sm" disabled
+                style="width: auto; min-width: 220px;" title="Actualiza a Plan Básico para cambiar materia">
+                <option value="matematicas">Matemáticas (Solo vista)</option>
+              </select>
+              {% endif %}
             </div>
             <div class="card-body">
               <div class="row">
@@ -772,9 +816,11 @@
                         <span class="fw-bold" id="nivel4-pct">--%</span>
                       </div>
                       <div class="progress" style="height: 12px;">
-                        <div id="nivel4-bar" class="progress-bar" style="width: 0%; background-color: #28a745;"></div>
+                        <div id="nivel4-bar" class="progress-bar" style="width: 0%; background-color: #28a745;">
+                        </div>
                       </div>
-                      <small class="text-muted">Puntaje 71-100 | <span id="nivel4-count">--</span> estudiantes</small>
+                      <small class="text-muted">Puntaje 71-100 | <span id="nivel4-count">--</span>
+                        estudiantes</small>
                     </div>
                     <!-- Nivel 3 - Satisfactorio -->
                     <div class="nivel-item mb-3">
@@ -783,9 +829,11 @@
                         <span class="fw-bold" id="nivel3-pct">--%</span>
                       </div>
                       <div class="progress" style="height: 12px;">
-                        <div id="nivel3-bar" class="progress-bar" style="width: 0%; background-color: #17a2b8;"></div>
+                        <div id="nivel3-bar" class="progress-bar" style="width: 0%; background-color: #17a2b8;">
+                        </div>
                       </div>
-                      <small class="text-muted">Puntaje 56-70 | <span id="nivel3-count">--</span> estudiantes</small>
+                      <small class="text-muted">Puntaje 56-70 | <span id="nivel3-count">--</span>
+                        estudiantes</small>
                     </div>
                     <!-- Nivel 2 - Mínimo -->
                     <div class="nivel-item mb-3">
@@ -794,9 +842,11 @@
                         <span class="fw-bold" id="nivel2-pct">--%</span>
                       </div>
                       <div class="progress" style="height: 12px;">
-                        <div id="nivel2-bar" class="progress-bar" style="width: 0%; background-color: #ffc107;"></div>
+                        <div id="nivel2-bar" class="progress-bar" style="width: 0%; background-color: #ffc107;">
+                        </div>
                       </div>
-                      <small class="text-muted">Puntaje 41-55 | <span id="nivel2-count">--</span> estudiantes</small>
+                      <small class="text-muted">Puntaje 41-55 | <span id="nivel2-count">--</span>
+                        estudiantes</small>
                     </div>
                     <!-- Nivel 1 - Insuficiente -->
                     <div class="nivel-item mb-3">
@@ -805,7 +855,8 @@
                         <span class="fw-bold" id="nivel1-pct">--%</span>
                       </div>
                       <div class="progress" style="height: 12px;">
-                        <div id="nivel1-bar" class="progress-bar" style="width: 0%; background-color: #dc3545;"></div>
+                        <div id="nivel1-bar" class="progress-bar" style="width: 0%; background-color: #dc3545;">
+                        </div>
                       </div>
                       <small class="text-muted">Puntaje 0-40 | <span id="nivel1-count">--</span> estudiantes</small>
                     </div>
@@ -851,7 +902,8 @@
                       <span id="brechaDepartamental" class="badge bg-secondary">--</span>
                     </div>
                     <div class="progress" style="height: 8px;">
-                      <div id="brechaDepartamentalBar" class="progress-bar" role="progressbar" style="width: 50%"></div>
+                      <div id="brechaDepartamentalBar" class="progress-bar" role="progressbar" style="width: 50%">
+                      </div>
                     </div>
                   </div>
                   <div class="mb-3">
@@ -984,7 +1036,8 @@
                 <div class="row mb-3">
                   <div class="col-12">
                     <div class="alert alert-primary border-primary">
-                      <h6 class="alert-heading"><i class="bx bx-star me-1"></i> Indicadores de Excelencia Académica</h6>
+                      <h6 class="alert-heading"><i class="bx bx-star me-1"></i> Indicadores de Excelencia Académica
+                      </h6>
                       <p class="mb-0 small">Métricas clave que distinguen a los mejores colegios del país</p>
                     </div>
                   </div>
@@ -1118,10 +1171,12 @@
                       <div class="col-md-6">
                         <strong>Interpretación:</strong>
                         <ul class="mb-0 mt-1">
-                          <li><span class="badge bg-success">+2.0 o más</span> = <strong>Élite</strong> (Top 2.5%)</li>
+                          <li><span class="badge bg-success">+2.0 o más</span> = <strong>Élite</strong> (Top 2.5%)
+                          </li>
                           <li><span class="badge bg-success">+1.0 a +2.0</span> = <strong>Muy Superior</strong> (Top
                             16%)</li>
-                          <li><span class="badge bg-info">+0.5 a +1.0</span> = <strong>Superior</strong> (Top 30%)</li>
+                          <li><span class="badge bg-info">+0.5 a +1.0</span> = <strong>Superior</strong> (Top 30%)
+                          </li>
                           <li><span class="badge bg-secondary">-0.5 a +0.5</span> = <strong>Promedio</strong> (38%
                             central)</li>
                           <li><span class="badge bg-warning">-1.0 a -0.5</span> = <strong>Por Debajo</strong></li>
@@ -1147,7 +1202,8 @@
               <!-- Mapa de Calor de Rendimiento -->
               <div class="row mb-4">
                 <div class="col-12">
-                  <h6 class="text-muted mb-3"><i class="bx bx-grid-alt me-1"></i> Mapa de Calor: Rendimiento por Materia
+                  <h6 class="text-muted mb-3"><i class="bx bx-grid-alt me-1"></i> Mapa de Calor: Rendimiento por
+                    Materia
                   </h6>
                   <div class="table-responsive">
                     <table class="table table-sm table-bordered" id="heatmapTable">
@@ -1180,7 +1236,8 @@
               <!-- Simulador de Mejora -->
               <div class="row">
                 <div class="col-md-6">
-                  <h6 class="text-muted mb-3"><i class="bx bx-calculator me-1"></i> Simulador: ¿Qué pasaría si...?</h6>
+                  <h6 class="text-muted mb-3"><i class="bx bx-calculator me-1"></i> Simulador: ¿Qué pasaría si...?
+                  </h6>
                   <div class="mb-3">
                     <label class="form-label">Materia a mejorar</label>
                     <select class="form-select" id="simulatorSubject">
@@ -1247,18 +1304,44 @@
             <div class="card-header d-flex justify-content-between align-items-center">
               <h5 class="card-title mb-0">
                 <i class="bx bx-brain me-1"></i> Análisis y Recomendaciones IA
+                {% if not has_premium %}
+                <span class="badge bg-primary-subtle text-primary ms-2" style="font-size: 0.65rem;">Premium</span>
+                {% endif %}
               </h5>
+              {% if has_premium %}
               <button class="btn btn-sm btn-primary" id="generateAIBtn">
                 <i class="bx bx-brain"></i> Generar Análisis
               </button>
+              {% else %}
+              <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                <i class="bx bx-lock-alt"></i> Desbloquear IA
+              </button>
+              {% endif %}
             </div>
             <div class="card-body">
+              {% if has_premium %}
               <div id="aiRecommendations">
                 <p class="text-muted">
                   Haz clic en "Generar Análisis" para obtener recomendaciones personalizadas
                   basadas en IA sobre cómo mejorar el rendimiento del colegio.
                 </p>
               </div>
+              {% else %}
+              <div class="locked-section p-4">
+                <div class="text-center">
+                  <i class="bx bx-brain lock-icon mb-3"></i>
+                  <h6 class="mb-2">Análisis IA Bloqueado</h6>
+                  <p class="text-muted mb-3 small">
+                    Obtén recomendaciones personalizadas basadas en inteligencia artificial para mejorar el
+                    rendimiento
+                    del colegio
+                  </p>
+                  <button class="btn btn-sm btn-upgrade" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                    <i class="bx bx-rocket"></i> Actualizar a Premium
+                  </button>
+                </div>
+              </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -1268,10 +1351,34 @@
 
   <!-- Explorador Jerárquico Tab -->
   <div class="tab-pane fade" id="explorador" role="tabpanel">
+    {% if not has_basic %}
+    <!-- Freemium Info Banner for Free Users -->
+    <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+      <div class="d-flex align-items-center">
+        <i class="bx bx-info-circle fs-4 me-3"></i>
+        <div class="flex-grow-1">
+          <h6 class="alert-heading mb-1">Vista Limitada - Solo Año 2024</h6>
+          <p class="mb-0 small">
+            Estás viendo datos del año actual. Actualiza al <strong>Plan Básico</strong> para acceder a históricos
+            desde
+            1996
+            y navegar por departamentos y municipios.
+          </p>
+        </div>
+        <button type="button" class="btn btn-sm btn-info ms-3" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+          <i class="bx bx-rocket"></i> Actualizar
+        </button>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="card-title mb-0">Explorador Jerárquico - ICFES</h4>
         <div>
+          {% if has_basic %}
+          <!-- Full year selector for Basic+ users -->
           <select id="hierarchy-year-selector" class="form-select form-select-sm">
             <optgroup label="2020s">
               <option value="2024">2024</option>
@@ -1311,6 +1418,13 @@
               <option value="1996">1996</option>
             </optgroup>
           </select>
+          {% else %}
+          <!-- Locked year selector for Free users -->
+          <select id="hierarchy-year-selector" class="form-select form-select-sm" disabled
+            title="Solo año 2024 disponible en plan gratuito">
+            <option value="2024" selected>2024 (Solo año actual)</option>
+          </select>
+          {% endif %}
         </div>
       </div>
       <div class="card-body p-0">
@@ -1430,7 +1544,8 @@
                     <div class="d-flex align-items-start">
                       <span class="me-2">🟢</span>
                       <div>
-                        <strong>Excelencia Integral:</strong> Estudiantes con nivel 4 (superior) en TODAS las materias
+                        <strong>Excelencia Integral:</strong> Estudiantes con nivel 4 (superior) en TODAS las
+                        materias
                         evaluadas.
                       </div>
                     </div>
@@ -1464,7 +1579,8 @@
                     <div class="d-flex align-items-start">
                       <span class="me-2">🟡</span>
                       <div>
-                        <strong>Perfil Bilingüe Avanzado:</strong> Estudiantes con nivel 4 en Inglés. Oportunidad para
+                        <strong>Perfil Bilingüe Avanzado:</strong> Estudiantes con nivel 4 en Inglés. Oportunidad
+                        para
                         programas internacionales.
                       </div>
                     </div>
@@ -1533,7 +1649,8 @@
         <div class="alert alert-info mb-3">
           <strong>Interpretación del Mapa:</strong>
           <span id="mapaLeyenda">
-            Las zonas más <strong class="text-success">intensas</strong> indican mayor concentración de estudiantes con
+            Las zonas más <strong class="text-success">intensas</strong> indican mayor concentración de estudiantes
+            con
             excelencia integral.
           </span>
         </div>
