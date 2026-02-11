@@ -44,14 +44,14 @@ def search_schools(request):
         with get_duckdb_connection() as conn:
             sql = """
                 SELECT DISTINCT
-                    cole_codigo_dane as code,
-                    cole_nombre_establecimiento as name,
-                    cole_depto_ubicacion as department,
-                    cole_mcpio_ubicacion as municipality
+                    colegio_bk as code,
+                    nombre_colegio as name,
+                    departamento as department,
+                    municipio as municipality
                 FROM gold.dim_colegios
-                WHERE cole_nombre_establecimiento ILIKE ?
-                   OR CAST(cole_codigo_dane AS VARCHAR) LIKE ?
-                ORDER BY cole_nombre_establecimiento
+                WHERE nombre_colegio ILIKE ?
+                   OR CAST(colegio_bk AS VARCHAR) LIKE ?
+                ORDER BY nombre_colegio
                 LIMIT 20
             """
             results = conn.execute(sql, [f'%{query}%', f'%{query}%']).fetchall()
@@ -88,10 +88,10 @@ def get_departments(request):
     try:
         with get_duckdb_connection() as conn:
             sql = """
-                SELECT DISTINCT cole_depto_ubicacion as department
+                SELECT DISTINCT departamento as department
                 FROM gold.dim_colegios
-                WHERE cole_depto_ubicacion IS NOT NULL
-                ORDER BY cole_depto_ubicacion
+                WHERE departamento IS NOT NULL
+                ORDER BY departamento
             """
             results = conn.execute(sql).fetchall()
             
@@ -126,11 +126,11 @@ def get_municipalities(request):
     try:
         with get_duckdb_connection() as conn:
             sql = """
-                SELECT DISTINCT cole_mcpio_ubicacion as municipality
+                SELECT DISTINCT municipio as municipality
                 FROM gold.dim_colegios
-                WHERE cole_depto_ubicacion = ?
-                  AND cole_mcpio_ubicacion IS NOT NULL
-                ORDER BY cole_mcpio_ubicacion
+                WHERE departamento = ?
+                  AND municipio IS NOT NULL
+                ORDER BY municipio
             """
             results = conn.execute(sql, [department]).fetchall()
             
