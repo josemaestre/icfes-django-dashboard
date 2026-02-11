@@ -198,7 +198,7 @@
                 }
 
                 searchTimeout = setTimeout(() => {
-                    fetch(`/dashboard/api/schools/search/?q=${encodeURIComponent(query)}`)
+                    fetch(`/icfes/api/schools/search/?q=${encodeURIComponent(query)}`)
                         .then(r => r.json())
                         .then(data => {
                             if (data.results && data.results.length > 0) {
@@ -284,7 +284,7 @@
         function loadDepartments() {
             if (!departmentSelect) return;
 
-            fetch('/dashboard/api/departments/')
+            fetch('/icfes/api/departments/')
                 .then(r => r.json())
                 .then(data => {
                     departmentSelect.innerHTML = '<option value="">Selecciona un departamento...</option>';
@@ -311,7 +311,7 @@
             municipalitySelect.disabled = true;
             municipalitySelect.innerHTML = '<option value="">Cargando...</option>';
 
-            fetch(`/dashboard/api/municipalities/?dept=${encodeURIComponent(department)}`)
+            fetch(`/icfes/api/municipalities/?dept=${encodeURIComponent(department)}`)
                 .then(r => r.json())
                 .then(data => {
                     municipalitySelect.innerHTML = '<option value="">Selecciona un municipio...</option>';
