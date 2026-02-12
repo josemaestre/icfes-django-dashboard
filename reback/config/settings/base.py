@@ -53,7 +53,8 @@ DATABASES = {
     },
     "icfes": {
         # Read-only connection to dbt DuckDB database
-        'ENGINE': 'django.db.backends.sqlite3',  # Placeholder, we'll use raw DuckDB connections
+        # Placeholder, we'll use raw DuckDB connections
+        'ENGINE': 'django.db.backends.sqlite3',
         'NAME': str(BASE_DIR.parent.parent / 'dbt' / 'icfes_processing' / 'dev.duckdb'),
     },
 }
@@ -61,7 +62,8 @@ DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 # DuckDB Configuration
 # ------------------------------------------------------------------------------
-ICFES_DUCKDB_PATH = str(BASE_DIR.parent.parent / 'dbt' / 'icfes_processing' / 'dev.duckdb')
+ICFES_DUCKDB_PATH = str(BASE_DIR.parent.parent / 'dbt' /
+                        'icfes_processing' / 'dev.duckdb')
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -264,12 +266,13 @@ EMAIL_TIMEOUT = 5
 # Django Admin URL.
 ADMIN_URL = "admin/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#admins
-ADMINS = [("""Techzaa""", "techzaa@example.com")]
+ADMINS = [("""SABE DE DATOS""", "icfes@sabededatos.com")]
 # https://docs.djangoproject.com/en/dev/ref/settings/#managers
 MANAGERS = ADMINS
 # https://cookiecutter-django.readthedocs.io/en/latest/settings.html#other-environment-settings
 # Force the `admin` sign in process to go through the `django-allauth` workflow
-DJANGO_ADMIN_FORCE_ALLAUTH = env.bool("DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
+DJANGO_ADMIN_FORCE_ALLAUTH = env.bool(
+    "DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
 
 # LOGGING
 # ------------------------------------------------------------------------------
@@ -325,7 +328,8 @@ LOGGING = {
 
 # django-allauth
 # ------------------------------------------------------------------------------
-ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
+ACCOUNT_ALLOW_REGISTRATION = env.bool(
+    "DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 # https://docs.allauth.org/en/latest/account/configuration.html
@@ -364,12 +368,15 @@ WOMPI_PUBLIC_KEY = env("WOMPI_PUBLIC_KEY", default="")
 WOMPI_PRIVATE_KEY = env("WOMPI_PRIVATE_KEY", default="")
 WOMPI_EVENTS_SECRET = env("WOMPI_EVENTS_SECRET", default="")
 WOMPI_INTEGRITY_SECRET = env("WOMPI_INTEGRITY_SECRET", default="")
-WOMPI_BASE_URL = env("WOMPI_BASE_URL", default="https://production.wompi.co/v1")
+WOMPI_BASE_URL = env(
+    "WOMPI_BASE_URL", default="https://production.wompi.co/v1")
 
 # CELERY
 # ------------------------------------------------------------------------------
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL",
+                        default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND",
+                            default="redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
