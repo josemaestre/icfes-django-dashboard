@@ -1,0 +1,24 @@
+{% extends "account/email/base_email.html" %}
+{% load i18n %}
+
+{% block content %}
+<h2>{% trans "Confirm E-mail Address" %}</h2>
+
+<p>{% trans "Hello from ICFES Analytics," %}</p>
+
+<p>{% trans "You're receiving this e-mail because user" %} <strong>{{ user_display }}</strong> {% trans "at" %}
+    <strong>{{ current_site.name }}</strong> {% trans "has given yours as an e-mail address to connect their account."
+    %}</p>
+
+<p>{% trans "To confirm this is correct, go to the following page:" %}</p>
+
+<div style="text-align: center;">
+    <a href="{{ activate_url }}" class="button">{% trans "Confirm E-mail" %}</a>
+</div>
+
+<p>{% trans "This link will expire in" %} {{ key_expiration_days }} {% trans "days." %}</p>
+
+<p>{% trans "Thanks for using our site!" %}</p>
+
+<p>{% trans "The ICFES Analytics Team" %}</p>
+{% endblock %}
