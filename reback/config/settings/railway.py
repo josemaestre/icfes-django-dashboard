@@ -107,7 +107,7 @@ MEDIA_URL = "/media/"
 # ------------------------------------------------------------------------------
 DEFAULT_FROM_EMAIL = env(
     "DJANGO_DEFAULT_FROM_EMAIL",
-    default="ICFES Analytics <noreply@icfes-analytics.railway.app>",
+    default="ICFES Analytics <icfes@sabededatos.com>",
 )
 SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 EMAIL_SUBJECT_PREFIX = env(
