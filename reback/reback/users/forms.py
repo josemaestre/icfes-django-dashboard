@@ -80,18 +80,16 @@ class UserSignupForm(SignupForm):
     )
     
     # Geographic Location
-    department = ChoiceField(
-        choices=[('', 'Selecciona un departamento...')],
+    department = CharField(
         required=False,
         label=_("Departamento"),
-        widget=Select(attrs={'class': 'form-select', 'id': 'id_department'})
+        widget=Select(choices=[('', 'Selecciona un departamento...')], attrs={'class': 'form-select', 'id': 'id_department'})
     )
     
-    municipality = ChoiceField(
-        choices=[('', 'Primero selecciona un departamento')],
+    municipality = CharField(
         required=False,
         label=_("Municipio"),
-        widget=Select(attrs={'class': 'form-select', 'id': 'id_municipality'})
+        widget=Select(choices=[('', 'Primero selecciona un departamento')], attrs={'class': 'form-select', 'id': 'id_municipality'})
     )
     
     # User Type & Organization
@@ -203,18 +201,16 @@ class UserSocialSignupForm(SocialSignupForm):
     )
     
     # Geographic Location
-    department = ChoiceField(
-        choices=[('', 'Selecciona un departamento...')],
+    department = CharField(
         required=False,
         label=_("Departamento"),
-        widget=Select(attrs={'class': 'form-select', 'id': 'id_department'})
+        widget=Select(choices=[('', 'Selecciona un departamento...')], attrs={'class': 'form-select', 'id': 'id_department'})
     )
     
-    municipality = ChoiceField(
-        choices=[('', 'Primero selecciona un departamento')],
+    municipality = CharField(
         required=False,
         label=_("Municipio"),
-        widget=Select(attrs={'class': 'form-select', 'id': 'id_municipality'})
+        widget=Select(choices=[('', 'Primero selecciona un departamento')], attrs={'class': 'form-select', 'id': 'id_municipality'})
     )
     
     # User Type & Organization
