@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<!-- DEBUG: RELOADED V3 -->
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ seo.title|default:school.nombre }}</title>
     <meta name="description" content="{{ seo.description|default:'Resultados ICFES del colegio' }}">
     <meta name="keywords" content="{{ seo.keywords|default:'ICFES, resultados, ranking colegios' }}">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="robots" content="{{ seo.robots|default:'index, follow' }}">
     <link rel="canonical" href="{{ canonical_url }}">
 
     <meta property="og:locale" content="es_CO">
@@ -17,163 +15,117 @@
     <meta property="og:title" content="{{ seo.title|default:school.nombre }}">
     <meta property="og:description" content="{{ seo.description|default:'Resultados ICFES del colegio' }}">
     <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:image" content="{{ seo.og_image }}">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ seo.title|default:school.nombre }}">
     <meta name="twitter:description" content="{{ seo.description|default:'Resultados ICFES del colegio' }}">
+    <meta name="twitter:image" content="{{ seo.og_image }}">
+
     <script type="application/ld+json">{{ structured_data_json|safe }}</script>
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
         }
 
         .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e4d92 0%, #0f766e 100%);
             color: white;
-            padding: 60px 0;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            text-align: center;
-            transition: transform 0.2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #667eea;
-            margin: 10px 0;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            padding: 56px 0;
+            margin-bottom: 32px;
         }
 
         .info-badge {
             display: inline-block;
-            padding: 5px 15px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            margin: 5px;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            margin: 5px 6px 0 0;
+            font-size: 0.95rem;
         }
 
-        .chart-card {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-        }
-
-        .insights-card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .card-block {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             margin-bottom: 20px;
         }
 
-        .strength-item {
-            padding: 10px;
-            margin: 8px 0;
-            background: #e8f5e9;
-            border-left: 4px solid #4caf50;
-            border-radius: 5px;
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #223;
         }
 
-        .weakness-item {
-            padding: 10px;
-            margin: 8px 0;
-            background: #fff3e0;
-            border-left: 4px solid #ff9800;
-            border-radius: 5px;
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+            text-align: center;
         }
 
-        .subject-name {
-            font-weight: 600;
-            color: #333;
+        .stat-label {
+            color: #5f6673;
+            font-size: 0.84rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e4d92;
         }
 
         .subject-score {
             float: right;
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 700;
+            color: #1e4d92;
         }
 
-        .cta-section {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-            margin-top: 40px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .strength-item,
+        .weakness-item,
+        .action-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin: 8px 0;
         }
 
-        .cta-button {
-            background: #667eea;
-            color: white;
-            padding: 15px 40px;
-            border-radius: 25px;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
-            font-weight: bold;
-            transition: all 0.3s;
+        .strength-item {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
         }
 
-        .cta-button:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            color: white;
+        .weakness-item {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
         }
 
-        .footer {
-            background: #2d3748;
-            color: white;
-            padding: 20px 0;
-            margin-top: 60px;
-            text-align: center;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #333;
+        .action-item {
+            background: #eef4ff;
+            border-left: 4px solid #1e4d92;
         }
 
         .comparison-item {
-            padding: 15px;
+            padding: 14px;
             background: #f8f9fa;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .comparison-label {
             font-weight: 600;
-            color: #555;
+            color: #445;
             margin-bottom: 8px;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
         }
 
         .comparison-values {
@@ -188,10 +140,10 @@
         }
 
         .gap-value {
-            font-weight: bold;
-            font-size: 1.1rem;
-            padding: 4px 12px;
-            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 4px 10px;
+            border-radius: 999px;
         }
 
         .gap-value.positive {
@@ -203,113 +155,148 @@
             color: #d32f2f;
             background: #ffebee;
         }
+
+        .footer {
+            background: #1f2937;
+            color: #fff;
+            padding: 20px 0;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .cta-button {
+            background: #1e4d92;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 999px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        .cta-button:hover {
+            color: #fff;
+            background: #153b71;
+        }
+
+        .simple-table td,
+        .simple-table th {
+            vertical-align: middle;
+        }
+
+        .metric-chip {
+            display: inline-block;
+            background: #ecfdf5;
+            color: #166534;
+            padding: 5px 10px;
+            border-radius: 999px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 0.86rem;
+        }
     </style>
 </head>
-
 <body>
-    <!-- Hero Section -->
     <div class="hero-section">
         <div class="container">
-            <h1 class="display-4">{{ school.nombre }}</h1>
+            <h1 class="display-5">{{ school.nombre }}</h1>
             <div class="mt-3">
-                <span class="info-badge">📍 {{ school.municipio }}, {{ school.departamento }}</span>
-                <span class="info-badge">🏫 {{ school.sector }}</span>
-                <span class="info-badge">🆔 {{ school.codigo }}</span>
+                <span class="info-badge">{{ school.municipio }}, {{ school.departamento }}</span>
+                <span class="info-badge">{{ school.sector }}</span>
+                <span class="info-badge">Codigo DANE {{ school.codigo }}</span>
             </div>
         </div>
     </div>
 
     <div class="container">
         {% if has_data %}
+        <div class="card-block">
+            <h2 class="section-title">Resumen ejecutivo</h2>
+            <p class="mb-2">{{ narrative_summary }}</p>
 
-        <!-- Radar Chart Section -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="chart-card">
-                    <h3 class="section-title">📊 Perfil de Desempeño</h3>
-                    <div style="position: relative; height: 350px;">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                </div>
+            {% if comparison %}
+            <div class="mt-2">
+                {% if comparison.percentil_municipal is not None %}
+                <span class="metric-chip">Percentil municipal {{ comparison.percentil_municipal }}</span>
+                {% endif %}
+                {% if comparison.percentil_departamental is not None %}
+                <span class="metric-chip">Percentil departamental {{ comparison.percentil_departamental }}</span>
+                {% endif %}
+                {% if comparison.percentil_nacional is not None %}
+                <span class="metric-chip">Percentil nacional {{ comparison.percentil_nacional }}</span>
+                {% endif %}
             </div>
+            {% endif %}
 
-            <!-- Top 3 Strengths and Weaknesses -->
-            <div class="col-md-6">
-                <div class="insights-card">
-                    <h3 class="section-title">💪 Top 3 Fortalezas</h3>
-                    {% for subject, score in top_strengths %}
-                    <div class="strength-item">
-                        <span class="subject-name">{{ subject }}</span>
-                        <span class="subject-score">{{ score }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <div class="insights-card">
-                    <h3 class="section-title">📈 Áreas de Mejora</h3>
-                    {% for subject, score in top_weaknesses %}
-                    <div class="weakness-item">
-                        <span class="subject-name">{{ subject }}</span>
-                        <span class="subject-score">{{ score }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
+            <div class="mt-3">
+                <a href="{{ internal_links.municipio_url }}" class="btn btn-sm btn-outline-primary me-2">Ver colegios del municipio</a>
+                <a href="{{ internal_links.departamento_url }}" class="btn btn-sm btn-outline-primary">Ver colegios del departamento</a>
             </div>
         </div>
 
-        <!-- Historical Evolution Chart -->
-        {% if historical_chart.has_data %}
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="chart-card">
-                    <h3 class="section-title">📈 Evolución Histórica (Puntaje Global)</h3>
-                    <div style="position: relative; height: 300px;">
-                        <canvas id="historicalChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Comparison with Averages -->
-        {% if comparison %}
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="insights-card">
-                    <h3 class="section-title">🎯 Comparación con Promedios 2024</h3>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card-block">
+                    <h2 class="section-title">Resultados ICFES {{ stats.year }}</h2>
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="comparison-item">
-                                <div class="comparison-label">📍 Municipal ({{ school.municipio }})</div>
-                                <div class="comparison-values">
-                                    <span class="avg-value">Promedio: {{ comparison.promedio_municipal }}</span>
-                                    <span class="gap-value {{ comparison.brecha_municipal_class }}">
-                                        {{ comparison.brecha_municipal_display }}
-                                    </span>
-                                </div>
-                            </div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Puntaje Global</div><div class="stat-value">{{ stats.global|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Matematicas</div><div class="stat-value">{{ stats.matematicas|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Lectura Critica</div><div class="stat-value">{{ stats.lectura|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Ciencias Naturales</div><div class="stat-value">{{ stats.ciencias|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Sociales y Ciudadanas</div><div class="stat-value">{{ stats.sociales|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Ingles</div><div class="stat-value">{{ stats.ingles|default:"N/A" }}</div></div></div>
+                    </div>
+                    <div class="stat-card mt-2">
+                        <div class="stat-label">Estudiantes evaluados</div>
+                        <div class="stat-value">{{ stats.estudiantes|default:"0" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card-block">
+                    <h3 class="section-title">Fortalezas</h3>
+                    {% for subject, score in top_strengths %}
+                    <div class="strength-item">{{ subject }} <span class="subject-score">{{ score }}</span></div>
+                    {% endfor %}
+                </div>
+                <div class="card-block">
+                    <h3 class="section-title">Areas de mejora</h3>
+                    {% for subject, score in top_weaknesses %}
+                    <div class="weakness-item">{{ subject }} <span class="subject-score">{{ score }}</span></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if comparison %}
+        <div class="card-block">
+            <h3 class="section-title">Comparacion con promedios {{ stats.year }}</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="comparison-item">
+                        <div class="comparison-label">Municipal ({{ school.municipio }})</div>
+                        <div class="comparison-values">
+                            <span class="avg-value">Promedio: {{ comparison.promedio_municipal }}</span>
+                            <span class="gap-value {{ comparison.brecha_municipal_class }}">{{ comparison.brecha_municipal_display }}</span>
                         </div>
-                        <div class="col-md-4">
-                            <div class="comparison-item">
-                                <div class="comparison-label">🏛️ Departamental ({{ school.departamento }})</div>
-                                <div class="comparison-values">
-                                    <span class="avg-value">Promedio: {{ comparison.promedio_departamental }}</span>
-                                    <span class="gap-value {{ comparison.brecha_departamental_class }}">
-                                        {{ comparison.brecha_departamental_display }}
-                                    </span>
-                                </div>
-                            </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="comparison-item">
+                        <div class="comparison-label">Departamental ({{ school.departamento }})</div>
+                        <div class="comparison-values">
+                            <span class="avg-value">Promedio: {{ comparison.promedio_departamental }}</span>
+                            <span class="gap-value {{ comparison.brecha_departamental_class }}">{{ comparison.brecha_departamental_display }}</span>
                         </div>
-                        <div class="col-md-4">
-                            <div class="comparison-item">
-                                <div class="comparison-label">🇨🇴 Nacional</div>
-                                <div class="comparison-values">
-                                    <span class="avg-value">Promedio: {{ comparison.promedio_nacional }}</span>
-                                    <span class="gap-value {{ comparison.brecha_nacional_class }}">
-                                        {{ comparison.brecha_nacional_display }}
-                                    </span>
-                                </div>
-                            </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="comparison-item">
+                        <div class="comparison-label">Nacional</div>
+                        <div class="comparison-values">
+                            <span class="avg-value">Promedio: {{ comparison.promedio_nacional }}</span>
+                            <span class="gap-value {{ comparison.brecha_nacional_class }}">{{ comparison.brecha_nacional_display }}</span>
                         </div>
                     </div>
                 </div>
@@ -317,190 +304,206 @@
         </div>
         {% endif %}
 
-        <!-- Statistics Section -->
-        <h2 class="mb-4">📊 Resultados ICFES 2024</h2>
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card-block">
+                    <h3 class="section-title">Perfil de desempeno</h3>
+                    <div style="position: relative; height: 330px;"><canvas id="radarChart"></canvas></div>
+                </div>
+            </div>
+
+            {% if historical_chart.has_data %}
+            <div class="col-lg-6">
+                <div class="card-block">
+                    <h3 class="section-title">Evolucion historica</h3>
+                    <div style="position: relative; height: 330px;"><canvas id="historicalChart"></canvas></div>
+                    {% if performance_signals.trend_3y is not None %}
+                    <p class="mt-3 mb-0">Tendencia 3 anos: {{ performance_signals.trend_3y }} puntos.</p>
+                    {% endif %}
+                    {% if performance_signals.trend_5y is not None %}
+                    <p class="mb-0">Tendencia 5 anos: {{ performance_signals.trend_5y }} puntos.</p>
+                    {% endif %}
+                    {% if performance_signals.stability_std is not None %}
+                    <p class="mb-0">Variabilidad historica (desv. estandar): {{ performance_signals.stability_std }}.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
 
         <div class="row">
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Puntaje Global</div>
-                    <div class="stat-value">{{ stats.global|default:"N/A" }}</div>
+            <div class="col-lg-6">
+                <div class="card-block">
+                    <h3 class="section-title">Acciones recomendadas</h3>
+                    {% for recommendation in action_recommendations %}
+                    <div class="action-item">{{ recommendation }}</div>
+                    {% endfor %}
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Matemáticas</div>
-                    <div class="stat-value">{{ stats.matematicas|default:"N/A" }}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Lectura Crítica</div>
-                    <div class="stat-value">{{ stats.lectura|default:"N/A" }}</div>
+            <div class="col-lg-6">
+                <div class="card-block">
+                    <h3 class="section-title">Tabla de materias</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm simple-table">
+                            <thead>
+                                <tr>
+                                    <th>Materia</th>
+                                    <th class="text-end">Puntaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in subject_rows %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td class="text-end"><strong>{{ item.score }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Ciencias Naturales</div>
-                    <div class="stat-value">{{ stats.ciencias|default:"N/A" }}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Sociales y Ciudadanas</div>
-                    <div class="stat-value">{{ stats.sociales|default:"N/A" }}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Inglés</div>
-                    <div class="stat-value">{{ stats.ingles|default:"N/A" }}</div>
-                </div>
+        {% if indicators %}
+        <div class="card-block">
+            <h3 class="section-title">Indicadores avanzados</h3>
+            <div class="row">
+                <div class="col-md-3"><p class="mb-1"><strong>Excelencia integral:</strong> {{ indicators.excelencia_integral|default:"N/A" }}%</p></div>
+                <div class="col-md-3"><p class="mb-1"><strong>Competencia satisfactoria:</strong> {{ indicators.competencia_satisfactoria|default:"N/A" }}%</p></div>
+                <div class="col-md-3"><p class="mb-1"><strong>Perfil STEM avanzado:</strong> {{ indicators.perfil_stem|default:"N/A" }}%</p></div>
+                <div class="col-md-3"><p class="mb-1"><strong>Riesgo alto:</strong> {{ indicators.riesgo_alto|default:"N/A" }}%</p></div>
             </div>
         </div>
+        {% endif %}
 
-        <div class="row mt-3">
-            <div class="col-md-12">
-                <div class="stat-card">
-                    <div class="stat-label">Total Estudiantes Evaluados</div>
-                    <div class="stat-value">{{ stats.estudiantes|default:"0" }}</div>
+        {% if similar_schools %}
+        <div class="card-block">
+            <h3 class="section-title">Colegios similares del municipio</h3>
+            <ul class="mb-0">
+                {% for school_item in similar_schools %}
+                <li><a href="{{ school_item.url }}">{{ school_item.name }}</a> (puntaje {{ school_item.score }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="card-block">
+            <h3 class="section-title">Preguntas frecuentes</h3>
+            <div class="accordion" id="faqAccordion">
+                {% for faq in faq_items %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading{{ forloop.counter }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="faqCollapse{{ forloop.counter }}">
+                            {{ faq.question }}
+                        </button>
+                    </h2>
+                    <div id="faqCollapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="faqHeading{{ forloop.counter }}" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">{{ faq.answer }}</div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
 
         {% else %}
-        <!-- No Data Message -->
         <div class="alert alert-info">
-            <h4>📋 Información No Disponible</h4>
-            <p>Actualmente no tenemos datos de resultados ICFES 2024 para este colegio.</p>
+            <h4>Informacion no disponible</h4>
+            <p>Actualmente no tenemos datos suficientes de resultados ICFES para este colegio.</p>
         </div>
         {% endif %}
 
-        <!-- CTA Section -->
-        <div class="cta-section">
-            <h3>🚀 ¿Quieres Análisis Detallados para tu Colegio?</h3>
-            <p class="lead">Accede a reportes completos, análisis históricos, comparaciones y recomendaciones
-                personalizadas</p>
+        <div class="card-block text-center">
+            <h3>Quieres analisis detallados para tu colegio</h3>
+            <p class="lead">Accede a reportes completos, comparaciones historicas y recomendaciones accionables.</p>
             <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_planes" class="cta-button">Ver Planes y Detalles del Producto</a>
-                <a href="/icfes/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Ir al Portal Principal</a>
+                <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_planes" class="cta-button">Ver planes y detalles</a>
+                <a href="/icfes/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Ir al portal principal</a>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         <div class="container">
-            <p>&copy; 2024 ICFES Analytics. Un producto de <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline;">www.sabededatos.com</a></p>
+            <p class="mb-0">&copy; 2026 ICFES Analytics. Un producto de <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline;">www.sabededatos.com</a></p>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
     {% if has_data %}
     <script>
-        // Radar Chart
-        const ctx = document.getElementById('radarChart').getContext('2d');
-        const radarChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: {{ radar_data.labels | safe }},
-        datasets: [{
-            label: 'Puntajes 2024',
-            data: {{ radar_data.values | safe }},
-            backgroundColor: 'rgba(102, 126, 234, 0.2)',
-            borderColor: 'rgba(102, 126, 234, 1)',
-            borderWidth: 2,
-            pointBackgroundColor: 'rgba(102, 126, 234, 1)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(102, 126, 234, 1)'
-                }]
-            },
-        options: {
-            responsive: true,
-                maintainAspectRatio: true,
-                    aspectRatio: 1,
-                        scales: {
-                r: {
-                    beginAtZero: true,
-                        max: 100,
-                            ticks: {
-                        stepSize: 20
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
+        document.addEventListener("DOMContentLoaded", function () {
+            if (typeof Chart === "undefined") {
+                return;
             }
-        }
-        });
-    </script>
 
-    {% if historical_chart.has_data %}
-    <script>
-        // Historical Chart
-        const ctxHistory = document.getElementById('historicalChart').getContext('2d');
-        const historicalChart = new Chart(ctxHistory, {
-            type: 'line',
-            data: {
-                labels: {{ historical_chart.years | safe }},
-        datasets: [{
-            label: 'Puntaje Global',
-            data: {{ historical_chart.scores | safe }},
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-            borderWidth: 3,
-            pointBackgroundColor: '#fff',
-            pointBorderColor: '#667eea',
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            fill: true,
-            tension: 0.4
-                }]
-            },
-        options: {
-            responsive: true,
-                maintainAspectRatio: false,
-                    plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    mode: 'index',
-                        intersect: false,
+            const radarEl = document.getElementById("radarChart");
+            if (radarEl) {
+                new Chart(radarEl.getContext("2d"), {
+                    type: "radar",
+                    data: {
+                        labels: {{ radar_data.labels|safe }},
+                        datasets: [{
+                            label: "Puntajes {{ stats.year }}",
+                            data: {{ radar_data.values|safe }},
+                            backgroundColor: "rgba(30, 77, 146, 0.15)",
+                            borderColor: "rgba(30, 77, 146, 1)",
+                            borderWidth: 2,
+                            pointBackgroundColor: "rgba(30, 77, 146, 1)",
+                            pointBorderColor: "#fff"
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { stepSize: 20 }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
                     }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                        grid: {
-                        color: 'rgba(0,0,0,0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+                });
             }
-        }
+
+            {% if historical_chart.has_data %}
+            const historyEl = document.getElementById("historicalChart");
+            if (historyEl) {
+                new Chart(historyEl.getContext("2d"), {
+                    type: "line",
+                    data: {
+                        labels: {{ historical_chart.years|safe }},
+                        datasets: [{
+                            label: "Puntaje Global",
+                            data: {{ historical_chart.scores|safe }},
+                            borderColor: "#1e4d92",
+                            backgroundColor: "rgba(30, 77, 146, 0.1)",
+                            borderWidth: 3,
+                            pointBackgroundColor: "#fff",
+                            pointBorderColor: "#1e4d92",
+                            pointRadius: 4,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: false },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+            {% endif %}
         });
     </script>
-    {% endif %}
     {% endif %}
 </body>
-
 </html>

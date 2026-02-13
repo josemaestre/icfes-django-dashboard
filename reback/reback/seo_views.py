@@ -4,8 +4,15 @@ from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponse
 
 
+def _public_base_url(request):
+    configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
+    if configured:
+        return configured.rstrip("/")
+    return request.build_absolute_uri("/").rstrip("/")
+
+
 def robots_txt(request):
-    base = request.build_absolute_uri("/").rstrip("/")
+    base = _public_base_url(request)
     lines = [
         "User-agent: *",
         "Allow: /",

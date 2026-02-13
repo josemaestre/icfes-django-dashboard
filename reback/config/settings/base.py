@@ -89,6 +89,8 @@ CACHES = {
 ROOT_URLCONF = "config.urls"
 # https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = "config.wsgi.application"
+# Public base URL used for canonical, OG tags, robots and sitemaps.
+PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="")
 
 # APPS
 # ------------------------------------------------------------------------------

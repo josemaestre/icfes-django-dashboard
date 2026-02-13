@@ -27,6 +27,8 @@ urlpatterns = [
     path("sitemap.xml", sitemap_views.sitemap_index),
     path("sitemap-static.xml", sitemap_views.sitemap_static),
     path("sitemap-icfes-<int:page>.xml", sitemap_views.sitemap_icfes),
+    path("sitemap-departamentos.xml", sitemap_views.sitemap_departamentos),
+    path("sitemap-municipios.xml", sitemap_views.sitemap_municipios),
     path("sitemap-geo.xml", sitemap_views.sitemap_geo),
     path("sitemap-longtail.xml", sitemap_views.sitemap_longtail),
     
