@@ -42,7 +42,6 @@ def sitemap_index(request):
 def sitemap_static(request):
     base = _base_url(request)
     urls = [
-        f"{base}/",
         f"{base}/landing/",
         f"{base}/pricing/",
         f"{base}/icfes/",
