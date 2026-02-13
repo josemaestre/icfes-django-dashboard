@@ -25,6 +25,8 @@ urlpatterns = [
     path("sitemap.xml", sitemap_views.sitemap_index),
     path("sitemap-static.xml", sitemap_views.sitemap_static),
     path("sitemap-icfes-<int:page>.xml", sitemap_views.sitemap_icfes),
+    path("sitemap-geo.xml", sitemap_views.sitemap_geo),
+    path("sitemap-longtail.xml", sitemap_views.sitemap_longtail),
     
     # Your stuff: custom urls includes go here
     # ...

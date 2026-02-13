@@ -3,6 +3,7 @@ Simplified landing page view for schools
 Shows basic information and 2024 statistics
 """
 import duckdb
+import json
 from django.shortcuts import render
 from django.http import Http404
 from .db_utils import get_duckdb_connection, resolve_schema
@@ -154,9 +155,88 @@ def school_landing_page(request, slug):
                 comparison_data = conn.execute(resolve_schema(comparison_query), [colegio_sk]).fetchone()
             
             # Prepare context
+            latest_year = str(historical_data[-1][0]) if historical_data else "2024"
+            school_name = school['nombre']
+            municipio = school['municipio']
+            departamento = school['departamento']
+            score_hint = ""
+            if stats and stats[0] is not None:
+                score_hint = f" Puntaje global: {round(stats[0], 1)}."
+
+            seo_title = (
+                f"{school_name} en {municipio}: Puntaje ICFES {latest_year} | Ranking y Análisis"
+            )
+            seo_description = (
+                f"Resultados ICFES de {school_name} en {municipio}, {departamento}. "
+                f"Consulta puntaje global, materias, evolución histórica y comparación con "
+                f"promedios municipal, departamental y nacional.{score_hint}"
+            )
+            seo_keywords = (
+                f"{school_name}, ICFES {latest_year}, puntaje ICFES {municipio}, "
+                f"ranking colegios {municipio}, Pruebas Saber 11 {departamento}, "
+                "resultados ICFES colegio"
+            )
+            breadcrumb_items = [
+                {
+                    '@type': 'ListItem',
+                    'position': 1,
+                    'name': 'Inicio',
+                    'item': request.build_absolute_uri('/'),
+                },
+                {
+                    '@type': 'ListItem',
+                    'position': 2,
+                    'name': 'Colegios ICFES',
+                    'item': request.build_absolute_uri('/icfes/colegio/'),
+                },
+                {
+                    '@type': 'ListItem',
+                    'position': 3,
+                    'name': school_name,
+                    'item': request.build_absolute_uri(request.path),
+                },
+            ]
+            school_schema = {
+                '@context': 'https://schema.org',
+                '@type': 'School',
+                '@id': f"{request.build_absolute_uri(request.path)}#school",
+                'name': school_name,
+                'description': seo_description,
+                'url': request.build_absolute_uri(request.path),
+                'mainEntityOfPage': request.build_absolute_uri(request.path),
+                'address': {
+                    '@type': 'PostalAddress',
+                    'addressLocality': municipio,
+                    'addressRegion': departamento,
+                    'addressCountry': 'CO',
+                },
+            }
+            if stats and stats[0] is not None:
+                school_schema['additionalProperty'] = [{
+                    '@type': 'PropertyValue',
+                    'name': f"Puntaje global ICFES {latest_year}",
+                    'value': round(stats[0], 1),
+                }]
+            breadcrumb_schema = {
+                '@context': 'https://schema.org',
+                '@type': 'BreadcrumbList',
+                'itemListElement': breadcrumb_items,
+            }
+
             context = {
                 'school': school,
                 'has_data': stats is not None,
+                'seo': {
+                    'year': latest_year,
+                    'title': seo_title,
+                    'description': seo_description,
+                    'keywords': seo_keywords,
+                },
+                'canonical_url': request.build_absolute_uri(request.path),
+                'structured_data_json': json.dumps(
+                    [school_schema, breadcrumb_schema],
+                    ensure_ascii=False,
+                ),
             }
             
             if stats:

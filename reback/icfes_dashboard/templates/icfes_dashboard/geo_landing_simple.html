@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="keywords" content="{{ seo.keywords }}">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <meta property="og:locale" content="es_CO">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="ICFES Analytics">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    {% if structured_data_json %}
+    <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+    {% endif %}
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f7f9fc; color: #1f2937; }
+        .hero { background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%); color: #fff; }
+        .metric-card, .panel {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 0;
+        }
+        .metric-value { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+        .chart-wrap { height: 300px; }
+        .cta-section {
+            background: #fff;
+            padding: 36px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        .footer {
+            background: #24324a;
+            color: #fff;
+            padding: 18px 0;
+            text-align: center;
+            margin-top: 32px;
+        }
+    </style>
+</head>
+<body>
+{% if index_mode %}
+    <section class="py-5 hero">
+        <div class="container">
+            <h1 class="mb-2">Resultados ICFES por Departamento</h1>
+            <p class="mb-0">Selecciona un departamento para ver tendencia histórica y ranking de colegios.</p>
+        </div>
+    </section>
+    <main class="container py-4">
+        <div class="panel p-4">
+            <div class="row g-3">
+                {% for d in departments %}
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <a class="btn btn-outline-primary w-100 text-start" href="/icfes/departamento/{{ d.slug }}/">
+                        {{ d.name }}
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+{% else %}
+    <section class="py-5 hero">
+        <div class="container">
+            <p class="mb-2">
+                <a href="/icfes/departamentos/" class="link-light">Departamentos</a>
+                {% if geo.municipio %} / <a href="/icfes/departamento/{{ geo.departamento_slug }}/" class="link-light">{{ geo.departamento }}</a>{% endif %}
+            </p>
+            <h1 class="mb-2">ICFES en {{ geo.name }}</h1>
+            <p class="mb-0">Análisis agregado y evolución histórica. Año más reciente: {{ latest_year }}.</p>
+        </div>
+    </section>
+
+    <main class="container py-4">
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="metric-card p-3">
+                    <div class="text-muted">Promedio global</div>
+                    <div class="metric-value">{{ stats.promedio_global|default:"N/A" }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="metric-card p-3">
+                    <div class="text-muted">Colegios</div>
+                    <div class="metric-value">{{ stats.total_colegios }}</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="metric-card p-3">
+                    <div class="text-muted">Estudiantes</div>
+                    <div class="metric-value">{{ stats.total_estudiantes }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel p-3 mb-4">
+            <h2 class="h5 mb-3">Tendencia histórica del puntaje global</h2>
+            <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+
+        <div class="panel p-3 mb-4">
+            <h2 class="h5 mb-3">Top 10 colegios ({{ latest_year }})</h2>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Colegio</th>
+                            <th>Sector</th>
+                            <th>Promedio</th>
+                            <th>Estudiantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in top_schools %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ school.nombre }}</td>
+                            <td>{{ school.sector|default:"-" }}</td>
+                            <td>{{ school.promedio_global|default:"-" }}</td>
+                            <td>{{ school.total_estudiantes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if geo.type == "departamento" and municipios %}
+        <div class="panel p-3">
+            <h2 class="h5 mb-3">Municipios destacados en {{ geo.departamento }}</h2>
+            <div class="row g-3">
+                {% for m in municipios %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <a class="text-decoration-none" href="/icfes/departamento/{{ geo.departamento_slug }}/municipio/{{ m.slug }}/">
+                        <div class="metric-card p-3">
+                            <div class="fw-semibold">{{ m.nombre }}</div>
+                            <div class="small text-muted">{{ m.total_colegios }} colegios</div>
+                            <div class="mt-1">Promedio: <strong>{{ m.promedio_global|default:"N/A" }}</strong></div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    {{ trend_chart|json_script:"trend-data" }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const trendData = JSON.parse(document.getElementById('trend-data').textContent);
+        const years = trendData.years || [];
+        const scores = trendData.scores || [];
+
+        if (years.length > 0) {
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Promedio Global ICFES',
+                        data: scores,
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.18)',
+                        fill: true,
+                        tension: 0.25,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Puntaje' } },
+                        x: { title: { display: true, text: 'Año' } }
+                    }
+                }
+            });
+        }
+    </script>
+{% endif %}
+
+<section class="container mb-4">
+    <div class="cta-section">
+        <h3 class="mb-2">🚀 ¿Quieres Análisis Detallados para tu Colegio?</h3>
+        <p class="lead mb-3">Accede a reportes completos, análisis históricos, comparaciones y recomendaciones personalizadas.</p>
+        <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+            <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_planes" class="btn btn-primary btn-lg">Ver Planes y Detalles del Producto</a>
+            <a href="/icfes/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Ir al Portal Principal</a>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container">
+        <p class="mb-0">&copy; 2024 ICFES Analytics. Un producto de <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration: underline;">www.sabededatos.com</a></p>
+    </div>
+</footer>
+</body>
+</html>

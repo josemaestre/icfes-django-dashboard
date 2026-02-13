@@ -2,7 +2,14 @@
 URLs para el dashboard ICFES.
 """
 from django.urls import path
-from . import views, landing_views_simple as landing_views, export_views, api_views
+from . import (
+    api_views,
+    export_views,
+    geo_landing_views,
+    landing_views_simple as landing_views,
+    longtail_landing_views,
+    views,
+)
 
 app_name = 'icfes_dashboard'
 
@@ -15,6 +22,18 @@ urlpatterns = [
     # Dynamic school landing pages (SEO)
     path('colegio/<slug:slug>/',
          landing_views.school_landing_page, name='school_landing'),
+    path('departamentos/',
+         geo_landing_views.departments_index_page, name='departments_index'),
+    path('departamento/<slug:departamento_slug>/',
+         geo_landing_views.department_landing_page, name='department_landing'),
+    path('departamento/<slug:departamento_slug>/municipio/<slug:municipio_slug>/',
+         geo_landing_views.municipality_landing_page, name='municipality_landing'),
+    path('ranking/colegios/<int:ano>/',
+         longtail_landing_views.ranking_colegios_year_page, name='ranking_colegios_year'),
+    path('ranking/matematicas/<int:ano>/',
+         longtail_landing_views.ranking_matematicas_year_page, name='ranking_matematicas_year'),
+    path('historico/puntaje-global/',
+         longtail_landing_views.historico_nacional_page, name='historico_puntaje_global'),
 
     # Endpoints de datos generales
     path('api/estadisticas/', views.icfes_estadisticas_generales,

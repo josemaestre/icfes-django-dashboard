@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="keywords" content="{{ seo.keywords }}">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta property="og:locale" content="es_CO">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="ICFES Analytics">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8fafc; color: #1f2937; }
+        .hero { background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%); color: #fff; }
+        .panel {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        .chart-wrap { height: 320px; }
+        .cta-section {
+            background: #fff;
+            padding: 36px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        .footer {
+            background: #24324a;
+            color: #fff;
+            padding: 18px 0;
+            text-align: center;
+            margin-top: 32px;
+        }
+    </style>
+</head>
+<body>
+    <section class="py-5 hero">
+        <div class="container">
+            <h1 class="mb-2">{{ seo.title }}</h1>
+            <p class="mb-0">{{ seo.description }}</p>
+        </div>
+    </section>
+
+    <main class="container py-4">
+        {% if mode == "ranking_general" or mode == "ranking_matematicas" %}
+        <div class="panel p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Año {{ year }}</h2>
+                <div class="small text-muted">Años disponibles:
+                    {% for y in years %}
+                    {% if y == year %}
+                    <strong>{{ y }}</strong>
+                    {% else %}
+                    {{ y }}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="panel p-3">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        {% if mode == "ranking_general" %}
+                        <tr>
+                            <th>#</th>
+                            <th>Colegio</th>
+                            <th>Departamento</th>
+                            <th>Municipio</th>
+                            <th>Sector</th>
+                            <th>Puntaje Global</th>
+                            <th>Estudiantes</th>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <th>#</th>
+                            <th>Colegio</th>
+                            <th>Departamento</th>
+                            <th>Municipio</th>
+                            <th>Sector</th>
+                            <th>Matemáticas</th>
+                            <th>Global</th>
+                        </tr>
+                        {% endif %}
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ row.nombre }}</td>
+                            <td>{{ row.departamento|default:"-" }}</td>
+                            <td>{{ row.municipio|default:"-" }}</td>
+                            <td>{{ row.sector|default:"-" }}</td>
+                            {% if mode == "ranking_general" %}
+                            <td>{{ row.score|default:"-" }}</td>
+                            <td>{{ row.estudiantes }}</td>
+                            {% else %}
+                            <td>{{ row.score_math|default:"-" }}</td>
+                            <td>{{ row.score_global|default:"-" }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if mode == "historico_nacional" %}
+        <div class="panel p-3 mb-4">
+            <h2 class="h5 mb-3">Tendencia histórica del puntaje global ICFES (nacional)</h2>
+            <div class="chart-wrap"><canvas id="historyChart"></canvas></div>
+        </div>
+
+        <div class="panel p-3">
+            <h2 class="h5 mb-3">Serie anual</h2>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Año</th>
+                            <th>Promedio Global</th>
+                            <th>Colegios</th>
+                            <th>Estudiantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td>{{ row.ano }}</td>
+                            <td>{{ row.promedio_global|default:"-" }}</td>
+                            <td>{{ row.total_colegios }}</td>
+                            <td>{{ row.total_estudiantes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <section class="container mb-4">
+        <div class="cta-section">
+            <h3 class="mb-2">🚀 ¿Quieres Análisis Detallados para tu Colegio?</h3>
+            <p class="lead mb-3">Accede a reportes completos, análisis históricos, comparaciones y recomendaciones personalizadas.</p>
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=longtail_landing&utm_content=cta_planes" class="btn btn-primary btn-lg">Ver Planes y Detalles del Producto</a>
+                <a href="/icfes/?utm_source=seo&utm_medium=landing&utm_campaign=longtail_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Ir al Portal Principal</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 ICFES Analytics. Un producto de <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration: underline;">www.sabededatos.com</a></p>
+        </div>
+    </footer>
+
+    {% if mode == "historico_nacional" %}
+    {{ chart|json_script:"history-chart-data" }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const data = JSON.parse(document.getElementById('history-chart-data').textContent);
+        const years = data.years || [];
+        const scores = data.scores || [];
+        if (years.length > 0) {
+            new Chart(document.getElementById('historyChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Promedio Global',
+                        data: scores,
+                        borderColor: '#1d4ed8',
+                        backgroundColor: 'rgba(29, 78, 216, 0.18)',
+                        fill: true,
+                        tension: 0.25,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Puntaje' } },
+                        x: { title: { display: true, text: 'Año' } }
+                    }
+                }
+            });
+        }
+    </script>
+    {% endif %}
+</body>
+</html>
