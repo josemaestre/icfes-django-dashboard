@@ -296,11 +296,11 @@ def school_landing_page(request, slug):
                 }
 
                 subjects = {
-                    "Matematicas": stats_dict["matematicas"],
-                    "Lectura Critica": stats_dict["lectura"],
+                    "Matemáticas": stats_dict["matematicas"],
+                    "Lectura Crítica": stats_dict["lectura"],
                     "Ciencias Naturales": stats_dict["ciencias"],
                     "Sociales y Ciudadanas": stats_dict["sociales"],
-                    "Ingles": stats_dict["ingles"],
+                    "Inglés": stats_dict["ingles"],
                 }
                 valid_subjects = {k: v for k, v in subjects.items() if v is not None}
                 sorted_subjects = sorted(valid_subjects.items(), key=lambda x: x[1], reverse=True)
@@ -313,7 +313,7 @@ def school_landing_page(request, slug):
                 ]
 
                 radar_data = {
-                    "labels": ["Matematicas", "Lectura", "Ciencias", "Sociales", "Ingles"],
+                    "labels": ["Matemáticas", "Lectura", "Ciencias", "Sociales", "Inglés"],
                     "values": [
                         stats_dict["matematicas"] or 0,
                         stats_dict["lectura"] or 0,
@@ -347,11 +347,11 @@ def school_landing_page(request, slug):
                         "clasificacion_departamental": comparison_data[10] or "Sin clasificar",
                         "clasificacion_nacional": comparison_data[11] or "Sin clasificar",
                         "gaps_subjects": {
-                            "Lectura Critica": _to_float(comparison_data[12]),
-                            "Matematicas": _to_float(comparison_data[13]),
+                            "Lectura Crítica": _to_float(comparison_data[12]),
+                            "Matemáticas": _to_float(comparison_data[13]),
                             "Ciencias Naturales": _to_float(comparison_data[14]),
                             "Sociales y Ciudadanas": _to_float(comparison_data[15]),
-                            "Ingles": _to_float(comparison_data[16]),
+                            "Inglés": _to_float(comparison_data[16]),
                         },
                     }
 
@@ -402,6 +402,34 @@ def school_landing_page(request, slug):
                             action_recommendations.append(
                                 f"Priorizar {worst_gap[0]}: cerrar {abs(worst_gap[1])} puntos frente al promedio municipal."
                             )
+
+                # Trend-based recommendations
+                if performance_signals.get("trend_3y") is not None:
+                    t3 = performance_signals["trend_3y"]
+                    if t3 < -10:
+                        action_recommendations.append(
+                            f"Alerta: caída de {abs(t3)} puntos en 3 años. Revisar cambios curriculares y rotación docente reciente."
+                        )
+                    elif t3 < -5:
+                        action_recommendations.append(
+                            f"Tendencia descendente ({abs(t3)} pts en 3 años). Considerar diagnóstico institucional para identificar causas."
+                        )
+                    elif t3 > 10:
+                        action_recommendations.append(
+                            f"Excelente progreso: +{t3} puntos en 3 años. Documentar las prácticas exitosas para replicarlas."
+                        )
+
+                # Percentile-based recommendations
+                if comparison and comparison.get("percentil_nacional") is not None:
+                    pn = comparison["percentil_nacional"]
+                    if pn < 25:
+                        action_recommendations.append(
+                            "El colegio está por debajo del percentil 25 nacional. Evaluar acceso a recursos pedagógicos y formación docente."
+                        )
+                    elif pn > 90:
+                        action_recommendations.append(
+                            f"Percentil {pn} nacional: el colegio se ubica entre los mejores del país. Potenciar áreas STEM para consolidar la excelencia."
+                        )
 
                 if stats_dict.get("sociales") is not None and stats_dict["sociales"] < 50:
                     action_recommendations.append(
@@ -631,7 +659,7 @@ def school_landing_page(request, slug):
                     "year": latest_year,
                     "title": seo_title,
                     "description": seo_description,
-                    "keywords": seo_keywords,
+                    "keywords": "",
                     "og_image": og_image,
                     "robots": robots_meta,
                 },

@@ -202,7 +202,7 @@
             <div class="mt-3">
                 <span class="info-badge">{{ school.municipio }}, {{ school.departamento }}</span>
                 <span class="info-badge">{{ school.sector }}</span>
-                <span class="info-badge">Codigo DANE {{ school.codigo }}</span>
+                <span class="info-badge">Código DANE {{ school.codigo }}</span>
             </div>
         </div>
     </div>
@@ -239,11 +239,11 @@
                     <h2 class="section-title">Resultados ICFES {{ stats.year }}</h2>
                     <div class="row">
                         <div class="col-md-4"><div class="stat-card"><div class="stat-label">Puntaje Global</div><div class="stat-value">{{ stats.global|default:"N/A" }}</div></div></div>
-                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Matematicas</div><div class="stat-value">{{ stats.matematicas|default:"N/A" }}</div></div></div>
-                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Lectura Critica</div><div class="stat-value">{{ stats.lectura|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Matemáticas</div><div class="stat-value">{{ stats.matematicas|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Lectura Crítica</div><div class="stat-value">{{ stats.lectura|default:"N/A" }}</div></div></div>
                         <div class="col-md-4"><div class="stat-card"><div class="stat-label">Ciencias Naturales</div><div class="stat-value">{{ stats.ciencias|default:"N/A" }}</div></div></div>
                         <div class="col-md-4"><div class="stat-card"><div class="stat-label">Sociales y Ciudadanas</div><div class="stat-value">{{ stats.sociales|default:"N/A" }}</div></div></div>
-                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Ingles</div><div class="stat-value">{{ stats.ingles|default:"N/A" }}</div></div></div>
+                        <div class="col-md-4"><div class="stat-card"><div class="stat-label">Inglés</div><div class="stat-value">{{ stats.ingles|default:"N/A" }}</div></div></div>
                     </div>
                     <div class="stat-card mt-2">
                         <div class="stat-label">Estudiantes evaluados</div>
@@ -260,7 +260,7 @@
                     {% endfor %}
                 </div>
                 <div class="card-block">
-                    <h3 class="section-title">Areas de mejora</h3>
+                    <h3 class="section-title">Áreas de mejora</h3>
                     {% for subject, score in top_weaknesses %}
                     <div class="weakness-item">{{ subject }} <span class="subject-score">{{ score }}</span></div>
                     {% endfor %}
@@ -270,7 +270,7 @@
 
         {% if comparison %}
         <div class="card-block">
-            <h3 class="section-title">Comparacion con promedios {{ stats.year }}</h3>
+            <h3 class="section-title">Comparación con promedios {{ stats.year }}</h3>
             <div class="row">
                 <div class="col-md-4">
                     <div class="comparison-item">
@@ -306,7 +306,7 @@
         <div class="row">
             <div class="col-lg-6">
                 <div class="card-block">
-                    <h3 class="section-title">Perfil de desempeno</h3>
+                    <h3 class="section-title">Perfil de desempeño</h3>
                     <div style="position: relative; height: 330px;"><canvas id="radarChart"></canvas></div>
                 </div>
             </div>
@@ -314,16 +314,16 @@
             {% if historical_chart.has_data %}
             <div class="col-lg-6">
                 <div class="card-block">
-                    <h3 class="section-title">Evolucion historica</h3>
+                    <h3 class="section-title">Evolución histórica</h3>
                     <div style="position: relative; height: 330px;"><canvas id="historicalChart"></canvas></div>
                     {% if performance_signals.trend_3y is not None %}
-                    <p class="mt-3 mb-0">Tendencia 3 anos: {{ performance_signals.trend_3y }} puntos.</p>
+                    <p class="mt-3 mb-0">Tendencia 3 años: {{ performance_signals.trend_3y }} puntos.</p>
                     {% endif %}
                     {% if performance_signals.trend_5y is not None %}
-                    <p class="mb-0">Tendencia 5 anos: {{ performance_signals.trend_5y }} puntos.</p>
+                    <p class="mb-0">Tendencia 5 años: {{ performance_signals.trend_5y }} puntos.</p>
                     {% endif %}
                     {% if performance_signals.stability_std is not None %}
-                    <p class="mb-0">Variabilidad historica (desv. estandar): {{ performance_signals.stability_std }}.</p>
+                    <p class="mb-0">Variabilidad histórica (desv. estándar): {{ performance_signals.stability_std }}.</p>
                     {% endif %}
                 </div>
             </div>
@@ -407,17 +407,17 @@
 
         {% else %}
         <div class="alert alert-info">
-            <h4>Informacion no disponible</h4>
+            <h4>Información no disponible</h4>
             <p>Actualmente no tenemos datos suficientes de resultados ICFES para este colegio.</p>
         </div>
         {% endif %}
 
         <div class="card-block text-center">
-            <h3>Quieres analisis detallados para tu colegio</h3>
-            <p class="lead">Accede a reportes completos, comparaciones historicas y recomendaciones accionables.</p>
+            <h3>¿Quieres un diagnóstico completo de tu colegio?</h3>
+            <p class="lead">Obtén reportes personalizados con brechas por materia, tendencias históricas y acciones concretas de mejora.</p>
             <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_planes" class="cta-button">Ver planes y detalles</a>
-                <a href="/icfes/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Ir al portal principal</a>
+                <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_planes" class="cta-button">Solicitar diagnóstico gratuito</a>
+                <a href="/icfes/?utm_source=seo&utm_medium=landing&utm_campaign=school_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Explorar el portal ICFES</a>
             </div>
         </div>
     </div>
