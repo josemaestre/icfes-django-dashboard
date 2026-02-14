@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ seo.title }}</title>
     <meta name="description" content="{{ seo.description }}">
-    <meta name="keywords" content="{{ seo.keywords }}">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <link rel="canonical" href="{{ canonical_url }}">
     <meta property="og:locale" content="es_CO">
@@ -100,7 +99,7 @@
                         {% for row in rows %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
-                            <td>{{ row.nombre }}</td>
+                            <td>{% if row.slug %}<a href="/icfes/colegio/{{ row.slug }}/">{{ row.nombre }}</a>{% else %}{{ row.nombre }}{% endif %}</td>
                             <td>{{ row.departamento|default:"-" }}</td>
                             <td>{{ row.municipio|default:"-" }}</td>
                             <td>{{ row.sector|default:"-" }}</td>

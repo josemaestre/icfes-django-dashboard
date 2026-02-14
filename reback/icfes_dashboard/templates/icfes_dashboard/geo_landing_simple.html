@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ seo.title }}</title>
     <meta name="description" content="{{ seo.description }}">
-    <meta name="keywords" content="{{ seo.keywords }}">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <link rel="canonical" href="{{ canonical_url }}">
 
@@ -128,7 +127,7 @@
                         {% for school in top_schools %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
-                            <td>{{ school.nombre }}</td>
+                            <td>{% if school.slug %}<a href="/icfes/colegio/{{ school.slug }}/">{{ school.nombre }}</a>{% else %}{{ school.nombre }}{% endif %}</td>
                             <td>{{ school.sector|default:"-" }}</td>
                             <td>{{ school.promedio_global|default:"-" }}</td>
                             <td>{{ school.total_estudiantes }}</td>
@@ -155,6 +154,19 @@
                 </div>
                 {% endfor %}
             </div>
+        </div>
+        {% endif %}
+
+        {% if all_schools_in_municipality %}
+        <div class="panel p-3 mb-4">
+            <h2 class="h5 mb-3">Todos los colegios en {{ geo.name }} ({{ all_schools_in_municipality|length }})</h2>
+            <ul class="list-unstyled mb-0" style="column-count:2; column-gap:1.5rem;">
+                {% for school in all_schools_in_municipality %}
+                <li class="mb-1">
+                    {% if school.slug %}<a href="/icfes/colegio/{{ school.slug }}/" class="text-decoration-none">{{ school.nombre }} {% if school.promedio_global %}<small class="text-muted">({{ school.promedio_global }})</small>{% endif %}</a>{% else %}{{ school.nombre }}{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
         </div>
         {% endif %}
     </main>

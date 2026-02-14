@@ -3,6 +3,7 @@
 import json
 import logging
 import statistics
+from datetime import date
 from urllib.parse import urljoin
 
 import duckdb
@@ -11,6 +12,7 @@ from django.http import Http404
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.utils.text import slugify
+from django.views.decorators.cache import cache_page
 
 from .db_utils import get_duckdb_connection, resolve_schema
 from .landing_utils import generate_school_slug
@@ -111,6 +113,7 @@ def _find_school_by_slug(conn, slug):
     return None
 
 
+@cache_page(60 * 60 * 4)
 def school_landing_page(request, slug):
     try:
         with get_duckdb_connection() as conn:
@@ -406,25 +409,25 @@ def school_landing_page(request, slug):
                     )
                 if stats_dict.get("matematicas") is not None and stats_dict["matematicas"] < 50:
                     action_recommendations.append(
-                        "Enfocar Matematicas en resolucion de problemas y manejo de tiempo por bloque."
+                        "Enfocar Matemáticas en resolución de problemas y manejo de tiempo por bloque."
                     )
                 if indicators and indicators.get("riesgo_alto") is not None and indicators["riesgo_alto"] > 20:
                     action_recommendations.append(
-                        "Implementar plan de intervencion temprana para estudiantes en riesgo alto."
+                        "Implementar plan de intervención temprana para estudiantes en riesgo alto."
                     )
                 if not action_recommendations:
                     action_recommendations.append(
-                        "Mantener la estrategia actual y consolidar seguimiento por cohortes para sostener el desempeno."
+                        "Mantener la estrategia actual y consolidar seguimiento por cohortes para sostener el desempeño."
                     )
 
                 ranking_fragment = ""
                 if stats_dict.get("ranking_municipal") and stats_dict.get("total_colegios_municipio"):
                     ranking_fragment = (
-                        f"ocupa la posicion {stats_dict['ranking_municipal']} de "
+                        f"ocupa la posición {stats_dict['ranking_municipal']} de "
                         f"{stats_dict['total_colegios_municipio']} en {school['municipio']}"
                     )
                 else:
-                    ranking_fragment = "cuenta con desempeno medible frente a su contexto local"
+                    ranking_fragment = "cuenta con desempeño medible frente a su contexto local"
 
                 percentil_fragment = ""
                 if comparison and comparison.get("percentil_municipal") is not None:
@@ -436,7 +439,7 @@ def school_landing_page(request, slug):
                 if performance_signals.get("trend_3y") is not None:
                     direction = "mejora" if performance_signals["trend_3y"] >= 0 else "retroceso"
                     trend_text = (
-                        f" En los ultimos 3 anos registra {direction} de "
+                        f" En los últimos 3 años registra {direction} de "
                         f"{abs(performance_signals['trend_3y'])} puntos."
                     )
 
@@ -463,50 +466,51 @@ def school_landing_page(request, slug):
             )
 
             if has_data and stats_dict:
-                title_bits = [f"{school['nombre']} en {school['municipio']}: Puntaje ICFES {latest_year}"]
+                # Compact title: ~60 chars for better SERP CTR
+                title_extras = []
+                if stats_dict.get("global") is not None:
+                    title_extras.append(str(stats_dict["global"]))
                 if stats_dict.get("ranking_municipal"):
-                    title_bits.append(f"Ranking {stats_dict['ranking_municipal']} local")
+                    title_extras.append(f"#{stats_dict['ranking_municipal']}")
                 if comparison and comparison.get("percentil_municipal") is not None:
-                    title_bits.append(f"Percentil {comparison['percentil_municipal']}")
-                seo_title = " | ".join(title_bits)
+                    title_extras.append(f"P{comparison['percentil_municipal']}")
+                extras_str = " | ".join(title_extras)
+                seo_title = (
+                    f"{school['nombre']} ({school['municipio']}) — ICFES {latest_year}: {extras_str}"
+                )
 
                 seo_description = (
-                    f"Analiza resultados ICFES {latest_year} de {school['nombre']} en {school['municipio']}, "
+                    f"Resultados ICFES {latest_year} de {school['nombre']} en {school['municipio']}, "
                     f"{school['departamento']}: puntaje global {stats_dict['global']}, ranking local, "
-                    "brechas por materia, evolucion historica y recomendaciones de mejora."
+                    f"brechas por materia, evolución histórica y recomendaciones de mejora."
                 )
             else:
-                seo_title = f"{school['nombre']} en {school['municipio']} | ICFES Analytics"
+                seo_title = f"{school['nombre']} ({school['municipio']}) — ICFES Analytics"
                 seo_description = (
                     f"Consulta el perfil ICFES de {school['nombre']} en {school['municipio']}, "
                     f"{school['departamento']}, con comparativos territoriales y tendencias."
                 )
 
-            seo_keywords = (
-                f"{school['nombre']}, ICFES {latest_year}, puntaje ICFES {school['municipio']}, "
-                f"ranking colegios {school['municipio']}, resultados ICFES {school['departamento']}"
-            )
-
             faq_items = [
                 {
-                    "question": f"Cual fue el puntaje global ICFES de {school['nombre']} en {latest_year}?",
+                    "question": f"¿Cuál fue el puntaje global ICFES de {school['nombre']} en {latest_year}?",
                     "answer": (
                         f"El puntaje global reportado es {stats_dict['global']}."
                         if stats_dict and stats_dict.get("global") is not None
-                        else "No hay puntaje global disponible para el ultimo corte."
+                        else "No hay puntaje global disponible para el último corte."
                     ),
                 },
                 {
-                    "question": f"Como se compara {school['nombre']} frente al promedio de {school['municipio']}?",
+                    "question": f"¿Cómo se compara {school['nombre']} frente al promedio de {school['municipio']}?",
                     "answer": (
                         f"La brecha municipal global es {comparison['brecha_municipal_display']}."
                         if comparison
-                        else "No hay comparacion municipal disponible en este momento."
+                        else "No hay comparación municipal disponible en este momento."
                     ),
                 },
                 {
-                    "question": "Que areas tienen mayor oportunidad de mejora?",
-                    "answer": action_recommendations[0] if action_recommendations else "Revisar brechas por materia y tendencia historica.",
+                    "question": "¿Qué áreas tienen mayor oportunidad de mejora?",
+                    "answer": action_recommendations[0] if action_recommendations else "Revisar brechas por materia y tendencia histórica.",
                 },
             ]
 
@@ -531,8 +535,9 @@ def school_landing_page(request, slug):
                 },
             ]
 
+            today_iso = date.today().isoformat()
+
             schema_school = {
-                "@context": "https://schema.org",
                 "@type": "School",
                 "@id": f"{canonical_url}#school",
                 "name": school["nombre"],
@@ -555,23 +560,29 @@ def school_landing_page(request, slug):
                     }
                 ]
 
-            schema_webpage = {
-                "@context": "https://schema.org",
-                "@type": "WebPage",
-                "name": seo_title,
+            schema_article = {
+                "@type": "Article",
+                "@id": f"{canonical_url}#article",
+                "headline": seo_title,
                 "description": seo_description,
                 "url": canonical_url,
                 "inLanguage": "es-CO",
+                "datePublished": f"{latest_year}-06-01",
+                "dateModified": today_iso,
+                "about": {"@id": f"{canonical_url}#school"},
+                "publisher": {
+                    "@type": "Organization",
+                    "name": "ICFES Analytics",
+                    "url": _absolute_url(base_url, "/"),
+                },
             }
 
             schema_breadcrumb = {
-                "@context": "https://schema.org",
                 "@type": "BreadcrumbList",
                 "itemListElement": breadcrumb_items,
             }
 
             schema_faq = {
-                "@context": "https://schema.org",
                 "@type": "FAQPage",
                 "mainEntity": [
                     {
@@ -626,7 +637,10 @@ def school_landing_page(request, slug):
                 },
                 "canonical_url": canonical_url,
                 "structured_data_json": json.dumps(
-                    [schema_school, schema_webpage, schema_breadcrumb, schema_faq],
+                    {
+                        "@context": "https://schema.org",
+                        "@graph": [schema_school, schema_article, schema_breadcrumb, schema_faq],
+                    },
                     ensure_ascii=False,
                 ),
             }

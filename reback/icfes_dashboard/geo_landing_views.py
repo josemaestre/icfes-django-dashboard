@@ -8,20 +8,22 @@ import logging
 from django.http import Http404
 from django.shortcuts import render
 from django.utils.text import slugify
+from django.views.decorators.cache import cache_page
 
 from .db_utils import get_duckdb_connection, resolve_schema
 
 logger = logging.getLogger(__name__)
 
 
-def _build_geo_where(departamento=None, municipio=None):
-    where = ["departamento IS NOT NULL", "departamento != ''"]
+def _build_geo_where(departamento=None, municipio=None, alias=""):
+    prefix = f"{alias}." if alias else ""
+    where = [f"{prefix}departamento IS NOT NULL", f"{prefix}departamento != ''"]
     params = []
     if departamento:
-        where.append("departamento = ?")
+        where.append(f"{prefix}departamento = ?")
         params.append(departamento)
     if municipio:
-        where.append("municipio = ?")
+        where.append(f"{prefix}municipio = ?")
         params.append(municipio)
     return " AND ".join(where), params
 
@@ -96,19 +98,52 @@ def _geo_landing_context(request, departamento, municipio=None):
         """
         trend_rows = conn.execute(resolve_schema(trend_query), where_params).fetchall()
 
+        f_where, f_params = _build_geo_where(departamento, municipio, alias="f")
+        f_latest_where = f"{f_where} AND CAST(f.ano AS INTEGER) = ?"
+        f_latest_params = f_params + [latest_year]
+
         top_schools_query = f"""
             SELECT
-                nombre_colegio,
-                sector,
-                ROUND(avg_punt_global, 1) AS promedio_global,
-                total_estudiantes
-            FROM gold.fct_agg_colegios_ano
-            WHERE {latest_where}
-              AND nombre_colegio IS NOT NULL
-            ORDER BY avg_punt_global DESC
+                f.nombre_colegio,
+                f.sector,
+                ROUND(f.avg_punt_global, 1) AS promedio_global,
+                f.total_estudiantes,
+                COALESCE(s.slug, '') AS slug
+            FROM gold.fct_agg_colegios_ano f
+            LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+            WHERE {f_latest_where}
+              AND f.nombre_colegio IS NOT NULL
+            ORDER BY f.avg_punt_global DESC
             LIMIT 10
         """
-        top_rows = conn.execute(resolve_schema(top_schools_query), latest_params).fetchall()
+        top_rows = conn.execute(resolve_schema(top_schools_query), f_latest_params).fetchall()
+
+        all_schools_in_municipality = []
+        if municipio is not None:
+            all_schools_query = f"""
+                SELECT
+                    f.nombre_colegio,
+                    f.sector,
+                    ROUND(f.avg_punt_global, 1) AS promedio_global,
+                    COALESCE(s.slug, '') AS slug
+                FROM gold.fct_agg_colegios_ano f
+                LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+                WHERE {f_latest_where}
+                  AND f.nombre_colegio IS NOT NULL
+                ORDER BY f.nombre_colegio ASC
+            """
+            all_schools_rows = conn.execute(
+                resolve_schema(all_schools_query), f_latest_params
+            ).fetchall()
+            all_schools_in_municipality = [
+                {
+                    "nombre": row[0],
+                    "sector": row[1],
+                    "promedio_global": float(row[2]) if row[2] is not None else None,
+                    "slug": row[3],
+                }
+                for row in all_schools_rows
+            ]
 
         municipios = []
         if municipio is None:
@@ -235,9 +270,11 @@ def _geo_landing_context(request, departamento, municipio=None):
                 "sector": row[1],
                 "promedio_global": float(row[2]) if row[2] is not None else None,
                 "total_estudiantes": int(row[3]) if row[3] else 0,
+                "slug": row[4],
             }
             for row in top_rows
         ],
+        "all_schools_in_municipality": all_schools_in_municipality,
         "municipios": municipios,
         "seo": {
             "title": seo_title,
@@ -252,6 +289,7 @@ def _geo_landing_context(request, departamento, municipio=None):
     }
 
 
+@cache_page(60 * 60 * 12)
 def departments_index_page(request):
     try:
         with get_duckdb_connection() as conn:
@@ -283,6 +321,7 @@ def departments_index_page(request):
         raise Http404("Error al cargar departamentos")
 
 
+@cache_page(60 * 60 * 4)
 def department_landing_page(request, departamento_slug):
     try:
         with get_duckdb_connection() as conn:
@@ -298,6 +337,7 @@ def department_landing_page(request, departamento_slug):
         raise Http404("Error al cargar el departamento")
 
 
+@cache_page(60 * 60 * 4)
 def municipality_landing_page(request, departamento_slug, municipio_slug):
     try:
         with get_duckdb_connection() as conn:

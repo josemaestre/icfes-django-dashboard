@@ -6,6 +6,7 @@ import logging
 
 from django.http import Http404
 from django.shortcuts import render
+from django.views.decorators.cache import cache_page
 
 from .db_utils import get_duckdb_connection, resolve_schema
 
@@ -23,6 +24,7 @@ def _available_years(conn):
     return [int(row[0]) for row in rows if row[0] is not None]
 
 
+@cache_page(60 * 60 * 6)
 def ranking_colegios_year_page(request, ano):
     try:
         year = int(ano)
@@ -37,16 +39,18 @@ def ranking_colegios_year_page(request, ano):
 
             query = """
                 SELECT
-                    nombre_colegio,
-                    departamento,
-                    municipio,
-                    sector,
-                    ROUND(avg_punt_global, 1) AS promedio_global,
-                    total_estudiantes
-                FROM gold.fct_agg_colegios_ano
-                WHERE CAST(ano AS INTEGER) = ?
-                  AND nombre_colegio IS NOT NULL
-                ORDER BY avg_punt_global DESC
+                    f.nombre_colegio,
+                    f.departamento,
+                    f.municipio,
+                    f.sector,
+                    ROUND(f.avg_punt_global, 1) AS promedio_global,
+                    f.total_estudiantes,
+                    COALESCE(s.slug, '') AS slug
+                FROM gold.fct_agg_colegios_ano f
+                LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+                WHERE CAST(f.ano AS INTEGER) = ?
+                  AND f.nombre_colegio IS NOT NULL
+                ORDER BY f.avg_punt_global DESC
                 LIMIT 50
             """
             rows = conn.execute(resolve_schema(query), [year]).fetchall()
@@ -87,6 +91,7 @@ def ranking_colegios_year_page(request, ano):
                         "sector": row[3],
                         "score": float(row[4]) if row[4] is not None else None,
                         "estudiantes": int(row[5]) if row[5] else 0,
+                        "slug": row[6],
                     }
                     for row in rows
                 ],
@@ -109,6 +114,7 @@ def ranking_colegios_year_page(request, ano):
         raise Http404("Error al cargar ranking de colegios")
 
 
+@cache_page(60 * 60 * 6)
 def ranking_matematicas_year_page(request, ano):
     try:
         year = int(ano)
@@ -123,17 +129,19 @@ def ranking_matematicas_year_page(request, ano):
 
             query = """
                 SELECT
-                    nombre_colegio,
-                    departamento,
-                    municipio,
-                    sector,
-                    ROUND(avg_punt_matematicas, 1) AS promedio_matematicas,
-                    ROUND(avg_punt_global, 1) AS promedio_global
-                FROM gold.fct_agg_colegios_ano
-                WHERE CAST(ano AS INTEGER) = ?
-                  AND nombre_colegio IS NOT NULL
-                  AND avg_punt_matematicas IS NOT NULL
-                ORDER BY avg_punt_matematicas DESC
+                    f.nombre_colegio,
+                    f.departamento,
+                    f.municipio,
+                    f.sector,
+                    ROUND(f.avg_punt_matematicas, 1) AS promedio_matematicas,
+                    ROUND(f.avg_punt_global, 1) AS promedio_global,
+                    COALESCE(s.slug, '') AS slug
+                FROM gold.fct_agg_colegios_ano f
+                LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+                WHERE CAST(f.ano AS INTEGER) = ?
+                  AND f.nombre_colegio IS NOT NULL
+                  AND f.avg_punt_matematicas IS NOT NULL
+                ORDER BY f.avg_punt_matematicas DESC
                 LIMIT 50
             """
             rows = conn.execute(resolve_schema(query), [year]).fetchall()
@@ -174,6 +182,7 @@ def ranking_matematicas_year_page(request, ano):
                         "sector": row[3],
                         "score_math": float(row[4]) if row[4] is not None else None,
                         "score_global": float(row[5]) if row[5] is not None else None,
+                        "slug": row[6],
                     }
                     for row in rows
                 ],
@@ -196,6 +205,7 @@ def ranking_matematicas_year_page(request, ano):
         raise Http404("Error al cargar ranking de matemáticas")
 
 
+@cache_page(60 * 60 * 12)
 def historico_nacional_page(request):
     try:
         with get_duckdb_connection() as conn:
