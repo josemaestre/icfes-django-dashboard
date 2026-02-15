@@ -358,6 +358,427 @@
                 <div class="col-lg-7 hero-content">
                     <h1 class="hero-title">
                         Datos Educativos de Colombia al Alcance de Todos
+                    </h1>
+                    <p class="hero-subtitle">
+                        Accede a 29 años de datos históricos del ICFES. Analiza tendencias, compara colegios y toma
+                        decisiones basadas en datos reales.
+                    </p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="#pricing" class="btn btn-light btn-lg cta-button">
+                            Ver Planes
+                        </a>
+                        <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg cta-button">
+                            Comenzar Gratis
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center d-none d-lg-block">
+                    <i class="bi bi-graph-up-arrow" style="font-size: 15rem; opacity: 0.2;"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">17.7M+</div>
+                        <div class="stat-label">Estudiantes</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">29</div>
+                        <div class="stat-label">Años de Datos</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">15K+</div>
+                        <div class="stat-label">Colegios</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card">
+                        <div class="stat-number">33</div>
+                        <div class="stat-label">Departamentos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stakeholders Section -->
+    <section class="stakeholders-section"
+        style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);">
+        <div class="container">
+            <h2 class="section-title">¿Quién se Beneficia?</h2>
+            <p class="section-subtitle">
+                ICFES Analytics empodera a diferentes actores del ecosistema educativo colombiano
+            </p>
+
+            <div class="row g-4">
+                <!-- Padres de Familia -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-people-fill" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Padres de Familia
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Compara colegios antes de matricular
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Evalúa tendencias de rendimiento
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Toma decisiones informadas sobre educación
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Identifica fortalezas y áreas de mejora
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Educadores -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-mortarboard-fill" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Educadores y Docentes
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Benchmarking con otras instituciones
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Identifica brechas de aprendizaje
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Diseña estrategias pedagógicas basadas en datos
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                Monitorea progreso año tras año
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Instituciones Educativas -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-building" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Instituciones Educativas
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Análisis de posicionamiento competitivo
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Reportes para acreditación y calidad
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Planificación estratégica institucional
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-purple me-2" style="color: #8b5cf6;"></i>
+                                Marketing educativo con datos reales
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Investigadores -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-search" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Investigadores
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                29 años de datos históricos para análisis
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                API REST para integraciones académicas
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                Exportación masiva en múltiples formatos
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                Estudios longitudinales y correlacionales
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Gobierno y Política Pública -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-flag-fill" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Gobierno y Política Pública
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Monitoreo de brechas educativas regionales
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Evaluación de impacto de políticas
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Asignación eficiente de recursos
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-danger me-2"></i>
+                                Transparencia y rendición de cuentas
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Empresas EdTech -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="stakeholder-card"
+                        style="background: white; border-radius: 16px; padding: 40px 30px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;">
+                        <div
+                            style="width: 70px; height: 70px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="bi bi-laptop" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1rem;">
+                            Empresas EdTech
+                        </h3>
+                        <ul style="list-style: none; padding: 0; color: var(--text-light); line-height: 1.8;">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Integración vía API REST
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Enriquece productos con datos reales
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Análisis de mercado educativo
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill text-info me-2"></i>
+                                Identificación de oportunidades de negocio
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">¿Por qué ICFES Analytics?</h2>
+            <p class="section-subtitle">
+                La plataforma más completa para análisis de datos educativos en Colombia
+            </p>
+
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h3 class="feature-title">Análisis Histórico Completo</h3>
+                        <p class="feature-description">
+                            Accede a 29 años de datos del ICFES (1996-2024). Identifica tendencias, patrones y evolución
+                            del sistema educativo colombiano.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Exploración Geográfica</h3>
+                        <p class="feature-description">
+                            Navega desde regiones hasta colegios individuales. Compara departamentos, municipios y
+                            encuentra los mejores colegios.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <h3 class="feature-title">Dashboard Interactivo</h3>
+                        <p class="feature-description">
+                            Visualizaciones dinámicas con ApexCharts. KPIs en tiempo real, rankings, tendencias y
+                            métricas avanzadas.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-file-earmark-bar-graph"></i>
+                        </div>
+                        <h3 class="feature-title">Exportación de Datos</h3>
+                        <p class="feature-description">
+                            Descarga datos en CSV, Excel o PDF. Crea reportes personalizados para presentaciones o
+                            análisis externos.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-code-square"></i>
+                        </div>
+                        <h3 class="feature-title">API REST</h3>
+                        <p class="feature-description">
+                            Integra datos del ICFES en tus aplicaciones. API REST documentada con endpoints JSON para
+                            desarrolladores.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <h3 class="feature-title">Alto Rendimiento</h3>
+                        <p class="feature-description">
+                            Queries optimizadas con DuckDB. Respuestas en 12-25ms. Procesa millones de registros
+                            instantáneamente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Z-Score Analysis Section -->
+    <section class="zscore-section"
+        style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);">
+        <div class="container">
+            <h2 class="section-title">Análisis Z-Score: Comparación Justa y Precisa</h2>
+            <p class="section-subtitle">
+                Utilizamos Z-Score para normalizar puntajes y permitir comparaciones equitativas entre colegios,
+                independientemente del año o la materia evaluada.
+            </p>
+
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6">
+                    <div
+                        style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                        <h3
+                            style="font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1.5rem;">
+                            <i class="bi bi-calculator text-primary me-2"></i>
+                            ¿Qué es el Z-Score?
+                        </h3>
+                        <p style="color: var(--text-light); line-height: 1.8; margin-bottom: 1.5rem;">
+                            El Z-Score es una métrica estadística que indica cuántas desviaciones estándar se encuentra
+                            un valor respecto a la media. En ICFES Analytics, lo usamos para:
+                        </p>
+                        <div
+                            style="background: #f8fafc; border-left: 4px solid var(--primary-color); padding: 20px; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <code style="font-size: 1.1rem; color: var(--text-dark);">
+                                Z = (X - μ) / σ
+                            </code>
+                            <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.9rem; color: var(--text-light);">
+                                Donde X es el puntaje, μ es la media y σ es la desviación estándar
+                            </p>
+                        </div>
+                        <ul style="list-style: none; padding: 0; color: var(--text-dark);">
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <strong>Comparación Normalizada:</strong> Compara colegios de diferentes años en la
+                                misma escala
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <strong>Identificación de Outliers:</strong> Detecta colegios con rendimiento
+                                excepcional o deficiente
+                            </li>
+                            <li style="margin-bottom: 12px;">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <strong>Percentiles Precisos:</strong> Ubica cada colegio en su posición relativa exacta
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div
+                        style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                        <h3
+                            style="font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 1.5rem;">
+                            <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                            Interpretación del Z-Score
+                        </h3>
+                        <div style="margin-bottom: 20px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 8px; margin-bottom: 10px;">
+                                <span style="color: white; font-weight: 600;">Z > +2.0</span>
+                                <span style="color: white;">Excepcional (Top 2.5%)</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 8px; margin-bottom: 10px;">
+                                <span style="color: white; font-weight: 600;">+1.0 < Z < +2.0</span>
+                                        <span style="color: white;">Muy Bueno (Top 16%)</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #e0e7ff; border-radius: 8px; margin-bottom: 10px;">
                                 <span style="color: var(--text-dark); font-weight: 600;">-1.0 < Z < +1.0</span>
                                         <span style="color: var(--text-dark);">Promedio (68%)</span>
                             </div>
