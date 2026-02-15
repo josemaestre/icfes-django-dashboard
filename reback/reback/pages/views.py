@@ -103,3 +103,29 @@ def dynamic_pages_view(request, template_name):
         return render(request, f'pages/pages-404.html')
 
 
+def pricing_page_view(request):
+    """
+    Pricing page - public.
+    """
+    canonical_url = request.build_absolute_uri(request.path)
+    
+    seo_title = "Planes y Precios - ICFES Analytics"
+    seo_description = (
+        "Conoce nuestros planes Free, Basic, Premium y Enterprise. "
+        "Escoge la mejor opción para acceder a datos históricos y análisis detallados del ICFES."
+    )
+
+    return render(
+        request,
+        "pages/pricing.html",
+        {
+            "seo": {
+                "title": seo_title,
+                "description": seo_description,
+                "canonical_url": canonical_url,
+            }
+        },
+    )
+
+
+
