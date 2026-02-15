@@ -11,7 +11,10 @@ def landing_page_view(request):
     """
     Landing page - public, no login required.
     """
-    canonical_url = request.build_absolute_uri("/landing/")
+    # Canonical URL is now the root
+    canonical_url = request.build_absolute_uri("/")
+    # Ensure no trailing slash issues if needed, but build_absolute_uri('/') usually returns ".../"
+    
     og_image = request.build_absolute_uri(
         static("images/screenshots/dashboard_main.png")
     )
@@ -68,9 +71,9 @@ def landing_page_view(request):
 
 def home_redirect_view(request):
     """
-    Canonicalize homepage traffic to /landing/ to avoid duplicate indexable URLs.
+    Redirect /landing/ traffic to root / to avoid duplicate content.
     """
-    return redirect("pages:landing", permanent=True)
+    return redirect("pages:home", permanent=True)
 
 
 @login_required

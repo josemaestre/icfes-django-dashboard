@@ -57,7 +57,7 @@ def sitemap_static(request):
     base = _base_url(request)
     lastmod = datetime.now(timezone.utc).date().isoformat()
     urls = [
-        f"{base}/landing/",
+        f"{base}/",
         f"{base}/pricing/",
         f"{base}/icfes/",
         f"{base}/icfes/colegio/",
