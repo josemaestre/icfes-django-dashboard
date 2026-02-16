@@ -41,6 +41,18 @@
     {% block extra_javascript %} {% endblock extra_javascript %}
     {% endblock javascript %}
 
+    <!-- WhatsApp FAB -->
+    <a href="https://wa.me/573127364948" class="whatsapp-fab" target="_blank" rel="noopener noreferrer"
+        style="position: fixed; bottom: 30px; right: 30px; background-color: #25D366; color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; transition: all 0.3s ease;">
+        <iconify-icon icon="mdi:whatsapp" width="35" height="35"></iconify-icon>
+    </a>
+    <style>
+        .whatsapp-fab:hover {
+            transform: scale(1.1);
+            background-color: #128C7E !important;
+        }
+    </style>
+
     {% include 'partials/upgrade_modal.html' %}
 
 </body>
