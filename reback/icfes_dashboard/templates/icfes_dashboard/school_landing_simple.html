@@ -233,6 +233,47 @@
             </div>
         </div>
 
+        {% if dynamic_description %}
+        <div class="card-block">
+            <h3 class="section-title">Análisis de desempeño académico</h3>
+            {% for paragraph in dynamic_description %}
+            <p class="mb-2">{{ paragraph }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if best_muni or best_dept %}
+        <div class="card-block">
+            <h3 class="section-title">Líderes en calidad (mismo sector)</h3>
+            <div class="row">
+                {% if best_muni %}
+                <div class="col-md-6">
+                    <div class="comparison-item">
+                        <div class="comparison-label">Mejor del municipio ({{ best_muni.municipio }})</div>
+                        <p class="mb-1"><strong>{{ best_muni.name }}</strong></p>
+                        <p class="mb-1">Puntaje: {{ best_muni.score }}</p>
+                        {% if best_muni.diff is not None and best_muni.diff > 0 %}
+                        <p class="mb-2 text-muted">{{ best_muni.diff }} puntos por encima de este colegio</p>
+                        {% endif %}
+                        <a href="{{ best_muni.url }}" class="btn btn-sm btn-outline-primary">Ver colegio</a>
+                    </div>
+                </div>
+                {% endif %}
+                {% if best_dept %}
+                <div class="col-md-6">
+                    <div class="comparison-item">
+                        <div class="comparison-label">Mejor del departamento ({{ best_dept.departamento }})</div>
+                        <p class="mb-1"><strong>{{ best_dept.name }}</strong></p>
+                        <p class="mb-1">Puntaje: {{ best_dept.score }}</p>
+                        <p class="mb-2 text-muted">{{ best_dept.municipio }}</p>
+                        <a href="{{ best_dept.url }}" class="btn btn-sm btn-outline-primary">Ver colegio</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-lg-8">
                 <div class="card-block">

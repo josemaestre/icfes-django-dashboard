@@ -180,6 +180,24 @@ def school_landing_page(request, slug):
 
             latest_year = str(latest_stats[0]) if latest_stats else "2024"
             colegio_sk = latest_stats[8] if latest_stats else None
+            current_context = conn.execute(
+                resolve_schema(
+                    """
+                    SELECT
+                        sector,
+                        municipio,
+                        departamento
+                    FROM gold.fct_colegio_historico
+                    WHERE codigo_dane = ?
+                      AND ano = ?
+                    LIMIT 1
+                    """
+                ),
+                [codigo, latest_year],
+            ).fetchone()
+            current_sector = current_context[0] if current_context else school["sector"]
+            current_municipio = current_context[1] if current_context else school["municipio"]
+            current_departamento = current_context[2] if current_context else school["departamento"]
 
             comparison_data = None
             if colegio_sk:
@@ -255,11 +273,108 @@ def school_landing_page(request, slug):
                     [
                         latest_year,
                         codigo,
-                        school["municipio"],
-                        school["sector"],
+                        current_municipio,
+                        current_sector,
                         latest_stats[1],
                     ],
                 ).fetchall()
+
+            if len(similar_rows) < 4 and latest_stats and latest_stats[1] is not None:
+                similar_dept_query = """
+                    SELECT
+                        h.codigo_dane,
+                        h.nombre_colegio,
+                        h.municipio,
+                        h.avg_punt_global,
+                        COALESCE(s.slug, '') AS slug
+                    FROM gold.fct_colegio_historico h
+                    LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+                    WHERE h.ano = ?
+                      AND h.codigo_dane != ?
+                      AND h.departamento = ?
+                      AND h.municipio != ?
+                      AND h.sector = ?
+                      AND h.avg_punt_global IS NOT NULL
+                    ORDER BY ABS(h.avg_punt_global - ?)
+                    LIMIT ?
+                """
+                needed = 5 - len(similar_rows)
+                dept_rows = conn.execute(
+                    resolve_schema(similar_dept_query),
+                    [
+                        latest_year,
+                        codigo,
+                        current_departamento,
+                        current_municipio,
+                        current_sector,
+                        latest_stats[1],
+                        needed,
+                    ],
+                ).fetchall()
+                similar_rows.extend(dept_rows)
+
+            best_muni = None
+            best_dept = None
+            if latest_stats and latest_stats[1] is not None:
+                best_muni_row = conn.execute(
+                    resolve_schema(
+                        """
+                        SELECT
+                            h.nombre_colegio,
+                            h.avg_punt_global,
+                            h.codigo_dane,
+                            COALESCE(s.slug, '') AS slug
+                        FROM gold.fct_colegio_historico h
+                        LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+                        WHERE h.ano = ?
+                          AND h.municipio = ?
+                          AND h.sector = ?
+                        ORDER BY h.avg_punt_global DESC
+                        LIMIT 1
+                        """
+                    ),
+                    [latest_year, current_municipio, current_sector],
+                ).fetchone()
+                if best_muni_row and best_muni_row[3]:
+                    best_muni = {
+                        "name": best_muni_row[0],
+                        "score": _to_float(best_muni_row[1]),
+                        "municipio": current_municipio,
+                        "diff": _to_float((best_muni_row[1] or 0) - (latest_stats[1] or 0)),
+                        "url": _absolute_url(base_url, f"/icfes/colegio/{best_muni_row[3]}/"),
+                        "is_current": best_muni_row[2] == codigo,
+                    }
+
+                best_dept_row = conn.execute(
+                    resolve_schema(
+                        """
+                        SELECT
+                            h.nombre_colegio,
+                            h.avg_punt_global,
+                            h.municipio,
+                            h.codigo_dane,
+                            COALESCE(s.slug, '') AS slug
+                        FROM gold.fct_colegio_historico h
+                        LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+                        WHERE h.ano = ?
+                          AND h.departamento = ?
+                          AND h.sector = ?
+                        ORDER BY h.avg_punt_global DESC
+                        LIMIT 1
+                        """
+                    ),
+                    [latest_year, current_departamento, current_sector],
+                ).fetchone()
+                if best_dept_row and best_dept_row[4]:
+                    best_dept = {
+                        "name": best_dept_row[0],
+                        "score": _to_float(best_dept_row[1]),
+                        "municipio": best_dept_row[2],
+                        "departamento": current_departamento,
+                        "diff": _to_float((best_dept_row[1] or 0) - (latest_stats[1] or 0)),
+                        "url": _absolute_url(base_url, f"/icfes/colegio/{best_dept_row[4]}/"),
+                        "is_current": best_dept_row[3] == codigo,
+                    }
 
             has_data = latest_stats is not None
             stats_dict = None
@@ -273,6 +388,7 @@ def school_landing_page(request, slug):
             performance_signals = {}
             action_recommendations = []
             narrative_summary = ""
+            dynamic_description = []
             faq_items = []
             similar_schools = []
 
@@ -477,6 +593,30 @@ def school_landing_page(request, slug):
                     f"{percentil_fragment}. {trend_text}"
                 ).strip()
 
+                dynamic_description.append(
+                    f"{school['nombre']} es un colegio del sector {current_sector.lower()} ubicado en {current_municipio}, {current_departamento}. "
+                    f"En {latest_year} obtuvo {stats_dict['global']} puntos globales."
+                )
+                if comparison and comparison.get("brecha_municipal") is not None:
+                    gap = comparison["brecha_municipal"]
+                    if gap >= 0:
+                        dynamic_description.append(
+                            f"Su resultado está {gap} puntos por encima del promedio municipal, mostrando una posición competitiva favorable en su entorno local."
+                        )
+                    else:
+                        dynamic_description.append(
+                            f"Actualmente se ubica {abs(gap)} puntos por debajo del promedio municipal, con oportunidad clara de mejora en materias clave."
+                        )
+                if best_muni:
+                    if best_muni["is_current"]:
+                        dynamic_description.append(
+                            f"Es el colegio con mejor puntaje del municipio dentro de su sector."
+                        )
+                    else:
+                        dynamic_description.append(
+                            f"El líder municipal de su sector es {best_muni['name']} con {best_muni['score']} puntos."
+                        )
+
                 for row in similar_rows:
                     if not row[4]:
                         continue
@@ -643,8 +783,11 @@ def school_landing_page(request, slug):
                 "performance_signals": performance_signals,
                 "action_recommendations": action_recommendations,
                 "narrative_summary": narrative_summary,
+                "dynamic_description": dynamic_description,
                 "faq_items": faq_items,
                 "similar_schools": similar_schools,
+                "best_muni": best_muni,
+                "best_dept": best_dept,
                 "internal_links": {
                     "municipio_url": _absolute_url(
                         base_url,
