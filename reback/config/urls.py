@@ -32,6 +32,9 @@ urlpatterns = [
     path('icfes/', include('icfes_dashboard.urls')),  # 👈 conexión al dashboard
     path('payments/', include('reback.users.stripe_urls', namespace='payments')),  # 👈 Stripe payments
 
+    # Favicon
+    path("favicon.ico", RedirectView.as_view(url="/static/images/favicon.ico", permanent=True)),
+
     # SEO
     path("robots.txt", seo_views.robots_txt),
     path("BingSiteAuth.xml", seo_views.bing_site_auth),

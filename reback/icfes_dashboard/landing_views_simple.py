@@ -70,13 +70,18 @@ def _absolute_url(base_url, path):
 def _find_school_by_slug(conn, slug):
     school_query = """
         SELECT
-            codigo,
-            nombre_colegio,
-            municipio,
-            departamento,
-            sector
-        FROM gold.dim_colegios_slugs
-        WHERE slug = ?
+            s.codigo,
+            s.nombre_colegio,
+            s.municipio,
+            s.departamento,
+            s.sector,
+            d.direccion,
+            d.telefono,
+            d.email,
+            d.rector
+        FROM gold.dim_colegios_slugs s
+        LEFT JOIN gold.dim_colegios d ON d.colegio_bk = s.codigo
+        WHERE s.slug = ?
         LIMIT 1
     """
 
@@ -94,7 +99,11 @@ def _find_school_by_slug(conn, slug):
             nombre_colegio,
             municipio,
             departamento,
-            sector
+            sector,
+            NULL AS direccion,
+            NULL AS telefono,
+            NULL AS email,
+            NULL AS rector
         FROM gold.fct_colegio_historico
         WHERE codigo_dane IS NOT NULL
           AND nombre_colegio IS NOT NULL
@@ -128,26 +137,13 @@ def school_landing_page(request, slug):
                 "departamento": school_result[3],
                 "sector": school_result[4],
                 "slug": slug,
+                "direccion": school_result[5],
+                "telefono": school_result[6],
+                "email": school_result[7],
+                "rector": school_result[8],
             }
 
             codigo = school["codigo"]
-
-            # Fetch contact info from dim_colegios
-            contact_query = """
-                SELECT direccion, telefono, email, rector
-                FROM gold.dim_colegios
-                WHERE colegio_bk = ?
-                LIMIT 1
-            """
-            try:
-                contact_row = conn.execute(resolve_schema(contact_query), [codigo]).fetchone()
-                if contact_row:
-                    school["direccion"] = contact_row[0]
-                    school["telefono"] = contact_row[1]
-                    school["email"] = contact_row[2]
-                    school["rector"] = contact_row[3]
-            except Exception:
-                logger.debug("Could not fetch contact info for %s", codigo)
 
             base_url = _build_base_url(request)
             canonical_url = _absolute_url(base_url, request.path)
@@ -155,7 +151,8 @@ def school_landing_page(request, slug):
             dept_slug = slugify(school["departamento"] or "")
             muni_slug = slugify(school["municipio"] or "")
 
-            latest_query = """
+            # Single query for all fct_colegio_historico data (latest + historical + context)
+            historico_query = """
                 SELECT
                     ano,
                     avg_punt_global,
@@ -172,50 +169,26 @@ def school_landing_page(request, slug):
                     percentil_sector,
                     cambio_absoluto_global,
                     cambio_porcentual_global,
-                    clasificacion_tendencia
+                    clasificacion_tendencia,
+                    sector,
+                    municipio,
+                    departamento
                 FROM gold.fct_colegio_historico
                 WHERE codigo_dane = ?
                 ORDER BY CAST(ano AS INTEGER) DESC
-                LIMIT 1
             """
-            latest_stats = conn.execute(resolve_schema(latest_query), [codigo]).fetchone()
+            all_rows = conn.execute(resolve_schema(historico_query), [codigo]).fetchall()
 
-            historical_query = """
-                SELECT
-                    ano,
-                    avg_punt_global,
-                    avg_punt_matematicas,
-                    avg_punt_lectura_critica,
-                    avg_punt_c_naturales,
-                    avg_punt_sociales_ciudadanas,
-                    avg_punt_ingles
-                FROM gold.fct_colegio_historico
-                WHERE codigo_dane = ?
-                  AND CAST(ano AS INTEGER) >= 2015
-                ORDER BY CAST(ano AS INTEGER) ASC
-            """
-            historical_data = conn.execute(resolve_schema(historical_query), [codigo]).fetchall()
+            latest_stats = all_rows[0] if all_rows else None
+            # Historical: filter >= 2015 and reverse to ASC order
+            historical_data = [r for r in reversed(all_rows) if int(r[0]) >= 2015]
 
             latest_year = str(latest_stats[0]) if latest_stats else "2024"
             colegio_sk = latest_stats[8] if latest_stats else None
-            current_context = conn.execute(
-                resolve_schema(
-                    """
-                    SELECT
-                        sector,
-                        municipio,
-                        departamento
-                    FROM gold.fct_colegio_historico
-                    WHERE codigo_dane = ?
-                      AND ano = ?
-                    LIMIT 1
-                    """
-                ),
-                [codigo, latest_year],
-            ).fetchone()
-            current_sector = current_context[0] if current_context else school["sector"]
-            current_municipio = current_context[1] if current_context else school["municipio"]
-            current_departamento = current_context[2] if current_context else school["departamento"]
+            # Context from latest row (sector=16, municipio=17, departamento=18)
+            current_sector = latest_stats[16] if latest_stats else school["sector"]
+            current_municipio = latest_stats[17] if latest_stats else school["municipio"]
+            current_departamento = latest_stats[18] if latest_stats else school["departamento"]
 
             comparison_data = None
             if colegio_sk:
@@ -334,65 +307,49 @@ def school_landing_page(request, slug):
             best_muni = None
             best_dept = None
             if latest_stats and latest_stats[1] is not None:
-                best_muni_row = conn.execute(
-                    resolve_schema(
-                        """
-                        SELECT
-                            h.nombre_colegio,
-                            h.avg_punt_global,
-                            h.codigo_dane,
-                            COALESCE(s.slug, '') AS slug
-                        FROM gold.fct_colegio_historico h
-                        LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
-                        WHERE h.ano = ?
-                          AND h.municipio = ?
-                          AND h.sector = ?
-                        ORDER BY h.avg_punt_global DESC
-                        LIMIT 1
-                        """
-                    ),
-                    [latest_year, current_municipio, current_sector],
-                ).fetchone()
-                if best_muni_row and best_muni_row[3]:
-                    best_muni = {
-                        "name": best_muni_row[0],
-                        "score": _to_float(best_muni_row[1]),
-                        "municipio": current_municipio,
-                        "diff": _to_float((best_muni_row[1] or 0) - (latest_stats[1] or 0)),
-                        "url": _absolute_url(base_url, f"/icfes/colegio/{best_muni_row[3]}/"),
-                        "is_current": best_muni_row[2] == codigo,
-                    }
-
-                best_dept_row = conn.execute(
-                    resolve_schema(
-                        """
-                        SELECT
-                            h.nombre_colegio,
-                            h.avg_punt_global,
-                            h.municipio,
-                            h.codigo_dane,
-                            COALESCE(s.slug, '') AS slug
-                        FROM gold.fct_colegio_historico h
-                        LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
-                        WHERE h.ano = ?
-                          AND h.departamento = ?
-                          AND h.sector = ?
-                        ORDER BY h.avg_punt_global DESC
-                        LIMIT 1
-                        """
-                    ),
-                    [latest_year, current_departamento, current_sector],
-                ).fetchone()
-                if best_dept_row and best_dept_row[4]:
-                    best_dept = {
-                        "name": best_dept_row[0],
-                        "score": _to_float(best_dept_row[1]),
-                        "municipio": best_dept_row[2],
-                        "departamento": current_departamento,
-                        "diff": _to_float((best_dept_row[1] or 0) - (latest_stats[1] or 0)),
-                        "url": _absolute_url(base_url, f"/icfes/colegio/{best_dept_row[4]}/"),
-                        "is_current": best_dept_row[3] == codigo,
-                    }
+                best_query = """
+                    (SELECT 'muni' AS source,
+                            h.nombre_colegio, h.avg_punt_global, h.municipio,
+                            h.codigo_dane, COALESCE(s.slug, '') AS slug
+                     FROM gold.fct_colegio_historico h
+                     LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+                     WHERE h.ano = ? AND h.municipio = ? AND h.sector = ?
+                     ORDER BY h.avg_punt_global DESC LIMIT 1)
+                    UNION ALL
+                    (SELECT 'dept' AS source,
+                            h.nombre_colegio, h.avg_punt_global, h.municipio,
+                            h.codigo_dane, COALESCE(s.slug, '') AS slug
+                     FROM gold.fct_colegio_historico h
+                     LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+                     WHERE h.ano = ? AND h.departamento = ? AND h.sector = ?
+                     ORDER BY h.avg_punt_global DESC LIMIT 1)
+                """
+                best_rows = conn.execute(
+                    resolve_schema(best_query),
+                    [latest_year, current_municipio, current_sector,
+                     latest_year, current_departamento, current_sector],
+                ).fetchall()
+                for row in best_rows:
+                    # row: source, nombre, score, municipio, codigo_dane, slug
+                    if row[0] == "muni" and row[5]:
+                        best_muni = {
+                            "name": row[1],
+                            "score": _to_float(row[2]),
+                            "municipio": current_municipio,
+                            "diff": _to_float((row[2] or 0) - (latest_stats[1] or 0)),
+                            "url": _absolute_url(base_url, f"/icfes/colegio/{row[5]}/"),
+                            "is_current": row[4] == codigo,
+                        }
+                    elif row[0] == "dept" and row[5]:
+                        best_dept = {
+                            "name": row[1],
+                            "score": _to_float(row[2]),
+                            "municipio": row[3],
+                            "departamento": current_departamento,
+                            "diff": _to_float((row[2] or 0) - (latest_stats[1] or 0)),
+                            "url": _absolute_url(base_url, f"/icfes/colegio/{row[5]}/"),
+                            "is_current": row[4] == codigo,
+                        }
 
             has_data = latest_stats is not None
             stats_dict = None
