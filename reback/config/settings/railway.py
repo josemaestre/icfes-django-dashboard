@@ -3,9 +3,15 @@
 Production settings for Railway deployment.
 Simplified version without AWS S3, using whitenoise for static files.
 """
+import os
+
 import dj_database_url
 from .base import *  # noqa: F403
 from .base import env
+
+# Error log directory
+ERROR_LOG_DIR = env("ERROR_LOG_DIR", default="/app/logs")
+os.makedirs(ERROR_LOG_DIR, exist_ok=True)
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -33,6 +39,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",  # Required by allauth
     "reback.users.middleware.AutoCreateAdminMiddleware",  # Auto-create admin
+    "reback.middleware.error_logging.ErrorLoggingMiddleware",  # Log 4xx/5xx errors
 ]
 
 # DATABASES
@@ -138,12 +145,23 @@ LOGGING = {
         "verbose": {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
+        "error_detail": {
+            "format": "%(asctime)s | %(levelname)s | %(message)s",
+        },
     },
     "handlers": {
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+        },
+        "error_file": {
+            "level": "WARNING",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(ERROR_LOG_DIR, "http_errors.log"),
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "error_detail",
         },
     },
     "root": {"level": "INFO", "handlers": ["console"]},
@@ -157,6 +175,11 @@ LOGGING = {
             "level": "ERROR",
             "handlers": ["console"],
             "propagate": True,
+        },
+        "http_errors": {
+            "handlers": ["console", "error_file"],
+            "level": "WARNING",
+            "propagate": False,
         },
     },
 }

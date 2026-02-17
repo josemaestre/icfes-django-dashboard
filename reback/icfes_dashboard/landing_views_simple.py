@@ -113,7 +113,7 @@ def _find_school_by_slug(conn, slug):
     return None
 
 
-@cache_page(60 * 60 * 4)
+@cache_page(60 * 60 * 6)
 def school_landing_page(request, slug):
     try:
         with get_duckdb_connection() as conn:
@@ -131,6 +131,24 @@ def school_landing_page(request, slug):
             }
 
             codigo = school["codigo"]
+
+            # Fetch contact info from dim_colegios
+            contact_query = """
+                SELECT direccion, telefono, email, rector
+                FROM gold.dim_colegios
+                WHERE colegio_bk = ?
+                LIMIT 1
+            """
+            try:
+                contact_row = conn.execute(resolve_schema(contact_query), [codigo]).fetchone()
+                if contact_row:
+                    school["direccion"] = contact_row[0]
+                    school["telefono"] = contact_row[1]
+                    school["email"] = contact_row[2]
+                    school["rector"] = contact_row[3]
+            except Exception:
+                logger.debug("Could not fetch contact info for %s", codigo)
+
             base_url = _build_base_url(request)
             canonical_url = _absolute_url(base_url, request.path)
             og_image = _absolute_url(base_url, static("images/screenshots/dashboard_main.png"))
