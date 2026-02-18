@@ -123,6 +123,7 @@ def sitemap_departamentos(request):
         FROM gold.fct_agg_colegios_ano
         WHERE departamento IS NOT NULL
           AND departamento != ''
+          AND ano = (SELECT MAX(ano) FROM gold.fct_agg_colegios_ano)
         ORDER BY departamento
     """
     with get_duckdb_connection() as conn:
@@ -163,6 +164,7 @@ def sitemap_municipios(request):
           AND departamento != ''
           AND municipio IS NOT NULL
           AND municipio != ''
+          AND ano = (SELECT MAX(ano) FROM gold.fct_agg_colegios_ano)
         ORDER BY departamento, municipio
     """
     with get_duckdb_connection() as conn:
