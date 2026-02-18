@@ -27,6 +27,8 @@ ALLOWED_HOSTS = env.list(
 # MIDDLEWARE - Add auto-create admin middleware
 # ------------------------------------------------------------------------------
 MIDDLEWARE = [
+    # Normalize double slashes before anything else
+    "reback.middleware.slash_normalize.SlashNormalizeMiddleware",
     # Compress responses (cost optimization)
     "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
