@@ -95,14 +95,13 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 
 # STATIC FILES (whitenoise)
 # ------------------------------------------------------------------------------
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"  # noqa: F405
+STATICFILES_STORAGE = "reback.storages.LenientManifestStorage"  # noqa: F405
 STATIC_ROOT = str(BASE_DIR / "staticfiles")  # noqa: F405
 STATIC_URL = "/static/"
 
 # WhiteNoise optimization
 WHITENOISE_MAX_AGE = 31536000  # 1 year cache for hashed files
 WHITENOISE_COMPRESS_OFFLINE = True  # Pre-compress gzip/brotli at collectstatic
-WHITENOISE_MANIFEST_STRICT = False  # Ignore missing sourcemap refs in vendor JS (e.g. chart.js)
 
 # MEDIA
 # ------------------------------------------------------------------------------

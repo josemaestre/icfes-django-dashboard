@@ -5,35 +5,26 @@ from django.contrib import admin
 from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
-# ruff: noqa
-from django.conf import settings
-from django.conf.urls.static import static
-from django.contrib import admin
-from django.urls import include
-from django.urls import path
-from django.views import defaults as default_views
-from django.views.generic import TemplateView
-from django.views.generic.base import RedirectView # Added import for RedirectView
+from django.views.generic.base import RedirectView
 from icfes_dashboard import sitemap_views
 from reback import seo_views
 
-# Define the redirect view
 home_redirect_view = RedirectView.as_view(url='/', permanent=True)
 
 urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
-    # path('icfes/', include('icfes_dashboard.urls')),
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
     path("users/", include("reback.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     path("landing/", home_redirect_view),  # Redirect /landing/ to /
-    path("", include("reback.pages.urls", namespace="pages")),
-    path('icfes/', include('icfes_dashboard.urls')),  # 👈 conexión al dashboard
-    path('payments/', include('reback.users.stripe_urls', namespace='payments')),  # 👈 Stripe payments
 
-    # Favicon
+    # Favicon — must be before the catch-all pages include to avoid dynamic_pages_view
     path("favicon.ico", RedirectView.as_view(url="/static/images/favicon.ico", permanent=True)),
+
+    path("", include("reback.pages.urls", namespace="pages")),
+    path('icfes/', include('icfes_dashboard.urls')),
+    path('payments/', include('reback.users.stripe_urls', namespace='payments')),
 
     # SEO
     path("robots.txt", seo_views.robots_txt),
