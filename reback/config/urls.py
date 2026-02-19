@@ -20,7 +20,7 @@ urlpatterns = [
     path("landing/", home_redirect_view),  # Redirect /landing/ to /
 
     # Favicon — must be before the catch-all pages include to avoid dynamic_pages_view
-    path("favicon.ico", RedirectView.as_view(url="/static/images/favicon.ico", permanent=True)),
+    path("favicon.ico", seo_views.favicon_view),
 
     path("", include("reback.pages.urls", namespace="pages")),
     path('icfes/', include('icfes_dashboard.urls')),

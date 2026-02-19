@@ -21,6 +21,14 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+def favicon_view(request):
+    for static_dir in settings.STATICFILES_DIRS:
+        path = Path(static_dir) / "images" / "favicon.ico"
+        if path.exists():
+            return FileResponse(path.open("rb"), content_type="image/x-icon")
+    raise Http404("favicon.ico not found")
+
+
 def bing_site_auth(request):
     """
     Serve Bing verification file from project root.
