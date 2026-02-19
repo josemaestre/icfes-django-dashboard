@@ -25,7 +25,9 @@ def favicon_view(request):
     for static_dir in settings.STATICFILES_DIRS:
         path = Path(static_dir) / "images" / "favicon.ico"
         if path.exists():
-            return FileResponse(path.open("rb"), content_type="image/x-icon")
+            response = FileResponse(path.open("rb"), content_type="image/x-icon")
+            response["Cache-Control"] = "public, max-age=604800"  # 7 days
+            return response
     raise Http404("favicon.ico not found")
 
 
