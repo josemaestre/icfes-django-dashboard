@@ -2,9 +2,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import DetailView
+from django.views.generic import DetailView, ListView
 from django.views.generic import RedirectView
 from django.views.generic import UpdateView
+from django.contrib.auth.mixins import UserPassesTestMixin
+from .forms import UserManagementForm
 
 from reback.users.models import User
 
@@ -43,3 +45,29 @@ class UserRedirectView(LoginRequiredMixin, RedirectView):
 
 
 user_redirect_view = UserRedirectView.as_view()
+
+
+class SuperUserRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_superuser
+
+
+class UserManagementListView(SuperUserRequiredMixin, ListView):
+    model = User
+    template_name = "users/management_list.html"
+    context_object_name = "users_list"
+    ordering = ['-date_joined']
+    paginate_by = 20
+
+
+class UserManagementUpdateView(SuperUserRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = User
+    form_class = UserManagementForm
+    template_name = "users/management_form.html"
+    success_message = _("User details successfully updated")
+
+    def get_success_url(self):
+        return reverse("users:management_list")
+
+user_management_list_view = UserManagementListView.as_view()
+user_management_update_view = UserManagementUpdateView.as_view()

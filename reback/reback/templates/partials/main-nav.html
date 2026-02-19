@@ -49,6 +49,18 @@
         </div>
       </li>
 
+      {% if request.user.is_superuser %}
+      <li class="menu-title">Administration</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'users:management_list' %}">
+          <span class="nav-icon">
+            <iconify-icon icon="iconamoon:profile-circle-duotone"></iconify-icon>
+          </span>
+          <span class="nav-text"> User Management </span>
+        </a>
+      </li>
+      {% endif %}
+
 
 
 
