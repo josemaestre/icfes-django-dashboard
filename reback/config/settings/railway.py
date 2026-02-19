@@ -15,9 +15,7 @@ os.makedirs(ERROR_LOG_DIR, exist_ok=True)
 
 # GENERAL
 # ------------------------------------------------------------------------------
-# TEMPORARY: DEBUG=True to serve static files directly
-# TODO: Fix static files deployment and set back to False
-DEBUG = True
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS",
@@ -97,15 +95,13 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 
 # STATIC FILES (whitenoise)
 # ------------------------------------------------------------------------------
-MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
-# Override Django default to avoid manifest storage
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"  # noqa: F405
 STATIC_ROOT = str(BASE_DIR / "staticfiles")  # noqa: F405
 STATIC_URL = "/static/"
 
 # WhiteNoise optimization (cost reduction)
-WHITENOISE_MAX_AGE = 31536000  # 1 year cache
-WHITENOISE_COMPRESS_OFFLINE = True  # Pre-compress files
+WHITENOISE_MAX_AGE = 31536000  # 1 year cache for hashed files
+WHITENOISE_COMPRESS_OFFLINE = True  # Pre-compress gzip/brotli at collectstatic
 
 # MEDIA
 # ------------------------------------------------------------------------------
