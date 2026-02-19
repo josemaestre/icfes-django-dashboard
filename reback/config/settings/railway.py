@@ -6,14 +6,8 @@ Simplified version without AWS S3, using whitenoise for static files.
 import os
 
 import dj_database_url
-from whitenoise.storage import CompressedManifestStaticFilesStorage
 from .base import *  # noqa: F403
 from .base import env
-
-
-class CompressedManifestStaticFilesStorageNoStrict(CompressedManifestStaticFilesStorage):
-    """WhiteNoise storage that ignores missing sourcemap files referenced in vendor JS."""
-    manifest_strict = False
 
 # Error log directory
 ERROR_LOG_DIR = env("ERROR_LOG_DIR", default="/app/logs")
@@ -101,13 +95,14 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 
 # STATIC FILES (whitenoise)
 # ------------------------------------------------------------------------------
-STATICFILES_STORAGE = "config.settings.railway.CompressedManifestStaticFilesStorageNoStrict"  # noqa: F405
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"  # noqa: F405
 STATIC_ROOT = str(BASE_DIR / "staticfiles")  # noqa: F405
 STATIC_URL = "/static/"
 
-# WhiteNoise optimization (cost reduction)
+# WhiteNoise optimization
 WHITENOISE_MAX_AGE = 31536000  # 1 year cache for hashed files
 WHITENOISE_COMPRESS_OFFLINE = True  # Pre-compress gzip/brotli at collectstatic
+WHITENOISE_MANIFEST_STRICT = False  # Ignore missing sourcemap refs in vendor JS (e.g. chart.js)
 
 # MEDIA
 # ------------------------------------------------------------------------------
