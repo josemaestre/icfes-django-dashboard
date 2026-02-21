@@ -27,6 +27,8 @@ from icfes_dashboard.db_utils import (
     get_historia_brechas,
     get_historia_convergencia,
     get_historia_riesgo,
+    get_historia_riesgo_colegios,
+    get_historia_ingles,
 )
 
 logger = logging.getLogger(__name__)
@@ -539,4 +541,40 @@ def historia_riesgo(request):
         return JsonResponse({'data': data})
     except Exception as e:
         logger.error(f"historia_riesgo error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def historia_riesgo_colegios(request):
+    """
+    Lista de colegios por nivel de riesgo.
+    Query param: ?nivel=Alto|Medio|Bajo
+    """
+    nivel = request.GET.get('nivel', 'Alto')
+    if nivel not in ('Alto', 'Medio', 'Bajo'):
+        return JsonResponse({'error': 'nivel debe ser Alto, Medio o Bajo'}, status=400)
+    try:
+        cache_key = f'historia_riesgo_colegios_{nivel}'
+        data = _cached(cache_key, _HISTORIA_CACHE_TTL,
+                       lambda: get_historia_riesgo_colegios(nivel))
+        return JsonResponse({'data': data, 'nivel': nivel})
+    except Exception as e:
+        logger.error(f"historia_riesgo_colegios error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def historia_ingles(request):
+    """
+    Datos de Inglés para Cap. 6:
+    - Brecha privado/público por materia
+    - Evolución Inglés por sector 2018-2024
+    - Inglés por región
+    """
+    try:
+        data = _cached('historia_ingles', _HISTORIA_CACHE_TTL,
+                       get_historia_ingles)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"historia_ingles error: {e}")
         return JsonResponse({'error': str(e)}, status=500)

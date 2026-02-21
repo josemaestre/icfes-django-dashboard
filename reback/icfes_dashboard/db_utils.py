@@ -1833,3 +1833,141 @@ def get_historia_riesgo():
     except Exception as e:
         logger.error(f"Error in get_historia_riesgo: {e}")
         return []
+
+
+def get_historia_riesgo_colegios(nivel_riesgo, limit=200):
+    """
+    Lista de colegios filtrada por nivel de riesgo (Alto / Medio / Bajo).
+    Fuente: fct_riesgo_colegios (año más reciente).
+    """
+    try:
+        query = resolve_schema("""
+            SELECT
+                nombre_colegio,
+                departamento,
+                sector,
+                ROUND(avg_punt_global_actual, 1) AS puntaje_global,
+                ROUND(prob_declive * 100, 1)     AS prob_declive_pct,
+                factores_principales
+            FROM gold.fct_riesgo_colegios
+            WHERE ano = (SELECT MAX(ano) FROM gold.fct_riesgo_colegios)
+              AND nivel_riesgo = ?
+            ORDER BY prob_declive DESC
+            LIMIT ?
+        """)
+        with get_duckdb_connection() as con:
+            rows = con.execute(query, [nivel_riesgo, limit]).fetchall()
+        return [
+            {
+                'nombre_colegio': r[0],
+                'departamento': r[1],
+                'sector': r[2],
+                'puntaje_global': float(r[3]) if r[3] else None,
+                'prob_declive_pct': float(r[4]) if r[4] else None,
+                'factores_principales': r[5],
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error(f"Error in get_historia_riesgo_colegios: {e}")
+        return []
+
+
+def get_historia_ingles():
+    """
+    Datos de Inglés para el capítulo 6 del storytelling:
+    - Brecha privado/público en Inglés vs otras materias (año más reciente)
+    - Evolución Inglés por sector 2018-2024
+    - Inglés por región (año más reciente)
+    Fuentes: fact_icfes_resumen_global, tendencias_regionales.
+    """
+    try:
+        # 1. Brecha privado/público por materia
+        q_brecha = resolve_schema("""
+            SELECT
+                ROUND(AVG(CASE WHEN cole_naturaleza = 'NO OFICIAL' THEN avg_ingles END)
+                    - AVG(CASE WHEN cole_naturaleza = 'OFICIAL' THEN avg_ingles END), 2) AS brecha_ingles,
+                ROUND(AVG(CASE WHEN cole_naturaleza = 'NO OFICIAL' THEN avg_matematicas END)
+                    - AVG(CASE WHEN cole_naturaleza = 'OFICIAL' THEN avg_matematicas END), 2) AS brecha_matematicas,
+                ROUND(AVG(CASE WHEN cole_naturaleza = 'NO OFICIAL' THEN avg_lectura END)
+                    - AVG(CASE WHEN cole_naturaleza = 'OFICIAL' THEN avg_lectura END), 2) AS brecha_lectura,
+                ROUND(AVG(CASE WHEN cole_naturaleza = 'NO OFICIAL' THEN avg_ciencias END)
+                    - AVG(CASE WHEN cole_naturaleza = 'OFICIAL' THEN avg_ciencias END), 2) AS brecha_ciencias,
+                ROUND(AVG(CASE WHEN cole_naturaleza = 'NO OFICIAL' THEN avg_sociales END)
+                    - AVG(CASE WHEN cole_naturaleza = 'OFICIAL' THEN avg_sociales END), 2) AS brecha_sociales
+            FROM gold.fact_icfes_resumen_global
+            WHERE ano = (SELECT MAX(ano) FROM gold.fact_icfes_resumen_global)
+              AND cole_naturaleza IN ('OFICIAL', 'NO OFICIAL')
+              AND estudiantes > 0
+        """)
+
+        # 2. Evolución Inglés por sector 2018-2024
+        q_tendencia = resolve_schema("""
+            SELECT
+                ano,
+                cole_naturaleza AS sector,
+                ROUND(AVG(avg_ingles), 2)      AS ingles,
+                ROUND(AVG(avg_matematicas), 2) AS matematicas,
+                ROUND(AVG(avg_lectura), 2)     AS lectura
+            FROM gold.fact_icfes_resumen_global
+            WHERE CAST(ano AS INTEGER) >= 2018
+              AND cole_naturaleza IN ('OFICIAL', 'NO OFICIAL')
+              AND estudiantes > 0
+            GROUP BY ano, cole_naturaleza
+            ORDER BY ano, cole_naturaleza
+        """)
+
+        # 3. Inglés por región (año más reciente desde tendencias_regionales)
+        q_regiones = resolve_schema("""
+            SELECT
+                region,
+                ROUND(avg_punt_ingles, 2)  AS ingles,
+                ROUND(avg_punt_global, 2)  AS global
+            FROM gold.tendencias_regionales
+            WHERE ano = (SELECT MAX(ano) FROM gold.tendencias_regionales)
+            ORDER BY ingles DESC
+        """)
+
+        with get_duckdb_connection() as con:
+            row_brecha  = con.execute(q_brecha).fetchone()
+            rows_tend   = con.execute(q_tendencia).fetchall()
+            rows_regiones = con.execute(q_regiones).fetchall()
+
+        brechas = {
+            'Inglés':          float(row_brecha[0]) if row_brecha[0] else None,
+            'Matemáticas':     float(row_brecha[1]) if row_brecha[1] else None,
+            'Lectura Crítica': float(row_brecha[2]) if row_brecha[2] else None,
+            'Ciencias':        float(row_brecha[3]) if row_brecha[3] else None,
+            'Sociales':        float(row_brecha[4]) if row_brecha[4] else None,
+        }
+
+        tendencia = {}
+        for r in rows_tend:
+            s = r[1]
+            if s not in tendencia:
+                tendencia[s] = []
+            tendencia[s].append({
+                'ano': r[0],
+                'ingles': float(r[2]) if r[2] else None,
+                'matematicas': float(r[3]) if r[3] else None,
+                'lectura': float(r[4]) if r[4] else None,
+            })
+
+        regiones = [
+            {
+                'region': r[0],
+                'ingles': float(r[1]) if r[1] else None,
+                'global': float(r[2]) if r[2] else None,
+            }
+            for r in rows_regiones
+        ]
+
+        return {
+            'brechas_por_materia': brechas,
+            'tendencia_sector':    tendencia,
+            'regiones':            regiones,
+        }
+
+    except Exception as e:
+        logger.error(f"Error in get_historia_ingles: {e}")
+        return {}

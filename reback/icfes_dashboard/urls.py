@@ -151,6 +151,8 @@ urlpatterns = [
     path('api/historia/brechas/', api_views.historia_brechas, name='historia_brechas'),
     path('api/historia/convergencia/', api_views.historia_convergencia, name='historia_convergencia'),
     path('api/historia/riesgo/', api_views.historia_riesgo, name='historia_riesgo'),
+    path('api/historia/riesgo/colegios/', api_views.historia_riesgo_colegios, name='historia_riesgo_colegios'),
+    path('api/historia/ingles/', api_views.historia_ingles, name='historia_ingles'),
     
     # API endpoints for enhanced user profile
     path('api/schools/search/', api_views.search_schools, name='search_schools'),

@@ -241,10 +241,104 @@
         <div class="col-lg-7">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h6 class="card-title text-muted mb-3">Distribución de Riesgo de Declive — Colegios</h6>
+                    <h6 class="card-title text-muted mb-3">
+                        Distribución de Riesgo de Declive — Colegios
+                        <small class="text-muted fw-normal ms-2">(clic en un segmento para ver la lista)</small>
+                    </h6>
                     <div class="d-flex justify-content-center align-items-center" style="min-height:260px;">
                         <canvas id="chart-riesgo" style="max-width:340px;max-height:340px;"></canvas>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel deslizable: lista de colegios por nivel de riesgo -->
+    <div id="c5-colegios-panel" class="card mb-4 shadow-sm d-none">
+        <div class="card-header d-flex align-items-center justify-content-between py-2">
+            <span class="fw-bold" id="c5-panel-title">Colegios en riesgo</span>
+            <button class="btn btn-sm btn-outline-secondary" id="c5-panel-close">Cerrar ✕</button>
+        </div>
+        <div class="card-body p-0">
+            <div id="c5-panel-loading" class="text-center py-4 d-none">
+                <div class="spinner-border spinner-border-sm text-secondary"></div>
+                <span class="ms-2 text-muted">Cargando...</span>
+            </div>
+            <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>#</th>
+                            <th>Colegio</th>
+                            <th>Departamento</th>
+                            <th>Sector</th>
+                            <th class="text-end">Puntaje Global</th>
+                            <th class="text-end">Prob. Declive</th>
+                        </tr>
+                    </thead>
+                    <tbody id="c5-colegios-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CAPÍTULO 6: El idioma de las oportunidades
+    ══════════════════════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge chapter-badge-6">Capítulo 6</span>
+        <h3 class="chapter-title">El idioma de las oportunidades</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Inglés — la materia más desigual</p>
+                <h4 class="fw-bold mb-3">El inglés amplifica la brecha como ninguna otra materia.</h4>
+                <p class="text-muted mb-3">
+                    En el año más reciente, la diferencia entre un colegio <strong>privado</strong>
+                    y uno <strong>público</strong> en Inglés es de
+                    <strong id="c6-brecha-pp" class="text-danger">10.7 pts</strong>
+                    — casi el <strong>doble</strong> que en Matemáticas
+                    (<span id="c6-brecha-mat">6 pts</span>) o Lectura Crítica
+                    (<span id="c6-brecha-lec">6 pts</span>).
+                </p>
+                <p class="text-muted mb-3">
+                    Quien tiene acceso a enseñanza de inglés de calidad no solo pasa mejor el examen:
+                    abre puertas a universidades, empleos y movilidad social que el resto no puede alcanzar.
+                    <strong>Esta es la brecha invisible que más duele.</strong>
+                </p>
+                <div class="callout-box bg-primary-subtle border-start border-primary border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold" id="c6-callout">
+                        La brecha de Inglés entre sector privado y público es la mayor de todas las materias.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Brecha Privado vs Público por Materia (puntos)</h6>
+                    <canvas id="chart-ingles-brecha" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Inglés por Sector — Evolución 2018–2024</h6>
+                    <canvas id="chart-ingles-tendencia" height="240"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Inglés por Región (año más reciente)</h6>
+                    <canvas id="chart-ingles-regiones" height="240"></canvas>
                 </div>
             </div>
         </div>
@@ -295,6 +389,7 @@
 .chapter-badge-3 { background: #c0392b; }
 .chapter-badge-4 { background: #27ae60; }
 .chapter-badge-5 { background: #8e44ad; }
+.chapter-badge-6 { background: #d35400; }
 .chapter-title {
     margin: 0;
     font-size: 1.25rem;
@@ -326,15 +421,17 @@
 <script>
 /* ═══════════════════════════════════════════════════════════════
    HISTORIA DE LA EDUCACIÓN COLOMBIANA
-   Carga todos los datos en paralelo y construye los 5 capítulos.
+   Carga todos los datos en paralelo y construye los 6 capítulos.
 ═══════════════════════════════════════════════════════════════ */
 
 const API = {
-    tendencia:    '/icfes/api/historia/tendencia-nacional/',
-    regiones:     '/icfes/api/historia/regiones/',
-    brechas:      '/icfes/api/historia/brechas/',
-    convergencia: '/icfes/api/historia/convergencia/',
-    riesgo:       '/icfes/api/historia/riesgo/',
+    tendencia:       '/icfes/api/historia/tendencia-nacional/',
+    regiones:        '/icfes/api/historia/regiones/',
+    brechas:         '/icfes/api/historia/brechas/',
+    convergencia:    '/icfes/api/historia/convergencia/',
+    riesgo:          '/icfes/api/historia/riesgo/',
+    riesgoColegios:  '/icfes/api/historia/riesgo/colegios/',
+    ingles:          '/icfes/api/historia/ingles/',
 };
 
 const COLORS = {
@@ -365,12 +462,14 @@ Promise.all([
     fetch(API.brechas).then(r => r.json()),
     fetch(API.convergencia).then(r => r.json()),
     fetch(API.riesgo).then(r => r.json()),
-]).then(([tendRaw, regRaw, breRaw, convRaw, riesRaw]) => {
+    fetch(API.ingles).then(r => r.json()),
+]).then(([tendRaw, regRaw, breRaw, convRaw, riesRaw, ingRaw]) => {
     const tend  = tendRaw.data  || [];
     const regs  = regRaw.data   || [];
     const bres  = breRaw.data   || {};
     const convs = convRaw.data  || [];
     const risks = riesRaw.data  || [];
+    const ing   = ingRaw.data   || {};
 
     renderHero(tend);
     renderCap1(tend);
@@ -378,6 +477,7 @@ Promise.all([
     renderCap3(bres);
     renderCap4(convs);
     renderCap5(risks);
+    renderCap6(ing);
 }).catch(err => console.error('Historia load error:', err));
 
 
@@ -666,7 +766,7 @@ function renderCap5(risks) {
         list.appendChild(div);
     });
 
-    new Chart(document.getElementById('chart-riesgo'), {
+    const chartRiesgo = new Chart(document.getElementById('chart-riesgo'), {
         type: 'doughnut',
         data: {
             labels: risks.map(r => `Riesgo ${r.nivel_riesgo}`),
@@ -674,7 +774,7 @@ function renderCap5(risks) {
                 data:            risks.map(r => r.colegios),
                 backgroundColor: risks.map(r => colorMap[r.nivel_riesgo] || '#aaa'),
                 borderWidth: 2,
-                hoverOffset: 8,
+                hoverOffset: 12,
             }],
         },
         options: {
@@ -688,8 +788,207 @@ function renderCap5(risks) {
                             const r = risks[ctx.dataIndex];
                             return ` ${r.colegios.toLocaleString('es-CO')} colegios (prob. declive: ${fmt(r.prob_promedio)}%)`;
                         },
+                        footer: () => 'Clic para ver la lista →',
                     },
                 },
+            },
+            onClick(evt, elements) {
+                if (!elements.length) return;
+                const nivel = risks[elements[0].index].nivel_riesgo;
+                loadRiesgoColegios(nivel);
+            },
+        },
+    });
+
+    // Panel close button
+    document.getElementById('c5-panel-close').addEventListener('click', () => {
+        document.getElementById('c5-colegios-panel').classList.add('d-none');
+    });
+}
+
+// ─── Panel: lista de colegios por nivel de riesgo ─────────────
+let _riesgoCache = {};
+function loadRiesgoColegios(nivel) {
+    const panel  = document.getElementById('c5-colegios-panel');
+    const tbody  = document.getElementById('c5-colegios-tbody');
+    const title  = document.getElementById('c5-panel-title');
+    const loader = document.getElementById('c5-panel-loading');
+    const colorMap = { Alto: '#c0392b', Medio: '#f39c12', Bajo: '#27ae60' };
+
+    title.innerHTML = `<span style="color:${colorMap[nivel] || '#333'};">● Riesgo ${nivel}</span> — lista de colegios`;
+    panel.classList.remove('d-none');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (_riesgoCache[nivel]) {
+        renderRiesgoTable(tbody, _riesgoCache[nivel]);
+        return;
+    }
+
+    loader.classList.remove('d-none');
+    tbody.innerHTML = '';
+
+    fetch(`${API.riesgoColegios}?nivel=${nivel}`)
+        .then(r => r.json())
+        .then(res => {
+            _riesgoCache[nivel] = res.data || [];
+            loader.classList.add('d-none');
+            renderRiesgoTable(tbody, _riesgoCache[nivel]);
+        })
+        .catch(() => {
+            loader.classList.add('d-none');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar los datos</td></tr>';
+        });
+}
+
+function renderRiesgoTable(tbody, rows) {
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin datos</td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.map((r, i) => `
+        <tr>
+            <td class="text-muted small">${i + 1}</td>
+            <td class="fw-medium">${r.nombre_colegio || '—'}</td>
+            <td>${r.departamento || '—'}</td>
+            <td><span class="badge bg-${r.sector === 'OFICIAL' ? 'secondary' : 'primary'} bg-opacity-25 text-dark">${r.sector || '—'}</span></td>
+            <td class="text-end fw-bold">${r.puntaje_global != null ? fmt(r.puntaje_global, 1) : '—'}</td>
+            <td class="text-end text-danger fw-bold">${r.prob_declive_pct != null ? fmt(r.prob_declive_pct, 1) + '%' : '—'}</td>
+        </tr>
+    `).join('');
+}
+
+// ─── CAPÍTULO 6: El idioma de las oportunidades ───────────────
+function renderCap6(ing) {
+    if (!ing || !ing.brechas_por_materia) return;
+
+    const brechas   = ing.brechas_por_materia   || {};
+    const tendencia = ing.tendencia_sector       || {};
+    const regiones  = ing.regiones               || [];
+
+    // Update narrative numbers
+    const bIng = brechas['Inglés'];
+    const bMat = brechas['Matemáticas'];
+    const bLec = brechas['Lectura Crítica'];
+    if (bIng != null) document.getElementById('c6-brecha-pp').textContent  = fmt(bIng, 1) + ' pts';
+    if (bMat != null) document.getElementById('c6-brecha-mat').textContent = fmt(bMat, 1) + ' pts';
+    if (bLec != null) document.getElementById('c6-brecha-lec').textContent = fmt(bLec, 1) + ' pts';
+
+    // Callout
+    if (bIng && bMat) {
+        const ratio = (bIng / bMat).toFixed(1);
+        document.getElementById('c6-callout').textContent =
+            `La brecha de Inglés privado/público (${fmt(bIng, 1)} pts) es ${ratio}× mayor que la de Matemáticas (${fmt(bMat, 1)} pts).`;
+    }
+
+    // Chart 1: Brecha privado/público por materia (horizontal bar)
+    const materias = Object.keys(brechas);
+    const valores  = materias.map(m => brechas[m]);
+    const barColors = materias.map(m =>
+        m === 'Inglés' ? COLORS.danger : 'rgba(26,58,92,0.5)'
+    );
+    new Chart(document.getElementById('chart-ingles-brecha'), {
+        type: 'bar',
+        data: {
+            labels: materias,
+            datasets: [{
+                label: 'Brecha privado – público (pts)',
+                data:  valores,
+                backgroundColor: barColors,
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${fmt(ctx.raw, 2)} puntos de ventaja privado sobre público`,
+                    },
+                },
+            },
+            scales: {
+                x: { title: { display: true, text: 'Puntos de brecha (privado − público)' } },
+            },
+        },
+    });
+
+    // Chart 2: Evolución Inglés por sector 2018-2024
+    const oficial    = tendencia['OFICIAL']    || [];
+    const noOficial  = tendencia['NO OFICIAL'] || [];
+    const anos       = [...new Set([...oficial.map(d => d.ano), ...noOficial.map(d => d.ano)])].sort();
+    const ofMap      = Object.fromEntries(oficial.map(d   => [d.ano, d.ingles]));
+    const noOfMap    = Object.fromEntries(noOficial.map(d => [d.ano, d.ingles]));
+
+    new Chart(document.getElementById('chart-ingles-tendencia'), {
+        type: 'line',
+        data: {
+            labels: anos,
+            datasets: [
+                {
+                    label: 'Privados (No Oficial)',
+                    data:  anos.map(a => noOfMap[a] ?? null),
+                    borderColor: COLORS.primary,
+                    backgroundColor: 'rgba(26,58,92,0.08)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 5,
+                },
+                {
+                    label: 'Públicos (Oficial)',
+                    data:  anos.map(a => ofMap[a] ?? null),
+                    borderColor: COLORS.danger,
+                    backgroundColor: 'rgba(192,57,43,0.08)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 5,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { title: { display: true, text: 'Puntaje Inglés' }, suggestedMin: 40 },
+                x: { title: { display: true, text: 'Año' } },
+            },
+        },
+    });
+
+    // Chart 3: Inglés por región (horizontal bar)
+    new Chart(document.getElementById('chart-ingles-regiones'), {
+        type: 'bar',
+        data: {
+            labels: regiones.map(r => r.region.replace('Región ', '')),
+            datasets: [{
+                label: 'Puntaje Inglés',
+                data:  regiones.map(r => r.ingles),
+                backgroundColor: [
+                    COLORS.primary, COLORS.secondary, '#16a085',
+                    '#27ae60', COLORS.warning, COLORS.danger,
+                ],
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: ctx => {
+                            const r = regiones[ctx.dataIndex];
+                            return `Puntaje global: ${fmt(r.global, 1)} pts`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { suggestedMin: 40, title: { display: true, text: 'Puntaje Inglés' } },
             },
         },
     });
