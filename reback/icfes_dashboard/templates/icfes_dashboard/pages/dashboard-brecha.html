@@ -1,0 +1,1052 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Brecha Educativa - ICFES Analytic{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Brecha Educativa' sub_title='Oficial vs No Oficial' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- ═══════════════════════════════════════════
+       FILTROS
+  ═══════════════════════════════════════════ -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-medium mb-1">Año</label>
+                    <select class="form-select" id="filter-ano">
+                        {% for ano in anos_disponibles %}
+                        <option value="{{ ano }}" {% if forloop.first %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium mb-1">Departamento (Tendencia)</label>
+                    <select class="form-select" id="filter-depto">
+                        <option value="">Todo Colombia</option>
+                        {% for dept in departamentos %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="btn-apply">
+                        <i class="bx bx-filter-alt align-middle me-1"></i> Aplicar
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <a class="btn btn-outline-dark w-100" href="/icfes/ejecutivo/">
+                        <i class="bx bx-line-chart align-middle me-1"></i> Resumen Ejecutivo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       KPI CARDS
+  ═══════════════════════════════════════════ -->
+    <div class="row" id="kpi-row">
+
+        <!-- Colegios Oficiales -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Colegios Oficiales</p>
+                            <h4 class="mb-0" id="kpi-total-oficial">--</h4>
+                            <small class="text-muted" id="kpi-est-oficial">-- estudiantes</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-primary">
+                                    <i class="bx bx-building-house text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colegios No Oficiales -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Colegios No Oficiales</p>
+                            <h4 class="mb-0" id="kpi-total-no-oficial">--</h4>
+                            <small class="text-muted" id="kpi-est-no-oficial">-- estudiantes</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-warning">
+                                    <i class="bx bx-buildings text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Puntaje Oficial -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Prom. Oficial</p>
+                            <h4 class="mb-0 text-primary" id="kpi-prom-oficial">--</h4>
+                            <small class="text-muted">pts promedio global</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-primary">
+                                    <i class="bx bx-bar-chart-alt-2 text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Puntaje No Oficial -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Prom. No Oficial</p>
+                            <h4 class="mb-0 text-warning" id="kpi-prom-no-oficial">--</h4>
+                            <small class="text-muted">pts promedio global</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-warning">
+                                    <i class="bx bx-bar-chart-alt-2 text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /row kpis -->
+
+    <!-- Brecha global highlight -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center" role="alert" id="brecha-alert">
+                <i class="bx bx-info-circle fs-4 me-3"></i>
+                <span>Calculando brecha...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       ROW 1: Materias + Niveles
+  ═══════════════════════════════════════════ -->
+    <div class="row mt-2">
+
+        <!-- Puntaje por Materia -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-book-open me-2 text-primary"></i>Puntaje por Materia
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">Promedio comparativo por área: Oficial vs No
+                        Oficial</p>
+                    <div class="d-flex gap-3 mb-3">
+                        <span class="d-flex align-items-center gap-1" style="font-size:12px;font-weight:600;">
+                            <span
+                                style="width:10px;height:10px;border-radius:50%;background:#0d6efd;display:inline-block;"></span>
+                            Oficial
+                        </span>
+                        <span class="d-flex align-items-center gap-1" style="font-size:12px;font-weight:600;">
+                            <span
+                                style="width:10px;height:10px;border-radius:50%;background:#ffc107;display:inline-block;"></span>
+                            No Oficial
+                        </span>
+                    </div>
+                    <canvas id="chart-materias" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Niveles de Desempeño -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-target-lock me-2 text-success"></i>Niveles de Desempeño
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">% de estudiantes por nivel: Insuficiente · Mínimo
+                        · Satisfactorio · Avanzado</p>
+                    <canvas id="chart-niveles" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       ROW 2: Tendencia histórica
+  ═══════════════════════════════════════════ -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-trending-up me-2 text-info"></i>Tendencia Histórica del Puntaje Global
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Evolución anual por sector — filtra por departamento en los filtros superiores
+                    </p>
+                    <div class="d-flex gap-3 mb-3">
+                        <span class="d-flex align-items-center gap-1" style="font-size:12px;font-weight:600;">
+                            <span
+                                style="width:10px;height:10px;border-radius:50%;background:#0d6efd;display:inline-block;"></span>
+                            Oficial
+                        </span>
+                        <span class="d-flex align-items-center gap-1" style="font-size:12px;font-weight:600;">
+                            <span
+                                style="width:10px;height:10px;border-radius:50%;background:#ffc107;display:inline-block;"></span>
+                            No Oficial
+                        </span>
+                    </div>
+                    <canvas id="chart-tendencia" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       ROW 3 (NUEVO): Ranking Brecha por Materia (Opción B) + Niveles por Materia (Opción A)
+  ═══════════════════════════════════════════ -->
+    <div class="row mt-2">
+
+        <!-- OPCIÓN B: Ranking de brecha por materia -->
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-sort-alt-2 me-2 text-warning"></i>Ranking de Brecha por Materia
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Diferencia de puntaje (privado − público) por área — ordenado de mayor a menor brecha
+                    </p>
+                    <canvas id="chart-brecha-ranking" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN A: Distribución de niveles por materia -->
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-layer me-2 text-info"></i>Niveles de Desempeño por Materia
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        % de estudiantes en cada nivel por materia y sector
+                        <span class="badge bg-light text-dark border ms-1">Oficial</span>
+                        <span class="badge bg-light text-dark border ms-1">No Oficial</span>
+                    </p>
+                    <div id="chart-niveles-materia-container">
+                        <div class="text-center text-muted py-4">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            Cargando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       ROW 4: Tabla departamental
+  ═══════════════════════════════════════════ -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-map-alt me-2 text-danger"></i>Brecha por Departamento
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Diferencia de puntaje global entre sector privado y público.
+                        <span class="badge bg-success-subtle text-success">Verde</span> = colegios públicos superan a
+                        privados.
+                        La columna <strong>Z-Score</strong> indica cuántas desviaciones estándar se aleja la brecha de
+                        ese departamento
+                        del promedio nacional — permite identificar dónde la desigualdad es <em>estadísticamente
+                            excepcional</em>:
+                        <code>|z| &gt; 2</code> = caso extremo · <code>z &lt; 0</code> = brecha menor que la media.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped" id="tabla-departamental">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Departamento</th>
+                                    <th class="text-primary">Oficial</th>
+                                    <th class="text-warning">No Oficial</th>
+                                    <th>Brecha</th>
+                                    <th
+                                        title="Z-Score: cuántas desviaciones estándar está la brecha de este depto respecto al promedio nacional. |z|>2 = caso extremo.">
+                                        Z-Score ⓘ</th>
+                                    <th>Colegios</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-depto-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                        </div>
+                                        Cargando datos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       ROW 4: Convergencia Regional + Tendencia Brecha
+    ══════════════════════════════════════════════ -->
+    <div class="row mt-4">
+
+        <!-- Convergencia Regional -->
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">🗺️ Convergencia Regional</h4>
+                    <p class="text-muted small mb-3">Brecha entre las regiones geográficas más y menos avanzadas</p>
+                    <div id="convergencia-estado" class="mb-3"></div>
+                    <div id="convergencia-lista"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tendencia de la Brecha (Cerrándose / Ampliándose) -->
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">📈 ¿La brecha se está cerrando?</h4>
+                    <p class="text-muted small mb-3">Evolución de la brecha absoluta entre sector público y privado</p>
+                    <canvas id="chart-tendencia-brecha" height="140"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+       ROW 5: Fortalezas por Sector + Distribución Z-Score
+    ══════════════════════════════════════════════ -->
+    <div class="row mt-4 mb-4">
+
+        <!-- Fortalezas por Sector -->
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">🏆 Fortalezas académicas por sector</h4>
+                    <p class="text-muted small mb-3">¿En qué área destaca cada sector?</p>
+                    <div id="fortalezas-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribución Z-Score -->
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">📊 Distribución de puntajes por sector</h4>
+                    <p class="text-muted small mb-2">% de colegios en cada rango de rendimiento (z-score nacional)</p>
+                    <canvas id="chart-zscore-dist" height="150"></canvas>
+
+                    <div class="mt-3 bg-light border rounded p-3 text-sm">
+                        <h6 class="mb-2 fw-semibold text-dark"><i
+                                class="bx bx-info-circle text-primary me-1 align-middle"></i>¿Cómo interpretar este
+                            gráfico?</h6>
+                        <p class="small mb-2 text-muted">
+                            Esta gráfica agrupa a los colegios según su <strong>Z-Score</strong>, una medida estadística
+                            que ubica a cada colegio en relación al promedio nacional general. Revela la
+                            <strong>desigualdad estructural</strong> al mostrar dónde se concentran verdaderamente los
+                            colegios de cada sector:
+                        </p>
+                        <ul class="small mb-0 text-muted ps-3" style="line-height: 1.4;">
+                            <li class="mb-1"><strong>Izquierda (Rendimiento Bajo, <-1σ):< /strong> Indica los colegios
+                                        con los puntajes más bajos del país. Cuando la barra del sector oficial
+                                        (público) es mucho más alta aquí, significa que el estado soporta la mayor carga
+                                        de rezago educativo.</li>
+                            <li class="mb-1"><strong>Centro (Normal, -1σ a 1σ):</strong> Representa el grueso de
+                                colegios con un nivel estándar o cercano a la media.</li>
+                            <li><strong>Derecha (Excelencia, >1σ):</strong> Colegios con los puntajes más altos a nivel
+                                nacional. Si la barra del sector no oficial (privado) predomina en este extremo, refleja
+                                que la excelencia académica es mayoritariamente de acceso exclusivo.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        'use strict';
+
+        var chartMaterias = null;
+        var chartNiveles = null;
+        var chartTendencia = null;
+        var chartBrechaRanking = null;
+        var chartsNivelesMateria = {};
+
+        var COLOR_OFICIAL = '#0d6efd';
+        var COLOR_NO_OFICIAL = '#ffc107';
+
+        var MAT_LABELS = {
+            lectura_critica: 'L. Crítica',
+            matematicas: 'Matemáticas',
+            ciencias_naturales: 'C. Naturales',
+            sociales_ciudadanas: 'Sociales',
+            ingles: 'Inglés',
+        };
+
+        function getAno() { return document.getElementById('filter-ano').value; }
+        function getDepto() { return document.getElementById('filter-depto').value; }
+        function withBust(url) { return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_ts=' + Date.now(); }
+        function num(v) {
+            var n = Number(v);
+            return Number.isFinite(n) ? n : 0;
+        }
+        function normSector(s) {
+            var v = (s || '').toString().toUpperCase().trim();
+            if (v === 'OFICIAL' || v === '1') return 'OFICIAL';
+            if (v === 'NO_OFICIAL' || v === 'NO OFICIAL' || v === '0') return 'NO_OFICIAL';
+            return v;
+        }
+
+        document.getElementById('btn-apply').addEventListener('click', loadAll);
+        document.getElementById('filter-ano').addEventListener('change', loadAll);
+        document.getElementById('filter-depto').addEventListener('change', loadAll);
+
+        function loadAll() {
+            loadKpis();
+            loadMaterias();
+            loadNiveles();
+            loadTendencia();
+            loadNivelesPorMateria();
+            loadDeptTable();
+            loadConvergenciaRegional();
+            loadTendenciaBrecha();
+            loadFortalezas();
+            loadZscoreDist();
+        }
+
+        // ── KPIs ──────────────────────────────────────────────
+        function loadKpis() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/kpis/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var of = data['OFICIAL'] || data['1'] || {};
+                    var no = data['NO_OFICIAL'] || data['NO OFICIAL'] || data['0'] || {};
+                    var brecha = (data['brecha_global'] != null) ? data['brecha_global'] : 0;
+
+                    document.getElementById('kpi-total-oficial').textContent = (of.total_colegios || 0).toLocaleString();
+                    document.getElementById('kpi-est-oficial').textContent = (of.total_estudiantes || 0).toLocaleString() + ' estudiantes';
+                    document.getElementById('kpi-total-no-oficial').textContent = (no.total_colegios || 0).toLocaleString();
+                    document.getElementById('kpi-est-no-oficial').textContent = (no.total_estudiantes || 0).toLocaleString() + ' estudiantes';
+                    document.getElementById('kpi-prom-oficial').textContent = num(of.promedio_global).toFixed(1);
+                    document.getElementById('kpi-prom-no-oficial').textContent = num(no.promedio_global).toFixed(1);
+
+                    var alertEl = document.getElementById('brecha-alert');
+                    var b = num(brecha);
+                    var sign = b >= 0 ? '+' : '';
+                    var icon = b >= 0 ? 'bx-trending-up' : 'bx-trending-down';
+                    var alertCls = b >= 0 ? 'alert-warning' : 'alert-success';
+                    var ano = getAno();
+                    var msg = b >= 0
+                        ? 'Los colegios <strong>privados</strong> superan a los públicos en <strong>' + sign + b.toFixed(1) + ' puntos</strong> de promedio global (' + ano + ')'
+                        : 'Los colegios <strong>públicos</strong> superan a los privados en <strong>' + Math.abs(b).toFixed(1) + ' puntos</strong> de promedio global (' + ano + ')';
+
+                    alertEl.className = 'alert ' + alertCls + ' d-flex align-items-center';
+                    alertEl.innerHTML = '<i class="bx ' + icon + ' fs-4 me-3"></i><span>' + msg + '</span>';
+                })
+                .catch(function (e) { console.error('loadKpis error', e); });
+        }
+
+        // ── Materias ───────────────────────────────────────────
+        function loadMaterias() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/por-materia/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var data = json.data || [];
+                    var labels = ['L. Crítica', 'Matemáticas', 'C. Naturales', 'Sociales', 'Inglés'];
+                    var keys = ['lectura_critica', 'matematicas', 'ciencias_naturales', 'sociales_ciudadanas', 'ingles'];
+                    var ofRow = data.find(function (d) { return normSector(d.sector_norm) === 'OFICIAL'; }) || {};
+                    var noRow = data.find(function (d) { return normSector(d.sector_norm) === 'NO_OFICIAL'; }) || {};
+
+                    var ctx = document.getElementById('chart-materias').getContext('2d');
+                    if (chartMaterias) { chartMaterias.destroy(); }
+                    chartMaterias = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Oficial', data: keys.map(function (k) { return num(ofRow[k]); }), backgroundColor: COLOR_OFICIAL + 'CC', borderColor: COLOR_OFICIAL, borderWidth: 1, borderRadius: 4 },
+                                { label: 'No Oficial', data: keys.map(function (k) { return num(noRow[k]); }), backgroundColor: COLOR_NO_OFICIAL + 'CC', borderColor: COLOR_NO_OFICIAL, borderWidth: 1, borderRadius: 4 }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: false, min: 40, grid: { color: '#f0f0f0' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                })
+                .catch(function (e) { console.error('loadMaterias error', e); });
+        }
+
+        // ── Niveles Globales ───────────────────────────────────
+        function loadNiveles() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/niveles-desempeno/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var data = json.data || [];
+                    var ofRow = data.find(function (d) { return normSector(d.sector_norm) === 'OFICIAL'; }) || {};
+                    var noRow = data.find(function (d) { return normSector(d.sector_norm) === 'NO_OFICIAL'; }) || {};
+
+                    var keys = ['pct_insuficiente', 'pct_minimo', 'pct_satisfactorio', 'pct_avanzado'];
+                    var names = ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'];
+                    var colors = ['#dc3545', '#ffc107', '#0d6efd', '#198754'];
+
+                    var ctx = document.getElementById('chart-niveles').getContext('2d');
+                    if (chartNiveles) { chartNiveles.destroy(); }
+                    chartNiveles = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Oficial', 'No Oficial'],
+                            datasets: keys.map(function (k, i) {
+                                return {
+                                    label: names[i],
+                                    data: [num(ofRow[k]), num(noRow[k])],
+                                    backgroundColor: colors[i] + 'CC',
+                                    borderColor: colors[i],
+                                    borderWidth: 1,
+                                    borderRadius: 4
+                                };
+                            })
+                        },
+                        options: {
+                            responsive: true,
+                            indexAxis: 'y',
+                            plugins: {
+                                legend: { display: true, position: 'bottom' },
+                                tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + c.parsed.x.toFixed(1) + '%'; } } }
+                            },
+                            scales: {
+                                x: { stacked: true, ticks: { callback: function (v) { return v + '%'; } } },
+                                y: { stacked: true, grid: { display: false } }
+                            }
+                        }
+                    });
+                })
+                .catch(function (e) { console.error('loadNiveles error', e); });
+        }
+
+        // ── Tendencia ──────────────────────────────────────────
+        function loadTendencia() {
+            var depto = getDepto();
+            var ano = getAno();
+            var url = '/icfes/api/brecha/tendencia-historica/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var data = json.data || [];
+                    var ctx = document.getElementById('chart-tendencia').getContext('2d');
+                    if (chartTendencia) { chartTendencia.destroy(); }
+
+                    if (!data.length) {
+                        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                        return;
+                    }
+
+                    var ofData = data
+                        .filter(function (d) { return normSector(d.sector_norm) === 'OFICIAL'; })
+                        .sort(function (a, b) { return Number(a.ano) - Number(b.ano); });
+                    var noData = data
+                        .filter(function (d) { return normSector(d.sector_norm) === 'NO_OFICIAL'; })
+                        .sort(function (a, b) { return Number(a.ano) - Number(b.ano); });
+                    var labels = Array.from(new Set(data.map(function (d) { return String(d.ano); })))
+                        .sort(function (a, b) { return Number(a) - Number(b); });
+
+                    chartTendencia = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Oficial',
+                                    data: labels.map(function (yr) {
+                                        var r = ofData.find(function (d) { return String(d.ano) === String(yr); });
+                                        return r ? num(r.promedio_global) : null;
+                                    }),
+                                    borderColor: COLOR_OFICIAL, backgroundColor: COLOR_OFICIAL + '22',
+                                    tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2
+                                },
+                                {
+                                    label: 'No Oficial',
+                                    data: labels.map(function (yr) {
+                                        var r = noData.find(function (d) { return String(d.ano) === String(yr); });
+                                        return r ? num(r.promedio_global) : null;
+                                    }),
+                                    borderColor: COLOR_NO_OFICIAL, backgroundColor: COLOR_NO_OFICIAL + '22',
+                                    tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { grid: { color: '#f0f0f0' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                })
+                .catch(function (e) { console.error('loadTendencia error', e); });
+        }
+
+        // ── OPCIÓN B: Ranking brecha por materia ───────────────
+        // ── OPCIÓN A: Niveles por materia ─────────────────────
+        function loadNivelesPorMateria() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/niveles-por-materia/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var data = json.data || [];
+
+                    // ── Opción B: ranking brecha ──
+                    var materiaKeys = Object.keys(MAT_LABELS);
+                    var brechas = materiaKeys.map(function (mk) {
+                        var ofRow = data.find(function (d) { return normSector(d.sector_norm) === 'OFICIAL' && d.materia === mk; }) || {};
+                        var noRow = data.find(function (d) { return normSector(d.sector_norm) === 'NO_OFICIAL' && d.materia === mk; }) || {};
+                        return { materia: MAT_LABELS[mk], brecha: (num(noRow.promedio) - num(ofRow.promedio)) };
+                    });
+                    // sort by brecha descending
+                    brechas.sort(function (a, b) { return b.brecha - a.brecha; });
+
+                    if (chartBrechaRanking) { chartBrechaRanking.destroy(); }
+                    chartBrechaRanking = new Chart(document.getElementById('chart-brecha-ranking').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: brechas.map(function (b) { return b.materia; }),
+                            datasets: [{
+                                label: 'Brecha (No Oficial − Oficial)',
+                                data: brechas.map(function (b) { return parseFloat(b.brecha.toFixed(2)); }),
+                                backgroundColor: brechas.map(function (b) { return b.brecha >= 0 ? '#ffc107CC' : '#198754CC'; }),
+                                borderColor: brechas.map(function (b) { return b.brecha >= 0 ? '#ffc107' : '#198754'; }),
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (c) {
+                                            var v = c.parsed.x;
+                                            return (v >= 0 ? ' +' : ' ') + v.toFixed(2) + ' pts (privado ' + (v >= 0 ? 'gana' : 'pierde') + ')';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { color: '#f0f0f0' }, ticks: { callback: function (v) { return (v >= 0 ? '+' : '') + v; } } },
+                                y: { grid: { display: false } }
+                            }
+                        }
+                    });
+
+                    // ── Opción A: niveles por materia ──
+                    var container = document.getElementById('chart-niveles-materia-container');
+                    container.innerHTML = '';
+
+                    // Destroy old charts
+                    Object.values(chartsNivelesMateria).forEach(function (c) { c.destroy(); });
+                    chartsNivelesMateria = {};
+
+                    var levelKeys = ['pct_insuficiente', 'pct_minimo', 'pct_satisfactorio', 'pct_avanzado'];
+                    var levelNames = ['Insuficiente (-A/1)', 'Mínimo (A1/2)', 'Satisfactorio (A2/3)', 'Avanzado (B1/4)'];
+                    var levelColors = ['#dc3545', '#ffc107', '#0d6efd', '#198754'];
+
+                    materiaKeys.forEach(function (mk) {
+                        var ofRow = data.find(function (d) { return normSector(d.sector_norm) === 'OFICIAL' && d.materia === mk; }) || {};
+                        var noRow = data.find(function (d) { return normSector(d.sector_norm) === 'NO_OFICIAL' && d.materia === mk; }) || {};
+
+                        // wrapper row
+                        var row = document.createElement('div');
+                        row.className = 'mb-3';
+
+                        // label
+                        var diff = (num(noRow.promedio) - num(ofRow.promedio)).toFixed(1);
+                        var sign = diff >= 0 ? '+' : '';
+                        var dCls = diff >= 0 ? 'text-warning' : 'text-success';
+                        var lbl = document.createElement('div');
+                        lbl.className = 'small fw-bold mb-1 text-muted d-flex justify-content-between';
+                        lbl.innerHTML = '<span>' + MAT_LABELS[mk] + ' <span class="text-primary">' + num(ofRow.promedio).toFixed(1) + '</span> vs <span class="text-warning">' + num(noRow.promedio).toFixed(1) + '</span> <span class="' + dCls + '">Δ' + sign + diff + '</span></span>' +
+                            (mk === 'ingles' ? '<span class="text-muted" style="font-size:0.75rem">-A, A1, A2, B1+</span>' : '');
+                        row.appendChild(lbl);
+
+                        var cWrapper = document.createElement('div');
+                        cWrapper.style.position = 'relative';
+                        cWrapper.style.height = '60px'; // 2 barras
+                        var canvas = document.createElement('canvas');
+                        cWrapper.appendChild(canvas);
+                        row.appendChild(cWrapper);
+
+                        container.appendChild(row);
+
+                        var customNames = mk === 'ingles' ? ['A- (Menos de A1)', 'A1 (Básico)', 'A2 (Pre-intermedio)', 'B1+ (Intermedio/Avanzado)'] : levelNames;
+
+                        chartsNivelesMateria[mk] = new Chart(canvas.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: ['Oficial', 'No Oficial'],
+                                datasets: levelKeys.map(function (k, i) {
+                                    return {
+                                        label: customNames[i],
+                                        data: [num(ofRow[k]), num(noRow[k])],
+                                        backgroundColor: levelColors[i] + 'DD',
+                                        borderColor: levelColors[i],
+                                        borderWidth: 0, // removed border to prevent 1px gaps
+                                        barThickness: 18 // slightly thicker
+                                    };
+                                })
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                indexAxis: 'y',
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + c.parsed.x.toFixed(1) + '%'; } } }
+                                },
+                                scales: {
+                                    x: { stacked: true, max: 100.1, display: false },
+                                    y: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#888' } }
+                                }
+                            }
+                        });
+                    });
+
+                    // add legend once
+                    var legend = document.createElement('div');
+                    legend.className = 'd-flex gap-3 mt-2 flex-wrap';
+                    levelKeys.forEach(function (lk, li) {
+                        var sp = document.createElement('span');
+                        sp.className = 'd-flex align-items-center gap-1';
+                        sp.style.fontSize = '11px';
+                        sp.innerHTML = '<span style="width:10px;height:10px;border-radius:3px;background:' + levelColors[li] + ';display:inline-block;"></span>' + levelNames[li];
+                        legend.appendChild(sp);
+                    });
+                    container.appendChild(legend);
+                })
+                .catch(function (e) { console.error('loadNivelesPorMateria error', e); });
+        }
+
+        // ── Tabla Departamental ────────────────────────────────
+        function loadDeptTable() {
+            var ano = getAno();
+            var depto = getDepto();
+            var tbody = document.getElementById('tabla-depto-body');
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
+
+            var url = '/icfes/api/brecha/departamental/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin datos disponibles</td></tr>';
+                        return;
+                    }
+                    var html = '';
+                    data.forEach(function (d, i) {
+                        var brecha = (d.brecha != null) ? num(d.brecha) : null;
+                        var sign = (brecha !== null && brecha >= 0) ? '+' : '';
+                        var brechaText = (brecha !== null) ? sign + brecha.toFixed(1) + ' pts' : '—';
+                        var badgeCls = (brecha !== null && brecha < 0) ? 'badge bg-success-subtle text-success' :
+                            (brecha !== null && brecha > 10) ? 'badge bg-danger-subtle text-danger' :
+                                'badge bg-warning-subtle text-warning';
+                        var heroTag = d.publico_gana
+                            ? '<span class="badge bg-success-subtle text-success ms-1">Público gana</span>'
+                            : '';
+
+                        // ── Z-Score badge ──
+                        var zCell = '—';
+                        if (d.z_score != null) {
+                            var z = num(d.z_score);
+                            var zText = (z >= 0 ? '+' : '') + z.toFixed(2);
+                            var zCls, zTip;
+                            if (z > 2) {
+                                zCls = 'badge bg-danger text-white';
+                                zTip = 'Desigualdad extrema: la brecha de este depto está más de 2σ por encima de la media nacional';
+                            } else if (z > 1) {
+                                zCls = 'badge';
+                                zTip = 'Desigualdad alta: brecha notablemente mayor que el promedio nacional';
+                                zCell = '<span class="' + zCls + '" style="background:#b45309;color:#fff;" title="' + zTip + '">' + zText + '</span>';
+                            } else if (z < -1) {
+                                zCls = 'badge bg-success text-white';
+                                zTip = 'Depto con menor desigualdad que la media: brecha por debajo del promedio nacional';
+                            } else {
+                                zCls = 'badge bg-info-subtle text-info';
+                                zTip = 'Brecha dentro del rango normal (±1σ respecto a la media nacional)';
+                            }
+                            zCell = '<span class="' + zCls + '" title="' + zTip + '">' + zText + '</span>';
+                        }
+
+                        html +=
+                            '<tr>' +
+                            '<td><strong>' + (i + 1) + '</strong></td>' +
+                            '<td>' + d.departamento + heroTag + '</td>' +
+                            '<td><strong class="text-primary">' + num(d.OFICIAL).toFixed(1) + '</strong></td>' +
+                            '<td><strong class="text-warning">' + num(d.NO_OFICIAL).toFixed(1) + '</strong></td>' +
+                            '<td><span class="' + badgeCls + '">' + brechaText + '</span></td>' +
+                            '<td>' + zCell + '</td>' +
+                            '<td><small class="text-muted">' + d.total_colegios_oficial + ' pub · ' + d.total_colegios_no_oficial + ' priv</small></td>' +
+                            '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                })
+                .catch(function (e) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">Error cargando datos</td></tr>';
+                });
+        }
+
+        // ── Init ──────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', loadAll);
+
+        // ── Convergencia Regional ─────────────────────────────
+        var chartTendenciaBrecha = null;
+        var chartZscoreDist = null;
+
+        function loadConvergenciaRegional() {
+            var ano = getAno();
+            fetch(withBust('/icfes/api/brecha/convergencia-regional/?ano=' + ano))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var d = json.data || {};
+                    if (!d.ano) {
+                        document.getElementById('convergencia-estado').innerHTML = '<span class="text-muted small">Sin datos disponibles</span>';
+                        return;
+                    }
+                    var estadoBadge = {
+                        'Convergencia Moderada': '<span class="badge bg-success">Convergencia Moderada</span>',
+                        'Divergencia': '<span class="badge bg-danger">Divergencia</span>',
+                        'Estable': '<span class="badge bg-secondary">Estable</span>',
+                    }[d.estado_convergencia] || ('<span class="badge bg-secondary">' + (d.estado_convergencia || '') + '</span>');
+                    var tendBadge = (d.tendencia_brecha || '').indexOf('Ampli') >= 0
+                        ? '<span class="badge bg-warning text-dark">Amplándose</span>'
+                        : '<span class="badge bg-info text-dark">Estable/Cerrándose</span>';
+                    document.getElementById('convergencia-estado').innerHTML =
+                        '<div class="d-flex gap-2 flex-wrap mb-2">' +
+                        '<div><small class="text-muted">Estado:</small> ' + estadoBadge + '</div>' +
+                        '<div><small class="text-muted">Tendencia:</small> ' + tendBadge + '</div>' +
+                        '<div><small class="text-muted">Año:</small> <span class="fw-bold">' + d.ano + '</span></div>' +
+                        '</div>' +
+                        '<p class="small mb-1">Brecha líder-rezagada: <strong>' + (d.brecha_lider_rezagada || 0).toFixed(1) + ' pts</strong></p>';
+
+                    var regiones = d.regiones || [];
+                    var html = '';
+                    regiones.sort(function (a, b) { return b.puntaje - a.puntaje; }).forEach(function (r, i) {
+                        var pct = ((r.puntaje - 220) / (280 - 220) * 100).toFixed(0);
+                        pct = Math.max(5, Math.min(100, parseFloat(pct)));
+                        var col = i === 0 ? '#198754' : i === regiones.length - 1 ? '#dc3545' : '#0d6efd';
+                        html += '<div class="mb-1"><div class="d-flex justify-content-between"><small>' + r.region + '</small>' +
+                            '<small class="fw-bold">' + r.puntaje.toFixed(1) + '</small></div>' +
+                            '<div class="progress" style="height:6px"><div class="progress-bar" style="width:' + pct + '%;background:' + col + '"></div></div></div>';
+                    });
+                    document.getElementById('convergencia-lista').innerHTML = html;
+                })
+                .catch(function (e) { console.error('loadConvergenciaRegional error', e); });
+        }
+
+        // ── Tendencia Brecha Sector ───────────────────────────
+        function loadTendenciaBrecha() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/tendencia-brecha/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var data = json.data || [];
+                    var ctx = document.getElementById('chart-tendencia-brecha').getContext('2d');
+                    if (chartTendenciaBrecha) { chartTendenciaBrecha.destroy(); }
+
+                    if (!data.length) return;
+
+                    var anos = data.map(function (d) { return d.ano; });
+                    var brechas = data.map(function (d) { return Math.abs(d.brecha_absoluta_puntos || 0); });
+                    var pub = data.map(function (d) { return d.puntaje_publico || 0; });
+                    var priv = data.map(function (d) { return d.puntaje_privado || 0; });
+
+                    chartTendenciaBrecha = new Chart(ctx, {
+                        data: {
+                            labels: anos,
+                            datasets: [
+                                { type: 'line', label: 'Oficial', data: pub, borderColor: COLOR_OFICIAL, backgroundColor: 'transparent', tension: 0.4, pointRadius: 3, yAxisID: 'y' },
+                                { type: 'line', label: 'No Oficial', data: priv, borderColor: COLOR_NO_OFICIAL, backgroundColor: 'transparent', tension: 0.4, pointRadius: 3, yAxisID: 'y' },
+                                { type: 'bar', label: 'Brecha', data: brechas, backgroundColor: '#ef444460', borderColor: '#ef4444', borderWidth: 1, borderRadius: 3, yAxisID: 'y2' }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                                tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1) + ' pts'; } } }
+                            },
+                            scales: {
+                                y: { type: 'linear', position: 'left', title: { display: true, text: 'Puntaje' }, grid: { color: '#f0f0f0' } },
+                                y2: { type: 'linear', position: 'right', title: { display: true, text: 'Brecha' }, grid: { display: false }, min: 0 }
+                            }
+                        }
+                    });
+                })
+                .catch(function (e) { console.error('loadTendenciaBrecha error', e); });
+        }
+
+        // ── Fortalezas por Sector ─────────────────────────────
+        function loadFortalezas() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/area-fortalezas/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var d = json.data || {};
+                    var AREA_ICONS = {
+                        'INGLÉS': '🌐', 'LECTURA CRÍTICA': '📖', 'MATEMÁTICAS': '📐',
+                        'CIENCIAS NATURALES': '🔬', 'SOCIALES': '🌍'
+                    };
+                    function sectorBlock(sector, label, color) {
+                        var s = d[sector];
+                        if (!s || !s.mejor_area) return '';
+                        var dist = (s.mejor_distribucion || []).slice(0, 4).map(function (item) {
+                            return '<div class="d-flex justify-content-between"><small>' + (AREA_ICONS[item.area] || '') + ' ' + item.area + '</small><small class="fw-bold">' + item.pct + '%</small></div>' +
+                                '<div class="progress mb-1" style="height:4px"><div class="progress-bar" style="width:' + item.pct + '%;background:' + color + '"></div></div>';
+                        }).join('');
+                        return '<div class="mb-3">' +
+                            '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                            '<span class="fw-bold" style="color:' + color + '">' + label + '</span>' +
+                            '<span class="badge" style="background:' + color + '20;color:' + color + ';border:1px solid ' + color + '66">' + (AREA_ICONS[s.mejor_area] || '') + ' ' + s.mejor_area + '</span>' +
+                            '</div>' + dist + '</div>';
+                    }
+                    document.getElementById('fortalezas-container').innerHTML =
+                        sectorBlock('OFICIAL', '🏛 Escuelas Oficiales', '#0d6efd') +
+                        sectorBlock('NO_OFICIAL', '🏫 Colegios No Oficiales', '#ffc107');
+                })
+                .catch(function (e) { console.error('loadFortalezas error', e); });
+        }
+
+        // ── Distribución Z-Score ───────────────────────────────
+        function loadZscoreDist() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/brecha/zscore-distribucion/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    var d = json.data || {};
+                    var BUCKETS = ['Muy bajo (<-2σ)', 'Bajo (-2σ a -1σ)', 'Normal (-1σ a 1σ)', 'Alto (1σ a 2σ)', 'Muy alto (>2σ)'];
+                    var COLORS = ['#dc3545', '#fd7e14', '#6c757d', '#198754', '#0d6efd'];
+
+                    function getVal(sector, bucket) {
+                        var arr = d[sector] || [];
+                        var item = arr.find(function (x) { return x.bucket === bucket; });
+                        return item ? item.total : 0;
+                    }
+
+                    var totOf = BUCKETS.reduce(function (s, b) { return s + getVal('OFICIAL', b); }, 0) || 1;
+                    var totNo = BUCKETS.reduce(function (s, b) { return s + getVal('NO_OFICIAL', b); }, 0) || 1;
+
+                    var ctx = document.getElementById('chart-zscore-dist').getContext('2d');
+                    if (chartZscoreDist) { chartZscoreDist.destroy(); }
+                    chartZscoreDist = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: BUCKETS,
+                            datasets: [
+                                {
+                                    label: 'Oficial', yAxisID: 'y',
+                                    data: BUCKETS.map(function (b) { return (getVal('OFICIAL', b) / totOf * 100).toFixed(1); }),
+                                    backgroundColor: COLORS.map(function (c) { return c + 'AA'; }),
+                                    borderColor: COLORS, borderWidth: 1, borderRadius: 3
+                                },
+                                {
+                                    label: 'No Oficial', yAxisID: 'y',
+                                    data: BUCKETS.map(function (b) { return (getVal('NO_OFICIAL', b) / totNo * 100).toFixed(1); }),
+                                    backgroundColor: COLORS.map(function (c) { return c + '55'; }),
+                                    borderColor: COLORS, borderWidth: 1, borderRadius: 3,
+                                    borderDash: [4, 2]
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                                tooltip: { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + c.parsed.y + '%'; } } }
+                            },
+                            scales: {
+                                y: { title: { display: true, text: '% de colegios' }, grid: { color: '#f0f0f0' } },
+                                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                            }
+                        }
+                    });
+                })
+                .catch(function (e) { console.error('loadZscoreDist error', e); });
+        }
+
+    })();
+</script>
+{% endblock extra_javascript %}

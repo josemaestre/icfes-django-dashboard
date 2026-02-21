@@ -1,0 +1,131 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Resumen Ejecutivo ICFES{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Resumen Ejecutivo ICFES' sub_title='Storytelling Gold Layer' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-medium mb-1">Año</label>
+                    <select class="form-select" id="story-ano">
+                        {% for ano in anos_disponibles %}
+                        <option value="{{ ano }}" {% if forloop.first %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium mb-1">Departamento (aplica a toda la vista)</label>
+                    <select class="form-select" id="story-depto">
+                        <option value="">Todo Colombia</option>
+                        {% for dept in departamentos %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="story-apply">
+                        <i class="bx bx-filter-alt align-middle me-1"></i>Actualizar
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <a class="btn btn-outline-secondary w-100" href="/icfes/">
+                        <i class="bx bx-left-arrow-alt align-middle me-1"></i>Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="story-kpis">
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <p class="text-muted fw-medium mb-2">Promedio Nacional</p>
+                    <h4 class="mb-0" id="kpi-promedio">--</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <p class="text-muted fw-medium mb-2">Brecha Sector (pts)</p>
+                    <h4 class="mb-0" id="kpi-brecha">--</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <p class="text-muted fw-medium mb-2">Colegios Alto Riesgo</p>
+                    <h4 class="mb-0" id="kpi-riesgo">--</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <p class="text-muted fw-medium mb-2">Total Estudiantes</p>
+                    <h4 class="mb-0" id="kpi-estudiantes">--</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title mb-0">Tendencia Nacional y Brecha por Sector</h4>
+                        <small class="text-muted" id="story-active-filter">Filtro: --</small>
+                    </div>
+                    <canvas id="story-trend-chart" height="110"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Brechas Clave</h4>
+                    <div id="story-brechas-list" class="small text-muted">Cargando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h4 class="card-title mb-3">Top Priorización de Intervención</h4>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm" id="story-prioridad-table">
+                    <thead>
+                        <tr>
+                            <th>Código DANE</th>
+                            <th>Colegio</th>
+                            <th>Departamento</th>
+                            <th>Municipio</th>
+                            <th>Puntaje</th>
+                            <th>Prob. Declive</th>
+                            <th>Gap Municipio</th>
+                            <th>Priority Score</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/pages/resumen-ejecutivo-icfes.js' %}"></script>
+{% endblock extra_javascript %}

@@ -17,6 +17,9 @@ urlpatterns = [
     # Vista principal
     path('', views.icfes_dashboard, name='dashboard'),
     path('charts/', views.dashboard_charts, name='dashboard_charts'),
+    path('brecha/', views.brecha_educativa_dashboard, name='brecha_educativa'),
+    path('ejecutivo/', views.resumen_ejecutivo_dashboard, name='resumen_ejecutivo'),
+    path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
 
     # Dynamic school landing pages (SEO)
@@ -135,11 +138,36 @@ urlpatterns = [
          views.api_colegio_riesgo, name='api_colegio_riesgo'),
     path('api/panorama-riesgo/',
          views.api_panorama_riesgo, name='api_panorama_riesgo'),
+
+    # Storytelling ejecutivo (Gold Layer)
+    path('api/story/resumen/', views.api_story_resumen_ejecutivo, name='api_story_resumen'),
+    path('api/story/serie-anual/', views.api_story_serie_anual, name='api_story_serie_anual'),
+    path('api/story/brechas/', views.api_story_brechas_clave, name='api_story_brechas'),
+    path('api/story/priorizacion/', views.api_story_priorizacion, name='api_story_priorizacion'),
+
+    # Historia de la Educación Colombiana - Story API
+    path('api/historia/tendencia-nacional/', api_views.historia_tendencia_nacional, name='historia_tendencia_nacional'),
+    path('api/historia/regiones/', api_views.historia_regiones, name='historia_regiones'),
+    path('api/historia/brechas/', api_views.historia_brechas, name='historia_brechas'),
+    path('api/historia/convergencia/', api_views.historia_convergencia, name='historia_convergencia'),
+    path('api/historia/riesgo/', api_views.historia_riesgo, name='historia_riesgo'),
     
     # API endpoints for enhanced user profile
     path('api/schools/search/', api_views.search_schools, name='search_schools'),
     path('api/departments/', api_views.get_departments, name='get_departments'),
     path('api/municipalities/', api_views.get_municipalities, name='get_municipalities'),
+
+    # Brecha Educativa API endpoints
+    path('api/brecha/kpis/', api_views.brecha_kpis, name='brecha_kpis'),
+    path('api/brecha/por-materia/', api_views.brecha_por_materia, name='brecha_por_materia'),
+    path('api/brecha/tendencia-historica/', api_views.brecha_tendencia_historica, name='brecha_tendencia_historica'),
+    path('api/brecha/niveles-desempeno/', api_views.brecha_niveles_desempeno, name='brecha_niveles_desempeno'),
+    path('api/brecha/departamental/', api_views.brecha_departamental, name='brecha_departamental'),
+    path('api/brecha/niveles-por-materia/', api_views.brecha_niveles_por_materia, name='brecha_niveles_por_materia'),
+    path('api/brecha/convergencia-regional/', api_views.brecha_convergencia_regional, name='brecha_convergencia_regional'),
+    path('api/brecha/tendencia-brecha/', api_views.brecha_tendencia_brecha_sector, name='brecha_tendencia_brecha'),
+    path('api/brecha/area-fortalezas/', api_views.brecha_area_fortalezas, name='brecha_area_fortalezas'),
+    path('api/brecha/zscore-distribucion/', api_views.brecha_zscore_distribucion, name='brecha_zscore_distribucion'),
     
     # Export Endpoints
     # CSV Exports (Basic Plan)

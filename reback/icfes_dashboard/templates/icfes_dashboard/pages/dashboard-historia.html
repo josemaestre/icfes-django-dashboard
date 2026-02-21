@@ -1,0 +1,698 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Historia de la Educación Colombiana — ICFES Analytics{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Historia de la Educación Colombiana' sub_title='25 años de datos — 1996 a 2024' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid pb-5" id="historia-root">
+
+    <!-- ══════════════════════════════════════════════════
+         HERO: El dato que lo dice todo
+    ══════════════════════════════════════════════════ -->
+    <div class="card mb-4 border-0 text-white" style="background:linear-gradient(135deg,#1a3a5c 0%,#2e7d9e 100%);">
+        <div class="card-body py-4 px-4">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <p class="mb-1 text-white-50 small text-uppercase fw-semibold letter-spacing-1">Relato de datos</p>
+                    <h2 class="fw-bold mb-3" style="font-size:1.75rem;">
+                        Colombia ha evaluado a más de<br>
+                        <span class="text-warning" id="hero-total-estudiantes" style="font-size:2.2rem;">17 millones</span>
+                        de estudiantes en los últimos 25 años.
+                    </h2>
+                    <p class="text-white-75 mb-0" style="max-width:560px;">
+                        Esta es la historia del sistema educativo colombiano contada con datos del ICFES.
+                        Cinco capítulos que revelan avances, brechas y el reto que aún queda por resolver.
+                    </p>
+                </div>
+                <div class="col-lg-5">
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,0.1);">
+                                <div class="fw-bold fs-4 text-warning" id="hero-ano-max">2024</div>
+                                <div class="small text-white-75">Último año</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,0.1);">
+                                <div class="fw-bold fs-4 text-warning" id="hero-promedio-actual">255</div>
+                                <div class="small text-white-75">Promedio 2024</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,0.1);">
+                                <div class="fw-bold fs-4 text-warning" id="hero-colegios">10 984</div>
+                                <div class="small text-white-75">Colegios activos</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,0.1);">
+                                <div class="fw-bold fs-4 text-warning">6</div>
+                                <div class="small text-white-75">Regiones</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CAPÍTULO 1: El viaje de 25 años
+    ══════════════════════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge">Capítulo 1</span>
+        <h3 class="chapter-title">El viaje de 25 años</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">La tendencia nacional</p>
+                <h4 class="fw-bold mb-3">Colombia creció — aunque no siempre en línea recta.</h4>
+                <p class="text-muted mb-3">
+                    Desde el año 2000, el promedio nacional pasó de <strong>224 puntos</strong>
+                    a <strong id="c1-promedio-actual">255 puntos</strong> en 2024, un avance de
+                    <strong id="c1-crecimiento">+14%</strong>.
+                    El camino tuvo altibajos: el pico histórico fue <strong>2016</strong> con 260 pts.
+                    La pandemia de 2020 redujo el número de estudiantes pero el promedio se sostuvo.
+                </p>
+                <div class="callout-box bg-warning-subtle border-start border-warning border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold"><span id="c1-insight"></span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Promedio Nacional — Serie 2000–2024</h6>
+                    <canvas id="chart-tendencia-nacional" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CAPÍTULO 2: Las 6 Colombias
+    ══════════════════════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge chapter-badge-2">Capítulo 2</span>
+        <h3 class="chapter-title">Las 6 Colombias</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Puntaje Promedio por Región — Año más reciente</h6>
+                    <canvas id="chart-regiones" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Disparidad regional</p>
+                <h4 class="fw-bold mb-3">Hay un país que avanza más rápido que otro.</h4>
+                <p class="text-muted mb-3">
+                    La Región <strong>Centro Oriente</strong> (Bogotá, Cundinamarca, Boyacá…)
+                    lidera con <strong id="c2-lider-pts">268 pts</strong>,
+                    mientras la Región <strong>Caribe</strong> cierra con
+                    <strong id="c2-rezagado-pts">231 pts</strong>.
+                    Eso es una brecha de <strong id="c2-brecha-regional">37 puntos</strong>.
+                </p>
+                <p class="text-muted mb-3">
+                    Pero hay una buena noticia: el Caribe es la región con mayor
+                    <strong>aceleración</strong> de crecimiento.
+                </p>
+                <div id="c2-regiones-list" class="d-flex flex-column gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CAPÍTULO 3: Las brechas que persisten
+    ══════════════════════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge chapter-badge-3">Capítulo 3</span>
+        <h3 class="chapter-title">Las brechas que persisten</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Inequidad estructural</p>
+                <h4 class="fw-bold mb-3">Dónde vives sigue determinando cuánto aprendes.</h4>
+                <p class="text-muted mb-3">
+                    La brecha entre zonas <strong>urbanas y rurales</strong> ha sido de ~18 puntos
+                    de manera consistente en los últimos años.
+                    La brecha entre la región <strong>líder y la rezagada</strong> supera los 29 puntos.
+                </p>
+                <div class="row g-3 mt-1">
+                    <div class="col-6">
+                        <div class="card text-center border-0 bg-danger-subtle rounded-3 p-3">
+                            <div class="fw-bold fs-3 text-danger" id="c3-brecha-urbana">18</div>
+                            <div class="small text-muted">pts Urbano vs Rural</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card text-center border-0 bg-orange-subtle rounded-3 p-3" style="background:#fff3cd!important;">
+                            <div class="fw-bold fs-3 text-warning" id="c3-brecha-regional">30</div>
+                            <div class="small text-muted">pts Región Líder vs Rezagada</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <p class="text-muted small mb-0" id="c3-tendencia-nota"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Evolución de Brechas Clave (puntos)</h6>
+                    <canvas id="chart-brechas" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CAPÍTULO 4: ¿Colombia converge?
+    ══════════════════════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge chapter-badge-4">Capítulo 4</span>
+        <h3 class="chapter-title">¿Colombia converge?</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Brecha Líder–Rezagada y Coeficiente de Variación Regional (%)</h6>
+                    <canvas id="chart-convergencia" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Convergencia regional</p>
+                <h4 class="fw-bold mb-3">Señales mixtas — esperanza cauta.</h4>
+                <p class="text-muted mb-3">
+                    El <strong>coeficiente de variación regional</strong> mide qué tan dispersas están
+                    las regiones entre sí. Si baja, Colombia converge; si sube, diverge.
+                </p>
+                <p class="text-muted mb-3">
+                    Hubo <strong>divergencia</strong> en 2015 y 2021.
+                    En 2022 el sistema alcanzó nuevamente <em>Convergencia Moderada</em>.
+                    La brecha líder–rezagado se mantiene estable en torno a 35–37 puntos.
+                </p>
+                <div id="c4-status-list" class="d-flex flex-column gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CAPÍTULO 5: El riesgo invisible
+    ══════════════════════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge chapter-badge-5">Capítulo 5</span>
+        <h3 class="chapter-title">El riesgo invisible</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Colegios en riesgo de declive</p>
+                <h4 class="fw-bold mb-3">Más de 3 000 colegios están en riesgo de retroceder.</h4>
+                <p class="text-muted mb-3">
+                    El modelo de riesgo de la plataforma identifica los colegios con
+                    mayor probabilidad de declive en resultados el próximo año.
+                    Son los que necesitan atención prioritaria <em>ahora</em>.
+                </p>
+                <div id="c5-riesgo-list" class="d-flex flex-column gap-2 mb-3"></div>
+                <div class="callout-box bg-danger-subtle border-start border-danger border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold" id="c5-callout"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Distribución de Riesgo de Declive — Colegios</h6>
+                    <div class="d-flex justify-content-center align-items-center" style="min-height:260px;">
+                        <canvas id="chart-riesgo" style="max-width:340px;max-height:340px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         CTA final
+    ══════════════════════════════════════════════════ -->
+    <div class="card border-0 text-center py-4 mb-4" style="background:linear-gradient(135deg,#1a3a5c 0%,#2e7d9e 100%);">
+        <div class="card-body">
+            <h4 class="text-white fw-bold mb-2">¿Tu colegio forma parte de esta historia?</h4>
+            <p class="text-white-75 mb-4">
+                Consulta el diagnóstico completo de tu institución, compara con el promedio regional
+                y recibe acciones concretas de mejora.
+            </p>
+            <a href="{% url 'icfes_dashboard:brecha_educativa' %}" class="btn btn-warning btn-lg me-2">
+                Ver Brecha Educativa
+            </a>
+            <a href="{% url 'icfes_dashboard:departments_index' %}" class="btn btn-outline-light btn-lg">
+                Explorar por Departamento
+            </a>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+
+<style>
+/* ── Chapter dividers ── */
+.chapter-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: .75rem;
+    margin-top: 2.5rem;
+}
+.chapter-badge {
+    background: #1a3a5c;
+    color: #fff;
+    padding: .25rem .75rem;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.chapter-badge-2 { background: #2e7d9e; }
+.chapter-badge-3 { background: #c0392b; }
+.chapter-badge-4 { background: #27ae60; }
+.chapter-badge-5 { background: #8e44ad; }
+.chapter-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #343a40;
+}
+/* ── Region pill ── */
+.region-pill {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .75rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    font-size: .85rem;
+}
+.region-pill .region-score {
+    font-weight: 700;
+    margin-left: auto;
+}
+/* ── Callout box ── */
+.callout-box { font-size: .9rem; }
+</style>
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   HISTORIA DE LA EDUCACIÓN COLOMBIANA
+   Carga todos los datos en paralelo y construye los 5 capítulos.
+═══════════════════════════════════════════════════════════════ */
+
+const API = {
+    tendencia:    '/icfes/api/historia/tendencia-nacional/',
+    regiones:     '/icfes/api/historia/regiones/',
+    brechas:      '/icfes/api/historia/brechas/',
+    convergencia: '/icfes/api/historia/convergencia/',
+    riesgo:       '/icfes/api/historia/riesgo/',
+};
+
+const COLORS = {
+    primary:   '#1a3a5c',
+    secondary: '#2e7d9e',
+    warning:   '#f39c12',
+    danger:    '#c0392b',
+    success:   '#27ae60',
+    purple:    '#8e44ad',
+    light:     'rgba(26,58,92,0.08)',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────
+function fmt(n, dec = 1) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('es-CO', { maximumFractionDigits: dec });
+}
+function fmtM(n) {
+    if (!n) return '—';
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' M';
+    return n.toLocaleString('es-CO');
+}
+
+// ─── Fetch all data in parallel ───────────────────────────────
+Promise.all([
+    fetch(API.tendencia).then(r => r.json()),
+    fetch(API.regiones).then(r => r.json()),
+    fetch(API.brechas).then(r => r.json()),
+    fetch(API.convergencia).then(r => r.json()),
+    fetch(API.riesgo).then(r => r.json()),
+]).then(([tendRaw, regRaw, breRaw, convRaw, riesRaw]) => {
+    const tend  = tendRaw.data  || [];
+    const regs  = regRaw.data   || [];
+    const bres  = breRaw.data   || {};
+    const convs = convRaw.data  || [];
+    const risks = riesRaw.data  || [];
+
+    renderHero(tend);
+    renderCap1(tend);
+    renderCap2(regs);
+    renderCap3(bres);
+    renderCap4(convs);
+    renderCap5(risks);
+}).catch(err => console.error('Historia load error:', err));
+
+
+// ─── HERO ─────────────────────────────────────────────────────
+function renderHero(tend) {
+    if (!tend.length) return;
+    const last = tend[tend.length - 1];
+    const totalEst = tend.reduce((s, d) => s + (d.total_estudiantes || 0), 0);
+    document.getElementById('hero-total-estudiantes').textContent = fmtM(totalEst);
+    document.getElementById('hero-ano-max').textContent = last.ano;
+    document.getElementById('hero-promedio-actual').textContent = fmt(last.promedio, 0);
+    document.getElementById('hero-colegios').textContent = fmtM(last.total_colegios);
+}
+
+// ─── CAPÍTULO 1 ───────────────────────────────────────────────
+function renderCap1(tend) {
+    if (!tend.length) return;
+    const first = tend[0];
+    const last  = tend[tend.length - 1];
+    const pct   = ((last.promedio - first.promedio) / first.promedio * 100).toFixed(1);
+    const peak  = tend.reduce((m, d) => (d.promedio > m.promedio ? d : m), tend[0]);
+
+    document.getElementById('c1-promedio-actual').textContent = fmt(last.promedio, 0) + ' pts';
+    document.getElementById('c1-crecimiento').textContent    = '+' + pct + '%';
+    document.getElementById('c1-insight').textContent =
+        `Pico histórico: ${peak.promedio} pts en ${peak.ano}. En 2020 el número de estudiantes cayó ${
+            fmt(tend.find(d=>d.ano==='2019')?.total_estudiantes - tend.find(d=>d.ano==='2020')?.total_estudiantes, 0)
+        } por la pandemia.`;
+
+    new Chart(document.getElementById('chart-tendencia-nacional'), {
+        type: 'line',
+        data: {
+            labels: tend.map(d => d.ano),
+            datasets: [{
+                label: 'Promedio Nacional',
+                data:  tend.map(d => d.promedio),
+                borderColor: COLORS.secondary,
+                backgroundColor: 'rgba(46,125,158,0.12)',
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.3,
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: ctx => {
+                            const d = tend[ctx.dataIndex];
+                            return `Estudiantes: ${fmtM(d.total_estudiantes)} | Colegios: ${fmtM(d.total_colegios)}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                y: {
+                    suggestedMin: 210,
+                    title: { display: true, text: 'Puntaje promedio' },
+                },
+                x: { title: { display: true, text: 'Año' } },
+            },
+        },
+    });
+}
+
+// ─── CAPÍTULO 2 ───────────────────────────────────────────────
+function renderCap2(regs) {
+    if (!regs.length) return;
+    const lider  = regs[0];
+    const rezag  = regs[regs.length - 1];
+    const brecha = (lider.puntaje - rezag.puntaje).toFixed(0);
+
+    document.getElementById('c2-lider-pts').textContent    = fmt(lider.puntaje, 0) + ' pts';
+    document.getElementById('c2-rezagado-pts').textContent = fmt(rezag.puntaje, 0) + ' pts';
+    document.getElementById('c2-brecha-regional').textContent = brecha + ' puntos';
+
+    // Región pills
+    const container = document.getElementById('c2-regiones-list');
+    regs.forEach((r, i) => {
+        const bar = document.createElement('div');
+        bar.className = 'region-pill';
+        const rank = ['🥇','🥈','🥉','4°','5°','6°'][i] || '';
+        bar.innerHTML = `
+            <span>${rank}</span>
+            <span>${r.region.replace('Región ','')}</span>
+            <small class="text-muted ms-1">${r.clasificacion_aceleracion || ''}</small>
+            <span class="region-score text-primary fw-bold">${fmt(r.puntaje, 0)}</span>
+        `;
+        container.appendChild(bar);
+    });
+
+    const palette = [COLORS.primary, COLORS.secondary, '#16a085', '#27ae60', COLORS.warning, COLORS.danger];
+    new Chart(document.getElementById('chart-regiones'), {
+        type: 'bar',
+        data: {
+            labels: regs.map(r => r.region.replace('Región ', '')),
+            datasets: [{
+                label: 'Puntaje Global Promedio',
+                data:  regs.map(r => r.puntaje),
+                backgroundColor: palette,
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: ctx => {
+                            const r = regs[ctx.dataIndex];
+                            return `Crecimiento YoY: ${fmt(r.crecimiento_yoy)}% | ${r.clasificacion_tendencia}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { suggestedMin: 220, title: { display: true, text: 'Puntaje Promedio' } },
+            },
+        },
+    });
+}
+
+// ─── CAPÍTULO 3 ───────────────────────────────────────────────
+function renderCap3(bres) {
+    const urbano   = bres['Urbano vs Rural']          || [];
+    const regional = bres['Regional: Líder vs Rezagada'] || [];
+
+    // Latest values
+    if (urbano.length) {
+        const last = urbano[urbano.length - 1];
+        document.getElementById('c3-brecha-urbana').textContent = fmt(last.brecha_puntos, 0);
+    }
+    if (regional.length) {
+        const last = regional[regional.length - 1];
+        document.getElementById('c3-brecha-regional').textContent = fmt(last.brecha_puntos, 0);
+    }
+
+    // Tendency note
+    const urb  = urbano.at(-1);
+    const reg2 = regional.at(-1);
+    let nota = '';
+    if (urb)  nota += `Brecha urbano-rural: ${urb.tendencia_brecha}. `;
+    if (reg2) nota += `Brecha regional: ${reg2.tendencia_brecha}.`;
+    document.getElementById('c3-tendencia-nota').textContent = nota;
+
+    // Combine years
+    const allAnos = [...new Set([
+        ...urbano.map(d => d.ano),
+        ...regional.map(d => d.ano),
+    ])].sort();
+    const urbanMap   = Object.fromEntries(urbano.map(d => [d.ano, d.brecha_puntos]));
+    const regionMap  = Object.fromEntries(regional.map(d => [d.ano, d.brecha_puntos]));
+
+    new Chart(document.getElementById('chart-brechas'), {
+        type: 'line',
+        data: {
+            labels: allAnos,
+            datasets: [
+                {
+                    label: 'Urbano vs Rural (pts)',
+                    data:  allAnos.map(a => urbanMap[a] ?? null),
+                    borderColor: COLORS.danger,
+                    backgroundColor: 'rgba(192,57,43,0.08)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Región Líder vs Rezagada (pts)',
+                    data:  allAnos.map(a => regionMap[a] ?? null),
+                    borderColor: COLORS.warning,
+                    backgroundColor: 'rgba(243,156,18,0.08)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: false,
+                    pointRadius: 4,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { title: { display: true, text: 'Puntos de brecha' } },
+                x: { title: { display: true, text: 'Año' } },
+            },
+        },
+    });
+}
+
+// ─── CAPÍTULO 4 ───────────────────────────────────────────────
+function renderCap4(convs) {
+    if (!convs.length) return;
+
+    // Status chips
+    const container = document.getElementById('c4-status-list');
+    convs.slice(-4).reverse().forEach(c => {
+        const badge = c.estado_convergencia === 'Convergencia Moderada' ? 'success'
+                    : c.estado_convergencia === 'Divergencia' ? 'danger' : 'secondary';
+        const div = document.createElement('div');
+        div.className = 'd-flex align-items-center gap-2';
+        div.innerHTML = `
+            <span class="badge bg-${badge}">${c.ano}</span>
+            <span class="small">${c.estado_convergencia} — ${c.tendencia_brecha}</span>
+        `;
+        container.appendChild(div);
+    });
+
+    new Chart(document.getElementById('chart-convergencia'), {
+        type: 'line',
+        data: {
+            labels: convs.map(c => c.ano),
+            datasets: [
+                {
+                    label: 'Brecha Líder–Rezagada (pts)',
+                    data:  convs.map(c => c.brecha_lider_rezagado),
+                    borderColor: COLORS.primary,
+                    backgroundColor: 'rgba(26,58,92,0.1)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    fill: false,
+                    yAxisID: 'y',
+                    pointRadius: 5,
+                },
+                {
+                    label: 'Coef. Variación Regional (%)',
+                    data:  convs.map(c => c.coef_variacion),
+                    borderColor: COLORS.success,
+                    borderWidth: 2,
+                    borderDash: [5, 4],
+                    tension: 0.3,
+                    fill: false,
+                    yAxisID: 'y2',
+                    pointRadius: 4,
+                    pointStyle: 'triangle',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y:  { title: { display: true, text: 'Puntos' }, position: 'left' },
+                y2: { title: { display: true, text: 'CV (%)' }, position: 'right', grid: { drawOnChartArea: false } },
+                x:  { title: { display: true, text: 'Año' } },
+            },
+        },
+    });
+}
+
+// ─── CAPÍTULO 5 ───────────────────────────────────────────────
+function renderCap5(risks) {
+    if (!risks.length) return;
+
+    const colorMap = { 'Alto': COLORS.danger, 'Medio': COLORS.warning, 'Bajo': COLORS.success };
+    const total    = risks.reduce((s, r) => s + r.colegios, 0);
+    const alto     = risks.find(r => r.nivel_riesgo === 'Alto');
+    const medio    = risks.find(r => r.nivel_riesgo === 'Medio');
+
+    // Callout
+    const altoN  = alto  ? alto.colegios  : 0;
+    const medioN = medio ? medio.colegios : 0;
+    document.getElementById('c5-callout').textContent =
+        `${altoN.toLocaleString('es-CO')} colegios en riesgo alto + ${medioN.toLocaleString('es-CO')} en riesgo medio = ${(altoN + medioN).toLocaleString('es-CO')} instituciones que necesitan atención prioritaria.`;
+
+    // Pills
+    const list = document.getElementById('c5-riesgo-list');
+    risks.forEach(r => {
+        const pct  = (r.colegios / total * 100).toFixed(1);
+        const col  = colorMap[r.nivel_riesgo] || '#6c757d';
+        const div  = document.createElement('div');
+        div.className = 'region-pill';
+        div.style.borderColor = col;
+        div.innerHTML = `
+            <span style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+            <span>Riesgo <strong>${r.nivel_riesgo}</strong></span>
+            <span class="region-score" style="color:${col};">${r.colegios.toLocaleString('es-CO')} colegios (${pct}%)</span>
+        `;
+        list.appendChild(div);
+    });
+
+    new Chart(document.getElementById('chart-riesgo'), {
+        type: 'doughnut',
+        data: {
+            labels: risks.map(r => `Riesgo ${r.nivel_riesgo}`),
+            datasets: [{
+                data:            risks.map(r => r.colegios),
+                backgroundColor: risks.map(r => colorMap[r.nivel_riesgo] || '#aaa'),
+                borderWidth: 2,
+                hoverOffset: 8,
+            }],
+        },
+        options: {
+            responsive: true,
+            cutout: '60%',
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const r = risks[ctx.dataIndex];
+                            return ` ${r.colegios.toLocaleString('es-CO')} colegios (prob. declive: ${fmt(r.prob_promedio)}%)`;
+                        },
+                    },
+                },
+            },
+        },
+    });
+}
+</script>
+{% endblock extra_javascript %}

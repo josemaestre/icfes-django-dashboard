@@ -45,9 +45,19 @@
             <li class="sub-nav-item">
               <a class="sub-nav-link" href="{% url 'pages:dynamic_pages' template_name='dashboard-icfes' %}">ICFES</a>
             </li>
+            <li class="sub-nav-item">
+              <a class="sub-nav-link" href="{% url 'icfes_dashboard:brecha_educativa' %}">Brecha Educativa</a>
+            </li>
+            <li class="sub-nav-item">
+              <a class="sub-nav-link" href="{% url 'icfes_dashboard:historia_educacion' %}">Historia de la Educación</a>
+            </li>
+            <li class="sub-nav-item">
+              <a class="sub-nav-link" href="{% url 'icfes_dashboard:resumen_ejecutivo' %}">Resumen Ejecutivo</a>
+            </li>
           </ul>
         </div>
       </li>
+
 
       {% if request.user.is_superuser %}
       <li class="menu-title">Administration</li>

@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import cache_page
 import pandas as pd
 import json
+import unicodedata
 from .db_utils import (
     execute_query,
     get_table_data,
@@ -17,6 +18,54 @@ from .db_utils import (
     get_promedios_ubicacion
 )
 from .views_school_endpoints import *
+
+
+def _normalize_departamento_variants(name):
+    """Retorna variantes para filtrar departamento de forma robusta."""
+    if not name:
+        return None
+
+    raw = str(name).strip()
+    original = raw.upper()
+    no_accents = ''.join(
+        c for c in unicodedata.normalize('NFD', original)
+        if unicodedata.category(c) != 'Mn'
+    )
+    no_punct = ''.join(ch if ch.isalnum() or ch.isspace() else ' ' for ch in no_accents)
+    no_punct = ' '.join(no_punct.split())
+
+    values = set([raw, original, no_accents, no_punct])
+
+    if 'BOGOTA' in no_punct:
+        values.update([
+            'BOGOTA', 'BOGOTÁ',
+            'BOGOTA D.C.', 'BOGOTÁ D.C.',
+            'BOGOTA DC', 'BOGOTÁ DC',
+            'Bogotá DC', 'Bogotá D.C.', 'BOGOTA D C',
+        ])
+    if 'VALLE DEL CAUCA' in no_punct:
+        values.update(['VALLE', 'VALLE DEL CAUCA', 'Valle del Cauca'])
+    if 'NORTE DE SANTANDER' in no_punct:
+        values.update(['NORTE DE SANTANDER', 'NORTE SANTANDER'])
+    if 'SAN ANDRES' in no_punct:
+        values.update([
+            'SAN ANDRES',
+            'SAN ANDRES PROVIDENCIA Y SANTA CATALINA',
+            'ARCHIPIELAGO DE SAN ANDRES PROVIDENCIA Y SANTA CATALINA',
+            'Archipiélago de San Andrés, Providencia y Santa Catalina',
+        ])
+
+    return sorted(values)
+
+
+def _dept_key(value):
+    """Clave de comparación robusta para nombres de departamento."""
+    if value is None:
+        return ""
+    s = str(value).strip().upper()
+    s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+    s = ''.join(ch if ch.isalnum() or ch.isspace() else ' ' for ch in s)
+    return ' '.join(s.split())
 
 
 # ============================================================================
@@ -39,6 +88,29 @@ def dashboard_charts(request):
         'ano_actual': 2023,
     }
     return render(request, 'icfes_dashboard/pages/dashboard-icfes-charts.html', context)
+
+
+def brecha_educativa_dashboard(request):
+    """Vista del dashboard de brechas educativas: Oficial vs No Oficial."""
+    context = {
+        'anos_disponibles': get_anos_disponibles(),
+        'departamentos': get_departamentos(),
+    }
+    return render(request, 'icfes_dashboard/pages/dashboard-brecha.html', context)
+
+
+def resumen_ejecutivo_dashboard(request):
+    """Vista de resumen ejecutivo de storytelling ICFES."""
+    context = {
+        'anos_disponibles': get_anos_disponibles(),
+        'departamentos': get_departamentos(),
+    }
+    return render(request, 'icfes_dashboard/pages/resumen-ejecutivo-icfes.html', context)
+
+
+def historia_educacion_dashboard(request):
+    """Vista de storytelling: Historia de la Educación Colombiana."""
+    return render(request, 'icfes_dashboard/pages/dashboard-historia.html', {})
 
 
 # ============================================================================
@@ -390,6 +462,377 @@ def icfes_resumen(request):
     df = execute_query(query)
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
+
+
+# ============================================================================
+# ENDPOINTS API - STORYTELLING EJECUTIVO
+# ============================================================================
+
+@cache_page(60 * 30)  # 30 minutos
+@require_http_methods(["GET"])
+def api_story_resumen_ejecutivo(request):
+    """
+    Endpoint: KPIs ejecutivos para un año específico.
+    Query params: ?ano=2024 (opcional, default último disponible)
+    """
+    try:
+        ano_param = request.GET.get('ano')
+        ano_objetivo = int(ano_param) if ano_param else int(
+            execute_query("SELECT MAX(CAST(ano AS INTEGER)) AS ano FROM gold.icfes_master_resumen").iloc[0]['ano']
+        )
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    departamento = request.GET.get('departamento')
+    depto_vals = _normalize_departamento_variants(departamento) if departamento else None
+
+    where_clauses = ["m.estudiantes > 0", "CAST(m.ano AS INTEGER) = ?"]
+    params = [ano_objetivo]
+    if depto_vals:
+        ph = ", ".join(["?"] * len(depto_vals))
+        where_clauses.append(f"m.cole_depto_ubicacion IN ({ph})")
+        params.extend(depto_vals)
+    where_stmt = " AND ".join(where_clauses)
+
+    riesgo_where = ["ano = ?"]
+    riesgo_params = [ano_objetivo]
+    if depto_vals:
+        ph = ", ".join(["?"] * len(depto_vals))
+        riesgo_where.append(f"departamento IN ({ph})")
+        riesgo_params.extend(depto_vals)
+    riesgo_where_stmt = " AND ".join(riesgo_where)
+
+    query = f"""
+        WITH base AS (
+          SELECT
+            m.cole_cod_dane_establecimiento AS codigo_dane,
+            m.avg_global,
+            m.estudiantes,
+            CASE
+              WHEN UPPER(m.cole_naturaleza) IN ('NO_OFICIAL', 'NO OFICIAL', '0') THEN 'NO_OFICIAL'
+              WHEN UPPER(m.cole_naturaleza) = 'OFICIAL' OR m.cole_naturaleza = '1' THEN 'OFICIAL'
+              ELSE NULL
+            END AS sector_norm
+          FROM gold.icfes_master_resumen m
+          WHERE {where_stmt}
+        ),
+        kpi AS (
+          SELECT
+            ROUND(SUM(avg_global * estudiantes) / NULLIF(SUM(estudiantes), 0), 2) AS promedio_nacional,
+            SUM(estudiantes) AS total_estudiantes,
+            COUNT(DISTINCT codigo_dane) AS total_colegios,
+            ROUND(STDDEV_SAMP(avg_global), 2) AS desviacion_estandar,
+            ROUND(
+              (SUM(CASE WHEN sector_norm = 'NO_OFICIAL' THEN avg_global * estudiantes ELSE 0 END)
+               / NULLIF(SUM(CASE WHEN sector_norm = 'NO_OFICIAL' THEN estudiantes ELSE 0 END), 0))
+              -
+              (SUM(CASE WHEN sector_norm = 'OFICIAL' THEN avg_global * estudiantes ELSE 0 END)
+               / NULLIF(SUM(CASE WHEN sector_norm = 'OFICIAL' THEN estudiantes ELSE 0 END), 0))
+            , 2) AS brecha_sector_publico_privado
+          FROM base
+          WHERE sector_norm IS NOT NULL
+        ),
+        riesgo AS (
+          SELECT
+            AVG(prob_declive) AS prob_declive_prom,
+            SUM(CASE WHEN nivel_riesgo = 'Alto' THEN 1 ELSE 0 END) AS colegios_alto_riesgo,
+            COUNT(*) AS total_colegios_riesgo
+          FROM gold.fct_riesgo_colegios
+          WHERE {riesgo_where_stmt}
+        )
+        SELECT
+          ? AS ano,
+          k.promedio_nacional,
+          k.total_estudiantes,
+          k.total_colegios,
+          k.desviacion_estandar,
+          COALESCE(k.brecha_sector_publico_privado, 0) AS brecha_sector_publico_privado,
+          r.prob_declive_prom,
+          r.colegios_alto_riesgo,
+          r.total_colegios_riesgo
+        FROM kpi k
+        CROSS JOIN riesgo r
+    """
+
+    df = execute_query(query, params=params + riesgo_params + [ano_objetivo])
+    if df.empty:
+        return JsonResponse({'error': 'No hay datos para el año solicitado'}, status=404)
+    return JsonResponse(df.to_dict(orient='records')[0], safe=False)
+
+
+@cache_page(60 * 60)  # 1 hora
+@require_http_methods(["GET"])
+def api_story_serie_anual(request):
+    """Endpoint: Serie anual consolidada (promedio, brecha y riesgo)."""
+    departamento = request.GET.get('departamento')
+    depto_vals = _normalize_departamento_variants(departamento) if departamento else None
+
+    where_clauses = ["m.estudiantes > 0"]
+    params = []
+    if depto_vals:
+        ph = ", ".join(["?"] * len(depto_vals))
+        where_clauses.append(f"m.cole_depto_ubicacion IN ({ph})")
+        params.extend(depto_vals)
+    where_stmt = " AND ".join(where_clauses)
+
+    riesgo_where = []
+    riesgo_params = []
+    if depto_vals:
+        ph = ", ".join(["?"] * len(depto_vals))
+        riesgo_where.append(f"departamento IN ({ph})")
+        riesgo_params.extend(depto_vals)
+    riesgo_where_stmt = ("WHERE " + " AND ".join(riesgo_where)) if riesgo_where else ""
+
+    query = f"""
+        WITH serie AS (
+          SELECT
+            CAST(m.ano AS INTEGER) AS ano,
+            COUNT(DISTINCT m.cole_cod_dane_establecimiento) AS total_colegios,
+            SUM(m.estudiantes) AS total_estudiantes,
+            ROUND(SUM(m.avg_global * m.estudiantes) / NULLIF(SUM(m.estudiantes), 0), 2) AS promedio_nacional,
+            ROUND(STDDEV_SAMP(m.avg_global), 2) AS desviacion_estandar,
+            ROUND(SUM(m.avg_matematicas * m.estudiantes) / NULLIF(SUM(m.estudiantes), 0), 2) AS promedio_matematicas,
+            ROUND(SUM(m.avg_lectura * m.estudiantes) / NULLIF(SUM(m.estudiantes), 0), 2) AS promedio_lectura,
+            ROUND(
+              (SUM(CASE WHEN UPPER(m.cole_naturaleza) IN ('NO_OFICIAL', 'NO OFICIAL', '0') THEN m.avg_global * m.estudiantes ELSE 0 END)
+               / NULLIF(SUM(CASE WHEN UPPER(m.cole_naturaleza) IN ('NO_OFICIAL', 'NO OFICIAL', '0') THEN m.estudiantes ELSE 0 END), 0))
+              -
+              (SUM(CASE WHEN UPPER(m.cole_naturaleza) = 'OFICIAL' OR m.cole_naturaleza = '1' THEN m.avg_global * m.estudiantes ELSE 0 END)
+               / NULLIF(SUM(CASE WHEN UPPER(m.cole_naturaleza) = 'OFICIAL' OR m.cole_naturaleza = '1' THEN m.estudiantes ELSE 0 END), 0))
+            , 2) AS brecha_sector_publico_privado
+          FROM gold.icfes_master_resumen m
+          WHERE {where_stmt}
+          GROUP BY CAST(m.ano AS INTEGER)
+        ),
+        riesgo AS (
+          SELECT
+            ano,
+            SUM(CASE WHEN nivel_riesgo = 'Alto' THEN 1 ELSE 0 END) AS colegios_alto_riesgo,
+            COUNT(*) AS total_colegios_riesgo
+          FROM gold.fct_riesgo_colegios
+          {riesgo_where_stmt}
+          GROUP BY ano
+        )
+        SELECT
+          s.ano,
+          s.total_estudiantes,
+          s.total_colegios,
+          s.promedio_nacional,
+          s.desviacion_estandar,
+          s.promedio_matematicas,
+          s.promedio_lectura,
+          COALESCE(s.brecha_sector_publico_privado, 0) AS brecha_sector_publico_privado,
+          COALESCE(r.colegios_alto_riesgo, 0) AS colegios_alto_riesgo,
+          COALESCE(r.total_colegios_riesgo, 0) AS total_colegios_riesgo
+        FROM serie s
+        LEFT JOIN riesgo r ON r.ano = s.ano
+        ORDER BY s.ano DESC
+    """
+    df = execute_query(query, params=params + riesgo_params if (params or riesgo_params) else None)
+    return JsonResponse(df.to_dict(orient='records'), safe=False)
+
+
+@cache_page(60 * 30)  # 30 minutos
+@require_http_methods(["GET"])
+def api_story_brechas_clave(request):
+    """
+    Endpoint: Brechas clave del año (incluye convergencia regional).
+    Query params: ?ano=2024 (opcional, default último disponible)
+    """
+    try:
+        ano_param = request.GET.get('ano')
+        if ano_param:
+            ano_objetivo = int(ano_param)
+        else:
+            dfa = execute_query("SELECT MAX(CAST(ano AS INTEGER)) AS ano FROM gold.brechas_educativas")
+            ano_objetivo = int(dfa.iloc[0]['ano'])
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
+
+    departamento = request.GET.get('departamento')
+    depto_vals = _normalize_departamento_variants(departamento) if departamento else None
+
+    q_brechas = """
+        SELECT
+            CAST(ano AS INTEGER) AS ano,
+            tipo_brecha,
+            brecha_absoluta_puntos,
+            brecha_relativa_pct,
+            cambio_brecha_yoy,
+            tendencia_brecha,
+            magnitud_brecha
+        FROM gold.brechas_educativas
+        WHERE CAST(ano AS INTEGER) = ?
+        ORDER BY tipo_brecha
+    """
+    q_conv = """
+        SELECT
+            CAST(ano AS INTEGER) AS ano,
+            promedio_nacional,
+            brecha_lider_rezagado,
+            estado_convergencia,
+            tendencia_brecha
+        FROM gold.convergencia_regional
+        WHERE CAST(ano AS INTEGER) = ?
+    """
+    brechas_df = execute_query(q_brechas, params=[ano_objetivo])
+    # Fallback al último año disponible si no hay brechas para el año solicitado.
+    if brechas_df.empty:
+        max_df = execute_query("SELECT MAX(CAST(ano AS INTEGER)) AS ano FROM gold.brechas_educativas")
+        if not max_df.empty and max_df.iloc[0]['ano'] is not None:
+            ano_objetivo = int(max_df.iloc[0]['ano'])
+            brechas_df = execute_query(q_brechas, params=[ano_objetivo])
+
+    brechas = brechas_df.to_dict(orient='records')
+    # Si hay filtro departamental, recalcula al menos la brecha de sector para ese contexto.
+    if depto_vals:
+        ph = ", ".join(["?"] * len(depto_vals))
+        q_sector_local = f"""
+            SELECT
+              ? AS ano,
+              'Sector Público vs Privado' AS tipo_brecha,
+              ROUND(
+                (SUM(CASE WHEN UPPER(m.cole_naturaleza) IN ('NO_OFICIAL', 'NO OFICIAL', '0') THEN m.avg_global * m.estudiantes ELSE 0 END)
+                 / NULLIF(SUM(CASE WHEN UPPER(m.cole_naturaleza) IN ('NO_OFICIAL', 'NO OFICIAL', '0') THEN m.estudiantes ELSE 0 END), 0))
+                -
+                (SUM(CASE WHEN UPPER(m.cole_naturaleza) = 'OFICIAL' OR m.cole_naturaleza = '1' THEN m.avg_global * m.estudiantes ELSE 0 END)
+                 / NULLIF(SUM(CASE WHEN UPPER(m.cole_naturaleza) = 'OFICIAL' OR m.cole_naturaleza = '1' THEN m.estudiantes ELSE 0 END), 0))
+              , 2) AS brecha_absoluta_puntos,
+              NULL AS brecha_relativa_pct,
+              NULL AS cambio_brecha_yoy,
+              NULL AS tendencia_brecha,
+              NULL AS magnitud_brecha
+            FROM gold.icfes_master_resumen m
+            WHERE m.estudiantes > 0
+              AND CAST(m.ano AS INTEGER) = ?
+              AND m.cole_depto_ubicacion IN ({ph})
+        """
+        local_df = execute_query(q_sector_local, params=[ano_objetivo, ano_objetivo] + depto_vals)
+        local_rows = local_df.to_dict(orient='records')
+        if local_rows and local_rows[0].get('brecha_absoluta_puntos') is not None:
+            brechas = [b for b in brechas if b.get('tipo_brecha') != 'Sector Público vs Privado']
+            brechas.append(local_rows[0])
+
+    conv_df = execute_query(q_conv, params=[ano_objetivo])
+    convergencia = conv_df.to_dict(orient='records')[0] if not conv_df.empty else {}
+
+    return JsonResponse({
+        'ano': ano_objetivo,
+        'brechas': brechas,
+        'convergencia_regional': convergencia,
+    }, safe=False)
+
+
+@cache_page(60 * 15)  # 15 minutos
+@require_http_methods(["GET"])
+def api_story_priorizacion(request):
+    """
+    Endpoint: Ranking de priorización accionable.
+    Query params: ?ano=2024&departamento=BOGOTA%20D.C.&limit=30
+    """
+    try:
+        ano_objetivo = int(request.GET.get('ano', 2024))
+        limit = int(request.GET.get('limit', 30))
+        limit = min(max(limit, 1), 200)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetros inválidos'}, status=400)
+
+    departamento = request.GET.get('departamento')
+    depto_vals = _normalize_departamento_variants(departamento) if departamento else None
+
+    # El modelo de riesgo no siempre existe para todos los años del selector.
+    # Usamos el último año disponible <= año solicitado (o el último global como fallback).
+    q_ano_modelo = """
+        SELECT
+          COALESCE(
+            MAX(CASE WHEN ano <= ? THEN ano END),
+            MAX(ano)
+          ) AS ano_modelo
+        FROM gold.fct_riesgo_colegios
+    """
+    ano_df = execute_query(q_ano_modelo, params=[ano_objetivo])
+    ano_modelo = int(ano_df.iloc[0]['ano_modelo']) if not ano_df.empty and pd.notna(ano_df.iloc[0]['ano_modelo']) else ano_objetivo
+
+    query = """
+        WITH risk AS (
+          SELECT
+            codigo_dane,
+            departamento,
+            prob_declive,
+            avg_punt_global_actual
+          FROM gold.fct_riesgo_colegios
+          WHERE ano = ?
+        ),
+        agg AS (
+          SELECT
+            colegio_bk AS codigo_dane,
+            gap_municipio_promedio,
+            municipio
+          FROM gold.fct_agg_colegios_ano
+          WHERE CAST(ano AS INTEGER) = ?
+        ),
+        joined AS (
+          SELECT
+            r.codigo_dane,
+            r.departamento,
+            a.municipio,
+            r.prob_declive,
+            r.avg_punt_global_actual,
+            a.gap_municipio_promedio
+          FROM risk r
+          LEFT JOIN agg a ON r.codigo_dane = a.codigo_dane
+        ),
+        scored AS (
+          SELECT
+            *,
+            COALESCE(prob_declive, 0) * 0.5
+              + (1 - COALESCE(avg_punt_global_actual, 0) / 500.0) * 0.3
+              + (
+                  CASE
+                    WHEN COALESCE(gap_municipio_promedio, 0) < 0
+                      THEN ABS(gap_municipio_promedio) / 100.0
+                    ELSE 0
+                  END
+                ) * 0.2 AS priority_score
+          FROM joined
+        )
+        SELECT
+          s.codigo_dane,
+          MIN(c.nombre_colegio) AS nombre_colegio,
+          s.departamento,
+          MIN(s.municipio) AS municipio,
+          ROUND(AVG(s.prob_declive), 4) AS prob_declive,
+          ROUND(AVG(s.avg_punt_global_actual), 2) AS avg_punt_global_actual,
+          ROUND(AVG(s.gap_municipio_promedio), 2) AS gap_municipio_promedio,
+          ROUND(AVG(s.priority_score), 4) AS priority_score
+        FROM scored s
+        LEFT JOIN gold.fct_riesgo_colegios c
+          ON c.codigo_dane = s.codigo_dane AND c.ano = ?
+        GROUP BY s.codigo_dane, s.departamento
+        ORDER BY priority_score DESC
+    """
+
+    params = [ano_modelo, ano_objetivo, ano_modelo]
+    df = execute_query(query, params=params)
+
+    # Filtrado robusto por departamento en Python para evitar problemas de acentos/puntuación
+    if depto_vals:
+        target_keys = {_dept_key(v) for v in depto_vals}
+        if 'BOGOTA DC' in target_keys or 'BOGOTA D C' in target_keys or 'BOGOTA' in target_keys:
+            target_keys.update({'BOGOTA', 'BOGOTA DC', 'BOGOTA D C'})
+        if not df.empty:
+            df = df[df['departamento'].apply(lambda x: _dept_key(x) in target_keys)]
+
+    if not df.empty:
+        df = df.sort_values(by='priority_score', ascending=False).head(limit)
+
+    return JsonResponse({
+        'ano': ano_objetivo,
+        'ano_modelo': ano_modelo,
+        'departamento': departamento,
+        'total': len(df.index),
+        'items': df.to_dict(orient='records'),
+    }, safe=False)
 
 
 # ============================================================================
