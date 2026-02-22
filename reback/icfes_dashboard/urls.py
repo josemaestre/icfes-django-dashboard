@@ -20,6 +20,7 @@ urlpatterns = [
     path('brecha/', views.brecha_educativa_dashboard, name='brecha_educativa'),
     path('ejecutivo/', views.resumen_ejecutivo_dashboard, name='resumen_ejecutivo'),
     path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
+    path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
 
     # Dynamic school landing pages (SEO)
@@ -153,6 +154,12 @@ urlpatterns = [
     path('api/historia/riesgo/', api_views.historia_riesgo, name='historia_riesgo'),
     path('api/historia/riesgo/colegios/', api_views.historia_riesgo_colegios, name='historia_riesgo_colegios'),
     path('api/historia/ingles/', api_views.historia_ingles, name='historia_ingles'),
+
+    # Inteligencia Educativa - ML-driven narratives
+    path('api/inteligencia/trayectorias/', api_views.inteligencia_trayectorias, name='inteligencia_trayectorias'),
+    path('api/inteligencia/resilientes/', api_views.inteligencia_resilientes, name='inteligencia_resilientes'),
+    path('api/inteligencia/movilidad/', api_views.inteligencia_movilidad, name='inteligencia_movilidad'),
+    path('api/inteligencia/promesa-ingles/', api_views.inteligencia_promesa_ingles, name='inteligencia_promesa_ingles'),
     
     # API endpoints for enhanced user profile
     path('api/schools/search/', api_views.search_schools, name='search_schools'),

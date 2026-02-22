@@ -30,30 +30,33 @@ fetch('/icfes/data/')
     });
   });
 
-// --- Carga de resumen anual ---
-// --- Carga de resumen anual ---
-fetch('/icfes/resumen/')
+// --- Carga de resumen anual (storytelling ejecutivo) ---
+fetch('/icfes/api/story/serie-anual/')
   .then(response => response.json())
   .then(data => {
-    // Tabla resumen - usando los campos correctos del endpoint
+    // Tabla resumen enriquecida
     const tbody = document.querySelector('#tabla-resumen tbody');
-    if (tbody) { // Check existence (might be hidden in other tabs but DOM exists)
+    if (tbody) {
+      tbody.innerHTML = '';
       data.forEach(row => {
+        const riesgoPct = row.total_colegios_riesgo
+          ? ((row.colegios_alto_riesgo / row.total_colegios_riesgo) * 100)
+          : 0;
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${row.ano}</td>
             <td>${row.total_estudiantes ? row.total_estudiantes.toLocaleString() : '0'}</td>
             <td>${row.promedio_nacional ? row.promedio_nacional.toFixed(1) : '0.0'}</td>
-            <td>N/A</td>
-            <td>N/A</td>
-            <td>N/A</td>
-            <td>N/A</td>
+            <td>${row.brecha_sector_publico_privado ? row.brecha_sector_publico_privado.toFixed(1) : '0.0'}</td>
+            <td>${row.desviacion_estandar ? row.desviacion_estandar.toFixed(2) : '0.00'}</td>
+            <td>${row.colegios_alto_riesgo ? row.colegios_alto_riesgo.toLocaleString() : '0'}</td>
+            <td>${riesgoPct.toFixed(1)}%</td>
           `;
         tbody.appendChild(tr);
       });
     }
 
-    // Gráfico de evolución - usando campos disponibles
+    // Gráfico de evolución
     const ctxEvol = document.getElementById('graficoEvolucion').getContext('2d');
     if (ctxEvol) {
       new Chart(ctxEvol, {

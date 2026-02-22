@@ -1,0 +1,664 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Inteligencia Educativa — ICFES Analytics{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Inteligencia Educativa' sub_title='4 narrativas ML sobre el sistema educativo colombiano' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid pb-5" id="intel-root">
+
+    <!-- ══ HERO ══════════════════════════════════════════════ -->
+    <div class="card mb-4 border-0 text-white"
+         style="background:linear-gradient(135deg,#0d2137 0%,#1a5276 60%,#117a65 100%);">
+        <div class="card-body py-4 px-4">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <p class="mb-1 text-white-50 small text-uppercase fw-semibold">Análisis ML · Capa Gold</p>
+                    <h2 class="fw-bold mb-3" style="font-size:1.75rem;">
+                        Los datos saben cosas que los informes no cuentan.
+                    </h2>
+                    <p class="mb-0" style="color:rgba(255,255,255,.8);max-width:640px;">
+                        Cuatro narrativas generadas con modelos de datos sobre las
+                        <strong class="text-warning" id="hero-total-colegios">10 984</strong> instituciones
+                        del sistema: trayectorias, resiliencia, movilidad en el ranking y la promesa del inglés.
+                    </p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,.1);">
+                                <div class="fw-bold fs-5 text-warning" id="hero-mejora">—</div>
+                                <div class="small" style="color:rgba(255,255,255,.7);">en mejora</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,.1);">
+                                <div class="fw-bold fs-5 text-warning" id="hero-resilientes">1 851</div>
+                                <div class="small" style="color:rgba(255,255,255,.7);">públicos top 40%</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,.1);">
+                                <div class="fw-bold fs-5 text-warning" id="hero-escaladores">—</div>
+                                <div class="small" style="color:rgba(255,255,255,.7);">mayor escalada</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3 p-3" style="background:rgba(255,255,255,.1);">
+                                <div class="fw-bold fs-5 text-warning" id="hero-ingles-publicos">229</div>
+                                <div class="small" style="color:rgba(255,255,255,.7);">públicos ganan en inglés</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CAP 1: TRAYECTORIAS ═══════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge ch1">Capítulo 1</span>
+        <h3 class="chapter-title">¿Hacia dónde van los colegios de Colombia?</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Trayectorias escolares</p>
+                <h4 class="fw-bold mb-3">El sistema mejora — pero no todos a la vez.</h4>
+                <p class="text-muted mb-3">
+                    Basado en el cambio de puntaje año a año, cada colegio recibe una
+                    <strong>clasificación de trayectoria</strong>. La mayoría avanza,
+                    pero casi un tercio está en declive.
+                </p>
+                <div id="c1-kpi-row" class="d-flex flex-column gap-2 mb-3"></div>
+                <div class="callout-box bg-warning-subtle border-start border-warning border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold" id="c1-callout">
+                        La suma de colegios en mejora supera a los en deterioro — pero la brecha es estrecha.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Distribución nacional de trayectorias</h6>
+                    <canvas id="chart-trayectorias-nacional" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Trayectorias por Región — Composición (%)</h6>
+                    <canvas id="chart-trayectorias-region" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CAP 2: RESILIENTES ════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge ch2">Capítulo 2</span>
+        <h3 class="chapter-title">Los colegios públicos que le ganan a los privados</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">¿Dónde están los colegios resilientes? (por departamento)</h6>
+                    <canvas id="chart-resilientes-depto" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Resiliencia educativa</p>
+                <h4 class="fw-bold mb-3">
+                    <span id="c2-total" class="text-success">1 851</span> colegios públicos
+                    están en el top 40% nacional.
+                </h4>
+                <p class="text-muted mb-3">
+                    Son instituciones <strong>OFICIALES</strong> con percentil nacional ≥ 60.
+                    No solo superan al promedio público — superan a la mayoría de los privados.
+                    Su puntaje promedio es
+                    <strong id="c2-avg-score" class="text-success">274 pts</strong>.
+                </p>
+                <p class="text-muted mb-3">
+                    Estos son los colegios que <em>rompen el determinismo</em>: demuestran que el sector
+                    no es destino.
+                </p>
+                <div class="callout-box bg-success-subtle border-start border-success border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold" id="c2-callout">Bogotá lidera con 236 colegios públicos resilientes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- tabla resilientes -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between py-2">
+            <span class="fw-bold">Top colegios públicos resilientes</span>
+            <span class="badge bg-success" id="c2-badge-count"></span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:380px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>#</th><th>Colegio</th><th>Departamento</th>
+                            <th class="text-end">Puntaje</th>
+                            <th class="text-end">Inglés</th>
+                            <th class="text-end">Percentil nac.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="c2-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CAP 3: MOVILIDAD ══════════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge ch3">Capítulo 3</span>
+        <h3 class="chapter-title">Ganadores y perdedores del ranking</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header py-2 bg-success-subtle">
+                    <span class="fw-bold text-success">🚀 Mayor escalada en el ranking</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Colegio</th><th>Depto</th>
+                                    <th class="text-end">Posición</th>
+                                    <th class="text-end">Escalada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="c3-escaladores-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header py-2 bg-danger-subtle">
+                    <span class="fw-bold text-danger">📉 Mayor caída en el ranking</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Colegio</th><th>Depto</th>
+                                    <th class="text-end">Posición</th>
+                                    <th class="text-end">Caída</th>
+                                </tr>
+                            </thead>
+                            <tbody id="c3-caidas-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Magnitud de escalada vs caída — Top 20 en cada dirección</h6>
+                    <canvas id="chart-movilidad" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CAP 4: PROMESA INGLÉS ═════════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge ch4">Capítulo 4</span>
+        <h3 class="chapter-title">La promesa del inglés: públicos que rompen la barrera</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">La excepción que cambia todo</p>
+                <h4 class="fw-bold mb-3">
+                    <span id="c4-total" class="text-primary">229</span> colegios públicos
+                    superan el promedio de inglés de los privados.
+                </h4>
+                <p class="text-muted mb-3">
+                    El promedio de inglés de los colegios privados es
+                    <strong id="c4-threshold" class="text-primary">58.7 pts</strong>.
+                    Estos colegios <strong>OFICIALES</strong> lo superan — algunos por más de 20 puntos.
+                </p>
+                <p class="text-muted mb-3">
+                    El colegio público con mejor inglés en Colombia es
+                    <strong id="c4-lider-nombre">—</strong> en
+                    <span id="c4-lider-ciudad">—</span>,
+                    con <strong id="c4-lider-puntaje" class="text-primary">—</strong> pts de inglés.
+                </p>
+                <div class="callout-box bg-primary-subtle border-start border-primary border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold" id="c4-callout">
+                        Estos colegios prueban que la enseñanza de inglés de calidad no es monopolio del sector privado.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Colegios públicos con inglés > promedio privado — por Departamento</h6>
+                    <canvas id="chart-ingles-depto" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header py-2">
+            <span class="fw-bold">Colegios públicos que ganan en inglés</span>
+            <span class="badge bg-primary ms-2" id="c4-badge-count"></span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:360px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>#</th><th>Colegio</th><th>Departamento</th><th>Municipio</th>
+                            <th class="text-end">Inglés</th>
+                            <th class="text-end">Global</th>
+                            <th class="text-end">Percentil nac.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="c4-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CTA ═══════════════════════════════════════════════ -->
+    <div class="card border-0 text-center py-4 mb-4"
+         style="background:linear-gradient(135deg,#0d2137 0%,#117a65 100%);">
+        <div class="card-body">
+            <h4 class="text-white fw-bold mb-2">¿Tu colegio es uno de los resilientes?</h4>
+            <p class="mb-4" style="color:rgba(255,255,255,.8);">
+                Consulta el diagnóstico completo, compara con tu contexto y obtén acciones concretas.
+            </p>
+            <a href="{% url 'icfes_dashboard:brecha_educativa' %}" class="btn btn-warning btn-lg me-2">
+                Ver Brecha Educativa
+            </a>
+            <a href="{% url 'icfes_dashboard:historia_educacion' %}" class="btn btn-outline-light btn-lg">
+                Historia de la Educación
+            </a>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+
+<style>
+.chapter-divider {
+    display:flex; align-items:center; gap:1rem;
+    border-bottom:2px solid #e9ecef; padding-bottom:.75rem; margin-top:2.5rem;
+}
+.chapter-badge {
+    color:#fff; padding:.25rem .75rem; border-radius:20px;
+    font-size:.75rem; font-weight:700; text-transform:uppercase; white-space:nowrap;
+}
+.ch1 { background:#1a5276; }
+.ch2 { background:#117a65; }
+.ch3 { background:#784212; }
+.ch4 { background:#1a237e; }
+.chapter-title { margin:0; font-size:1.25rem; font-weight:700; color:#343a40; }
+.callout-box { font-size:.9rem; }
+.tray-pill {
+    display:flex; align-items:center; gap:.5rem;
+    padding:.35rem .75rem; border-radius:8px; font-size:.85rem;
+    background:#f8f9fa; border:1px solid #dee2e6;
+}
+.tray-pill .tray-n { font-weight:700; margin-left:auto; }
+</style>
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* ═════════════════════════════════════════════════════
+   INTELIGENCIA EDUCATIVA — 4 capítulos ML-driven
+═════════════════════════════════════════════════════ */
+
+const API = {
+    trayectorias:   '/icfes/api/inteligencia/trayectorias/',
+    resilientes:    '/icfes/api/inteligencia/resilientes/',
+    movilidad:      '/icfes/api/inteligencia/movilidad/',
+    inglesPromesa:  '/icfes/api/inteligencia/promesa-ingles/',
+};
+
+const TRAY_COLORS = {
+    'Mejora Significativa':   '#117a65',
+    'Mejora Leve':            '#1abc9c',
+    'Estable':                '#95a5a6',
+    'Deterioro Leve':         '#e67e22',
+    'Deterioro Significativo':'#c0392b',
+};
+const TRAY_ORDER = [
+    'Mejora Significativa','Mejora Leve','Estable','Deterioro Leve','Deterioro Significativo'
+];
+
+function fmt(n, dec=1) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('es-CO', { maximumFractionDigits: dec });
+}
+
+// ─── Load all in parallel ─────────────────────────────────────
+Promise.all([
+    fetch(API.trayectorias).then(r => r.json()),
+    fetch(API.resilientes).then(r => r.json()),
+    fetch(API.movilidad).then(r => r.json()),
+    fetch(API.inglesPromesa).then(r => r.json()),
+]).then(([trayRaw, resRaw, movRaw, ingRaw]) => {
+    const tray = trayRaw.data || {};
+    const res  = resRaw.data  || {};
+    const mov  = movRaw.data  || {};
+    const ing  = ingRaw.data  || {};
+
+    renderHero(tray, res, mov, ing);
+    renderCap1(tray);
+    renderCap2(res);
+    renderCap3(mov);
+    renderCap4(ing);
+}).catch(err => console.error('Inteligencia load error:', err));
+
+// ─── HERO ─────────────────────────────────────────────────────
+function renderHero(tray, res, mov, ing) {
+    const nac = tray.nacional || [];
+    const mejora = nac.filter(t => t.clasificacion.startsWith('Mejora'))
+                      .reduce((s, t) => s + t.colegios, 0);
+    document.getElementById('hero-mejora').textContent = mejora.toLocaleString('es-CO');
+    if (res.total) document.getElementById('hero-resilientes').textContent = res.total.toLocaleString('es-CO');
+    if (mov.escaladores?.length) {
+        const top = mov.escaladores[0];
+        document.getElementById('hero-escaladores').textContent =
+            Math.abs(top.cambio_ranking).toLocaleString('es-CO') + ' pos.';
+    }
+    if (ing.total) document.getElementById('hero-ingles-publicos').textContent = ing.total.toLocaleString('es-CO');
+
+    const totalColegios = nac.reduce((s, t) => s + t.colegios, 0);
+    if (totalColegios) document.getElementById('hero-total-colegios').textContent = totalColegios.toLocaleString('es-CO');
+}
+
+// ─── CAPÍTULO 1: Trayectorias ─────────────────────────────────
+function renderCap1(tray) {
+    const nac = tray.nacional || [];
+    const reg = tray.regional || {};
+
+    // Pills
+    const pillContainer = document.getElementById('c1-kpi-row');
+    const totalN = nac.reduce((s, t) => s + t.colegios, 0);
+    TRAY_ORDER.forEach(cat => {
+        const item = nac.find(t => t.clasificacion === cat);
+        if (!item) return;
+        const pct = (item.colegios / totalN * 100).toFixed(1);
+        const col = TRAY_COLORS[cat] || '#666';
+        const div = document.createElement('div');
+        div.className = 'tray-pill';
+        div.style.borderColor = col;
+        div.innerHTML = `
+            <span style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+            <span>${cat}</span>
+            <span class="tray-n" style="color:${col};">${item.colegios.toLocaleString('es-CO')} (${pct}%)</span>
+        `;
+        pillContainer.appendChild(div);
+    });
+
+    // Callout
+    const mejora = nac.filter(t => t.clasificacion.startsWith('Mejora')).reduce((s,t) => s+t.colegios, 0);
+    const deterior = nac.filter(t => t.clasificacion.startsWith('Deterioro')).reduce((s,t) => s+t.colegios, 0);
+    document.getElementById('c1-callout').textContent =
+        `${mejora.toLocaleString('es-CO')} colegios mejoran vs ${deterior.toLocaleString('es-CO')} que deterioran — diferencia de ${(mejora-deterior).toLocaleString('es-CO')} instituciones.`;
+
+    // Doughnut nacional
+    new Chart(document.getElementById('chart-trayectorias-nacional'), {
+        type: 'doughnut',
+        data: {
+            labels: TRAY_ORDER,
+            datasets: [{
+                data: TRAY_ORDER.map(c => (nac.find(t => t.clasificacion === c)?.colegios) || 0),
+                backgroundColor: TRAY_ORDER.map(c => TRAY_COLORS[c]),
+                borderWidth: 2,
+                hoverOffset: 8,
+            }],
+        },
+        options: {
+            responsive: true, cutout: '55%',
+            plugins: {
+                legend: { position: 'right' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const item = nac.find(t => t.clasificacion === TRAY_ORDER[ctx.dataIndex]);
+                            return ` ${ctx.raw.toLocaleString('es-CO')} colegios · Prom ${fmt(item?.puntaje_promedio)} pts`;
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    // Stacked bar por región
+    const regions = Object.keys(reg);
+    new Chart(document.getElementById('chart-trayectorias-region'), {
+        type: 'bar',
+        data: {
+            labels: regions.map(r => r.replace('Región ', '')),
+            datasets: TRAY_ORDER.map(cat => ({
+                label: cat,
+                data: regions.map(r => {
+                    const total = (reg[r] || []).reduce((s, t) => s + t.colegios, 0);
+                    const item  = (reg[r] || []).find(t => t.clasificacion === cat);
+                    return total ? +((item?.colegios || 0) / total * 100).toFixed(1) : 0;
+                }),
+                backgroundColor: TRAY_COLORS[cat],
+                stack: 'tray',
+                borderWidth: 0,
+            })),
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, max: 100,
+                     title: { display: true, text: '% de colegios' } },
+            },
+        },
+    });
+}
+
+// ─── CAPÍTULO 2: Resilientes ──────────────────────────────────
+function renderCap2(res) {
+    if (!res.total) return;
+
+    document.getElementById('c2-total').textContent = res.total.toLocaleString('es-CO');
+    document.getElementById('c2-badge-count').textContent = `${res.lista?.length || 0} mostrados`;
+
+    const avgScore = res.lista?.length
+        ? (res.lista.reduce((s, r) => s + (r.puntaje_global || 0), 0) / res.lista.length).toFixed(1)
+        : '—';
+    document.getElementById('c2-avg-score').textContent = avgScore + ' pts';
+
+    // Callout
+    if (res.por_departamento?.length) {
+        const top = res.por_departamento[0];
+        document.getElementById('c2-callout').textContent =
+            `${top.departamento} lidera con ${top.resilientes} colegios públicos en el top 40% nacional.`;
+    }
+
+    // Bar chart por depto
+    const deptos = res.por_departamento || [];
+    new Chart(document.getElementById('chart-resilientes-depto'), {
+        type: 'bar',
+        data: {
+            labels: deptos.map(d => d.departamento),
+            datasets: [{
+                label: 'Colegios resilientes',
+                data: deptos.map(d => d.resilientes),
+                backgroundColor: '#117a65',
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y', responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { title: { display: true, text: 'Nº colegios públicos top 40% nacional' } } },
+        },
+    });
+
+    // Table
+    const tbody = document.getElementById('c2-tbody');
+    tbody.innerHTML = (res.lista || []).map((r, i) => `
+        <tr>
+            <td class="text-muted small">${i+1}</td>
+            <td class="fw-medium">${r.nombre_colegio || '—'}</td>
+            <td>${r.departamento || '—'}</td>
+            <td class="text-end fw-bold text-success">${fmt(r.puntaje_global)}</td>
+            <td class="text-end">${fmt(r.puntaje_ingles)}</td>
+            <td class="text-end">
+                <span class="badge bg-success">${fmt(r.percentil_nacional, 1)}°</span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ─── CAPÍTULO 3: Movilidad ────────────────────────────────────
+function renderCap3(mov) {
+    const esc = mov.escaladores || [];
+    const cai = mov.caidas      || [];
+
+    // Tables
+    const tbodyEsc = document.getElementById('c3-escaladores-tbody');
+    tbodyEsc.innerHTML = esc.map(r => `
+        <tr>
+            <td class="fw-medium small">${r.nombre_colegio}</td>
+            <td class="small">${r.departamento}</td>
+            <td class="text-end small">${r.ranking_nacional?.toLocaleString('es-CO') || '—'}</td>
+            <td class="text-end fw-bold text-success">▲ ${Math.abs(r.cambio_ranking).toLocaleString('es-CO')}</td>
+        </tr>
+    `).join('');
+
+    const tbodyCai = document.getElementById('c3-caidas-tbody');
+    tbodyCai.innerHTML = cai.map(r => `
+        <tr>
+            <td class="fw-medium small">${r.nombre_colegio}</td>
+            <td class="small">${r.departamento}</td>
+            <td class="text-end small">${r.ranking_nacional?.toLocaleString('es-CO') || '—'}</td>
+            <td class="text-end fw-bold text-danger">▼ ${r.cambio_ranking.toLocaleString('es-CO')}</td>
+        </tr>
+    `).join('');
+
+    // Butterfly / diverging bar
+    const top20esc = esc.slice(0, 20);
+    const top20cai = cai.slice(0, 20);
+    const labels = [
+        ...top20esc.map((_, i) => `Escalador ${i+1}`),
+        ...top20cai.map((_, i) => `Caída ${i+1}`),
+    ];
+    new Chart(document.getElementById('chart-movilidad'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Escalada (posiciones subidas)',
+                    data: [
+                        ...top20esc.map(r => Math.abs(r.cambio_ranking)),
+                        ...top20cai.map(() => null),
+                    ],
+                    backgroundColor: '#117a65',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Caída (posiciones perdidas)',
+                    data: [
+                        ...top20esc.map(() => null),
+                        ...top20cai.map(r => r.cambio_ranking),
+                    ],
+                    backgroundColor: '#c0392b',
+                    borderRadius: 4,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { title: { display: true, text: 'Posiciones' } },
+            },
+        },
+    });
+}
+
+// ─── CAPÍTULO 4: Promesa inglés ────────────────────────────────
+function renderCap4(ing) {
+    if (!ing.total) return;
+
+    document.getElementById('c4-total').textContent  = ing.total.toLocaleString('es-CO');
+    document.getElementById('c4-threshold').textContent = fmt(ing.threshold_privado, 1) + ' pts';
+    document.getElementById('c4-badge-count').textContent = `${ing.lista?.length || 0} mostrados`;
+
+    // Lider
+    if (ing.lista?.length) {
+        const top = ing.lista[0];
+        document.getElementById('c4-lider-nombre').textContent  = top.nombre_colegio;
+        document.getElementById('c4-lider-ciudad').textContent  = top.municipio + ', ' + top.departamento;
+        document.getElementById('c4-lider-puntaje').textContent = fmt(top.ingles, 1);
+        document.getElementById('c4-callout').textContent =
+            `El colegio público con mejor inglés supera en ${fmt(top.ingles - ing.threshold_privado, 1)} pts el promedio privado. ${ing.total} instituciones públicas lograron este hito.`;
+    }
+
+    // Bar depto
+    const deptos = ing.por_departamento || [];
+    new Chart(document.getElementById('chart-ingles-depto'), {
+        type: 'bar',
+        data: {
+            labels: deptos.map(d => d.departamento),
+            datasets: [{
+                label: 'Colegios públicos con inglés > promedio privado',
+                data: deptos.map(d => d.colegios),
+                backgroundColor: '#1a237e',
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y', responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { title: { display: true, text: 'Nº colegios' } } },
+        },
+    });
+
+    // Table
+    const tbody = document.getElementById('c4-tbody');
+    tbody.innerHTML = (ing.lista || []).map((r, i) => `
+        <tr>
+            <td class="text-muted small">${i+1}</td>
+            <td class="fw-medium">${r.nombre_colegio}</td>
+            <td>${r.departamento}</td>
+            <td>${r.municipio}</td>
+            <td class="text-end fw-bold text-primary">${fmt(r.ingles, 1)}</td>
+            <td class="text-end">${fmt(r.global, 1)}</td>
+            <td class="text-end"><span class="badge bg-primary bg-opacity-75">${fmt(r.percentil_nacional, 1)}°</span></td>
+        </tr>
+    `).join('');
+}
+</script>
+{% endblock extra_javascript %}

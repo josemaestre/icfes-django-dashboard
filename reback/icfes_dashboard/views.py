@@ -113,6 +113,11 @@ def historia_educacion_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-historia.html', {})
 
 
+def inteligencia_educativa_dashboard(request):
+    """Vista de Inteligencia Educativa: 4 narrativas ML-driven."""
+    return render(request, 'icfes_dashboard/pages/dashboard-inteligencia.html', {})
+
+
 # ============================================================================
 # ENDPOINTS API - DATOS GENERALES
 # ============================================================================

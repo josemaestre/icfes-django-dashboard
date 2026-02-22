@@ -1835,6 +1835,257 @@ def get_historia_riesgo():
         return []
 
 
+# ============================================================================
+# INTELIGENCIA EDUCATIVA - 4 ML-driven Story Data Functions
+# ============================================================================
+
+def get_inteligencia_trayectorias():
+    """
+    Distribución de trayectorias escolares por categoría y por región.
+    Categorías: Mejora Significativa, Mejora Leve, Estable, Deterioro Leve, Deterioro Significativo.
+    Fuente: fct_colegio_historico.clasificacion_tendencia (año más reciente).
+    """
+    try:
+        q_nacional = resolve_schema("""
+            SELECT
+                clasificacion_tendencia,
+                COUNT(*)                          AS colegios,
+                ROUND(AVG(avg_punt_global), 2)    AS puntaje_promedio
+            FROM gold.fct_colegio_historico
+            WHERE ano = (SELECT MAX(ano) FROM gold.fct_colegio_historico)
+            GROUP BY clasificacion_tendencia
+            ORDER BY colegios DESC
+        """)
+        q_regional = resolve_schema("""
+            SELECT
+                dr.region,
+                h.clasificacion_tendencia,
+                COUNT(*) AS colegios
+            FROM gold.fct_colegio_historico h
+            JOIN gold.dim_departamentos_region dr
+              ON UPPER(h.departamento) = UPPER(dr.departamento)
+            WHERE h.ano = (SELECT MAX(ano) FROM gold.fct_colegio_historico)
+            GROUP BY dr.region, h.clasificacion_tendencia
+            ORDER BY dr.region, colegios DESC
+        """)
+        with get_duckdb_connection() as con:
+            rows_nac = con.execute(q_nacional).fetchall()
+            rows_reg = con.execute(q_regional).fetchall()
+
+        nacional = [
+            {
+                'clasificacion': r[0],
+                'colegios': int(r[1]),
+                'puntaje_promedio': float(r[2]) if r[2] else None,
+            }
+            for r in rows_nac
+        ]
+        regional = {}
+        for r in rows_reg:
+            reg = r[0]
+            if reg not in regional:
+                regional[reg] = []
+            regional[reg].append({'clasificacion': r[1], 'colegios': int(r[2])})
+
+        return {'nacional': nacional, 'regional': regional}
+    except Exception as e:
+        logger.error(f"Error in get_inteligencia_trayectorias: {e}")
+        return {}
+
+
+def get_inteligencia_resilientes(limit=150):
+    """
+    Colegios OFICIALES en el top 40% nacional (percentil_nacional >= 60).
+    Son los colegios públicos que superan la mayoría de los privados.
+    Fuente: fct_colegio_comparacion_contexto (año más reciente).
+    """
+    try:
+        q_list = resolve_schema("""
+            SELECT
+                ctx.nombre_colegio, ctx.departamento, ctx.municipio,
+                ROUND(ctx.colegio_global, 1)    AS puntaje_global,
+                ROUND(ctx.colegio_ingles, 1)    AS puntaje_ingles,
+                ctx.percentil_nacional,
+                ctx.clasificacion_vs_nacional,
+                ctx.total_estudiantes
+            FROM gold.fct_colegio_comparacion_contexto ctx
+            WHERE ctx.sector = 'OFICIAL'
+              AND ctx.percentil_nacional >= 60
+              AND ctx.total_estudiantes >= 10
+              AND CAST(ctx.ano AS INTEGER) = (
+                SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto
+              )
+            ORDER BY ctx.percentil_nacional DESC
+            LIMIT ?
+        """)
+        q_depto = resolve_schema("""
+            SELECT ctx.departamento, COUNT(*) AS resilientes
+            FROM gold.fct_colegio_comparacion_contexto ctx
+            WHERE ctx.sector = 'OFICIAL'
+              AND ctx.percentil_nacional >= 60
+              AND ctx.total_estudiantes >= 10
+              AND CAST(ctx.ano AS INTEGER) = (
+                SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto
+              )
+            GROUP BY ctx.departamento
+            ORDER BY resilientes DESC
+            LIMIT 15
+        """)
+        with get_duckdb_connection() as con:
+            rows_list  = con.execute(q_list,  [limit]).fetchall()
+            rows_depto = con.execute(q_depto).fetchall()
+            total = con.execute(resolve_schema("""
+                SELECT COUNT(*) FROM gold.fct_colegio_comparacion_contexto
+                WHERE sector='OFICIAL' AND percentil_nacional >= 60
+                  AND total_estudiantes >= 10
+                  AND CAST(ano AS INTEGER) = (SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto)
+            """)).fetchone()[0]
+
+        return {
+            'total': int(total),
+            'lista': [
+                {
+                    'nombre_colegio': r[0], 'departamento': r[1], 'municipio': r[2],
+                    'puntaje_global': float(r[3]) if r[3] else None,
+                    'puntaje_ingles': float(r[4]) if r[4] else None,
+                    'percentil_nacional': float(r[5]) if r[5] else None,
+                    'clasificacion_vs_nacional': r[6],
+                    'total_estudiantes': int(r[7]) if r[7] else 0,
+                }
+                for r in rows_list
+            ],
+            'por_departamento': [
+                {'departamento': r[0], 'resilientes': int(r[1])}
+                for r in rows_depto
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Error in get_inteligencia_resilientes: {e}")
+        return {}
+
+
+def get_inteligencia_movilidad(limit=25):
+    """
+    Escuelas con mayor escalada y mayor caída en el ranking nacional.
+    cambio_ranking_nacional negativo = subió posiciones (mejoró).
+    Fuente: fct_colegio_historico (año más reciente).
+    """
+    try:
+        base = resolve_schema("""
+            SELECT
+                nombre_colegio, departamento, municipio, sector,
+                ROUND(avg_punt_global, 1)   AS puntaje,
+                ranking_nacional,
+                cambio_ranking_nacional,
+                total_estudiantes
+            FROM gold.fct_colegio_historico
+            WHERE ano = (SELECT MAX(ano) FROM gold.fct_colegio_historico)
+              AND cambio_ranking_nacional IS NOT NULL
+              AND total_estudiantes >= 10
+            ORDER BY cambio_ranking_nacional {dir}
+            LIMIT ?
+        """)
+        with get_duckdb_connection() as con:
+            rows_esc = con.execute(base.replace('{dir}', 'ASC'),  [limit]).fetchall()
+            rows_cai = con.execute(base.replace('{dir}', 'DESC'), [limit]).fetchall()
+
+        def to_dict(r):
+            return {
+                'nombre_colegio': r[0], 'departamento': r[1], 'municipio': r[2],
+                'sector': r[3],
+                'puntaje': float(r[4]) if r[4] else None,
+                'ranking_nacional': int(r[5]) if r[5] else None,
+                'cambio_ranking': int(r[6]) if r[6] else None,
+                'total_estudiantes': int(r[7]) if r[7] else 0,
+            }
+
+        return {
+            'escaladores': [to_dict(r) for r in rows_esc],
+            'caidas':      [to_dict(r) for r in rows_cai],
+        }
+    except Exception as e:
+        logger.error(f"Error in get_inteligencia_movilidad: {e}")
+        return {}
+
+
+def get_inteligencia_promesa_ingles(limit=150):
+    """
+    Colegios OFICIALES cuyo puntaje de inglés supera el promedio NO OFICIAL.
+    Colegios públicos que están rompiendo la barrera del inglés.
+    Fuente: fct_colegio_comparacion_contexto (año más reciente).
+    """
+    try:
+        q_thr = resolve_schema("""
+            SELECT ROUND(AVG(colegio_ingles), 4)
+            FROM gold.fct_colegio_comparacion_contexto
+            WHERE sector = 'NO OFICIAL' AND total_estudiantes >= 10
+              AND CAST(ano AS INTEGER) = (
+                SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto
+              )
+        """)
+        with get_duckdb_connection() as con:
+            threshold = float(con.execute(q_thr).fetchone()[0] or 0)
+
+            q_list = resolve_schema(f"""
+                SELECT nombre_colegio, departamento, municipio,
+                    ROUND(colegio_ingles, 1) AS ingles,
+                    ROUND(colegio_global, 1) AS global,
+                    percentil_nacional, total_estudiantes
+                FROM gold.fct_colegio_comparacion_contexto
+                WHERE sector = 'OFICIAL'
+                  AND colegio_ingles >= {threshold}
+                  AND total_estudiantes >= 10
+                  AND CAST(ano AS INTEGER) = (
+                    SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto
+                  )
+                ORDER BY colegio_ingles DESC
+                LIMIT ?
+            """)
+            q_depto = resolve_schema(f"""
+                SELECT departamento, COUNT(*) AS n
+                FROM gold.fct_colegio_comparacion_contexto
+                WHERE sector = 'OFICIAL' AND colegio_ingles >= {threshold}
+                  AND total_estudiantes >= 10
+                  AND CAST(ano AS INTEGER) = (
+                    SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto
+                  )
+                GROUP BY departamento ORDER BY n DESC LIMIT 15
+            """)
+            q_total = resolve_schema(f"""
+                SELECT COUNT(*) FROM gold.fct_colegio_comparacion_contexto
+                WHERE sector = 'OFICIAL' AND colegio_ingles >= {threshold}
+                  AND total_estudiantes >= 10
+                  AND CAST(ano AS INTEGER) = (
+                    SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_colegio_comparacion_contexto
+                  )
+            """)
+            rows_list  = con.execute(q_list, [limit]).fetchall()
+            rows_depto = con.execute(q_depto).fetchall()
+            total      = con.execute(q_total).fetchone()[0]
+
+        return {
+            'threshold_privado': round(threshold, 2),
+            'total': int(total),
+            'lista': [
+                {
+                    'nombre_colegio': r[0], 'departamento': r[1], 'municipio': r[2],
+                    'ingles': float(r[3]) if r[3] else None,
+                    'global': float(r[4]) if r[4] else None,
+                    'percentil_nacional': float(r[5]) if r[5] else None,
+                    'total_estudiantes': int(r[6]) if r[6] else 0,
+                }
+                for r in rows_list
+            ],
+            'por_departamento': [
+                {'departamento': r[0], 'colegios': int(r[1])}
+                for r in rows_depto
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Error in get_inteligencia_promesa_ingles: {e}")
+        return {}
+
+
 def get_historia_riesgo_colegios(nivel_riesgo, limit=200):
     """
     Lista de colegios filtrada por nivel de riesgo (Alto / Medio / Bajo).

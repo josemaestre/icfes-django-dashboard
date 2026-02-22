@@ -29,6 +29,10 @@ from icfes_dashboard.db_utils import (
     get_historia_riesgo,
     get_historia_riesgo_colegios,
     get_historia_ingles,
+    get_inteligencia_trayectorias,
+    get_inteligencia_resilientes,
+    get_inteligencia_movilidad,
+    get_inteligencia_promesa_ingles,
 )
 
 logger = logging.getLogger(__name__)
@@ -577,4 +581,59 @@ def historia_ingles(request):
         return JsonResponse({'data': data})
     except Exception as e:
         logger.error(f"historia_ingles error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ============================================================================
+# INTELIGENCIA EDUCATIVA - API Endpoints
+# ============================================================================
+
+_INTEL_CACHE_TTL = 60 * 60 * 6  # 6 horas
+
+
+@require_GET
+def inteligencia_trayectorias(request):
+    """Distribución de trayectorias escolares nacional y por región."""
+    try:
+        data = _cached('inteligencia_trayectorias', _INTEL_CACHE_TTL,
+                       get_inteligencia_trayectorias)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"inteligencia_trayectorias error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def inteligencia_resilientes(request):
+    """Colegios públicos en top 40% nacional — los resilientes."""
+    try:
+        data = _cached('inteligencia_resilientes', _INTEL_CACHE_TTL,
+                       get_inteligencia_resilientes)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"inteligencia_resilientes error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def inteligencia_movilidad(request):
+    """Top escaladores y caídas en ranking nacional."""
+    try:
+        data = _cached('inteligencia_movilidad', _INTEL_CACHE_TTL,
+                       get_inteligencia_movilidad)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"inteligencia_movilidad error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def inteligencia_promesa_ingles(request):
+    """Colegios públicos cuyo inglés supera el promedio privado."""
+    try:
+        data = _cached('inteligencia_promesa_ingles', _INTEL_CACHE_TTL,
+                       get_inteligencia_promesa_ingles)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"inteligencia_promesa_ingles error: {e}")
         return JsonResponse({'error': str(e)}, status=500)
