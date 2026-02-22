@@ -160,7 +160,9 @@ urlpatterns = [
     path('api/inteligencia/resilientes/', api_views.inteligencia_resilientes, name='inteligencia_resilientes'),
     path('api/inteligencia/movilidad/', api_views.inteligencia_movilidad, name='inteligencia_movilidad'),
     path('api/inteligencia/promesa-ingles/', api_views.inteligencia_promesa_ingles, name='inteligencia_promesa_ingles'),
-    
+    path('api/inteligencia/potencial/', api_views.inteligencia_potencial, name='inteligencia_potencial'),
+    path('api/inteligencia/potencial/scatter/', api_views.inteligencia_potencial_scatter, name='inteligencia_potencial_scatter'),
+
     # API endpoints for enhanced user profile
     path('api/schools/search/', api_views.search_schools, name='search_schools'),
     path('api/departments/', api_views.get_departments, name='get_departments'),

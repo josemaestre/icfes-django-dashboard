@@ -33,6 +33,8 @@ from icfes_dashboard.db_utils import (
     get_inteligencia_resilientes,
     get_inteligencia_movilidad,
     get_inteligencia_promesa_ingles,
+    get_inteligencia_potencial,
+    get_inteligencia_potencial_scatter,
 )
 
 logger = logging.getLogger(__name__)
@@ -636,4 +638,28 @@ def inteligencia_promesa_ingles(request):
         return JsonResponse({'data': data})
     except Exception as e:
         logger.error(f"inteligencia_promesa_ingles error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def inteligencia_potencial(request):
+    """Colegios que superan su potencial contextual predicho por ML (GBM)."""
+    try:
+        data = _cached('inteligencia_potencial', _INTEL_CACHE_TTL,
+                       get_inteligencia_potencial)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"inteligencia_potencial error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def inteligencia_potencial_scatter(request):
+    """Scatter data: score real vs esperado para todos los colegios."""
+    try:
+        data = _cached('inteligencia_potencial_scatter', _INTEL_CACHE_TTL,
+                       get_inteligencia_potencial_scatter)
+        return JsonResponse({'data': data})
+    except Exception as e:
+        logger.error(f"inteligencia_potencial_scatter error: {e}")
         return JsonResponse({'error': str(e)}, status=500)

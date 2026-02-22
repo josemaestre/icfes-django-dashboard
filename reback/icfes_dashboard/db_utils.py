@@ -2222,3 +2222,120 @@ def get_historia_ingles():
     except Exception as e:
         logger.error(f"Error in get_historia_ingles: {e}")
         return {}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Inteligencia Educativa — Cap 5: Potencial Educativo Contextual (ML model)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def get_inteligencia_potencial(limit=200):
+    """
+    Colegios que superan su potencial contextual predicho por GBM.
+    Retorna: stats del modelo + colegios Excepcionales y Notables OFICIALES.
+    """
+    try:
+        q_stats = resolve_schema("""
+            SELECT
+                COUNT(*)  FILTER (WHERE clasificacion = 'Excepcional' AND sector = 'OFICIAL') AS n_excepcionales,
+                COUNT(*)  FILTER (WHERE clasificacion = 'Notable'     AND sector = 'OFICIAL') AS n_notables,
+                COUNT(*)  FILTER (WHERE clasificacion = 'En Riesgo Contextual')               AS n_riesgo,
+                ROUND(MAX(exceso), 1)                                                         AS max_exceso,
+                ROUND(AVG(exceso) FILTER (WHERE sector = 'OFICIAL'), 1)                       AS avg_exceso_oficial,
+                FIRST(model_r2)                                                               AS model_r2,
+                FIRST(model_mae)                                                              AS model_mae,
+                COUNT(*)                                                                      AS total_colegios
+            FROM gold.fct_potencial_educativo
+        """)
+
+        q_top = resolve_schema(f"""
+            SELECT
+                colegio_bk,
+                nombre_colegio,
+                sector,
+                region,
+                departamento,
+                ROUND(avg_global, 1)       AS score_real,
+                ROUND(score_esperado, 1)   AS score_esperado,
+                ROUND(exceso, 1)           AS exceso,
+                ROUND(percentil_exceso, 1) AS percentil_exceso,
+                ranking_exceso_nacional,
+                clasificacion
+            FROM gold.fct_potencial_educativo
+            WHERE clasificacion IN ('Excepcional', 'Notable')
+              AND sector = 'OFICIAL'
+            ORDER BY exceso DESC
+            LIMIT {limit}
+        """)
+
+        q_depto = resolve_schema("""
+            SELECT
+                departamento,
+                COUNT(*) FILTER (WHERE clasificacion = 'Excepcional' AND sector = 'OFICIAL') AS n_excepcionales,
+                COUNT(*) FILTER (WHERE clasificacion = 'Notable'     AND sector = 'OFICIAL') AS n_notables,
+                ROUND(AVG(exceso) FILTER (WHERE sector = 'OFICIAL'), 1)                     AS avg_exceso
+            FROM gold.fct_potencial_educativo
+            GROUP BY departamento
+            HAVING COUNT(*) FILTER (WHERE clasificacion IN ('Excepcional', 'Notable') AND sector = 'OFICIAL') > 0
+            ORDER BY n_excepcionales DESC, n_notables DESC
+            LIMIT 20
+        """)
+
+        with get_duckdb_connection() as con:
+            s = con.execute(q_stats).fetchone()
+            rows_top   = con.execute(q_top).fetchall()
+            rows_depto = con.execute(q_depto).fetchall()
+
+        cols_top = [
+            'colegio_bk', 'nombre_colegio', 'sector', 'region', 'departamento',
+            'score_real', 'score_esperado', 'exceso', 'percentil_exceso',
+            'ranking_exceso_nacional', 'clasificacion',
+        ]
+        cols_depto = ['departamento', 'n_excepcionales', 'n_notables', 'avg_exceso']
+
+        return {
+            'stats': {
+                'n_excepcionales':   int(s[0]) if s[0] else 0,
+                'n_notables':        int(s[1]) if s[1] else 0,
+                'n_riesgo':          int(s[2]) if s[2] else 0,
+                'max_exceso':        float(s[3]) if s[3] else None,
+                'avg_exceso_oficial': float(s[4]) if s[4] else None,
+                'model_r2':          float(s[5]) if s[5] else None,
+                'model_mae':         float(s[6]) if s[6] else None,
+                'total_colegios':    int(s[7]) if s[7] else 0,
+            },
+            'colegios': [dict(zip(cols_top, r)) for r in rows_top],
+            'por_departamento': [dict(zip(cols_depto, r)) for r in rows_depto],
+        }
+
+    except Exception as e:
+        logger.error(f"Error in get_inteligencia_potencial: {e}")
+        return {'stats': {}, 'colegios': [], 'por_departamento': []}
+
+
+def get_inteligencia_potencial_scatter(sample=2000):
+    """
+    Muestra de colegios para scatter: score_real vs score_esperado,
+    coloreado por clasificacion. Limitado a `sample` filas.
+    """
+    try:
+        q = resolve_schema(f"""
+            SELECT
+                ROUND(avg_global, 1)     AS score_real,
+                ROUND(score_esperado, 1) AS score_esperado,
+                ROUND(exceso, 1)         AS exceso,
+                clasificacion,
+                sector,
+                departamento
+            FROM gold.fct_potencial_educativo
+            USING SAMPLE {sample}
+        """)
+
+        with get_duckdb_connection() as con:
+            rows = con.execute(q).fetchall()
+
+        cols = ['score_real', 'score_esperado', 'exceso', 'clasificacion', 'sector', 'departamento']
+        return [dict(zip(cols, r)) for r in rows]
+
+    except Exception as e:
+        logger.error(f"Error in get_inteligencia_potencial_scatter: {e}")
+        return []

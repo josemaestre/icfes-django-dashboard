@@ -52,6 +52,14 @@
                                 <div class="small" style="color:rgba(255,255,255,.7);">públicos ganan en inglés</div>
                             </div>
                         </div>
+                        <div class="col-12">
+                            <div class="rounded-3 p-2" style="background:rgba(255,255,255,.1);">
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <span class="fw-bold fs-5 text-warning" id="hero-excepcionales">346</span>
+                                    <span class="small" style="color:rgba(255,255,255,.7);">colegios públicos superan su potencial contextual (ML)</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -287,6 +295,88 @@
         </div>
     </div>
 
+    <!-- ══ CAP 5: POTENCIAL EDUCATIVO ════════════════════════ -->
+    <div class="chapter-divider mb-4">
+        <span class="chapter-badge ch5">Capítulo 5</span>
+        <h3 class="chapter-title">El Mérito Real: Colegios que superan lo que predice su contexto</h3>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5 d-flex align-items-center">
+            <div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Modelo ML · GradientBoosting · 330K registros</p>
+                <h4 class="fw-bold mb-3">Un colegio puede ser pobre y excepcional a la vez.</h4>
+                <p class="text-muted mb-3">
+                    Entrenamos un <strong>modelo de potencial contextual</strong> con datos 2010–2024.
+                    Predice el puntaje esperado según <em>región, sector, calendario, tamaño y ubicación geográfica</em>.
+                    Los colegios con mayor diferencia <em>real − predicción</em> son los que verdaderamente superan su contexto.
+                </p>
+                <div class="d-flex gap-2 mb-3">
+                    <div class="text-center p-3 rounded-3 bg-light flex-grow-1">
+                        <div class="fw-bold fs-5 text-primary" id="c5-r2">0.44</div>
+                        <div class="small text-muted">R² (5-fold CV)</div>
+                    </div>
+                    <div class="text-center p-3 rounded-3 bg-light flex-grow-1">
+                        <div class="fw-bold fs-5 text-primary" id="c5-mae">19.8</div>
+                        <div class="small text-muted">MAE (pts)</div>
+                    </div>
+                    <div class="text-center p-3 rounded-3 bg-light flex-grow-1">
+                        <div class="fw-bold fs-5 text-success" id="c5-excepcionales-badge">346</div>
+                        <div class="small text-muted">Excepcionales</div>
+                    </div>
+                </div>
+                <div class="callout-box bg-success-subtle border-start border-success border-3 rounded p-3">
+                    <p class="mb-0 fw-semibold">
+                        <strong>#1: I.E.D. Alexander Von Humboldt</strong> (Barranquilla) supera su predicción por
+                        <span class="text-success">+129 pts</span> — el modelo esperaba 242, obtuvo 371.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Top 15 colegios OFICIALES por exceso de potencial</h6>
+                    <canvas id="chart-potencial-top" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1">Score real vs Score esperado (muestra 2024)</h6>
+                    <p class="text-muted small mb-3">Cada punto = un colegio · Color = clasificación contextual</p>
+                    <canvas id="chart-potencial-scatter" height="320"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Colegios Excepcionales y Notables (OFICIAL, 2024)</h6>
+                    <div style="max-height:380px;overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="text-muted">#</th>
+                                    <th>Colegio</th>
+                                    <th>Depto.</th>
+                                    <th class="text-end">Real</th>
+                                    <th class="text-end">Esperado</th>
+                                    <th class="text-end text-success">Exceso</th>
+                                </tr>
+                            </thead>
+                            <tbody id="c5-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ CTA ═══════════════════════════════════════════════ -->
     <div class="card border-0 text-center py-4 mb-4"
          style="background:linear-gradient(135deg,#0d2137 0%,#117a65 100%);">
@@ -319,6 +409,7 @@
 .ch2 { background:#117a65; }
 .ch3 { background:#784212; }
 .ch4 { background:#1a237e; }
+.ch5 { background:#6d4c41; }
 .chapter-title { margin:0; font-size:1.25rem; font-weight:700; color:#343a40; }
 .callout-box { font-size:.9rem; }
 .tray-pill {
@@ -342,6 +433,8 @@ const API = {
     resilientes:    '/icfes/api/inteligencia/resilientes/',
     movilidad:      '/icfes/api/inteligencia/movilidad/',
     inglesPromesa:  '/icfes/api/inteligencia/promesa-ingles/',
+    potencial:      '/icfes/api/inteligencia/potencial/',
+    potencialScatter: '/icfes/api/inteligencia/potencial/scatter/',
 };
 
 const TRAY_COLORS = {
@@ -366,21 +459,24 @@ Promise.all([
     fetch(API.resilientes).then(r => r.json()),
     fetch(API.movilidad).then(r => r.json()),
     fetch(API.inglesPromesa).then(r => r.json()),
-]).then(([trayRaw, resRaw, movRaw, ingRaw]) => {
+    fetch(API.potencial).then(r => r.json()),
+]).then(([trayRaw, resRaw, movRaw, ingRaw, potRaw]) => {
     const tray = trayRaw.data || {};
     const res  = resRaw.data  || {};
     const mov  = movRaw.data  || {};
     const ing  = ingRaw.data  || {};
+    const pot  = potRaw.data  || {};
 
-    renderHero(tray, res, mov, ing);
+    renderHero(tray, res, mov, ing, pot);
     renderCap1(tray);
     renderCap2(res);
     renderCap3(mov);
     renderCap4(ing);
+    renderCap5(pot);
 }).catch(err => console.error('Inteligencia load error:', err));
 
 // ─── HERO ─────────────────────────────────────────────────────
-function renderHero(tray, res, mov, ing) {
+function renderHero(tray, res, mov, ing, pot) {
     const nac = tray.nacional || [];
     const mejora = nac.filter(t => t.clasificacion.startsWith('Mejora'))
                       .reduce((s, t) => s + t.colegios, 0);
@@ -392,9 +488,12 @@ function renderHero(tray, res, mov, ing) {
             Math.abs(top.cambio_ranking).toLocaleString('es-CO') + ' pos.';
     }
     if (ing.total) document.getElementById('hero-ingles-publicos').textContent = ing.total.toLocaleString('es-CO');
-
     const totalColegios = nac.reduce((s, t) => s + t.colegios, 0);
     if (totalColegios) document.getElementById('hero-total-colegios').textContent = totalColegios.toLocaleString('es-CO');
+    if (pot.stats) {
+        const nExc = (pot.stats.n_excepcionales || 0) + (pot.stats.n_notables || 0);
+        document.getElementById('hero-excepcionales').textContent = nExc.toLocaleString('es-CO');
+    }
 }
 
 // ─── CAPÍTULO 1: Trayectorias ─────────────────────────────────
@@ -659,6 +758,109 @@ function renderCap4(ing) {
             <td class="text-end"><span class="badge bg-primary bg-opacity-75">${fmt(r.percentil_nacional, 1)}°</span></td>
         </tr>
     `).join('');
+}
+
+// ─── CAPÍTULO 5: Potencial Educativo ──────────────────────────
+const POTENCIAL_COLORS = {
+    'Excepcional':          '#117a65',
+    'Notable':              '#1abc9c',
+    'Esperado':             '#95a5a6',
+    'Bajo el Potencial':    '#e67e22',
+    'En Riesgo Contextual': '#c0392b',
+};
+const CLASIFICACIONES_POT = ['Excepcional','Notable','Esperado','Bajo el Potencial','En Riesgo Contextual'];
+
+function renderCap5(pot) {
+    const stats    = pot.stats    || {};
+    const colegios = pot.colegios || [];
+
+    // Stats badges
+    if (stats.model_r2 != null) document.getElementById('c5-r2').textContent = Number(stats.model_r2).toFixed(2);
+    if (stats.model_mae != null) document.getElementById('c5-mae').textContent = fmt(stats.model_mae, 1);
+    const nExc = (stats.n_excepcionales || 0) + (stats.n_notables || 0);
+    document.getElementById('c5-excepcionales-badge').textContent = nExc.toLocaleString('es-CO');
+
+    // Top 15 horizontal bar
+    const top15 = colegios.slice(0, 15);
+    const ctxTop = document.getElementById('chart-potencial-top').getContext('2d');
+    new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+            labels: top15.map(r => {
+                const n = r.nombre_colegio || '';
+                return n.length > 38 ? n.slice(0, 38) + '…' : n;
+            }),
+            datasets: [{
+                label: 'Exceso (pts sobre predicción)',
+                data: top15.map(r => r.exceso),
+                backgroundColor: top15.map(r => r.exceso >= 80 ? '#0d6e56' : r.exceso >= 50 ? '#117a65' : '#1abc9c'),
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: {
+                    label: ctx => `+${ctx.parsed.x} pts · Score real: ${top15[ctx.dataIndex].score_real}`
+                }},
+            },
+            scales: { x: { title: { display: true, text: 'Puntos por encima de la predicción' } } },
+        },
+    });
+
+    // Table (top 50)
+    const tbody5 = document.getElementById('c5-tbody');
+    tbody5.innerHTML = colegios.slice(0, 50).map((r, i) => `
+        <tr>
+            <td class="text-muted small">${i + 1}</td>
+            <td class="fw-medium">${r.nombre_colegio}</td>
+            <td>${r.departamento}</td>
+            <td class="text-end">${fmt(r.score_real, 1)}</td>
+            <td class="text-end text-muted">${fmt(r.score_esperado, 1)}</td>
+            <td class="text-end fw-bold text-success">+${fmt(r.exceso, 1)}</td>
+        </tr>
+    `).join('');
+
+    // Scatter loaded separately (bigger payload)
+    fetch(API.potencialScatter)
+        .then(r => r.json())
+        .then(d => renderScatterCap5(d.data || []))
+        .catch(err => console.warn('Scatter load error:', err));
+}
+
+function renderScatterCap5(data) {
+    const grouped = {};
+    CLASIFICACIONES_POT.forEach(c => { grouped[c] = []; });
+    data.forEach(r => {
+        if (grouped[r.clasificacion]) grouped[r.clasificacion].push({ x: r.score_esperado, y: r.score_real });
+    });
+    const ctxS = document.getElementById('chart-potencial-scatter').getContext('2d');
+    new Chart(ctxS, {
+        type: 'scatter',
+        data: {
+            datasets: CLASIFICACIONES_POT.map(c => ({
+                label: c,
+                data: grouped[c],
+                backgroundColor: (POTENCIAL_COLORS[c] || '#999') + 'AA',
+                pointRadius: 2.5,
+            })),
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+                tooltip: { callbacks: {
+                    label: ctx => `Esperado: ${ctx.parsed.x} · Real: ${ctx.parsed.y}`
+                }},
+            },
+            scales: {
+                x: { title: { display: true, text: 'Score esperado (modelo)' } },
+                y: { title: { display: true, text: 'Score real (ICFES)' } },
+            },
+        },
+    });
 }
 </script>
 {% endblock extra_javascript %}
