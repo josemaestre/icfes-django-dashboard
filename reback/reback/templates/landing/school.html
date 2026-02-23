@@ -7,6 +7,7 @@
 <!-- SEO Meta Tags -->
 <meta name="description" content="{{ meta.description }}">
 <meta name="keywords" content="{{ meta.keywords }}">
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -34,6 +35,26 @@
   }
 }
 </script>
+{% if faq_items %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for item in faq_items %}
+    {
+      "@type": "Question",
+      "name": "{{ item.question|escapejs }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ item.answer|escapejs }}"
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}
@@ -151,8 +172,8 @@
     <div class="row g-4">
         <div class="col-md-3">
             <div class="stat-card text-center">
-                <div class="stat-label">Puntaje Global 2024</div>
-                <div class="stat-value">{{ stats_2024.punt_global|floatformat:0 }}</div>
+                <div class="stat-label">Puntaje Global {{ report_year }}</div>
+                <div class="stat-value">{{ stats_2024.avg_punt_global|floatformat:0 }}</div>
                 <small class="text-muted">Puntos</small>
             </div>
         </div>
@@ -307,6 +328,26 @@
             </div>
         </div>
         {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if faq_items %}
+<div class="container mb-5">
+    <h3 class="mb-4"><i class="bi bi-question-circle"></i> Preguntas Frecuentes</h3>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    {% for item in faq_items %}
+                    <div class="mb-3">
+                        <h5 class="mb-2">{{ item.question }}</h5>
+                        <p class="text-muted mb-0">{{ item.answer }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}

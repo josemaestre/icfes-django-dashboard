@@ -163,7 +163,17 @@ def export_school_report_pdf(request, colegio_sk):
     Export detailed school report to PDF.
     Requires Premium subscription.
     """
-    logger.info(f"PDF Export: School report - colegio_sk={colegio_sk}, user={request.user.email}")
+    ano_param = request.GET.get('ano')
+    report_year = None
+    if ano_param:
+        try:
+            report_year = int(ano_param)
+        except (TypeError, ValueError):
+            report_year = None
+
+    logger.info(
+        f"PDF Export: School report - colegio_sk={colegio_sk}, ano={report_year}, user={request.user.email}"
+    )
     
     try:
         with get_duckdb_connection() as conn:
@@ -200,7 +210,33 @@ def export_school_report_pdf(request, colegio_sk):
                 ORDER BY ano DESC
                 LIMIT 5
             """
-            history = conn.execute(history_sql, [colegio_sk]).fetchall()
+            history_params = [colegio_sk]
+            if report_year is not None:
+                history_sql = """
+                    SELECT 
+                        ano,
+                        ROUND(AVG(punt_global), 2) as promedio_global,
+                        ROUND(AVG(punt_lectura_critica), 2) as lectura,
+                        ROUND(AVG(punt_matematicas), 2) as matematicas,
+                        ROUND(AVG(punt_sociales_ciudadanas), 2) as sociales,
+                        ROUND(AVG(punt_ciencias_naturales), 2) as ciencias,
+                        ROUND(AVG(punt_ingles), 2) as ingles,
+                        COUNT(*) as estudiantes
+                    FROM gold.fct_icfes_analytics
+                    WHERE colegio_sk = ?
+                      AND CAST(ano AS INTEGER) <= ?
+                    GROUP BY ano
+                    ORDER BY ano DESC
+                    LIMIT 5
+                """
+                history_params.append(report_year)
+
+            history = conn.execute(history_sql, history_params).fetchall()
+            if report_year is None and history:
+                try:
+                    report_year = int(history[0][0])
+                except (TypeError, ValueError):
+                    report_year = None
             
             # Create PDF
             buffer = BytesIO()
@@ -218,6 +254,10 @@ def export_school_report_pdf(request, colegio_sk):
             )
             title = Paragraph(f"Reporte: {school[0]}", title_style)
             story.append(title)
+            if report_year is not None:
+                subtitle = Paragraph(f"Corte de datos: {report_year}", styles['Normal'])
+                story.append(subtitle)
+                story.append(Spacer(1, 0.15*inch))
             
             # School info
             info_data = [
