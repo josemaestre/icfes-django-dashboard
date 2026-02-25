@@ -1,0 +1,2123 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Bilingüismo & Inglés - ICFES Analytic{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Bilingüismo & Inglés' sub_title='Análisis de Competencias en
+Idioma Extranjero' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- FILTROS -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-medium mb-1">Año</label>
+                    <select class="form-select" id="filter-ano">
+                        <option value="">Todos los años (Histórico)</option>
+                        {% for ano in anos_disponibles %}
+                        <option value="{{ ano }}" {% if forloop.first %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium mb-1">Departamento</label>
+                    <select class="form-select" id="filter-depto">
+                        <option value="">Todo Colombia</option>
+                        {% for dept in departamentos %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="btn-apply">
+                        <i class="bx bx-filter-alt align-middle me-1"></i> Aplicar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row" id="kpi-row">
+        <!-- Promedio Nacional -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Promedio Inglés</p>
+                            <h4 class="mb-0 text-primary" id="kpi-promedio">--</h4>
+                            <small class="text-muted">Puntaje global (0-100)</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-primary">
+                                    <i class="bx bx-world text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promedio Oficial -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Inglés Oficial</p>
+                            <h4 class="mb-0 text-info" id="kpi-publico">--</h4>
+                            <small class="text-muted">Colegios Públicos</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-info">
+                                    <i class="bx bx-building-house text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promedio No Oficial -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Inglés No Oficial</p>
+                            <h4 class="mb-0 text-warning" id="kpi-privado">--</h4>
+                            <small class="text-muted">Colegios Privados</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-warning">
+                                    <i class="bx bx-buildings text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Brecha Público vs Privado -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Brecha Público/Privado</p>
+                            <h4 class="mb-0 text-danger" id="kpi-brecha">-- pts</h4>
+                            <small class="text-muted">Privado supera al Público</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle mini-stat-icon">
+                                <span class="avatar-title rounded-circle bg-danger">
+                                    <i class="bx bx-transfer text-white"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MCER LEVEL CARDS -->
+    <div class="row mt-2 g-3" id="mcer-cards-row">
+        <!-- Pre A1 -->
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100" style="border-top: 4px solid #dc3545;">
+                <div class="card-body py-3 px-3">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="flex-grow-1">
+                            <p class="mb-0 text-uppercase fw-semibold text-muted" style="font-size:10px;letter-spacing:.6px;">Pre A1</p>
+                            <h3 class="mb-1 fw-bold text-danger" id="mcer-pct-pre-a1">--%</h3>
+                            <div class="progress mb-1" style="height:4px;border-radius:2px;">
+                                <div class="progress-bar bg-danger" id="mcer-bar-pre-a1" style="width:0%;transition:width .6s;"></div>
+                            </div>
+                            <small class="text-muted" style="font-size:10px;">No supera el umbral inicial</small>
+                        </div>
+                        <i class="bx bx-error-circle text-danger ms-2" style="font-size:26px;opacity:.4;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- A1 -->
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100" style="border-top: 4px solid #fd7e14;">
+                <div class="card-body py-3 px-3">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="flex-grow-1">
+                            <p class="mb-0 text-uppercase fw-semibold text-muted" style="font-size:10px;letter-spacing:.6px;">A1</p>
+                            <h3 class="mb-1 fw-bold text-warning" id="mcer-pct-a1">--%</h3>
+                            <div class="progress mb-1" style="height:4px;border-radius:2px;">
+                                <div class="progress-bar" id="mcer-bar-a1" style="width:0%;transition:width .6s;background:#fd7e14;"></div>
+                            </div>
+                            <small class="text-muted" style="font-size:10px;">Usuario básico inicial</small>
+                        </div>
+                        <i class="bx bx-log-in-circle text-warning ms-2" style="font-size:26px;opacity:.4;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- A2 -->
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100" style="border-top: 4px solid #0dcaf0;">
+                <div class="card-body py-3 px-3">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="flex-grow-1">
+                            <p class="mb-0 text-uppercase fw-semibold text-muted" style="font-size:10px;letter-spacing:.6px;">A2</p>
+                            <h3 class="mb-1 fw-bold text-info" id="mcer-pct-a2">--%</h3>
+                            <div class="progress mb-1" style="height:4px;border-radius:2px;">
+                                <div class="progress-bar bg-info" id="mcer-bar-a2" style="width:0%;transition:width .6s;"></div>
+                            </div>
+                            <small class="text-muted" style="font-size:10px;">Usuario básico avanzado</small>
+                        </div>
+                        <i class="bx bx-up-arrow-circle text-info ms-2" style="font-size:26px;opacity:.4;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- B1 -->
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm h-100" style="border-top: 4px solid #198754;">
+                <div class="card-body py-3 px-3">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="flex-grow-1">
+                            <p class="mb-0 text-uppercase fw-semibold text-muted" style="font-size:10px;letter-spacing:.6px;">B1 / B+</p>
+                            <h3 class="mb-1 fw-bold text-success" id="mcer-pct-b1">--%</h3>
+                            <div class="progress mb-1" style="height:4px;border-radius:2px;">
+                                <div class="progress-bar bg-success" id="mcer-bar-b1" style="width:0%;transition:width .6s;"></div>
+                            </div>
+                            <small class="text-muted" style="font-size:10px;">Hablante independiente · meta MEN 22%</small>
+                        </div>
+                        <i class="bx bx-certification text-success ms-2" style="font-size:26px;opacity:.4;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STORYTELLING: Narrativa dinámica del inglés en Colombia -->
+    <div class="row mt-3 mb-1" id="story-section">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-3">
+                <div class="border-start border-4 border-primary ps-3">
+                    <h5 class="mb-0 fw-bold">La Historia del Inglés en Colombia</h5>
+                    <p class="mb-0 text-muted" style="font-size:12px;">Narrativa generada desde los datos del año seleccionado</p>
+                </div>
+                <div class="ms-auto">
+                    <div id="story-loading" class="spinner-border spinner-border-sm text-muted opacity-50" role="status"></div>
+                </div>
+            </div>
+            <div class="row g-3" id="story-cards-row">
+                <!-- Skeleton cards mientras carga -->
+                <div class="col-md-6 col-xl-3"><div class="card h-100 border-0 shadow-sm placeholder-glow"><div class="card-body"><span class="placeholder col-6 mb-2 d-block"></span><span class="placeholder col-12"></span><span class="placeholder col-10"></span><span class="placeholder col-8 mt-2"></span></div></div></div>
+                <div class="col-md-6 col-xl-3"><div class="card h-100 border-0 shadow-sm placeholder-glow"><div class="card-body"><span class="placeholder col-6 mb-2 d-block"></span><span class="placeholder col-12"></span><span class="placeholder col-10"></span><span class="placeholder col-8 mt-2"></span></div></div></div>
+                <div class="col-md-6 col-xl-3"><div class="card h-100 border-0 shadow-sm placeholder-glow"><div class="card-body"><span class="placeholder col-6 mb-2 d-block"></span><span class="placeholder col-12"></span><span class="placeholder col-10"></span><span class="placeholder col-8 mt-2"></span></div></div></div>
+                <div class="col-md-6 col-xl-3"><div class="card h-100 border-0 shadow-sm placeholder-glow"><div class="card-body"><span class="placeholder col-6 mb-2 d-block"></span><span class="placeholder col-12"></span><span class="placeholder col-10"></span><span class="placeholder col-8 mt-2"></span></div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 1: Charts -->
+    <div class="row mt-2">
+        <!-- Tendencia Histórica -->
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-trending-up me-2 text-info"></i>Evolución del Puntaje de Inglés
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Comparativa histórica entre el desempeño global del ICFES y el puntaje de Inglés
+                        específicamente.
+                    </p>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="chart-tendencia"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribución de Niveles -->
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-pie-chart-alt-2 me-2 text-primary"></i>Distribución MCER
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Clasificación de estudiantes en el Marco Común Europeo de Referencia.
+                    </p>
+                    <div class="d-flex justify-content-center">
+                        <div style="width: 100%; max-width: 400px; height: 300px;">
+                            <canvas id="chart-mcer"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: MCER Histórico (Stacked Bar) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-bar-chart-alt-2 me-2 text-warning"></i>Evolución de Niveles MCER 2016–2024
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Distribución porcentual de estudiantes por nivel del Marco Común Europeo de Referencia cada año.
+                        Solo el <strong>10%</strong> alcanza B1 en 2024 — meta MEN 2025: 22%.
+                    </p>
+                    <div style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="chart-mcer-historico"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 3: Brechas Socioeconómicas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-equalizer me-2 text-danger"></i>Brechas Socioeconómicas en Inglés
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Factores que determinan el rendimiento en inglés. El estrato genera una brecha de
+                        <strong>+23 puntos</strong> entre niveles extremos; la motivación explica hasta <strong>63 puntos</strong> de diferencia.
+                    </p>
+                    <div class="row g-4">
+                        <!-- Por Estrato -->
+                        <div class="col-md-6">
+                            <h6 class="fw-medium text-muted mb-2">
+                                <i class="bx bx-home-circle me-1"></i>Puntaje Promedio por Estrato
+                            </h6>
+                            <div style="position: relative; height: 220px;">
+                                <canvas id="chart-estrato"></canvas>
+                            </div>
+                        </div>
+                        <!-- Por Acceso Digital -->
+                        <div class="col-md-6">
+                            <h6 class="fw-medium text-muted mb-2">
+                                <i class="bx bx-wifi me-1"></i>Impacto del Acceso Digital (Internet + Computador)
+                            </h6>
+                            <div style="position: relative; height: 220px;">
+                                <canvas id="chart-acceso-digital"></canvas>
+                            </div>
+                        </div>
+                        <!-- Por Educación: Story card + grouped chart + insight callout -->
+                        <div class="col-12">
+                            <!-- Story card principal -->
+                            <div id="story-educacion-card" class="rounded-3 p-3 mb-3 d-none"
+                                 style="background: linear-gradient(135deg, rgba(13,110,253,.06) 0%, rgba(102,16,242,.09) 100%);
+                                        border-left: 4px solid #6610f2;">
+                                <div class="row g-3 align-items-start">
+                                    <div class="col-md-7">
+                                        <p class="fw-semibold mb-1" style="font-size:14px;color:#6610f2;">
+                                            <i class="bx bx-book-open me-1"></i>El hogar como primer aula de inglés
+                                        </p>
+                                        <p class="mb-0 text-body-secondary" style="font-size:13px;line-height:1.6;" id="story-educacion-texto"></p>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                                            <div class="text-center px-3 py-2 rounded-2"
+                                                 style="background:rgba(25,135,84,.15); min-width:80px;">
+                                                <div class="fw-bold text-success" id="story-edu-postgrado" style="font-size:22px;">--</div>
+                                                <div class="text-muted" style="font-size:10px;">Con Postgrado</div>
+                                            </div>
+                                            <div class="text-center px-3 py-2 rounded-2"
+                                                 style="background:rgba(220,53,69,.15); min-width:80px;">
+                                                <div class="fw-bold text-danger" id="story-edu-ninguno" style="font-size:22px;">--</div>
+                                                <div class="text-muted" style="font-size:10px;">Sin educación</div>
+                                            </div>
+                                            <div class="text-center px-3 py-2 rounded-2"
+                                                 style="background:rgba(102,16,242,.15); min-width:80px;">
+                                                <div class="fw-bold" id="story-edu-brecha" style="font-size:22px;color:#6610f2;">--</div>
+                                                <div class="text-muted" style="font-size:10px;">Brecha total</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Grouped bar: padre + madre -->
+                            <h6 class="fw-medium text-muted mb-2">
+                                <i class="bx bx-graduation me-1"></i>Puntaje según Nivel Educativo del Hogar
+                                <span class="ms-2 badge bg-primary-subtle text-primary-emphasis fw-normal" style="font-size:10px;">Padre 🔵 vs Madre 🟣</span>
+                            </h6>
+                            <div style="position: relative; height: 250px;">
+                                <canvas id="chart-educacion-padre"></canvas>
+                            </div>
+                            <!-- Insight callout: el mensaje que emerge del chart -->
+                            <div id="story-edu-bottom" class="mt-3 d-none">
+                                <div class="d-flex align-items-start gap-3 rounded-3 p-3"
+                                     style="background:rgba(102,16,242,.05);border:1px solid rgba(102,16,242,.18);">
+                                    <div style="font-size:26px;line-height:1;flex-shrink:0;">💡</div>
+                                    <div>
+                                        <p class="fw-semibold mb-1" style="font-size:13px;" id="story-edu-insight"></p>
+                                        <p class="mb-0 text-muted" style="font-size:11px;font-style:italic;" id="story-edu-nuance"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="brechas-loading" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
+                        <span class="text-muted" style="font-size:13px;">Calculando brechas socioeconómicas...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 4: Estado de Ánimo vs Inglés -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-smile me-2 text-info"></i>Estado de Ánimo y Desempeño en Inglés
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        La autopercepción del estudiante sobre su inglés genera la mayor brecha observada en los datos:
+                        <strong>63 puntos</strong> entre quienes tienen motivación "Muy Baja" (~31 pts) y "Muy Alta" (~94 pts).
+                        Un indicador de que el trabajo motivacional es tan crítico como el pedagógico.
+                    </p>
+                    <div style="position: relative; height: 240px; width: 100%;">
+                        <canvas id="chart-estado-animo"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 5: Potencial en Inglés por Colegio (ML) -->
+    <div class="row mt-4">
+        <!-- Colegios Transformadores -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-rocket me-2 text-success"></i>Colegios Transformadores
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Instituciones que superan el puntaje esperado dado su contexto socioeconómico.
+                        Identificadas por el modelo ML de Potencial en Inglés.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th class="text-end">Inglés</th>
+                                    <th class="text-end">Esperado</th>
+                                    <th class="text-end">Exceso</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-transformadores">
+                                <tr><td colspan="4" class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Cargando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Colegios en Riesgo Contextual -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-trending-down me-2 text-danger"></i>Potencial sin Aprovechar
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Colegios que rinden por debajo de lo esperado dado su contexto favorable.
+                        Mayor oportunidad de mejora en inglés.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th class="text-end">Inglés</th>
+                                    <th class="text-end">Esperado</th>
+                                    <th class="text-end">Brecha</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-riesgo-ingles">
+                                <tr><td colspan="4" class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Cargando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 6: Mapa de Rendimiento Departamental -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-map-alt me-2 text-primary"></i>Rendimiento en Inglés por Departamento
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Promedio de inglés y porcentaje de estudiantes que alcanzan nivel B1 en cada departamento (año seleccionado).
+                        El color indica la intensidad del promedio: <span style="color:#dc3545">●</span> bajo &nbsp; <span style="color:#ffc107">●</span> medio &nbsp; <span style="color:#198754">●</span> alto.
+                    </p>
+                    <div style="position: relative; height: 560px; width: 100%;">
+                        <canvas id="chart-mapa-depto"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 7: Tabla de Excelencia (Top Colegios) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-trophy me-2 text-warning"></i>Top Colegios en Inglés
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Instituciones con mayor puntaje promedio en el área de idioma extranjero.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle" id="tabla-colegios">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:50px;">Rank</th>
+                                    <th>Colegio</th>
+                                    <th>Municipio</th>
+                                    <th>Sector</th>
+                                    <th class="text-end">Estudiantes</th>
+                                    <th class="text-end text-primary">Promedio Inglés</th>
+                                    <th class="text-center" style="width:100px;">Ver</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-colegios-body">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                        </div>
+                                        Cargando datos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 8: Alertas de Declive en Inglés -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card border-danger border-opacity-25">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-bell me-2 text-danger"></i>Alertas de Declive Sostenido en Inglés
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        Instituciones con <strong>3 años consecutivos de caída</strong> en el puntaje promedio de inglés.
+                        Identificadas como prioritarias para intervención pedagógica. La columna "Caída" indica la pérdida acumulada.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Institución</th>
+                                    <th>Depto</th>
+                                    <th>Sector</th>
+                                    <th class="text-end">Inglés Base</th>
+                                    <th class="text-end">Año Medio</th>
+                                    <th class="text-end">Actual</th>
+                                    <th class="text-end text-danger">Caída</th>
+                                    <th class="text-center">Alerta</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-alertas-declive">
+                                <tr><td colspan="8" class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Detectando patrones de declive...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="alertas-empty" class="d-none text-center py-3 text-success">
+                        <i class="bx bx-check-circle fs-4 me-2"></i>
+                        <span>No se detectaron colegios con declive sostenido en inglés para el año seleccionado.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ROW 9: Predicciones de Inglés 2025 (GBM ML) -->
+    <div class="row mt-4">
+        <div class="col-12 mb-2">
+            <h5 class="fw-semibold mb-0">
+                <i class="bx bx-trending-up me-2 text-primary"></i>Predicciones de Inglés 2025
+                <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:11px;">ML · GBM · R²=0.88</span>
+            </h5>
+            <p class="text-muted mb-0" style="font-size:13px;">Proyecciones del puntaje de inglés para 2025 basadas en el historial de cada colegio (lag features + GBM).</p>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-up-arrow-alt me-2 text-success"></i>Con Mayor Mejora Esperada
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">Colegios con mayor incremento predicho en inglés para 2025.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th class="text-end">2024</th>
+                                    <th class="text-end">2025 pred.</th>
+                                    <th class="text-end">Cambio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-prediccion-mejora">
+                                <tr><td colspan="4" class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Cargando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-down-arrow-alt me-2 text-danger"></i>Con Mayor Riesgo de Declive
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">Colegios que requieren atención preventiva para 2025.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th class="text-end">2024</th>
+                                    <th class="text-end">2025 pred.</th>
+                                    <th class="text-end">Cambio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-prediccion-declive">
+                                <tr><td colspan="4" class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Cargando...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 10: Prioridad de Intervención en Inglés -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="bx bx-target-lock me-2 text-warning"></i>Prioridad de Intervención
+                            </h4>
+                            <p class="text-muted mb-0" style="font-size:13px;">
+                                Score compuesto 0-100: brecha vs potencial (35%), declive 3 años (30%), nivel absoluto (25%), volumen (10%).
+                            </p>
+                        </div>
+                        <div class="btn-group btn-group-sm" id="filtro-nivel-prioridad" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" data-nivel="">Todos</button>
+                            <button type="button" class="btn btn-outline-danger" data-nivel="Cr&#237;tico">Crítico</button>
+                            <button type="button" class="btn btn-outline-warning" data-nivel="Urgente">Urgente</button>
+                            <button type="button" class="btn btn-outline-info" data-nivel="Atenci&#243;n">Atención</button>
+                            <button type="button" class="btn btn-outline-success" data-nivel="Estable">Estable</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Colegio</th>
+                                    <th class="text-end">Inglés</th>
+                                    <th class="text-end">Exceso</th>
+                                    <th style="min-width:130px;">Score Prioridad</th>
+                                    <th class="text-center">Nivel</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-prioridad-ingles">
+                                <tr><td colspan="6" class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>Calculando prioridades...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 11: Clusters Departamentales por Trayectoria -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12 mb-2">
+            <h5 class="fw-semibold mb-0">
+                <i class="bx bx-network-chart me-2 text-primary"></i>Clusters de Departamentos por Trayectoria
+                <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:11px;">K-Means · 4 grupos</span>
+            </h5>
+            <p class="text-muted mb-0" style="font-size:13px;">Agrupación de los 32 departamentos según su historia, tendencia y nivel reciente en inglés.</p>
+        </div>
+        <div class="col-12">
+            <div class="row" id="clusters-cards">
+                <div class="col-12 text-center text-muted py-4">
+                    <div class="spinner-border spinner-border-sm me-2"></div>Cargando clusters departamentales...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 12: Análisis Narrativo con IA -->
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card" style="border-top: 3px solid #6f42c1;">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 class="card-title mb-1">
+                                <i class="bx bx-brain me-2" style="color:#6f42c1;"></i>Análisis Narrativo con Inteligencia Artificial
+                                <span class="badge ms-2" style="font-size:11px; background-color:#ede7f6; color:#6f42c1;">Claude AI · Sonnet</span>
+                            </h4>
+                            <p class="text-muted mb-0" style="font-size:13px;">
+                                Interpretación ejecutiva generada por IA a partir de todos los indicadores del módulo de inglés.
+                                Diseñada para secretarías de educación y el Ministerio.
+                            </p>
+                        </div>
+                        <div id="ai-meta" class="text-end text-muted d-none" style="font-size:12px; white-space:nowrap;"></div>
+                    </div>
+
+                    <!-- Estado: cargando -->
+                    <div id="ai-loading" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+                        Consultando análisis IA...
+                    </div>
+
+                    <!-- Estado: no disponible -->
+                    <div id="ai-no-disponible" class="d-none text-center py-4">
+                        <i class="bx bx-bot fs-2 text-secondary mb-2 d-block"></i>
+                        <p class="text-muted mb-3" id="ai-no-disponible-msg">El análisis IA no ha sido generado para este período.</p>
+                        <button id="btn-generar-ia" class="btn btn-sm" style="border-color:#6f42c1; color:#6f42c1;">
+                            <i class="bx bx-bolt me-1"></i>Generar análisis ahora
+                        </button>
+                        <div id="ai-generando" class="d-none mt-3">
+                            <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+                            <span class="text-muted">Generando análisis con IA… puede tardar 20–30 segundos</span>
+                        </div>
+                    </div>
+
+                    <!-- Estado: análisis disponible -->
+                    <div id="ai-contenido" class="d-none">
+                        <div class="accordion accordion-flush" id="accordion-ia">
+
+                            <div class="accordion-item border-0">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button fw-semibold ps-0 collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#ai-situacion">
+                                        <i class="bx bx-bar-chart-square me-2 text-primary"></i>Situación Actual
+                                    </button>
+                                </h2>
+                                <div id="ai-situacion" class="accordion-collapse collapse show" data-bs-parent="#accordion-ia">
+                                    <div class="accordion-body px-0 pt-1 text-secondary lh-lg" id="ai-situacion-texto"></div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item border-0 border-top">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button fw-semibold ps-0 collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#ai-geografia">
+                                        <i class="bx bx-map-alt me-2 text-success"></i>Geografía / Clusters
+                                    </button>
+                                </h2>
+                                <div id="ai-geografia" class="accordion-collapse collapse" data-bs-parent="#accordion-ia">
+                                    <div class="accordion-body px-0 pt-1 text-secondary lh-lg" id="ai-geografia-texto"></div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item border-0 border-top">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button fw-semibold ps-0 collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#ai-prediccion">
+                                        <i class="bx bx-trending-up me-2 text-warning"></i>Predicción 2025
+                                    </button>
+                                </h2>
+                                <div id="ai-prediccion" class="accordion-collapse collapse" data-bs-parent="#accordion-ia">
+                                    <div class="accordion-body px-0 pt-1 text-secondary lh-lg" id="ai-prediccion-texto"></div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item border-0 border-top">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button fw-semibold ps-0 collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#ai-brecha">
+                                        <i class="bx bx-git-branch me-2 text-danger"></i>Brechas Socioeconómicas
+                                    </button>
+                                </h2>
+                                <div id="ai-brecha" class="accordion-collapse collapse" data-bs-parent="#accordion-ia">
+                                    <div class="accordion-body px-0 pt-1 text-secondary lh-lg" id="ai-brecha-texto"></div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item border-0 border-top">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button fw-semibold ps-0 collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#ai-recomendacion">
+                                        <i class="bx bx-bulb me-2" style="color:#6f42c1;"></i>Recomendaciones
+                                    </button>
+                                </h2>
+                                <div id="ai-recomendacion" class="accordion-collapse collapse" data-bs-parent="#accordion-ia">
+                                    <div class="accordion-body px-0 pt-1 text-secondary lh-lg" id="ai-recomendacion-texto"></div>
+                                </div>
+                            </div>
+
+                        </div><!-- /accordion-ia -->
+                    </div><!-- /ai-contenido -->
+
+                </div><!-- /card-body -->
+            </div><!-- /card -->
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+
+<!-- Modal: Evolución Histórica de Inglés por Colegio -->
+<div class="modal fade" id="modal-ingles-serie" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-1">
+                <div class="flex-grow-1 me-2">
+                    <h5 class="modal-title fw-bold mb-1" id="modal-colegio-nombre">Cargando...</h5>
+                    <div id="modal-colegio-meta" class="d-flex flex-wrap gap-2"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <!-- KPI rápidos -->
+                <div class="row g-2 mb-3" id="modal-stats-row"></div>
+                <!-- Gráfico de evolución -->
+                <div style="position: relative; height: 220px; width: 100%;">
+                    <canvas id="chart-serie-modal"></canvas>
+                </div>
+                <!-- Tabla año a año -->
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Año</th>
+                                <th class="text-end">Inglés</th>
+                                <th class="text-end">Prom. Nacional</th>
+                                <th class="text-end">vs Nacional</th>
+                                <th class="text-end">Estudiantes</th>
+                                <th class="text-center">Tendencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-serie-tabla">
+                            <tr><td colspan="6" class="text-center py-3 text-muted">
+                                <div class="spinner-border spinner-border-sm me-2"></div>Cargando...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-1">
+                <a href="#" id="modal-link-perfil" class="btn btn-outline-primary btn-sm">
+                    <i class="bx bx-link-external me-1"></i>Ver perfil completo
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        'use strict';
+
+        var chartTendencia = null;
+        var chartMcer = null;
+        var chartMcerHistorico = null;
+        var chartEstrato = null;
+        var chartAcceso = null;
+        var chartEducacion = null;
+        var chartEstadoAnimo = null;
+        var chartMapaDepto = null;
+        var chartSerie = null;
+        var modalIngles = null;
+
+        function getAno() { return document.getElementById('filter-ano').value; }
+        function getDepto() { return document.getElementById('filter-depto').value; }
+        function withBust(url) { return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_ts=' + Date.now(); }
+        function num(v) {
+            var n = Number(v);
+            return Number.isFinite(n) ? n : 0;
+        }
+        function normSector(s) {
+            if (!s) return 'OFICIAL';
+            var upper = String(s).toUpperCase();
+            if (upper === 'NO_OFICIAL' || upper === 'NO OFICIAL' || upper === '0' || upper === 'PRIVADO') return 'NO_OFICIAL';
+            return 'OFICIAL';
+        }
+
+        document.getElementById('btn-apply').addEventListener('click', loadAll);
+        document.getElementById('filter-ano').addEventListener('change', loadAll);
+        document.getElementById('filter-depto').addEventListener('change', loadAll);
+
+        function loadAll() {
+            loadStory();
+            loadKpis();
+            loadTendencia();
+            loadMcer();
+            loadMcerHistorico();
+            loadTopColegios();
+            loadPotencial();
+            loadEstadoAnimo();
+            loadMapaDepto();
+            loadAlertasDeclive();
+            loadPrediccion();
+            loadPrioridad('');
+            loadAnalisisIA();
+        }
+
+        // ── KPIs ──────────────────────────────────────────────
+        function loadKpis() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/ingles/kpis/?' + (ano ? 'ano=' + ano + '&' : '') + (depto ? 'departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || {};
+                    document.getElementById('kpi-promedio').textContent = num(data.promedio_ingles).toFixed(1);
+                    document.getElementById('kpi-publico').textContent = num(data.promedio_ingles_publico).toFixed(1);
+                    document.getElementById('kpi-privado').textContent = num(data.promedio_ingles_privado).toFixed(1);
+                    var brecha = num(data.brecha_ingles);
+                    document.getElementById('kpi-brecha').textContent = (brecha >= 0 ? '+' : '') + brecha.toFixed(1) + ' pts';
+                })
+                .catch(e => console.error('loadKpis error', e));
+        }
+
+        // ── Tendencia Histórica ───────────────────────────────
+        function loadTendencia() {
+            var depto = getDepto();
+            // Para tendencia usualmente no filtramos por año sino que mostramos todos
+            var url = '/icfes/api/ingles/tendencia/?' + (depto ? 'departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    var labels = data.map(d => d.ano);
+                    var dataIngles = data.map(d => num(d.promedio_ingles));
+                    var dataGlobal = data.map(d => num(d.promedio_global) * (50 / 250)); // Normalizado aprox para comparar 0-100 vs 0-500
+
+                    var ctx = document.getElementById('chart-tendencia').getContext('2d');
+                    if (chartTendencia) { chartTendencia.destroy(); }
+
+                    chartTendencia = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Promedio Inglés (0-100)',
+                                    data: dataIngles,
+                                    borderColor: '#0d6efd',
+                                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    borderWidth: 2,
+                                    pointRadius: 4
+                                },
+                                {
+                                    label: 'Promedio Global (Escalado)',
+                                    data: dataGlobal,
+                                    borderColor: '#adb5bd',
+                                    borderDash: [5, 5],
+                                    fill: false,
+                                    tension: 0.4,
+                                    borderWidth: 2,
+                                    pointRadius: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (context) {
+                                            if (context.datasetIndex === 1) {
+                                                return context.dataset.label + ': ' + (context.parsed.y * 5).toFixed(1) + ' (Real)';
+                                            }
+                                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1);
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { min: 30, max: 60, grid: { color: '#f0f0f0' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                })
+                .catch(e => console.error('loadTendencia error', e));
+        }
+
+        // ── Distribución MCER ─────────────────────────────────
+        function loadMcer() {
+            var ano = getAno();
+            var depto = getDepto();
+            var url = '/icfes/api/ingles/distribucion/?' + (ano ? 'ano=' + ano + '&' : '') + (depto ? 'departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+
+                    // Poblar las 4 MCER level cards
+                    var cardIds = ['pre-a1', 'a1', 'a2', 'b1'];
+                    data.forEach(function(d, i) {
+                        var elPct = document.getElementById('mcer-pct-' + cardIds[i]);
+                        var elBar = document.getElementById('mcer-bar-' + cardIds[i]);
+                        if (elPct) elPct.textContent = d.percent + '%';
+                        if (elBar) setTimeout(function(p){ return function(){ elBar.style.width = Math.min(p, 100) + '%'; }; }(d.percent), 200);
+                    });
+
+                    var ctx = document.getElementById('chart-mcer').getContext('2d');
+                    if (chartMcer) { chartMcer.destroy(); }
+
+                    if (!data.length) return;
+
+                    var labels = data.map(d => d.name + ' (' + d.percent + '%)');
+                    var values = data.map(d => d.percent);
+                    var colors = ['#dc3545', '#ffc107', '#0dcaf0', '#198754'];
+
+                    chartMcer = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: colors,
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'right' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (c) { return ' ' + c.raw + '%'; }
+                                    }
+                                }
+                            },
+                            cutout: '65%'
+                        }
+                    });
+                })
+                .catch(e => console.error('loadMcer error', e));
+        }
+
+        // ── Top Colegios ──────────────────────────────────────
+        function loadTopColegios() {
+            var ano = getAno();
+            var depto = getDepto();
+            var tbody = document.getElementById('tabla-colegios-body');
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Cargando...</td></tr>';
+
+            var url = '/icfes/api/ingles/colegios-top/?' + (ano ? 'ano=' + ano + '&' : '') + (depto ? 'departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No se encontraron datos para los filtros seleccionados.</td></tr>';
+                        return;
+                    }
+
+                    var html = '';
+                    data.forEach(function (d, i) {
+                        var isPriv = normSector(d.sector) === 'NO_OFICIAL';
+                        var badgeCls = isPriv ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info';
+                        var secName = isPriv ? 'Privado' : 'Público';
+
+                        html += '<tr>' +
+                            '<td class="fw-bold">' + (i + 1) + '</td>' +
+                            '<td><div class="fw-medium text-truncate" style="max-width: 300px;" title="' + (d.nombre_colegio || 'NR') + '">' + (d.nombre_colegio || 'NR') + '</div></td>' +
+                            '<td><small class="text-muted">' + (d.municipio || '') + '</small></td>' +
+                            '<td><span class="badge ' + badgeCls + '">' + secName + '</span></td>' +
+                            '<td class="text-end">' + (d.total_estudiantes || 0).toLocaleString() + '</td>' +
+                            '<td class="text-end fw-bold text-primary">' + num(d.promedio_ingles).toFixed(1) + '</td>' +
+                            '<td class="text-center"><a href="/icfes/colegio/?sk=' + (d.colegio_sk || '') + '" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bx bx-right-arrow-alt"></i></a></td>' +
+                            '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                })
+                .catch(function (e) {
+                    console.error('loadTopColegios error', e);
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error cargando colegios.</td></tr>';
+                });
+        }
+
+        // ── MCER Histórico (Stacked Bar) ──────────────────────
+        function loadMcerHistorico() {
+            var depto = getDepto();
+            var url = '/icfes/api/ingles/mcer-historico/' + (depto ? '?departamento=' + encodeURIComponent(depto) : '');
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) return;
+
+                    var labels = data.map(d => d.ano);
+                    var ctx = document.getElementById('chart-mcer-historico').getContext('2d');
+                    if (chartMcerHistorico) { chartMcerHistorico.destroy(); }
+
+                    chartMcerHistorico = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Pre A1 (Bajo mínimo)',
+                                    data: data.map(d => d.pct_pre_a1),
+                                    backgroundColor: '#dc3545',
+                                    stack: 'mcer'
+                                },
+                                {
+                                    label: 'A1 (Básico)',
+                                    data: data.map(d => d.pct_a1),
+                                    backgroundColor: '#fd7e14',
+                                    stack: 'mcer'
+                                },
+                                {
+                                    label: 'A2 (Elemental)',
+                                    data: data.map(d => d.pct_a2),
+                                    backgroundColor: '#0dcaf0',
+                                    stack: 'mcer'
+                                },
+                                {
+                                    label: 'B1 (Intermedio)',
+                                    data: data.map(d => d.pct_b1),
+                                    backgroundColor: '#198754',
+                                    stack: 'mcer'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index' },
+                            plugins: {
+                                legend: { position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (c) { return ' ' + c.dataset.label + ': ' + c.raw + '%'; }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { stacked: true, grid: { display: false } },
+                                y: { stacked: true, max: 100, ticks: { callback: v => v + '%' } }
+                            }
+                        }
+                    });
+                })
+                .catch(e => console.error('loadMcerHistorico error', e));
+        }
+
+        // ── Brechas Socioeconómicas (carga única) ────────────
+        function loadBrechas() {
+            var url = '/icfes/api/ingles/brechas/';
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || {};
+                    var loadingEl = document.getElementById('brechas-loading');
+                    if (loadingEl) loadingEl.style.display = 'none';
+                    renderEstrato(data.por_estrato || []);
+                    renderAcceso(data.por_acceso || []);
+                    renderEducacion(data.por_educacion_padre || [], data.por_educacion_madre || [], data.story_educacion || null);
+                })
+                .catch(e => console.error('loadBrechas error', e));
+        }
+
+        function renderEstrato(items) {
+            var ctx = document.getElementById('chart-estrato').getContext('2d');
+            if (chartEstrato) { chartEstrato.destroy(); }
+            chartEstrato = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: items.map(d => d.estrato),
+                    datasets: [{
+                        label: 'Puntaje Inglés Promedio',
+                        data: items.map(d => num(d.avg_ingles)),
+                        backgroundColor: items.map((_, i) => {
+                            var pct = i / Math.max(items.length - 1, 1);
+                            var r = Math.round(220 - pct * 170);
+                            var g = Math.round(50 + pct * 120);
+                            var b = 80;
+                            return 'rgba(' + r + ',' + g + ',' + b + ',0.85)';
+                        }),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 35, max: 75, ticks: { stepSize: 5 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderAcceso(items) {
+            var ctx = document.getElementById('chart-acceso-digital').getContext('2d');
+            if (chartAcceso) { chartAcceso.destroy(); }
+            var labels = items.map(d => {
+                var inet = d.tiene_internet === 'Si' ? 'Con Internet' : 'Sin Internet';
+                var comp = d.tiene_computador === 'Si' ? '+ PC' : '- PC';
+                return inet + ' ' + comp;
+            });
+            chartAcceso = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Puntaje Inglés Promedio',
+                        data: items.map(d => num(d.avg_ingles)),
+                        backgroundColor: items.map(d => {
+                            var hasI = d.tiene_internet === 'Si';
+                            var hasC = d.tiene_computador === 'Si';
+                            if (hasI && hasC) return '#198754';
+                            if (hasI || hasC) return '#0dcaf0';
+                            return '#dc3545';
+                        }),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 38, max: 58 },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderEducacion(padre, madre, story) {
+            // ── Story insight card ───────────────────────────────
+            if (story && story.hogar_postgrado > 0 && story.hogar_ninguno > 0) {
+                var brecha = story.brecha_hogar != null ? story.brecha_hogar : (story.hogar_postgrado - story.hogar_ninguno);
+                var card = document.getElementById('story-educacion-card');
+                card.classList.remove('d-none');
+                document.getElementById('story-edu-postgrado').textContent = story.hogar_postgrado.toFixed(1);
+                document.getElementById('story-edu-ninguno').textContent = story.hogar_ninguno.toFixed(1);
+                document.getElementById('story-edu-brecha').textContent = brecha.toFixed(1) + ' pts';
+                document.getElementById('story-educacion-texto').innerHTML =
+                    'Hogares con <strong>al menos un padre o madre con postgrado</strong> promedian '
+                    + '<strong class="text-success">' + story.hogar_postgrado.toFixed(1) + ' pts</strong>. '
+                    + 'Cuando <strong>ninguno tiene educación formal</strong>, el promedio baja a '
+                    + '<strong class="text-danger">' + story.hogar_ninguno.toFixed(1) + ' pts</strong>. '
+                    + 'Una diferencia de <strong style="color:#6610f2;">' + brecha.toFixed(1) + ' puntos</strong> — '
+                    + 'mayor que la brecha entre colegio público y privado (<strong>~9 pts</strong>). '
+                    + 'El gráfico muestra padre y madre en paralelo; las barras son casi idénticas en cada nivel.';
+
+                // ── Insight callout (el mensaje que emerge del chart) ─
+                var bottom = document.getElementById('story-edu-bottom');
+                if (bottom) {
+                    bottom.classList.remove('d-none');
+                    document.getElementById('story-edu-insight').innerHTML =
+                        'No importa si es papá o mamá: en cada nivel educativo, la diferencia entre ambos es menor a 2 puntos. '
+                        + 'Lo que marca la diferencia es <strong>el capital educativo del hogar como conjunto</strong>.';
+                    document.getElementById('story-edu-nuance').innerHTML =
+                        'Esta es una correlación estadística basada en ' + (story.n_postgrado || 0).toLocaleString() + ' hogares con postgrado '
+                        + 'y ' + (story.n_ninguno || 0).toLocaleString() + ' sin educación formal (2018-2024). '
+                        + 'No implica causalidad: la motivación, la calidad docente y el esfuerzo personal pueden cambiar el resultado. '
+                        + 'El nivel educativo del hogar abre puertas — el estudiante elige si cruzarlas.';
+                }
+            }
+
+            // ── Grouped bar chart ────────────────────────────────
+            var ctx = document.getElementById('chart-educacion-padre').getContext('2d');
+            if (chartEducacion) { chartEducacion.destroy(); }
+
+            // Alinear labels por nivel_educacion del padre (ya ordenado por avg desc)
+            var labels = padre.map(d => {
+                var l = d.nivel_educacion || '';
+                return l.length > 32 ? l.substring(0, 30) + '…' : l;
+            });
+
+            // Mapear madre al mismo orden de labels
+            var madreMap = {};
+            (madre || []).forEach(d => { madreMap[d.nivel_educacion] = num(d.avg_ingles); });
+            var dataMadre = padre.map(d => madreMap[d.nivel_educacion] || null);
+
+            chartEducacion = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Padre',
+                            data: padre.map(d => num(d.avg_ingles)),
+                            backgroundColor: 'rgba(13,110,253,.75)',
+                            borderRadius: 3,
+                            barPercentage: 0.8,
+                        },
+                        {
+                            label: 'Madre',
+                            data: dataMadre,
+                            backgroundColor: 'rgba(102,16,242,.65)',
+                            borderRadius: 3,
+                            barPercentage: 0.8,
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(c) { return ' ' + c.dataset.label + ': ' + c.raw + ' pts'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { min: 38, max: 73, grid: { color: '#f0f0f0' } },
+                        y: { ticks: { font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // ── Potencial en Inglés (ML) ──────────────────────────
+        function loadPotencial() {
+            var ano = getAno() || '2024';
+            var depto = getDepto();
+            var baseUrl = '/icfes/api/ingles/potencial/?ano=' + ano + (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+
+            // Transformadores
+            var tbodyT = document.getElementById('tabla-transformadores');
+            tbodyT.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';
+            fetch(withBust(baseUrl + '&modo=transformadores'))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        tbodyT.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Modelo ML pendiente de entrenamiento</td></tr>';
+                        return;
+                    }
+                    tbodyT.innerHTML = data.map(function (d, i) {
+                        var isPriv = String(d.sector).toUpperCase().indexOf('OFICIAL') >= 0 && String(d.sector).toUpperCase().indexOf('NO') >= 0;
+                        var badge = isPriv ? 'bg-warning-subtle text-warning-emphasis' : 'bg-info-subtle text-info-emphasis';
+                        var secLabel = isPriv ? 'Privado' : 'Público';
+                        var exceso = num(d.exceso_ingles);
+                        var link = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
+                        return '<tr>' +
+                            '<td><a href="' + link + '" class="text-decoration-none fw-medium text-truncate d-block" style="max-width:200px" title="' + (d.nombre_colegio || '') + '">' + (d.nombre_colegio || 'N/D') + '</a>' +
+                            '<small class="text-muted">' + (d.departamento || '') + ' · <span class="badge ' + badge + '">' + secLabel + '</span></small></td>' +
+                            '<td class="text-end fw-bold">' + num(d.avg_ingles).toFixed(1) + '</td>' +
+                            '<td class="text-end text-muted">' + num(d.score_esperado).toFixed(1) + '</td>' +
+                            '<td class="text-end fw-bold text-success">+' + exceso.toFixed(1) + '</td>' +
+                            '</tr>';
+                    }).join('');
+                })
+                .catch(e => {
+                    tbodyT.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Modelo ML pendiente</td></tr>';
+                });
+
+            // En Riesgo Contextual
+            var tbodyR = document.getElementById('tabla-riesgo-ingles');
+            tbodyR.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';
+            fetch(withBust(baseUrl + '&modo=riesgo'))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        tbodyR.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Modelo ML pendiente de entrenamiento</td></tr>';
+                        return;
+                    }
+                    tbodyR.innerHTML = data.map(function (d) {
+                        var isPriv = String(d.sector).toUpperCase().indexOf('OFICIAL') >= 0 && String(d.sector).toUpperCase().indexOf('NO') >= 0;
+                        var badge = isPriv ? 'bg-warning-subtle text-warning-emphasis' : 'bg-info-subtle text-info-emphasis';
+                        var secLabel = isPriv ? 'Privado' : 'Público';
+                        var exceso = num(d.exceso_ingles);
+                        var link = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
+                        return '<tr>' +
+                            '<td><a href="' + link + '" class="text-decoration-none fw-medium text-truncate d-block" style="max-width:200px" title="' + (d.nombre_colegio || '') + '">' + (d.nombre_colegio || 'N/D') + '</a>' +
+                            '<small class="text-muted">' + (d.departamento || '') + ' · <span class="badge ' + badge + '">' + secLabel + '</span></small></td>' +
+                            '<td class="text-end fw-bold">' + num(d.avg_ingles).toFixed(1) + '</td>' +
+                            '<td class="text-end text-muted">' + num(d.score_esperado).toFixed(1) + '</td>' +
+                            '<td class="text-end fw-bold text-danger">' + exceso.toFixed(1) + '</td>' +
+                            '</tr>';
+                    }).join('');
+                })
+                .catch(e => {
+                    tbodyR.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Modelo ML pendiente</td></tr>';
+                });
+        }
+
+        // ── Storytelling: Narrativa dinámica ─────────────────
+        var COLOR_HEX = { primary: '#0d6efd', warning: '#fd7e14', danger: '#dc3545', success: '#198754', info: '#0dcaf0' };
+
+        function loadStory() {
+            var ano = getAno() || '2024';
+            var loader = document.getElementById('story-loading');
+            if (loader) loader.style.display = '';
+
+            fetch(withBust('/icfes/api/ingles/story/?ano=' + ano))
+                .then(r => r.json())
+                .then(json => {
+                    if (loader) loader.style.display = 'none';
+                    var chapters = (json.data || {}).chapters || [];
+                    if (!chapters.length) return;
+
+                    document.getElementById('story-cards-row').innerHTML = chapters.map(function (ch) {
+                        var hex = COLOR_HEX[ch.color] || '#6c757d';
+                        var metricas = (ch.metricas || []).map(function (m) {
+                            var mc = m.color || 'secondary';
+                            return '<span class="badge bg-' + mc + '-subtle text-' + mc + '-emphasis px-2 py-1" style="font-size:11px;">' +
+                                '<strong>' + m.valor + '</strong> <span class="opacity-75">' + m.label + '</span>' +
+                                '</span>';
+                        }).join('');
+
+                        return '<div class="col-md-6 col-xl-3">' +
+                            '<div class="card h-100 border-0 shadow-sm" style="border-left:4px solid ' + hex + '!important;">' +
+                            '<div class="card-body d-flex flex-column p-3">' +
+                            '<div class="d-flex align-items-center mb-2 gap-2">' +
+                            '<div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:34px;height:34px;background:' + hex + '18;">' +
+                            '<i class="bx ' + ch.icon + '" style="color:' + hex + ';font-size:17px;"></i>' +
+                            '</div>' +
+                            '<h6 class="fw-bold mb-0" style="font-size:13px;line-height:1.3;">' + ch.titulo + '</h6>' +
+                            '</div>' +
+                            '<p class="text-muted flex-grow-1 mb-3" style="font-size:12.5px;line-height:1.65;">' + ch.texto + '</p>' +
+                            '<div class="d-flex flex-wrap gap-1 pt-2 border-top">' + metricas + '</div>' +
+                            '</div></div></div>';
+                    }).join('');
+                })
+                .catch(e => {
+                    console.error('loadStory error', e);
+                    if (loader) loader.style.display = 'none';
+                });
+        }
+
+        // ── Estado de Ánimo vs Inglés ─────────────────────────
+        function loadEstadoAnimo() {
+            var ano = getAno() || '2024';
+            var url = '/icfes/api/ingles/estado-animo/?ano=' + ano;
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) return;
+
+                    var ctx = document.getElementById('chart-estado-animo').getContext('2d');
+                    if (chartEstadoAnimo) { chartEstadoAnimo.destroy(); }
+
+                    // Gradiente rojo→verde según posición (mayor avg = más verde)
+                    var maxVal = Math.max.apply(null, data.map(d => num(d.avg_ingles)));
+                    var minVal = Math.min.apply(null, data.map(d => num(d.avg_ingles)));
+
+                    var colors = data.map(d => {
+                        var pct = maxVal > minVal ? (num(d.avg_ingles) - minVal) / (maxVal - minVal) : 0.5;
+                        var r = Math.round(220 * (1 - pct));
+                        var g = Math.round(40 + 130 * pct);
+                        var b = 60;
+                        return 'rgba(' + r + ',' + g + ',' + b + ',0.85)';
+                    });
+
+                    chartEstadoAnimo = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(d => d.estado_animo_ingles),
+                            datasets: [{
+                                label: 'Puntaje Promedio en Inglés',
+                                data: data.map(d => num(d.avg_ingles)),
+                                backgroundColor: colors,
+                                borderRadius: 5,
+                                barThickness: 32
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (c) {
+                                            var item = data[c.dataIndex];
+                                            return ' ' + c.raw.toFixed(1) + ' pts  (' + (item.total || 0).toLocaleString() + ' est.)';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    min: 20,
+                                    ticks: { callback: v => v + ' pts' },
+                                    grid: { color: '#f0f0f0' }
+                                },
+                                y: { grid: { display: false } }
+                            }
+                        }
+                    });
+                })
+                .catch(e => console.error('loadEstadoAnimo error', e));
+        }
+
+        // ── Mapa Departamental (bar chart horizontal con gradiente) ──────
+        function loadMapaDepto() {
+            var ano = getAno() || '2024';
+            var url = '/icfes/api/ingles/mapa-depto/?ano=' + ano;
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) return;
+
+                    // Ordenar por avg_ingles desc
+                    data.sort((a, b) => num(b.avg_ingles) - num(a.avg_ingles));
+
+                    var ctx = document.getElementById('chart-mapa-depto').getContext('2d');
+                    if (chartMapaDepto) { chartMapaDepto.destroy(); }
+
+                    var maxVal = num(data[0].avg_ingles);
+                    var minVal = num(data[data.length - 1].avg_ingles);
+
+                    function deptoColor(val) {
+                        var pct = maxVal > minVal ? (val - minVal) / (maxVal - minVal) : 0.5;
+                        var r = Math.round(220 * (1 - pct));
+                        var g = Math.round(50 + 100 * pct);
+                        var b = 60;
+                        return 'rgba(' + r + ',' + g + ',' + b + ',0.82)';
+                    }
+
+                    chartMapaDepto = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(d => d.departamento),
+                            datasets: [
+                                {
+                                    label: 'Promedio Inglés',
+                                    data: data.map(d => num(d.avg_ingles)),
+                                    backgroundColor: data.map(d => deptoColor(num(d.avg_ingles))),
+                                    borderRadius: 3,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: '% B1',
+                                    data: data.map(d => num(d.pct_b1)),
+                                    type: 'line',
+                                    borderColor: '#0d6efd',
+                                    backgroundColor: 'rgba(13,110,253,0.08)',
+                                    fill: false,
+                                    tension: 0.3,
+                                    pointRadius: 3,
+                                    borderWidth: 2,
+                                    yAxisID: 'y2'
+                                }
+                            ]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (c) {
+                                            if (c.datasetIndex === 0) return ' Inglés: ' + c.raw.toFixed(1) + ' pts';
+                                            return ' B1: ' + c.raw.toFixed(1) + '%';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { grid: { display: false } },
+                                y2: { display: false },
+                                x: {
+                                    min: 35,
+                                    ticks: { callback: v => v + ' pts' },
+                                    grid: { color: '#f8f8f8' }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(e => console.error('loadMapaDepto error', e));
+        }
+
+        // ── Alertas de Declive ────────────────────────────────
+        function loadAlertasDeclive() {
+            var ano = getAno() || '2024';
+            var tbody = document.getElementById('tabla-alertas-declive');
+            var emptyEl = document.getElementById('alertas-empty');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Detectando patrones de declive...</td></tr>';
+            if (emptyEl) emptyEl.classList.add('d-none');
+
+            var url = '/icfes/api/ingles/alertas-declive/?ano=' + ano;
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        tbody.innerHTML = '';
+                        if (emptyEl) emptyEl.classList.remove('d-none');
+                        return;
+                    }
+
+                    var html = data.map(function (d) {
+                        var caida = num(d.caida_total);
+                        var severidad = caida >= 10 ? 'danger' : caida >= 5 ? 'warning' : 'secondary';
+                        var icon = caida >= 10 ? 'bx-error-circle' : caida >= 5 ? 'bx-error' : 'bx-info-circle';
+                        var isPriv = String(d.sector || '').toUpperCase().indexOf('NO') >= 0 &&
+                                     String(d.sector || '').toUpperCase().indexOf('OFICIAL') >= 0;
+                        var secBadge = isPriv
+                            ? '<span class="badge bg-warning-subtle text-warning-emphasis">Privado</span>'
+                            : '<span class="badge bg-info-subtle text-info-emphasis">Público</span>';
+                        var link = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
+                        var nombreSafe = (d.nombre_colegio || '').replace(/"/g, '&quot;');
+                        return '<tr>' +
+                            '<td>' +
+                              '<a href="' + link + '" class="fw-medium text-decoration-none text-truncate d-block" style="max-width:180px" title="' + nombreSafe + '">' + (d.nombre_colegio || 'N/D') + '</a>' +
+                              '<button class="btn btn-link p-0 btn-serie-detalle" style="font-size:11px;line-height:1.2;" ' +
+                                'data-colegio-bk="' + (d.colegio_bk || '') + '" ' +
+                                'data-nombre="' + nombreSafe + '" ' +
+                                'data-slug="' + (d.slug || '') + '">' +
+                                '<i class="bx bx-line-chart me-1"></i>Ver evolución' +
+                              '</button>' +
+                            '</td>' +
+                            '<td><small>' + (d.departamento || '') + '</small></td>' +
+                            '<td>' + secBadge + '</td>' +
+                            '<td class="text-end text-muted">' + num(d.ingles_base).toFixed(1) + '</td>' +
+                            '<td class="text-end text-muted">' + num(d.ingles_medio).toFixed(1) + '</td>' +
+                            '<td class="text-end fw-bold">' + num(d.ingles_actual).toFixed(1) + '</td>' +
+                            '<td class="text-end fw-bold text-danger">-' + caida.toFixed(1) + '</td>' +
+                            '<td class="text-center"><span class="badge bg-' + severidad + '"><i class="bx ' + icon + ' me-1"></i>' +
+                            (caida >= 10 ? 'Crítico' : caida >= 5 ? 'Alto' : 'Moderado') + '</span></td>' +
+                            '</tr>';
+                    }).join('');
+                    tbody.innerHTML = html;
+                })
+                .catch(e => {
+                    console.error('loadAlertasDeclive error', e);
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-danger">Error al detectar alertas.</td></tr>';
+                });
+        }
+
+        // ── Modal: Evolución histórica de inglés por colegio ─────────
+        function abrirDetalleColegio(colegioBoK, nombre, slug) {
+            if (!modalIngles) {
+                modalIngles = new bootstrap.Modal(document.getElementById('modal-ingles-serie'));
+            }
+            // Reset modal content
+            document.getElementById('modal-colegio-nombre').textContent = nombre || 'Colegio';
+            document.getElementById('modal-colegio-meta').innerHTML = '';
+            document.getElementById('modal-stats-row').innerHTML = '';
+            document.getElementById('modal-serie-tabla').innerHTML =
+                '<tr><td colspan="6" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando datos históricos...</td></tr>';
+
+            // Link to full profile
+            var linkEl = document.getElementById('modal-link-perfil');
+            if (slug) { linkEl.href = '/icfes/colegio/' + slug + '/'; linkEl.style.display = ''; }
+            else { linkEl.style.display = 'none'; }
+
+            modalIngles.show();
+
+            fetch('/icfes/api/ingles/colegio-serie/?colegio_bk=' + encodeURIComponent(colegioBoK) + '&_ts=' + Date.now())
+                .then(r => r.json())
+                .then(json => {
+                    var info = json.data || {};
+                    var colegio = info.colegio || {};
+                    var serie = info.serie || [];
+
+                    // Meta badges
+                    var isPriv = normSector(colegio.sector) === 'NO_OFICIAL';
+                    var metaBadges = [
+                        '<span class="badge ' + (isPriv ? 'bg-warning-subtle text-warning-emphasis' : 'bg-info-subtle text-info-emphasis') + '">' + (isPriv ? 'Privado' : 'Público') + '</span>',
+                        colegio.departamento ? '<span class="badge bg-secondary-subtle text-secondary">' + colegio.departamento + '</span>' : '',
+                        colegio.region ? '<span class="badge bg-primary-subtle text-primary-emphasis">' + colegio.region + '</span>' : '',
+                        colegio.calendario ? '<span class="badge bg-light text-dark border">Calendario ' + colegio.calendario + '</span>' : '',
+                    ].filter(Boolean).join(' ');
+                    document.getElementById('modal-colegio-meta').innerHTML = metaBadges;
+
+                    if (!serie.length) {
+                        document.getElementById('modal-serie-tabla').innerHTML =
+                            '<tr><td colspan="6" class="text-center py-3 text-muted">No hay datos históricos disponibles.</td></tr>';
+                        return;
+                    }
+
+                    // ── Chart ──────────────────────────────────────
+                    var ctx = document.getElementById('chart-serie-modal').getContext('2d');
+                    if (chartSerie) { chartSerie.destroy(); }
+
+                    var anos = serie.map(d => d.ano);
+                    var scores = serie.map(d => num(d.avg_ingles));
+                    var nacs = serie.map(d => num(d.avg_nacional));
+                    var n = scores.length;
+
+                    // Últimos 3 puntos en rojo (zona de declive)
+                    var pointBg = scores.map((_, i) => i >= n - 3 ? '#dc3545' : '#0d6efd');
+                    var pointR  = scores.map((_, i) => i >= n - 3 ? 7 : 4);
+
+                    var yMin = Math.max(0, Math.floor(Math.min.apply(null, [...scores, ...nacs]) - 5));
+                    var yMax = Math.ceil(Math.max.apply(null, [...scores, ...nacs]) + 5);
+
+                    chartSerie = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: anos,
+                            datasets: [
+                                {
+                                    label: 'Inglés del Colegio',
+                                    data: scores,
+                                    borderColor: '#0d6efd',
+                                    backgroundColor: 'rgba(13,110,253,0.07)',
+                                    fill: true,
+                                    tension: 0.35,
+                                    borderWidth: 2.5,
+                                    pointRadius: pointR,
+                                    pointBackgroundColor: pointBg,
+                                    pointBorderColor: '#fff',
+                                    pointBorderWidth: 2
+                                },
+                                {
+                                    label: 'Promedio Nacional',
+                                    data: nacs,
+                                    borderColor: '#adb5bd',
+                                    borderDash: [6, 4],
+                                    fill: false,
+                                    tension: 0.35,
+                                    borderWidth: 1.5,
+                                    pointRadius: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (c) {
+                                            return ' ' + c.dataset.label + ': ' + c.raw.toFixed(1) + ' pts';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    min: yMin, max: yMax,
+                                    ticks: { callback: v => v + ' pts' },
+                                    grid: { color: '#f0f0f0' }
+                                },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+
+                    // ── Stat cards ─────────────────────────────────
+                    var peak = serie.reduce((best, d) => num(d.avg_ingles) > num(best.avg_ingles) ? d : best);
+                    var current = serie[n - 1];
+                    var vsNac = num(current.vs_nacional);
+                    var caida = num(serie[n - 3] ? serie[n - 3].avg_ingles : serie[0].avg_ingles) - num(current.avg_ingles);
+
+                    function mkStat(label, value, color, bxIcon) {
+                        return '<div class="col-6 col-sm-3">' +
+                            '<div class="border rounded-2 p-2 text-center">' +
+                            '<i class="bx ' + bxIcon + ' fs-5 text-' + color + '"></i>' +
+                            '<div class="fw-bold mt-1" style="font-size:13px;">' + value + '</div>' +
+                            '<div class="text-muted" style="font-size:11px;">' + label + '</div>' +
+                            '</div></div>';
+                    }
+
+                    document.getElementById('modal-stats-row').innerHTML = [
+                        mkStat('Mejor año', peak.ano + ' · ' + num(peak.avg_ingles).toFixed(1) + ' pts', 'success', 'bx-trophy'),
+                        mkStat('Puntaje actual', num(current.avg_ingles).toFixed(1) + ' pts (' + current.ano + ')', 'danger', 'bx-trending-down'),
+                        mkStat('vs Nacional', (vsNac >= 0 ? '+' : '') + vsNac.toFixed(1) + ' pts', vsNac >= 0 ? 'success' : 'danger', 'bx-transfer'),
+                        mkStat('Caída acumulada', '-' + caida.toFixed(1) + ' pts (3 años)', 'warning', 'bx-down-arrow-circle'),
+                    ].join('');
+
+                    // ── Tabla año a año ─────────────────────────────
+                    var tableRows = serie.slice().reverse().map(function (d, idx) {
+                        var prevScore = idx < serie.length - 1 ? num(serie[serie.length - 2 - idx].avg_ingles) : null;
+                        var diff = prevScore !== null ? num(d.avg_ingles) - prevScore : null;
+                        var trendIcon = diff === null ? '' :
+                            diff > 0.5 ? '<i class="bx bx-up-arrow-alt text-success"></i> +' + diff.toFixed(1) :
+                            diff < -0.5 ? '<i class="bx bx-down-arrow-alt text-danger"></i> ' + diff.toFixed(1) :
+                            '<i class="bx bx-minus text-muted"></i>';
+                        var vs = num(d.vs_nacional);
+                        var vsClass = vs >= 3 ? 'text-success' : vs <= -3 ? 'text-danger' : 'text-muted';
+                        var isDecline = idx < 3;  // últimos 3 años (invertidos)
+                        return '<tr' + (isDecline ? ' class="table-danger-subtle"' : '') + '>' +
+                            '<td><strong>' + d.ano + '</strong>' + (isDecline ? ' <span class="badge bg-danger-subtle text-danger" style="font-size:9px;">↓</span>' : '') + '</td>' +
+                            '<td class="text-end fw-bold">' + num(d.avg_ingles).toFixed(1) + '</td>' +
+                            '<td class="text-end text-muted">' + (d.avg_nacional ? num(d.avg_nacional).toFixed(1) : '--') + '</td>' +
+                            '<td class="text-end ' + vsClass + '">' + (vs >= 0 ? '+' : '') + vs.toFixed(1) + '</td>' +
+                            '<td class="text-end text-muted">' + (d.estudiantes || 0).toLocaleString() + '</td>' +
+                            '<td class="text-center">' + trendIcon + '</td>' +
+                            '</tr>';
+                    }).join('');
+                    document.getElementById('modal-serie-tabla').innerHTML = tableRows;
+                })
+                .catch(e => {
+                    console.error('abrirDetalleColegio error', e);
+                    document.getElementById('modal-serie-tabla').innerHTML =
+                        '<tr><td colspan="6" class="text-center py-3 text-danger">Error al cargar los datos.</td></tr>';
+                });
+        }
+
+        // Event delegation: click en botones "Ver evolución" de la tabla de alertas
+        document.getElementById('tabla-alertas-declive').addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-serie-detalle');
+            if (!btn) return;
+            e.preventDefault();
+            var bk = btn.dataset.colegioB || btn.getAttribute('data-colegio-bk');
+            var nombre = btn.dataset.nombre || btn.getAttribute('data-nombre');
+            var slug = btn.dataset.slug || btn.getAttribute('data-slug');
+            abrirDetalleColegio(bk, nombre, slug);
+        });
+
+        // ── Predicciones de Inglés 2025 (GBM ML) ─────────────
+        function loadPrediccion() {
+            var depto = getDepto();
+            var deptoParam = depto ? '&departamento=' + encodeURIComponent(depto) : '';
+
+            var tbodyM = document.getElementById('tabla-prediccion-mejora');
+            var tbodyD = document.getElementById('tabla-prediccion-declive');
+            var spinner = '<tr><td colspan="4" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';
+            tbodyM.innerHTML = spinner;
+            tbodyD.innerHTML = spinner;
+
+            function renderPrediccionRows(data, tbody, modo) {
+                if (!data.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Sin datos de predicción disponibles</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.map(function(d) {
+                    var cambio = num(d.cambio_predicho);
+                    var cambioClass = cambio >= 0 ? 'text-success' : 'text-danger';
+                    var cambioStr = (cambio >= 0 ? '+' : '') + cambio.toFixed(1);
+                    return '<tr>' +
+                        '<td><span class="fw-medium text-truncate d-block" style="max-width:200px;" title="' + (d.nombre_colegio || '') + '">' + (d.nombre_colegio || 'N/D') + '</span>' +
+                        '<small class="text-muted">' + (d.departamento || '') + '</small></td>' +
+                        '<td class="text-end">' + num(d.avg_ingles_actual).toFixed(1) + '</td>' +
+                        '<td class="text-end fw-bold">' + num(d.avg_ingles_predicho).toFixed(1) + '</td>' +
+                        '<td class="text-end fw-bold ' + cambioClass + '">' + cambioStr + '</td>' +
+                        '</tr>';
+                }).join('');
+            }
+
+            fetch(withBust('/icfes/api/ingles/prediccion/?limit=10&orden=mejora' + deptoParam))
+                .then(r => r.json())
+                .then(json => renderPrediccionRows(json.data || [], tbodyM, 'mejora'))
+                .catch(() => { tbodyM.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Error al cargar predicciones</td></tr>'; });
+
+            fetch(withBust('/icfes/api/ingles/prediccion/?limit=10&orden=riesgo' + deptoParam))
+                .then(r => r.json())
+                .then(json => renderPrediccionRows(json.data || [], tbodyD, 'riesgo'))
+                .catch(() => { tbodyD.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Error al cargar predicciones</td></tr>'; });
+        }
+
+        // ── Prioridad de Intervención ─────────────────────────
+        function loadPrioridad(nivelFiltro) {
+            var ano = getAno() || '2024';
+            var depto = getDepto();
+            var url = '/icfes/api/ingles/prioridad/?ano=' + ano + '&limit=20';
+            if (depto)       url += '&departamento=' + encodeURIComponent(depto);
+            if (nivelFiltro) url += '&nivel=' + encodeURIComponent(nivelFiltro);
+
+            var tbody = document.getElementById('tabla-prioridad-ingles');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Calculando prioridades...</td></tr>';
+
+            var badgeMap = { 'Cr\u00edtico': 'danger', 'Urgente': 'warning', 'Atenci\u00f3n': 'info', 'Estable': 'success' };
+
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No hay colegios para el filtro seleccionado</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.map(function(d, i) {
+                        var score = num(d.score_prioridad);
+                        var nivel = d.nivel_prioridad || 'Estable';
+                        var badgeColor = badgeMap[nivel] || 'secondary';
+                        var exceso = num(d.exceso_ingles);
+                        var exStr = (exceso >= 0 ? '+' : '') + exceso.toFixed(1);
+                        var exClass = exceso >= 0 ? 'text-success' : 'text-danger';
+                        var barColor = badgeColor === 'danger' ? '#dc3545' : badgeColor === 'warning' ? '#fd7e14' : badgeColor === 'info' ? '#0dcaf0' : '#198754';
+                        return '<tr>' +
+                            '<td class="text-muted" style="font-size:12px;">' + (i + 1) + '</td>' +
+                            '<td><span class="fw-medium text-truncate d-block" style="max-width:190px;" title="' + (d.nombre_colegio || '') + '">' + (d.nombre_colegio || 'N/D') + '</span>' +
+                            '<small class="text-muted">' + (d.departamento || '') + '</small></td>' +
+                            '<td class="text-end">' + num(d.avg_ingles).toFixed(1) + '</td>' +
+                            '<td class="text-end ' + exClass + '">' + exStr + '</td>' +
+                            '<td>' +
+                            '<div class="d-flex align-items-center gap-2">' +
+                            '<div class="progress flex-grow-1" style="height:6px;">' +
+                            '<div class="progress-bar" style="width:' + score + '%;background:' + barColor + ';"></div>' +
+                            '</div>' +
+                            '<span style="font-size:11px;font-weight:600;min-width:28px;">' + score.toFixed(0) + '</span>' +
+                            '</div></td>' +
+                            '<td class="text-center"><span class="badge bg-' + badgeColor + '-subtle text-' + badgeColor + '">' + nivel + '</span></td>' +
+                            '</tr>';
+                    }).join('');
+                })
+                .catch(() => { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">Error al cargar prioridades</td></tr>'; });
+        }
+
+        // Pills de nivel de prioridad
+        document.getElementById('filtro-nivel-prioridad').addEventListener('click', function(e) {
+            var btn = e.target.closest('button[data-nivel]');
+            if (!btn) return;
+            this.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loadPrioridad(btn.getAttribute('data-nivel'));
+        });
+
+        // ── Clusters Departamentales por Trayectoria ──────────
+        function loadClustersDepto() {
+            var container = document.getElementById('clusters-cards');
+            container.innerHTML = '<div class="col-12 text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando clusters...</div>';
+
+            fetch(withBust('/icfes/api/ingles/clusters-depto/'))
+                .then(r => r.json())
+                .then(json => {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        container.innerHTML = '<div class="col-12 text-center text-muted py-4">Clusters no disponibles</div>';
+                        return;
+                    }
+
+                    // Agrupar por cluster_label
+                    var grupos = {};
+                    data.forEach(function(d) {
+                        var lbl = d.cluster_label;
+                        if (!grupos[lbl]) grupos[lbl] = { label: lbl, rows: [] };
+                        grupos[lbl].rows.push(d);
+                    });
+
+                    var colorMap = {
+                        'Lider en Avance':   { border: 'success', text: 'success', icon: 'bx-rocket' },
+                        'Lider Estable':     { border: 'info',    text: 'info',    icon: 'bx-shield-check' },
+                        'En Recuperacion':   { border: 'warning', text: 'warning', icon: 'bx-trending-up' },
+                        'Rezagado Cronico':  { border: 'danger',  text: 'danger',  icon: 'bx-error-circle' },
+                    };
+
+                    var html = Object.values(grupos).map(function(g) {
+                        var c = colorMap[g.label] || { border: 'secondary', text: 'secondary', icon: 'bx-category' };
+                        var stats = g.rows[0] || {};
+                        var tendencia = num(stats.tendencia_pendiente || 0);
+                        var tendStr = (tendencia >= 0 ? '+' : '') + tendencia.toFixed(2) + ' pts/año';
+                        var tendClass = tendencia >= 0 ? 'text-success' : 'text-danger';
+                        // Formatear nombres (Title Case)
+                        var deptos = g.rows.map(function(r) {
+                            return r.departamento.slice(0,1) + r.departamento.slice(1).toLowerCase();
+                        }).join(' · ');
+                        return '<div class="col-lg-3 col-md-6 mb-3">' +
+                            '<div class="card h-100 border-' + c.border + ' border-opacity-50">' +
+                            '<div class="card-header bg-' + c.border + '-subtle py-2 d-flex align-items-center gap-2">' +
+                            '<i class="bx ' + c.icon + ' text-' + c.text + '"></i>' +
+                            '<strong class="text-' + c.text + ' flex-grow-1" style="font-size:13px;">' + g.label + '</strong>' +
+                            '<span class="badge bg-' + c.border + '-subtle text-' + c.text + '">' + g.rows.length + ' dptos</span>' +
+                            '</div>' +
+                            '<div class="card-body p-3">' +
+                            '<div class="d-flex justify-content-between mb-1">' +
+                            '<small class="text-muted">Promedio reciente</small>' +
+                            '<strong>' + num(stats.promedio_reciente || 0).toFixed(1) + ' pts</strong>' +
+                            '</div>' +
+                            '<div class="d-flex justify-content-between mb-2">' +
+                            '<small class="text-muted">Tendencia</small>' +
+                            '<strong class="' + tendClass + '">' + tendStr + '</strong>' +
+                            '</div>' +
+                            '<p style="font-size:11px;line-height:1.5;" class="text-muted mb-0">' + deptos + '</p>' +
+                            '</div></div></div>';
+                    }).join('');
+
+                    container.innerHTML = html;
+                })
+                .catch(() => {
+                    container.innerHTML = '<div class="col-12 text-center text-muted py-3">Error al cargar clusters</div>';
+                });
+        }
+
+        // ── Análisis IA ───────────────────────────────────────
+
+        function _textoIA(id, text) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (!text) { el.innerHTML = '<span class="text-muted">Sin información.</span>'; return; }
+            var paras = text.split(/\n\n+/).map(function(p) { return p.trim(); }).filter(function(p) { return p; });
+            el.innerHTML = paras.map(function(p) {
+                return '<p class="mb-2">' + p.replace(/\n/g, '<br>') + '</p>';
+            }).join('');
+        }
+
+        function _renderAnalisisIA(json) {
+            _textoIA('ai-situacion-texto',    json.situacion    || '');
+            _textoIA('ai-geografia-texto',    json.geografia    || '');
+            _textoIA('ai-prediccion-texto',   json.prediccion   || '');
+            _textoIA('ai-brecha-texto',       json.brecha       || '');
+            _textoIA('ai-recomendacion-texto',json.recomendacion|| '');
+
+            var meta = document.getElementById('ai-meta');
+            if (meta && json.fecha_generacion) {
+                var fecha = new Date(json.fecha_generacion);
+                meta.innerHTML = '<small>Generado: ' + fecha.toLocaleDateString('es-CO') +
+                                 (json.tokens_output ? ' &middot; ' + json.tokens_output + ' tokens' : '') +
+                                 '</small>';
+                meta.classList.remove('d-none');
+            }
+
+            document.getElementById('ai-loading').classList.add('d-none');
+            document.getElementById('ai-no-disponible').classList.add('d-none');
+            document.getElementById('ai-contenido').classList.remove('d-none');
+
+            // Abrir siempre la primera sección
+            var first = document.querySelector('#accordion-ia .accordion-collapse');
+            if (first && !first.classList.contains('show')) {
+                first.classList.add('show');
+            }
+        }
+
+        function loadAnalisisIA() {
+            var ano   = getAno();
+            var depto = getDepto();
+            var url   = '/icfes/api/ingles/ai-analisis/?ano=' + ano +
+                        (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+
+            document.getElementById('ai-loading').classList.remove('d-none');
+            document.getElementById('ai-no-disponible').classList.add('d-none');
+            document.getElementById('ai-contenido').classList.add('d-none');
+            document.getElementById('ai-meta').classList.add('d-none');
+
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    if (json.disponible) {
+                        _renderAnalisisIA(json);
+                    } else {
+                        document.getElementById('ai-loading').classList.add('d-none');
+                        document.getElementById('ai-no-disponible').classList.remove('d-none');
+                        document.getElementById('ai-no-disponible-msg').textContent =
+                            json.mensaje || 'Análisis no generado para este período.';
+                        // Restaurar botón por si venía de un intento previo
+                        document.getElementById('btn-generar-ia').classList.remove('d-none');
+                        document.getElementById('ai-generando').classList.add('d-none');
+                    }
+                })
+                .catch(function(e) {
+                    document.getElementById('ai-loading').classList.add('d-none');
+                    document.getElementById('ai-no-disponible').classList.remove('d-none');
+                    document.getElementById('ai-no-disponible-msg').textContent =
+                        'Error al consultar el análisis IA.';
+                    console.error('loadAnalisisIA error', e);
+                });
+        }
+
+        function _getCsrfToken() {
+            var match = document.cookie.match(/csrftoken=([^;]+)/);
+            return match ? match[1] : '';
+        }
+
+        document.getElementById('btn-generar-ia').addEventListener('click', function() {
+            var ano   = getAno();
+            var depto = getDepto();
+            var url   = '/icfes/api/ingles/ai-analisis/?ano=' + ano +
+                        (depto ? '&departamento=' + encodeURIComponent(depto) : '');
+
+            document.getElementById('btn-generar-ia').classList.add('d-none');
+            document.getElementById('ai-generando').classList.remove('d-none');
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': _getCsrfToken() }
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    if (json.disponible) {
+                        _renderAnalisisIA(json);
+                    } else {
+                        document.getElementById('ai-generando').classList.add('d-none');
+                        document.getElementById('btn-generar-ia').classList.remove('d-none');
+                        document.getElementById('ai-no-disponible-msg').textContent =
+                            json.error || 'Error al generar el análisis.';
+                    }
+                })
+                .catch(function(e) {
+                    document.getElementById('ai-generando').classList.add('d-none');
+                    document.getElementById('btn-generar-ia').classList.remove('d-none');
+                    document.getElementById('ai-no-disponible-msg').textContent =
+                        'Error de red al generar el análisis.';
+                    console.error('generar IA error', e);
+                });
+        });
+
+        // Initialize
+        loadAll();
+        loadBrechas();  // Solo una vez (no depende de filtros)
+        loadClustersDepto();  // Solo una vez (datos estáticos)
+
+    })();
+</script>
+{% endblock extra_javascript %}

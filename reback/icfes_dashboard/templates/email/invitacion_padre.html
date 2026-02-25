@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ICFES Analytics — Historial ICFES del colegio de tu hijo</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.10);">
+
+  <!-- Header -->
+  <tr>
+    <td style="background:linear-gradient(135deg,#059669 0%,#0891b2 100%);padding:36px 40px;">
+      <p style="margin:0 0 8px 0;color:#a7f3d0;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">ICFES Analytics</p>
+      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;line-height:1.3;">
+        ¿Conoces el historial real<br>del colegio de tu hijo?
+      </h1>
+    </td>
+  </tr>
+
+  <!-- Body -->
+  <tr>
+    <td style="padding:36px 40px;">
+
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px 0;">
+        Hola {{ nombre }},
+      </p>
+
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px 0;">
+        Elegir o evaluar el colegio de un hijo es una de las decisiones más importantes.
+        El promedio de un año no cuenta la historia completa. En ICFES Analytics puedes consultar
+        <strong>gratuitamente</strong> el historial completo de {{ colegio }},
+        sin necesidad de registrarte.
+      </p>
+
+      <!-- Qué encuentras -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
+        <tr>
+          <td style="background:#f0fdf4;border-radius:8px;padding:20px;">
+            <p style="margin:0 0 12px 0;color:#065f46;font-size:14px;font-weight:700;">¿Qué encuentras en la ficha de un colegio?</p>
+            <table width="100%" cellpadding="6">
+              <tr>
+                <td width="24" style="font-size:18px;">📈</td>
+                <td style="color:#374151;font-size:13px;line-height:1.6;">
+                  <strong>Evolución histórica</strong> del puntaje global desde 1994 hasta 2024
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">🏆</td>
+                <td style="color:#374151;font-size:13px;line-height:1.6;">
+                  <strong>Ranking nacional y departamental</strong> — qué posición ocupa frente a todos los colegios del país
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">🎯</td>
+                <td style="color:#374151;font-size:13px;line-height:1.6;">
+                  <strong>Clasificación de potencial contextual</strong> — si el colegio supera o no lo que su entorno predice
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">📚</td>
+                <td style="color:#374151;font-size:13px;line-height:1.6;">
+                  <strong>Puntajes por materia</strong> — matemáticas, lectura crítica, ciencias, inglés, sociales
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">🔍</td>
+                <td style="color:#374151;font-size:13px;line-height:1.6;">
+                  <strong>Colegios similares</strong> — para comparar con instituciones de perfil equivalente
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin:32px 0;">
+        <a href="{{ site_url }}/icfes/colegio/"
+           style="background:linear-gradient(135deg,#059669,#0891b2);color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:8px;font-size:16px;font-weight:700;display:inline-block;">
+          Buscar el colegio →
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin:12px 0 0 0;">Gratis · Sin registro · Datos oficiales del ICFES</p>
+      </div>
+
+      <p style="color:#6b7280;font-size:14px;line-height:1.7;margin:0;">
+        También puedes explorar todos los colegios de tu ciudad o departamento
+        y comparar sus tendencias históricas. Los datos provienen directamente
+        del ICFES y cubren más de 22.000 instituciones en todo el país.
+      </p>
+
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
+      <p style="margin:0;color:#9ca3af;font-size:12px;">
+        ICFES Analytics · <a href="{{ site_url }}" style="color:#059669;text-decoration:none;">icfes-analytics.com</a>
+        · Un producto de <a href="https://www.sabededatos.com" style="color:#059669;text-decoration:none;">sabededatos.com</a>
+      </p>
+      <p style="margin:8px 0 0 0;color:#d1d5db;font-size:11px;">
+        Recibiste este mensaje porque alguien pensó que podría ayudarte en la elección educativa de tu familia.
+      </p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+
+</body>
+</html>

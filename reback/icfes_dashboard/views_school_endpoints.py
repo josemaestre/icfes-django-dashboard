@@ -34,6 +34,63 @@ def api_colegio_historico(request, colegio_sk):
 
 
 @require_http_methods(["GET"])
+def api_colegio_ingles(request, colegio_sk):
+    """Perfil de bilingüismo del colegio (último año)"""
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+        
+    colegio_sk_str = str(colegio_sk)
+    
+    query_historico = """
+        SELECT ano, avg_punt_ingles, codigo_dane 
+        FROM gold.fct_colegio_historico 
+        WHERE colegio_sk = ? AND avg_punt_ingles IS NOT NULL
+        ORDER BY ano DESC
+    """
+    df_hist = execute_query(query_historico, params=[colegio_sk_str])
+    if df_hist.empty:
+        return JsonResponse({'error': 'No hay datos de inglés'}, status=404)
+        
+    ultimo = df_hist.iloc[0]
+    codigo_dane = str(ultimo['codigo_dane'])
+    
+    # Promedio historico
+    promedio_historico = df_hist['avg_punt_ingles'].mean()
+    
+    # Desempeño MCER (último año)
+    query_mcer = """
+        SELECT 
+            ing_nivel_pre_a1, ing_nivel_a1, ing_nivel_a2, ing_nivel_b1,
+            total_estudiantes
+        FROM gold.fct_indicadores_desempeno
+        WHERE colegio_bk = ?
+        ORDER BY ano DESC
+        LIMIT 1
+    """
+    df_mcer = execute_query(query_mcer, params=[codigo_dane])
+    
+    mcer_data = {}
+    if not df_mcer.empty:
+        mcer = df_mcer.iloc[0]
+        total = float(mcer['total_estudiantes']) if mcer['total_estudiantes'] else 1
+        mcer_data = {
+            'pre_a1': float(mcer['ing_nivel_pre_a1'] or 0),
+            'a1': float(mcer['ing_nivel_a1'] or 0),
+            'a2': float(mcer['ing_nivel_a2'] or 0),
+            'b1': float(mcer['ing_nivel_b1'] or 0),
+            'total': total
+        }
+    
+    response = {
+        'avg_historico': round(float(promedio_historico), 1),
+        'avg_ultimo': float(ultimo['avg_punt_ingles']),
+        'mcer': mcer_data
+    }
+    
+    return JsonResponse(response)
+
+
+@require_http_methods(["GET"])
 def api_colegio_correlaciones(request, colegio_sk):
     """Correlaciones entre materias y puntaje global"""
     query = f"""

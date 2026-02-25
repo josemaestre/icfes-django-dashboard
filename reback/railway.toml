@@ -6,4 +6,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python manage.py collectstatic --noinput --settings=config.settings.railway && python manage.py migrate --settings=config.settings.railway && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120"
+startCommand = "python manage.py collectstatic --noinput --settings=config.settings.railway && python manage.py migrate --settings=config.settings.railway && python manage.py generate_ingles_ia_analisis --ano=${INGLES_ANO:-2024} --settings=config.settings.railway && python manage.py generate_ingles_ia_analisis --ano=${INGLES_ANO:-2024} --departamento=ALL --settings=config.settings.railway && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120"

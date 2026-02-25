@@ -1,0 +1,204 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Enviar Invitación{% endblock %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Enviar Invitación' sub_title='Administración' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+    <i class="bx {% if msg.tags == 'success' %}bx-check-circle{% else %}bx-error-circle{% endif %} me-2 align-middle"></i>
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="row">
+
+    <!-- Formulario -->
+    <div class="col-xl-5">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title mb-1">
+            <i class="bx bx-envelope-open text-primary me-2"></i>Nueva Invitación
+          </h4>
+          <p class="text-muted mb-4" style="font-size:13px;">
+            Selecciona el perfil del destinatario — cada tipo envía un mensaje diferente
+            adaptado a su rol y motivación.
+          </p>
+
+          <form method="POST" action="{% url 'icfes_dashboard:invitar' %}">
+            {% csrf_token %}
+
+            <!-- Selector de tipo -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold mb-2">Tipo de destinatario</label>
+              <div class="row g-2" id="tipo-selector">
+
+                <div class="col-12">
+                  <input type="radio" class="btn-check" name="tipo" id="tipo-rector" value="rector" required>
+                  <label class="btn btn-outline-primary w-100 text-start d-flex align-items-center gap-2 py-2 px-3" for="tipo-rector">
+                    <i class="bx bx-building fs-20"></i>
+                    <div>
+                      <div class="fw-semibold">Rector / Director</div>
+                      <small class="text-muted">"¿Cómo está su colegio frente a su contexto?"</small>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="col-12">
+                  <input type="radio" class="btn-check" name="tipo" id="tipo-supervisor" value="supervisor">
+                  <label class="btn btn-outline-info w-100 text-start d-flex align-items-center gap-2 py-2 px-3" for="tipo-supervisor">
+                    <i class="bx bx-network-chart fs-20"></i>
+                    <div>
+                      <div class="fw-semibold">Supervisor / Secretaría de Educación</div>
+                      <small class="text-muted">"Inteligencia para gestionar un portafolio de colegios"</small>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="col-12">
+                  <input type="radio" class="btn-check" name="tipo" id="tipo-institucional" value="institucional">
+                  <label class="btn btn-outline-dark w-100 text-start d-flex align-items-center gap-2 py-2 px-3" for="tipo-institucional">
+                    <i class="bx bx-institution fs-20"></i>
+                    <div>
+                      <div class="fw-semibold">Institucional / Ministerio / Gobierno</div>
+                      <small class="text-muted">"30 años de datos que los informes oficiales no muestran"</small>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="col-12">
+                  <input type="radio" class="btn-check" name="tipo" id="tipo-padre" value="padre">
+                  <label class="btn btn-outline-success w-100 text-start d-flex align-items-center gap-2 py-2 px-3" for="tipo-padre">
+                    <i class="bx bx-group fs-20"></i>
+                    <div>
+                      <div class="fw-semibold">Padre de Familia</div>
+                      <small class="text-muted">"Consulta el historial ICFES del colegio de tu hijo"</small>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="col-12">
+                  <input type="radio" class="btn-check" name="tipo" id="tipo-conocido" value="conocido">
+                  <label class="btn btn-outline-warning w-100 text-start d-flex align-items-center gap-2 py-2 px-3" for="tipo-conocido">
+                    <i class="bx bx-smile fs-20"></i>
+                    <div>
+                      <div class="fw-semibold">Conocido Personal</div>
+                      <small class="text-muted">"Construí algo que creo que te va a interesar"</small>
+                    </div>
+                  </label>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="email">Email del destinatario <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="email" name="email" placeholder="correo@ejemplo.com" required>
+            </div>
+
+            <!-- Nombre (opcional) -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="nombre_destinatario">Nombre del destinatario <span class="text-muted fw-normal">(opcional)</span></label>
+              <input type="text" class="form-control" id="nombre_destinatario" name="nombre_destinatario"
+                placeholder="Ej: Doctora Martínez">
+              <div class="form-text">Si lo dejas vacío el email usará "Estimado/a".</div>
+            </div>
+
+            <!-- Colegio (solo visible para rector y padre) -->
+            <div class="mb-4" id="colegio-field" style="display:none;">
+              <label class="form-label fw-semibold" for="colegio_nombre">Nombre del colegio <span class="text-muted fw-normal">(personaliza el asunto)</span></label>
+              <input type="text" class="form-control" id="colegio_nombre" name="colegio_nombre"
+                placeholder="Ej: Colegio Refous">
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bx bx-send align-middle me-1"></i> Enviar Invitación
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    <div class="col-xl-7">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title mb-3">
+            <i class="bx bx-history text-info me-2"></i>Últimas Invitaciones
+          </h4>
+
+          {% if historial %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Email</th>
+                  <th>Nombre</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in historial %}
+                <tr>
+                  <td>
+                    {% if inv.tipo == 'rector' %}<span class="badge bg-primary-subtle text-primary">Rector</span>
+                    {% elif inv.tipo == 'supervisor' %}<span class="badge bg-info-subtle text-info">Supervisor</span>
+                    {% elif inv.tipo == 'institucional' %}<span class="badge bg-dark-subtle text-dark">Institucional</span>
+                    {% elif inv.tipo == 'padre' %}<span class="badge bg-success-subtle text-success">Padre</span>
+                    {% elif inv.tipo == 'conocido' %}<span class="badge bg-warning-subtle text-warning">Conocido</span>
+                    {% endif %}
+                  </td>
+                  <td><small>{{ inv.email }}</small></td>
+                  <td><small class="text-muted">{{ inv.nombre_destinatario|default:"—" }}</small></td>
+                  <td><small class="text-muted">{{ inv.fecha_envio|date:"d/m/Y H:i" }}</small></td>
+                  <td>
+                    {% if inv.estado == 'enviado' %}
+                    <span class="badge bg-success"><i class="bx bx-check me-1"></i>Enviado</span>
+                    {% else %}
+                    <span class="badge bg-danger" title="{{ inv.error_msg }}"><i class="bx bx-x me-1"></i>Error</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bx bx-envelope fs-1 mb-3 d-block"></i>
+            Aún no se han enviado invitaciones.
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Mostrar/ocultar campo de colegio según el tipo seleccionado
+  document.querySelectorAll('input[name="tipo"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      var colegioField = document.getElementById('colegio-field');
+      colegioField.style.display = (this.value === 'rector' || this.value === 'padre') ? '' : 'none';
+    });
+  });
+</script>
+
+{% endblock page_content %}

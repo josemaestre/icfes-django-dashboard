@@ -185,6 +185,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#ingles" role="tab">
+                            <span class="d-block d-sm-none"><i class="bx bx-world"></i></span>
+                            <span class="d-none d-sm-block">Inglés (MCER)</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#ia-recommendations" role="tab">
                             <span class="d-block d-sm-none"><i class="far fa-envelope"></i></span>
                             <span class="d-none d-sm-block">Análisis IA</span>
@@ -226,6 +232,62 @@
 
                             <!-- Radar Chart placeholder -->
                             <canvas id="radarChart" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tab Inglés -->
+                    <div class="tab-pane" id="ingles" role="tabpanel">
+                        <div class="mt-4">
+                            <h4 class="card-title">Perfil de Bilingüismo</h4>
+                            <p class="mb-4">Distribución del nivel de inglés según el Marco Común Europeo de Referencia
+                                (MCER).</p>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="font-size-14">Nivel B1 / B+</h5>
+                                    <div class="progress mb-4" style="height: 1.5rem;">
+                                        <div class="progress-bar bg-success" id="bar-b1" role="progressbar"
+                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%
+                                        </div>
+                                    </div>
+                                    <h5 class="font-size-14">Nivel A2</h5>
+                                    <div class="progress mb-4" style="height: 1.5rem;">
+                                        <div class="progress-bar bg-info" id="bar-a2" role="progressbar"
+                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%
+                                        </div>
+                                    </div>
+                                    <h5 class="font-size-14">Nivel A1</h5>
+                                    <div class="progress mb-4" style="height: 1.5rem;">
+                                        <div class="progress-bar bg-warning" id="bar-a1" role="progressbar"
+                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%
+                                        </div>
+                                    </div>
+                                    <h5 class="font-size-14">Nivel Pre-A1 (-A1)</h5>
+                                    <div class="progress mb-4" style="height: 1.5rem;">
+                                        <div class="progress-bar bg-danger" id="bar-pre-a1" role="progressbar"
+                                            style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-primary bg-soft">
+                                        <div class="card-body">
+                                            <h5 class="text-primary mb-3">Resumen de Inglés</h5>
+                                            <ul class="list-unstyled mb-0">
+                                                <li class="mb-2"><i
+                                                        class="bx bx-check-circle text-primary me-2"></i>Promedio
+                                                    Histórico: <strong id="resumen-promedio-ingles">--</strong> pts</li>
+                                                <li class="mb-0"><i
+                                                        class="bx bx-check-circle text-primary me-2"></i>Último
+                                                    Promedio: <strong id="resumen-avg-ingles-ultimo">--</strong> pts
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <!-- Donut Chart placeholder for JS -->
+                                    <div id="chart-mcer-colegio" style="height: 200px;"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

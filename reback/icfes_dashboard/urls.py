@@ -6,9 +6,12 @@ from . import (
     api_views,
     export_views,
     geo_landing_views,
+    invitacion_views,
     landing_views_simple as landing_views,
     longtail_landing_views,
     views,
+    views_ingles,
+    views_school_endpoints,
 )
 
 app_name = 'icfes_dashboard'
@@ -19,6 +22,7 @@ urlpatterns = [
     path('charts/', views.dashboard_charts, name='dashboard_charts'),
     path('brecha/', views.brecha_educativa_dashboard, name='brecha_educativa'),
     path('ejecutivo/', views.resumen_ejecutivo_dashboard, name='resumen_ejecutivo'),
+    path('ingles/', views.ingles_dashboard, name='ingles_dashboard'),
     path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
     path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
@@ -93,10 +97,12 @@ urlpatterns = [
          name='api_search_colegios'),
     path('api/colegio/<str:colegio_sk>/historico/',
          views.api_colegio_historico, name='api_colegio_historico'),
-    path('api/colegio/<str:colegio_sk>/correlaciones/',
-         views.api_colegio_correlaciones, name='api_colegio_correlaciones'),
-    path('api/colegio/<str:colegio_sk>/fortalezas/',
-         views.api_colegio_fortalezas, name='api_colegio_fortalezas'),
+    path('api/colegio/<str:colegio_sk>/similares/',
+         views_school_endpoints.api_colegios_similares, name='api_colegios_similares'),
+    path('api/colegio/<str:colegio_sk>/fortalezas-debilidades/',
+         views_school_endpoints.api_colegio_fortalezas, name='api_colegio_fortalezas_debilidades'),
+    path('api/colegio/<str:colegio_sk>/ingles/',
+         views_school_endpoints.api_colegio_ingles, name='api_colegio_ingles'),
     path('api/colegio/<str:colegio_sk>/comparacion/',
          views.api_colegio_comparacion, name='api_colegio_comparacion'),
     path('api/colegio/<str:colegio_sk>/resumen/',
@@ -163,6 +169,24 @@ urlpatterns = [
     path('api/inteligencia/potencial/', api_views.inteligencia_potencial, name='inteligencia_potencial'),
     path('api/inteligencia/potencial/scatter/', api_views.inteligencia_potencial_scatter, name='inteligencia_potencial_scatter'),
 
+    # English Dashboard Endpoints
+    path('api/ingles/kpis/', views_ingles.api_ingles_kpis, name='api_ingles_kpis'),
+    path('api/ingles/tendencia/', views_ingles.api_ingles_tendencia, name='api_ingles_tendencia'),
+    path('api/ingles/distribucion/', views_ingles.api_ingles_distribucion, name='api_ingles_distribucion'),
+    path('api/ingles/colegios-top/', views_ingles.api_ingles_colegios_top, name='api_ingles_colegios_top'),
+    path('api/ingles/mcer-historico/', views_ingles.api_ingles_mcer_historico, name='api_ingles_mcer_historico'),
+    path('api/ingles/brechas/', views_ingles.api_ingles_brechas, name='api_ingles_brechas'),
+    path('api/ingles/potencial/', views_ingles.api_ingles_potencial, name='api_ingles_potencial'),
+    path('api/ingles/mapa-depto/', views_ingles.api_ingles_mapa_depto, name='api_ingles_mapa_depto'),
+    path('api/ingles/estado-animo/', views_ingles.api_ingles_estado_animo, name='api_ingles_estado_animo'),
+    path('api/ingles/alertas-declive/', views_ingles.api_ingles_alertas_declive, name='api_ingles_alertas_declive'),
+    path('api/ingles/colegio-serie/', views_ingles.api_ingles_colegio_serie, name='api_ingles_colegio_serie'),
+    path('api/ingles/story/', views_ingles.api_ingles_story, name='api_ingles_story'),
+    path('api/ingles/prioridad/', views_ingles.api_ingles_prioridad, name='api_ingles_prioridad'),
+    path('api/ingles/clusters-depto/', views_ingles.api_ingles_clusters_depto, name='api_ingles_clusters_depto'),
+    path('api/ingles/prediccion/', views_ingles.api_ingles_prediccion, name='api_ingles_prediccion'),
+    path('api/ingles/ai-analisis/', views_ingles.api_ingles_ai_analisis, name='api_ingles_ai_analisis'),
+
     # API endpoints for enhanced user profile
     path('api/schools/search/', api_views.search_schools, name='search_schools'),
     path('api/departments/', api_views.get_departments, name='get_departments'),
@@ -180,6 +204,9 @@ urlpatterns = [
     path('api/brecha/area-fortalezas/', api_views.brecha_area_fortalezas, name='brecha_area_fortalezas'),
     path('api/brecha/zscore-distribucion/', api_views.brecha_zscore_distribucion, name='brecha_zscore_distribucion'),
     
+    # Módulo de invitaciones (solo superadmin)
+    path('invitar/', invitacion_views.invitar, name='invitar'),
+
     # Export Endpoints
     # CSV Exports (Basic Plan)
     path('export/schools/csv/', export_views.export_school_search_csv,

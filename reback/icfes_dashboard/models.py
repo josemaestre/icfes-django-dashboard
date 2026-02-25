@@ -418,3 +418,67 @@ class DimColegiosCluster(models.Model):
         db_table = 'gold.dim_colegios_cluster'
         unique_together = [['colegio_sk', 'ano']]
         ordering = ['ano', 'cluster_id']
+
+
+class InglesAnalisisIA(models.Model):
+    """
+    Análisis generativo de inglés pre-calculado durante el deploy.
+
+    Se almacena en PostgreSQL (default DB), NO en DuckDB.
+    Razón: es dato operacional mutable — se regenera con cada deploy,
+    sobrevive reinicios y redeploys del servidor web, y no requiere
+    API key de IA en runtime (solo durante el proceso de deploy).
+
+    El script que lo genera: deploy/generate_ingles_ia.py
+    El endpoint que lo sirve: api_ingles_ai_analisis (views_ingles.py)
+    """
+    TIPO_NACIONAL      = 'nacional'
+    TIPO_DEPARTAMENTO  = 'departamento'
+    TIPO_CHOICES = [
+        (TIPO_NACIONAL,     'Nacional'),
+        (TIPO_DEPARTAMENTO, 'Departamental'),
+    ]
+
+    tipo            = models.CharField(max_length=20, choices=TIPO_CHOICES, default=TIPO_NACIONAL)
+    parametro       = models.CharField(max_length=100, blank=True, default='')  # '' = nacional; nombre dpto = departamental
+    ano_referencia  = models.IntegerField()
+
+    # Estado — solo UNO puede estar activo por (tipo, parametro, ano_referencia)
+    # Los anteriores se archivan automáticamente al regenerar
+    ESTADO_ACTIVO   = 'activo'
+    ESTADO_ARCHIVADO = 'archivado'
+    ESTADO_CHOICES  = [
+        (ESTADO_ACTIVO,    'Activo'),
+        (ESTADO_ARCHIVADO, 'Archivado'),
+    ]
+    estado          = models.CharField(max_length=20, choices=ESTADO_CHOICES, default=ESTADO_ACTIVO)
+
+    # Análisis completo en Markdown
+    analisis_md     = models.TextField()
+
+    # Secciones individuales (parseadas del markdown para render selectivo)
+    situacion       = models.TextField(blank=True)
+    geografia       = models.TextField(blank=True)
+    prediccion      = models.TextField(blank=True)
+    brecha          = models.TextField(blank=True)
+    recomendacion   = models.TextField(blank=True)
+
+    # Metadatos del modelo IA
+    modelo_ia       = models.CharField(max_length=100, default='claude-sonnet-4-6')
+    fecha_generacion = models.DateTimeField(auto_now_add=True)
+    tokens_input    = models.IntegerField(null=True, blank=True)
+    tokens_output   = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        # No unique_together — permitimos múltiples versiones por (tipo, parametro, año)
+        # Solo uno tendrá estado='activo' a la vez; los demás quedan como 'archivado'
+        indexes = [
+            models.Index(fields=['tipo', 'parametro', 'ano_referencia', 'estado']),
+        ]
+        ordering = ['-fecha_generacion']
+        verbose_name = 'Análisis IA - Inglés'
+        verbose_name_plural = 'Análisis IA - Inglés'
+
+    def __str__(self):
+        ref = self.parametro or 'nacional'
+        return f"[{self.estado}] {self.tipo} {ref} {self.ano_referencia} ({self.fecha_generacion:%Y-%m-%d %H:%M})"

@@ -118,6 +118,15 @@ def inteligencia_educativa_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-inteligencia.html', {})
 
 
+def ingles_dashboard(request):
+    """Vista del dashboard de Bilingüismo/Inglés."""
+    context = {
+        'anos_disponibles': get_anos_disponibles(),
+        'departamentos': get_departamentos(),
+    }
+    return render(request, 'icfes_dashboard/pages/dashboard-ingles.html', context)
+
+
 # ============================================================================
 # ENDPOINTS API - DATOS GENERALES
 # ============================================================================
@@ -1840,7 +1849,7 @@ INSTRUCCIONES CRÍTICAS:
 Responde ÚNICAMENTE con el JSON, sin texto adicional."""
 
         message = client.messages.create(
-            model="claude-sonnet-4-5",  # Latest Claude Sonnet (from Anthropic docs)
+            model="claude-sonnet-4-6",
             max_tokens=8192,  # Maximum recommended for complete detailed responses
             messages=[{"role": "user", "content": prompt}]
         )

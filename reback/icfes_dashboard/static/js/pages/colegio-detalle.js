@@ -3,7 +3,7 @@
  * Maneja la carga de datos, gráficos y la funcionalidad de IA.
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // 1. Obtener el SK del colegio de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const colegioSk = urlParams.get('sk');
@@ -20,7 +20,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 3. Cargar Colegios Similares
     loadSimilarSchools(colegioSk);
 
-    // 4. Configurar botón de IA
+    // 4. Cargar Perfil de Inglés
+    loadInglesProfile(colegioSk);
+
+    // 5. Configurar botón de IA
     const btnAI = document.getElementById('btn-generate-ai');
     if (btnAI) {
         btnAI.addEventListener('click', () => loadAIRecommendations(colegioSk));
@@ -93,13 +96,14 @@ function loadSchoolSummary(sk) {
  * Carga el gráfico histórico
  */
 function loadHistoricalChart(sk) {
-     fetch(`/icfes/api/colegio/${sk}/historico/`)
+    fetch(`/icfes/api/colegio/${sk}/historico/`)
         .then(r => r.json())
         .then(data => {
-            // Data viene ordenada por ano ASC
-            const anos = data.map(d => d.ano);
-            const scores = data.map(d => d.avg_punt_global);
-            const deptScores = data.map(d => d.promedio_departamental_global);
+            // Data viene ordenada por ano DESC desde la API, la invertimos para el gráfico
+            const dataAsc = [...data].reverse();
+            const anos = dataAsc.map(d => d.ano);
+            const scores = dataAsc.map(d => d.avg_punt_global);
+            const deptScores = dataAsc.map(d => d.promedio_departamental_global);
 
             var options = {
                 chart: {
@@ -168,6 +172,69 @@ function loadSimilarSchools(sk) {
 }
 
 /**
+ * Carga Perfil de Bilingüismo (Inglés)
+ */
+function loadInglesProfile(sk) {
+    fetch(`/icfes/api/colegio/${sk}/ingles/`)
+        .then(r => {
+            if (!r.ok) throw new Error('Ingles no encontrado');
+            return r.json();
+        })
+        .then(data => {
+            if (data.error) {
+                console.error("Ingles data missing:", data.error);
+                return;
+            }
+            document.getElementById('resumen-promedio-ingles').textContent = data.avg_historico.toFixed(1);
+            document.getElementById('resumen-avg-ingles-ultimo').textContent = data.avg_ultimo.toFixed(1);
+
+            const mcer = data.mcer;
+            if (mcer && mcer.total > 0) {
+                const pB1 = (mcer.b1 / mcer.total) * 100;
+                const pA2 = (mcer.a2 / mcer.total) * 100;
+                const pA1 = (mcer.a1 / mcer.total) * 100;
+                const pPre = (mcer.pre_a1 / mcer.total) * 100;
+
+                document.getElementById('bar-b1').style.width = pB1 + '%';
+                document.getElementById('bar-b1').textContent = pB1.toFixed(1) + '%';
+
+                document.getElementById('bar-a2').style.width = pA2 + '%';
+                document.getElementById('bar-a2').textContent = pA2.toFixed(1) + '%';
+
+                document.getElementById('bar-a1').style.width = pA1 + '%';
+                document.getElementById('bar-a1').textContent = pA1.toFixed(1) + '%';
+
+                document.getElementById('bar-pre-a1').style.width = pPre + '%';
+                document.getElementById('bar-pre-a1').textContent = pPre.toFixed(1) + '%';
+
+                // Chart will only render properly if there is some data
+                var sum = pB1 + pA2 + pA1 + pPre;
+                if (sum > 0) {
+                    var options = {
+                        series: [pB1, pA2, pA1, pPre],
+                        labels: ['B1 / B+', 'A2', 'A1', 'Pre-A1'],
+                        colors: ['#198754', '#0dcaf0', '#ffc107', '#dc3545'],
+                        chart: { type: 'donut', height: 200 },
+                        legend: { show: false },
+                        tooltip: {
+                            y: { formatter: function (val) { return val.toFixed(1) + '%'; } }
+                        },
+                        dataLabels: { enabled: false }
+                    };
+                    var chart = new ApexCharts(document.querySelector("#chart-mcer-colegio"), options);
+                    chart.render();
+                } else {
+                    document.querySelector("#chart-mcer-colegio").innerHTML = '<div class="text-center text-muted mt-5">No hay niveles MCER disponibles</div>';
+                }
+            }
+        })
+        .catch(err => {
+            console.error("Error loading Ingles:", err);
+            // Hide or handle gracefully if not found
+        });
+}
+
+/**
  * Carga recomendaciones de IA
  */
 function loadAIRecommendations(sk) {
@@ -184,7 +251,7 @@ function loadAIRecommendations(sk) {
         .then(data => {
             loading.style.display = 'none';
             container.style.display = 'block';
-            
+
             if (data.error) {
                 container.innerHTML = `<div class="alert alert-warning">${data.message || data.error}</div>`;
                 return;
@@ -217,13 +284,13 @@ function loadAIRecommendations(sk) {
                      <div class="vstack gap-2">
                         ${data.estrategias_5_puntos.map((e, i) => `
                             <div class="bg-light p-3 rounded">
-                                <span class="fw-bold text-primary me-2">${i+1}.</span> ${e}
+                                <span class="fw-bold text-primary me-2">${i + 1}.</span> ${e}
                             </div>
                         `).join('')}
                      </div>
                 </div>
             `;
-            
+
             container.innerHTML = html;
         })
         .catch(err => {

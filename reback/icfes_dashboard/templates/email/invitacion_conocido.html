@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Te quiero mostrar algo que construí</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.10);">
+
+  <!-- Header -->
+  <tr>
+    <td style="background:linear-gradient(135deg,#7c3aed 0%,#db2777 100%);padding:36px 40px;">
+      <p style="margin:0 0 8px 0;color:#ddd6fe;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">Un proyecto personal</p>
+      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;line-height:1.3;">
+        Construí algo que creo<br>que te va a interesar
+      </h1>
+    </td>
+  </tr>
+
+  <!-- Body -->
+  <tr>
+    <td style="padding:36px 40px;">
+
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px 0;">
+        {{ nombre }},
+      </p>
+
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px 0;">
+        Llevo un buen tiempo trabajando en esto y quería compartirlo contigo.
+        Es una plataforma de análisis de los resultados del examen ICFES en Colombia:
+        <strong>30 años de datos, 17 millones de registros, 22.000 colegios</strong>,
+        con modelos de machine learning que yo mismo construí.
+      </p>
+
+      <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px 0;">
+        No es un dashboard genérico. Tiene cosas que no existen en ningún otro lugar:
+      </p>
+
+      <!-- Lo que lo hace especial -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
+        <tr>
+          <td style="background:#faf5ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;">
+            <table width="100%" cellpadding="6">
+              <tr>
+                <td width="24" style="font-size:18px;">🤖</td>
+                <td style="color:#374151;font-size:14px;line-height:1.6;">
+                  <strong>3 modelos de ML propios:</strong> predicción de riesgo de declive (XGBoost),
+                  clustering de colegios similares (K-Means), y potencial contextual
+                  (GradientBoosting) — que clasifica si un colegio supera o no lo que
+                  su contexto socioeconómico predice.
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">📖</td>
+                <td style="color:#374151;font-size:14px;line-height:1.6;">
+                  <strong>Historia narrativa:</strong> la educación colombiana contada en capítulos,
+                  con datos reales de cada evento histórico que marcó los resultados.
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">🗺️</td>
+                <td style="color:#374151;font-size:14px;line-height:1.6;">
+                  <strong>22.000 fichas individuales</strong> de colegios, con historial completo,
+                  ranking nacional, y comparación con instituciones similares.
+                </td>
+              </tr>
+              <tr>
+                <td style="font-size:18px;">🌍</td>
+                <td style="color:#374151;font-size:14px;line-height:1.6;">
+                  <strong>Brecha educativa:</strong> análisis profundo de la diferencia entre colegios
+                  públicos y privados, con estadísticas que los medios no publican.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin:32px 0;">
+        <a href="{{ site_url }}"
+           style="background:linear-gradient(135deg,#7c3aed,#db2777);color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:8px;font-size:16px;font-weight:700;display:inline-block;">
+          Mirarlo →
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin:12px 0 0 0;">
+          Totalmente gratuito para explorar
+        </p>
+      </div>
+
+      <p style="color:#6b7280;font-size:14px;line-height:1.7;margin:0;">
+        Puedes buscar tu colegio de toda la vida, el de tus hijos, o simplemente
+        explorar quiénes son los mejores colegios del país y por qué.
+        Me encantaría saber qué te parece.
+      </p>
+
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
+      <p style="margin:0;color:#9ca3af;font-size:12px;">
+        ICFES Analytics · <a href="{{ site_url }}" style="color:#7c3aed;text-decoration:none;">icfes-analytics.com</a>
+        · Un producto de <a href="https://www.sabededatos.com" style="color:#7c3aed;text-decoration:none;">sabededatos.com</a>
+      </p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+
+</body>
+</html>

@@ -189,4 +189,10 @@ ICFES_DUCKDB_PATH = env("DUCKDB_S3_PATH", default=env(
     "DUCKDB_PATH", default="/app/data/dev.duckdb"))
 # ------------------------------------------------------------------------------
 
+# AI / LLM
+# ------------------------------------------------------------------------------
+# Requerida para el análisis IA de inglés y el análisis de colegios individuales.
+# Configurar en Railway Dashboard → Variables → ANTHROPIC_API_KEY
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+
 print("BOOT railway settings loaded", __file__)
