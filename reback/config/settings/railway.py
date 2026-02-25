@@ -21,6 +21,15 @@ ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS",
     default=[".railway.app", "localhost", "icfes-analytics.com", "www.icfes-analytics.com"],
 )
+# Django 4+ requires explicit trusted origins for CSRF on HTTPS POST requests.
+CSRF_TRUSTED_ORIGINS = env.list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://icfes-analytics.com",
+        "https://www.icfes-analytics.com",
+        "https://*.railway.app",
+    ],
+)
 
 # MIDDLEWARE - Add auto-create admin middleware
 # ------------------------------------------------------------------------------
