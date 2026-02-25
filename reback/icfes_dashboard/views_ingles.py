@@ -3,11 +3,19 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_http_methods
 from django.core.cache import cache
 import pandas as pd
+import duckdb
 
 from .db_utils import execute_query
 
 logger = logging.getLogger(__name__)
 _CACHE_TTL = 60 * 60 * 2  # 2 horas
+
+def _is_table_missing(exc):
+    """True si la excepción es un CatalogException de DuckDB (tabla no existe)."""
+    return isinstance(exc, duckdb.CatalogException) or (
+        "CatalogException" in type(exc).__name__ or
+        "does not exist" in str(exc)
+    )
 
 def _cached(key, timeout, func):
     data = cache.get(key)
@@ -326,6 +334,9 @@ def api_ingles_brechas(request):
         cache_key = "ingles_brechas_v4"
         return JsonResponse({'data': _cached(cache_key, _CACHE_TTL, fetch)})
     except Exception as e:
+        if _is_table_missing(e):
+            logger.warning("api_ingles_brechas: tablas de brechas no disponibles en prod aún")
+            return JsonResponse({'data': None, 'unavailable': True})
         logger.error(f"api_ingles_brechas error: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -375,6 +386,9 @@ def api_ingles_potencial(request):
         cache_key = f"ingles_potencial_{ano}_{departamento}_{modo}"
         return JsonResponse({'data': _cached(cache_key, _CACHE_TTL, fetch)})
     except Exception as e:
+        if _is_table_missing(e):
+            logger.warning("api_ingles_potencial: fct_potencial_ingles no disponible en prod aún")
+            return JsonResponse({'data': [], 'unavailable': True})
         logger.error(f"api_ingles_potencial error: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -881,6 +895,9 @@ def api_ingles_prioridad(request):
         cache_key = f"ingles_prioridad_v1_{ano}_{departamento}_{sector}_{nivel}_{limit}"
         return JsonResponse({'data': _cached(cache_key, _CACHE_TTL, fetch)})
     except Exception as e:
+        if _is_table_missing(e):
+            logger.warning("api_ingles_prioridad: fct_prioridad_ingles no disponible en prod aún")
+            return JsonResponse({'data': [], 'unavailable': True})
         logger.exception("api_ingles_prioridad error")
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -914,6 +931,9 @@ def api_ingles_clusters_depto(request):
     try:
         return JsonResponse({'data': _cached('ingles_clusters_depto_v1', _CACHE_TTL, fetch)})
     except Exception as e:
+        if _is_table_missing(e):
+            logger.warning("api_ingles_clusters_depto: fct_clusters_depto_ingles no disponible en prod aún")
+            return JsonResponse({'data': [], 'unavailable': True})
         logger.exception("api_ingles_clusters_depto error")
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -978,6 +998,9 @@ def api_ingles_prediccion(request):
         cache_key = f"ingles_prediccion_v1_{departamento}_{sector}_{tendencia}_{orden}_{limit}"
         return JsonResponse({'data': _cached(cache_key, _CACHE_TTL, fetch)})
     except Exception as e:
+        if _is_table_missing(e):
+            logger.warning("api_ingles_prediccion: fct_prediccion_ingles no disponible en prod aún")
+            return JsonResponse({'data': [], 'unavailable': True})
         logger.exception("api_ingles_prediccion error")
         return JsonResponse({'error': str(e)}, status=500)
 
