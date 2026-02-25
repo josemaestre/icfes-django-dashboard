@@ -1037,12 +1037,16 @@ def api_ingles_ai_analisis(request):
 
     # --- GET: leer desde Postgres ---
     if request.method == 'GET':
-        obj = InglesAnalisisIA.objects.filter(
-            tipo=tipo,
-            parametro=parametro,
-            ano_referencia=ano,
-            estado=InglesAnalisisIA.ESTADO_ACTIVO,
-        ).order_by('-fecha_generacion').first()
+        try:
+            obj = InglesAnalisisIA.objects.filter(
+                tipo=tipo,
+                parametro=parametro,
+                ano_referencia=ano,
+                estado=InglesAnalisisIA.ESTADO_ACTIVO,
+            ).order_by('-fecha_generacion').first()
+        except Exception as e:
+            logger.warning(f"api_ingles_ai_analisis GET error (tabla posiblemente no migrada): {e}")
+            return JsonResponse({'disponible': False, 'mensaje': 'Análisis no disponible.'})
 
         if obj is None:
             return JsonResponse({

@@ -2076,8 +2076,15 @@ Idioma Extranjero' %}
         }
 
         function _getCsrfToken() {
-            var match = document.cookie.match(/csrftoken=([^;]+)/);
-            return match ? match[1] : '';
+            // Django CSRF cookies are URI-encoded — must decode or token length fails.
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var c = cookies[i].trim();
+                if (c.startsWith('csrftoken=')) {
+                    return decodeURIComponent(c.substring('csrftoken='.length));
+                }
+            }
+            return '';
         }
 
         document.getElementById('btn-generar-ia').addEventListener('click', function() {
