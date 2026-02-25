@@ -39,6 +39,14 @@ COPY reback/ .
 # Gulp build step skipped to avoid build complexity
 # Assets are already compiled and committed to repo
 
+# Collect static files at build time so WhiteNoise has them on startup.
+# DATABASE_URL and SECRET_KEY are required by settings at import time even
+# though collectstatic doesn't actually connect to any database.
+ARG DJANGO_SECRET_KEY=build-only-not-real
+ARG DATABASE_URL=sqlite:////tmp/build.db
+RUN DATABASE_URL=${DATABASE_URL} DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY} \
+    python manage.py collectstatic --noinput --settings=config.settings.railway
+
 # Create directory for DuckDB
 RUN mkdir -p /app/data
 
