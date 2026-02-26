@@ -202,19 +202,25 @@ ICFES_DUCKDB_PATH = env("DUCKDB_S3_PATH", default=env(
 # ------------------------------------------------------------------------------
 # Requerida para el análisis IA de inglés y el análisis de colegios individuales.
 # Configurar en Railway Dashboard → Variables → ANTHROPIC_API_KEY
-ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+import os as _os
+# Read directly from os.environ as fallback in case django-environ misses it
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="") or _os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Boot config verification — visible in Railway logs
 # ---------------------------------------------------------------------------
-def _check(name, value, required=False):
-    status = "SET" if value else ("MISSING - REQUIRED" if required else "not set")
-    print(f"[CONFIG] {name}: {status}")
+def _check(name, required=False):
+    via_env  = bool(env(name, default=""))
+    via_os   = bool(_os.environ.get(name, ""))
+    value    = via_env or via_os
+    detail   = f"(env={via_env}, os={via_os})"
+    status   = "SET" if value else ("MISSING - REQUIRED" if required else "not set")
+    print(f"[CONFIG] {name}: {status} {detail}")
 
 print("=" * 60)
 print("BOOT railway settings loaded")
-_check("DATABASE_URL",      env("DATABASE_URL", default=""),      required=True)
-_check("ANTHROPIC_API_KEY", ANTHROPIC_API_KEY,                    required=True)
-_check("DUCKDB_S3_PATH",    env("DUCKDB_S3_PATH", default=""))
-_check("AWS_ACCESS_KEY_ID", env("AWS_ACCESS_KEY_ID", default=""))
+_check("DATABASE_URL",      required=True)
+_check("ANTHROPIC_API_KEY", required=True)
+_check("DUCKDB_S3_PATH")
+_check("AWS_ACCESS_KEY_ID")
 print("=" * 60)
