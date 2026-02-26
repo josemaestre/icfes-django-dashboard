@@ -8,11 +8,11 @@ from urllib.parse import urljoin
 
 import duckdb
 from django.conf import settings
+from django.core.cache import cache
 from django.http import Http404
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.utils.text import slugify
-from django.views.decorators.cache import cache_page
 
 from .db_utils import get_duckdb_connection, resolve_schema
 from .landing_utils import generate_school_slug
@@ -122,8 +122,18 @@ def _find_school_by_slug(conn, slug):
     return None
 
 
-@cache_page(60 * 60 * 6)
 def school_landing_page(request, slug):
+    use_cache = request.method in {"GET", "HEAD"}
+    cache_key = f"html:school_landing_simple:v1:{slug}"
+
+    if use_cache:
+        cached_response = cache.get(cache_key)
+        if cached_response is not None:
+            request._cache_status = "HIT"
+            return cached_response
+    else:
+        request._cache_status = "BYPASS"
+
     try:
         with get_duckdb_connection() as conn:
             school_result = _find_school_by_slug(conn, slug)
@@ -791,10 +801,18 @@ def school_landing_page(request, slug):
                 ),
             }
 
-            return render(request, "icfes_dashboard/school_landing_simple.html", context)
+            response = render(request, "icfes_dashboard/school_landing_simple.html", context)
+            if use_cache and response.status_code == 200:
+                cache.set(cache_key, response, timeout=60 * 60 * 6)
+                request._cache_status = "MISS"
+            else:
+                request._cache_status = "BYPASS"
+            return response
 
     except Http404:
+        request._cache_status = "BYPASS"
         raise
     except Exception as exc:
+        request._cache_status = "BYPASS"
         logger.error("Error in school_landing_page for slug %s: %s", slug, exc)
         raise Http404("Error al cargar la informacion del colegio")

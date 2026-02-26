@@ -91,6 +91,8 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 # Public base URL used for canonical, OG tags, robots and sitemaps.
 PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="")
+PERF_LOGGING_ENABLED = env.bool("PERF_LOGGING_ENABLED", default=False)
+CACHE_DEBUG_HEADER_ENABLED = env.bool("CACHE_DEBUG_HEADER_ENABLED", default=False)
 
 # APPS
 # ------------------------------------------------------------------------------
@@ -180,7 +182,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "reback.users.subscription_middleware.SubscriptionMiddleware",  # Fixed path
-    "reback.middleware.redis_logging.RedisCacheLoggingMiddleware",  # Redis logging
+    "reback.middleware.perf_logging.PerfLoggingMiddleware",
+    "reback.middleware.perf_logging.CacheDebugHeaderMiddleware",
 ]
 
 # STATIC
@@ -323,6 +326,11 @@ LOGGING = {
         "django.core.cache": {
             "handlers": ["console"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        "perf": {
+            "handlers": ["console"],
+            "level": "INFO",
             "propagate": False,
         },
     },
