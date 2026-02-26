@@ -1081,8 +1081,10 @@ def api_ingles_ai_analisis(request):
                 'error': 'Ya existe un análisis activo. Usa ?forzar=1 para regenerar.'
             }, status=409)
 
+    import os
     from django.conf import settings
-    if not getattr(settings, 'ANTHROPIC_API_KEY', None):
+    api_key = getattr(settings, 'ANTHROPIC_API_KEY', None) or os.environ.get('ANTHROPIC_API_KEY', '')
+    if not api_key:
         return JsonResponse({'error': 'ANTHROPIC_API_KEY no configurada.'}, status=503)
 
     try:
@@ -1094,7 +1096,7 @@ def api_ingles_ai_analisis(request):
             prompt = _build_prompt_nacional(data, ano)
 
         import anthropic
-        client  = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        client  = anthropic.Anthropic(api_key=api_key)
         message = client.messages.create(
             model=MODEL_IA, max_tokens=MAX_TOKENS,
             messages=[{"role": "user", "content": prompt}]
