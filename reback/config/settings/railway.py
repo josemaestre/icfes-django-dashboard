@@ -49,6 +49,8 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",  # Required by allauth
     "reback.users.middleware.AutoCreateAdminMiddleware",  # Auto-create admin
     "reback.middleware.error_logging.ErrorLoggingMiddleware",  # Log 4xx/5xx errors
+    "reback.middleware.perf_logging.PerfLoggingMiddleware",
+    "reback.middleware.perf_logging.CacheDebugHeaderMiddleware",
 ]
 
 # DATABASES
@@ -186,6 +188,11 @@ LOGGING = {
         "http_errors": {
             "handlers": ["console", "error_file"],
             "level": "WARNING",
+            "propagate": False,
+        },
+        "perf": {
+            "handlers": ["console"],
+            "level": "INFO",
             "propagate": False,
         },
     },
