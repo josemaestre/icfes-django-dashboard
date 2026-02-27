@@ -1,590 +1,378 @@
-# ICFES Analytics Platform - Web Portal
+# ICFES Analytics Platform — Web Portal
 
-[![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.1+-green?logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-1.x-yellow?logo=duckdb&logoColor=white)](https://duckdb.org/)
+[![Railway](https://img.shields.io/badge/Deploy-Railway-purple)](https://railway.app/)
 
-> **Portal web interactivo para análisis de datos del examen ICFES (Colombia)**  
-> Integrado con dbt DuckDB data warehouse | 17.7M+ registros | 29 años de datos históricos
-
----
-
-## 🎯 Descripción
-
-Portal web Django que proporciona acceso interactivo a los datos procesados del examen ICFES. Conectado directamente al data warehouse dbt (`dev.duckdb`) para aprovechar modelos analíticos avanzados de la capa Gold.
-
-### Características Principales
-
-- 📊 **Dashboard Interactivo**: Visualizaciones con ApexCharts
-- 🗺️ **Explorador Jerárquico**: Navegación Región → Departamento → Municipio → Colegio
-- 📈 **Métricas Avanzadas**: Z-scores, percentiles, rankings, tendencias YoY
-- 🔌 **API REST**: Endpoints JSON para integraciones
-- ⚡ **Alto Rendimiento**: Queries optimizadas (~12-25ms)
-- 🎨 **UI Premium**: Template Reback Admin responsive
+> Portal web Django para la plataforma de inteligencia educativa ICFES Analytics.
+> 30 años de datos | 17.7M+ registros | 3 modelos ML | 22.000+ landing pages SEO
 
 ---
 
-## 🏗️ Arquitectura
+## Descripción
+
+Portal web conectado a un data warehouse DuckDB que expone:
+
+- **5 dashboards interactivos** con análisis educativo avanzado
+- **3 modelos de machine learning** en producción (riesgo, clusters, potencial contextual)
+- **22.000+ landing pages** individuales por colegio, indexadas por Google
+- **API REST interna** para todos los datos analíticos
+- **Infraestructura SEO completa**: sitemaps dinámicos, Schema.org, canonical, Open Graph
+
+---
+
+## Arquitectura del sistema completo
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Django Web Portal                       │
-│                    (c:\proyectos\www\reback)                 │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ Read-Only Connection
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    dbt DuckDB Warehouse                      │
-│              (c:\proyectos\dbt\icfes_processing)             │
-│                                                               │
-│  Bronze Layer  →  Silver Layer  →  Gold Layer                │
-│  (Raw Data)       (Cleaned)        (Analytics)               │
-│                                                               │
-│  • 38 sources     • dim_colegios   • fact_icfes_analytics    │
-│                   • dim_colegios   • fct_agg_colegios_ano    │
-│                   • icfes          • tendencias_regionales   │
-│                                    • vw_fct_colegios_region  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  EC2 (procesamiento pesado, 50 GB RAM)                              │
+│                                                                     │
+│  1. git pull (icfes_dbt + icfes_data_science + deploy scripts)      │
+│  2. dbt run   → Bronze → Silver → Gold (SQL models)                 │
+│  3. deploy_all.py (en orden):                                       │
+│       01_generate_slugs.py          → gold.dim_colegios_slugs       │
+│       train_school_clusters.py      → gold.fct_school_clusters      │
+│       predict_school_risk.py        → gold.fct_school_risk          │
+│       train_potencial_model.py      → gold.fct_potencial_educativo  │
+│       02_deploy_to_prod.py          → exporta TODO gold → prod.duckdb│
+│  4. prod.duckdb sube a S3                                           │
+│  5. Railway redeploy (descarga prod.duckdb desde S3 al arrancar)    │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                          prod.duckdb (S3)
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Railway (producción)                                               │
+│  Django 5.1 + DuckDB read-only                                      │
+│  → 22.000+ páginas de colegios                                      │
+│  → 5 dashboards                                                     │
+│  → API REST                                                         │
+│  → Sitemaps dinámicos                                               │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Capas del data warehouse
+
+| Capa | Descripción | Herramienta |
+|---|---|---|
+| **Bronze** | Archivos CSV brutos del ICFES (1994–2024) | dbt sources |
+| **Silver** | Datos limpios, normalizados, tipados | dbt SQL models |
+| **Gold** | Tablas analíticas + modelos ML | dbt SQL + Python scripts |
+
+---
+
+## Modelos de Machine Learning
+
+Los modelos se entrenan en EC2 con los scripts de `icfes_data_science/` y escriben
+directamente a la capa Gold del data warehouse antes del deploy a producción.
+
+### 1. Predicción de Riesgo de Declive
+```
+Archivo:  data_science/predict_school_risk.py
+Modelo:   XGBoost Classifier
+Output:   gold.fct_school_risk
+Pregunta: ¿Probabilidad de que este colegio baje su puntaje >2% el próximo año?
+```
+
+### 2. Clustering de Colegios
+```
+Archivo:  data_science/train_school_clusters.py
+Modelo:   K-Means (scikit-learn)
+Output:   gold.fct_school_clusters
+Pregunta: ¿A qué grupo de colegios similares pertenece este colegio?
+```
+
+### 3. Modelo de Potencial Educativo Contextual
+```
+Archivo:  data_science/train_potencial_model.py
+Modelo:   GradientBoostingRegressor (scikit-learn)
+Output:   gold.fct_potencial_educativo
+Pregunta: ¿Cuánto supera o queda por debajo este colegio de lo que su contexto predice?
+
+Training: 330K filas (2010–2024), 5-fold cross-validation
+Métricas: CV R² = 0.44 | CV MAE = 19.8 pts
+
+Features:
+  Categóricas: región, sector, calendario, departamento  (OrdinalEncoder)
+  Numéricas:   log1p(estudiantes), latitud, longitud
+
+Clasificaciones (por percentil del exceso):
+  >= 90  → Excepcional
+  75–90  → Notable
+  25–75  → Esperado
+  10–25  → Bajo el Potencial
+  < 10   → En Riesgo Contextual
+
+Resultado 2024: 10.646 colegios clasificados
+#1 Excepcional: Alexander Von Humboldt, Barranquilla (+129 pts sobre predicción)
 ```
 
 ---
 
-## 🚀 Instalación
+## Pipeline de deploy completo
+
+### En EC2 (deploy full, ~15–20 min)
+
+```bash
+# 1. Actualizar código
+cd ~/icfes_dbt && git pull
+cd ~/icfes_data_science && git pull
+cd ~/deploy && git pull
+
+# 2. Correr modelos dbt (capa Silver y Gold SQL)
+cd ~/icfes_dbt/icfes_processing
+dbt run
+
+# 3. Correr todos los scripts ML + deploy a prod
+cd ~/
+python deploy/deploy_all.py
+# Este script ejecuta en orden:
+#   deploy/01_generate_slugs.py
+#   data_science/train_school_clusters.py
+#   data_science/predict_school_risk.py
+#   data_science/train_potencial_model.py
+#   deploy/02_deploy_to_prod.py   ← exporta TODAS las tablas gold a prod.duckdb
+
+# 4. Subir prod.duckdb a S3
+aws s3 cp prod.duckdb s3://icfes-analytics/prod.duckdb
+
+# 5. Railway descarga prod.duckdb al arrancar (variable DB_PATH apunta a S3 mount)
+```
+
+### Script deploy_all.py
+
+```python
+# deploy/deploy_all.py — ejecuta los scripts en orden y aborta si alguno falla
+SCRIPTS = [
+    ("deploy/01_generate_slugs.py",        "Generating slugs for all schools"),
+    ("data_science/train_school_clusters.py","Training school clusters (K-Means)"),
+    ("data_science/predict_school_risk.py", "Generating risk predictions (XGBoost)"),
+    ("data_science/train_potencial_model.py","Training contextual potential model (GBM)"),
+    ("deploy/02_deploy_to_prod.py",         "Deploying gold tables to production"),
+]
+```
+
+### Script 02_deploy_to_prod.py
+
+Exporta automáticamente **todas** las tablas del schema `gold` de `dev.duckdb` a `prod.duckdb`
+vía parquet. No requiere lista manual de tablas — descubre todo lo que existe en gold.
+
+```bash
+# Solo deploy a prod sin re-entrenar modelos (cuando solo cambiaron datos dbt)
+python deploy/02_deploy_to_prod.py
+```
+
+---
+
+## Dashboards
+
+| Dashboard | URL | Descripción |
+|---|---|---|
+| **ICFES Principal** | `/icfes/` | KPIs, ranking depto, búsqueda colegio, modelo riesgo |
+| **Historia Educación** | `/icfes/historia/` | Narrativa 30 años por capítulos, convergencia regional |
+| **Inteligencia Educativa** | `/icfes/inteligencia/` | 5 capítulos ML: trayectorias, resilientes, movilidad, inglés, potencial |
+| **Brecha Educativa** | `/icfes/brecha/` | Oficial vs No Oficial: materias, niveles, depto, Z-score |
+| **Resumen Ejecutivo** | `/icfes/ejecutivo/` | Vista condensada para decisores |
+
+Todos: dark mode compatible (Bootstrap 5.3 CSS variables), responsive, Chart.js 4.4.
+
+---
+
+## SEO — Landing pages programáticas
+
+### Páginas indexadas
+
+```
+22.000+ URLs de colegios:
+/icfes/colegio/<slug>/              → ficha completa con ML
+/icfes/departamento/<slug>/         → 33 departamentos
+/icfes/departamento/<d>/municipio/<m>/  → ~1.100 municipios
+/icfes/ranking/colegios/<año>/      → top 50 por año (1994–2024)
+/icfes/ranking/matematicas/<año>/   → top 50 en matemáticas
+/icfes/historico/puntaje-global/    → tendencia nacional
+```
+
+### Sitemaps dinámicos
+
+```
+/sitemap.xml                 → índice de sitemaps
+/sitemap-static.xml          → páginas estáticas
+/sitemap-icfes-1.xml         → ~22.000 colegios (40K por página)
+/sitemap-departamentos.xml   → 33 departamentos
+/sitemap-municipios.xml      → ~1.100 municipios
+/sitemap-longtail.xml        → páginas de ranking por año
+```
+
+### Estado de indexación (feb 2026)
+
+- Indexadas: **6.110** (de 22.000+)
+- Impresiones: **8.330/mes** (era 0 hace 3 semanas)
+- Clics: **177/mes** (era 0)
+- Tendencia: exponencial — punto de inflexión activo
+
+---
+
+## Setup local (desarrollo)
 
 ### Prerrequisitos
 
 - Python 3.11+
-- pip
-- Git
-- dbt project configurado (ver `c:\proyectos\dbt\icfes_processing`)
-
-### Setup
+- `uv` (instalador de paquetes recomendado)
+- Acceso al archivo `dev.duckdb` del proyecto dbt
 
 ```bash
-# 1. Navegar al directorio del proyecto
-cd c:\proyectos\www\reback
+# Instalar dependencias
+uv pip install -r requirements/local.txt
 
-# 2. Crear entorno virtual
-python -m venv venv
+# Variables de entorno
+cp .env.example .env
+# Configurar DB_PATH apuntando a dev.duckdb local
 
-# 3. Activar entorno virtual
-# Windows:
-venv\Scripts\activate
-
-# 4. Instalar dependencias
-pip install -r requirements\local.txt
-
-# 5. Configurar variables de entorno
-# Copiar .env.example a .env y configurar
-
-# 6. Ejecutar migraciones
+# Migraciones Django (SQLite para metadata de usuarios)
 python manage.py migrate
 
-# 7. Crear superusuario
+# Crear superusuario
 python manage.py createsuperuser
 
-# 8. Iniciar servidor de desarrollo
+# Inicializar planes de suscripción
+python manage.py create_plans
+
+# Servidor de desarrollo
 python manage.py runserver
 ```
 
-### Inicializar Planes de Suscripción
+### Variables de entorno clave
 
 ```bash
-# Crear los 4 planes de suscripción (Free, Basic, Premium, Enterprise)
-python manage.py create_plans
+DB_PATH=/ruta/a/dev.duckdb          # DuckDB local (desarrollo)
+# En producción Railway apunta a prod.duckdb descargado desde S3
+PUBLIC_SITE_URL=https://www.icfes-analytics.com
+DJANGO_SECRET_KEY=...
+DJANGO_SETTINGS_MODULE=config.settings.production
 ```
 
 ---
 
-## 🔐 Acceso a la Aplicación
+## Conexión a DuckDB
 
-### URLs Principales
-
-| Página | URL | Acceso | Descripción |
-|--------|-----|--------|-------------|
-| **Pricing** | `http://localhost:8000/pages-pricing/` | 🌐 Público | Ver planes y precios |
-| **Registro** | `http://localhost:8000/accounts/signup/` | 🌐 Público | Crear cuenta nueva |
-| **Login** | `http://localhost:8000/accounts/login/` | 🌐 Público | Iniciar sesión |
-| **Dashboard** | `http://localhost:8000/` | 🔒 Requiere login | Dashboard principal |
-| **Admin Django** | `http://localhost:8000/admin/` | 🔒 Superuser | Gestión de suscripciones |
-
-### Flujo de Usuario
-
-```
-1. Ver Pricing (Público)
-   ↓
-2. Seleccionar Plan → Click "Get Started"
-   ↓
-3. Registrarse (email + password)
-   ↓
-4. Verificar email (check console Django en desarrollo)
-   ↓
-5. Login
-   ↓
-6. ✅ Acceso al Dashboard con Plan Free automático
-```
-
----
-
-## 💳 Sistema de Suscripciones (Freemium)
-
-### Planes Disponibles
-
-| Plan | Precio | Queries/Día | Acceso Geográfico | Años Históricos | Exportar | API |
-|------|--------|-------------|-------------------|-----------------|----------|-----|
-| **Free** | $0/mes | 10 | Solo regiones | 3 años | ❌ | ❌ |
-| **Basic** | $9.99/mes | 100 | Departamentos + Municipios | 10 años | CSV | ❌ |
-| **Premium** | $29.99/mes | 1,000 | Colegios individuales | 29 años (completo) | CSV, Excel, PDF | ✅ (100 req/hr) |
-| **Enterprise** | Custom | 10,000 | Todo | 29 años | Todo | ✅ Ilimitado |
-
-### Características por Tier
-
-#### 🆓 Free Plan
-- ✅ Datos agregados por **región**
-- ✅ Últimos **3 años** de datos
-- ✅ **10 consultas** por día
-- ❌ Sin exportación de datos
-- ❌ Sin acceso a API
-
-#### 💼 Basic Plan
-- ✅ Datos por **departamento** y **municipio**
-- ✅ Últimos **10 años** de datos
-- ✅ **100 consultas** por día
-- ✅ Exportación a **CSV**
-- ❌ Sin acceso a API
-
-#### ⭐ Premium Plan
-- ✅ Datos de **colegios individuales**
-- ✅ **Histórico completo** (1996-2024)
-- ✅ **1,000 consultas** por día
-- ✅ Exportación a **CSV, Excel y PDF**
-- ✅ **Acceso a API REST** (100 requests/hora)
-
-#### 🏢 Enterprise Plan
-- ✅ Todo lo de Premium
-- ✅ **API ilimitada**
-- ✅ **10,000 consultas** por día
-- ✅ Soporte dedicado
-- ✅ Integraciones personalizadas
-
-### Gestión de Suscripciones
-
-#### Admin Django
-
-```bash
-# 1. Crear superusuario (si no existe)
-python manage.py createsuperuser
-
-# 2. Acceder al admin
-http://localhost:8000/admin/
-
-# 3. Navegar a: Users → Subscription plans / User subscriptions
-```
-
-**En el admin puedes:**
-- ✅ Ver y editar planes de suscripción
-- ✅ Asignar planes a usuarios manualmente
-- ✅ Ver logs de queries por usuario
-- ✅ Monitorear uso diario de queries
-
-#### Asignar Plan Manualmente (Python Shell)
-
-```bash
-python manage.py shell
-```
+El portal usa **conexión read-only** a DuckDB. Nunca escribe en el warehouse desde el web.
 
 ```python
-from reback.users.models import User
-from reback.users.subscription_models import SubscriptionPlan, UserSubscription
-
-# Obtener usuario
-user = User.objects.get(email='usuario@example.com')
-
-# Obtener plan Premium
-premium = SubscriptionPlan.objects.get(tier='premium')
-
-# Asignar plan
-subscription = UserSubscription.objects.create(user=user, plan=premium)
-print(f"✅ {user.email} ahora tiene plan {premium.name}")
+# icfes_dashboard/db_utils.py
+def get_duckdb_connection():
+    return duckdb.connect(DB_PATH, read_only=True)
 ```
 
-### Control de Acceso Automático
-
-El sistema usa **middleware** para controlar acceso a endpoints `/icfes/api/`:
-
-```python
-# Verifica automáticamente:
-✅ Usuario autenticado?
-✅ Suscripción activa?
-✅ Queries disponibles hoy?
-✅ Plan permite acceder a este endpoint?
-
-# Si todo OK → Procesa request
-# Si NO → Retorna error 403/429 con mensaje de upgrade
-```
-
-**Ejemplo de respuesta cuando se excede límite:**
-
-```json
-{
-  "error": "Daily query limit exceeded",
-  "message": "You have reached your daily limit of 10 queries",
-  "current_plan": "free",
-  "queries_used": 10,
-  "queries_limit": 10,
-  "upgrade_url": "/pages-pricing/"
-}
-```
+En producción `DB_PATH` apunta al `prod.duckdb` descargado desde S3.
+En desarrollo `DB_PATH` apunta al `dev.duckdb` del proyecto dbt local.
 
 ---
 
-## 🧪 Testing del Sistema Freemium
+## Sistema de suscripciones (Freemium)
 
-### Test 1: Página Pública de Pricing
+| Plan | Precio | Acceso |
+|---|---|---|
+| **Free** | $0 | Datos básicos, 3 años, 10 queries/día |
+| **Basic** | $9.99/mes | Departamentos + municipios, 10 años, CSV export |
+| **Premium** | $29.99/mes | Colegios individuales, histórico completo, API |
+| **Enterprise** | Custom | Todo + soporte dedicado |
 
-```bash
-# Abrir en navegador (sin login):
-http://localhost:8000/pages-pricing/
-```
-
-✅ Debe mostrar los 4 planes sin pedir login
-
-### Test 2: Registro con Plan Free Automático
-
-```bash
-# 1. Ir a pricing y click "Get Started"
-# 2. Registrarse con email nuevo
-# 3. Verificar email (en desarrollo, ver console de Django)
-# 4. Login
-# 5. Verificar en admin que tiene UserSubscription con plan Free
-```
-
-### Test 3: Verificar Límites de Queries
-
-```python
-# En Django shell:
-from reback.users.models import User
-
-user = User.objects.get(email='tu@email.com')
-sub = user.subscription
-
-print(f"Plan: {sub.plan.name}")
-print(f"Queries hoy: {sub.queries_today}/{sub.plan.max_queries_per_day}")
-print(f"Queries restantes: {sub.get_remaining_queries()}")
-```
+Las landing pages de colegios (`/icfes/colegio/<slug>/`) son **100% públicas** — sin
+login requerido. El freemium aplica solo al dashboard interactivo con filtros avanzados.
 
 ---
 
-## 📊 Acceso al Dashboard ICFES
+## Repos relacionados
 
-### Dashboard Principal
-
-```
-http://localhost:8000/
-```
-
-**Requiere:** Login con cualquier plan (Free, Basic, Premium, Enterprise)
-
-
-
-## 📊 Dashboard ICFES
-
-### Vista General
-
-Incluye:
-- **KPIs**: Total estudiantes, colegios, promedio nacional, departamentos
-- **Tendencias Nacionales**: Gráfico de líneas con evolución temporal (1996-2024)
-- **Comparación Sectores**: Gráfico de barras (Oficial vs No Oficial)
-- **Ranking Departamental**: Top 10 departamentos por puntaje
-- **Distribución Regional**: Gráfico de dona con estudiantes por región
-- **Top Colegios**: Tabla interactiva con los 50 mejores colegios
-
-### Explorador Jerárquico
-
-Tabla expandible de 4 niveles:
-
-```
-📍 Región (6 regiones)
-  └─ 📍 Departamento
-      └─ 📍 Municipio
-          └─ 🏫 Colegio
-```
-
-**Métricas por nivel:**
-- Puntajes (Global, Matemáticas, Lectura, C. Naturales, Sociales, Inglés)
-- Ranking relativo
-- Tendencia anual (YoY %)
-- Z-Score (desviación estándar)
-- Percentil (0-100%)
+| Repo | Descripción |
+|---|---|
+| `icfes-django-dashboard` | Este repo — portal web Django |
+| `icfes_dbt` | Pipeline dbt (Bronze → Silver → Gold) |
+| `icfes_data_science` | Scripts ML (clusters, riesgo, potencial) |
 
 ---
 
-## 🔌 API Endpoints
+## Stack tecnológico
 
-### Estadísticas Generales
-
-```bash
-GET /icfes/api/estadisticas/?ano=2024
-```
-
-Retorna: Total estudiantes, colegios, promedio nacional, departamentos
-
-### Tendencias Nacionales
-
-```bash
-GET /icfes/api/charts/tendencias/
-```
-
-Retorna: Serie temporal con puntajes por materia (1996-2024)
-
-### Jerarquía Geográfica
-
-```bash
-# Regiones
-GET /icfes/api/hierarchy/regions/?ano=2024
-
-# Departamentos de una región
-GET /icfes/api/hierarchy/departments/?region=ANDINA&ano=2024
-
-# Municipios de un departamento
-GET /icfes/api/hierarchy/municipalities/?department=BOGOTA&ano=2024
-
-# Colegios de un municipio
-GET /icfes/api/hierarchy/schools/?municipality=BOGOTA&ano=2024
-```
-
-### Top Colegios
-
-```bash
-GET /icfes/api/colegios/destacados/?ano=2024&limit=50
-```
+| Capa | Tecnología |
+|---|---|
+| Backend | Django 5.1, Python 3.11 |
+| Data warehouse | DuckDB 1.x |
+| Pipeline ETL | dbt-core + dbt-duckdb |
+| ML | scikit-learn 1.8 (GBM, K-Means), XGBoost |
+| Hosting web | Railway |
+| Procesamiento pesado | EC2 (50 GB RAM) |
+| Almacenamiento | AWS S3 (prod.duckdb) |
+| Frontend | Bootstrap 5.3, Chart.js 4.4, Reback Admin |
+| SEO | Sitemaps dinámicos, Schema.org, OG tags |
 
 ---
 
-## 🛠️ Tecnologías
-
-### Backend
-- **Django 5.1+**: Framework web
-- **DuckDB**: Conexión a data warehouse
-- **Pandas**: Procesamiento de datos
-- **Django REST Framework**: API endpoints
-
-### Frontend
-- **Bootstrap 5**: Framework CSS
-- **ApexCharts**: Visualizaciones interactivas
-- **JavaScript ES6+**: Lógica de frontend
-- **Reback Admin**: Template premium
-
-### Database
-- **DuckDB** (dev.duckdb): Data warehouse principal (15.5 GB)
-- **PostgreSQL/SQLite**: Metadata de Django (usuarios, sesiones)
-
----
-
-## 📁 Estructura del Proyecto
+## Estructura del proyecto
 
 ```
-c:\proyectos\www\reback\
-├── config/                      # Configuración Django
+reback/
+├── config/
 │   └── settings/
-│       ├── base.py             # Settings base
-│       ├── local.py            # Settings desarrollo
-│       └── production.py       # Settings producción
-├── icfes_dashboard/            # App principal
-│   ├── models.py               # Modelos Django (unmanaged)
-│   ├── views.py                # Vistas y API endpoints
-│   ├── urls.py                 # Rutas
+│       ├── base.py
+│       ├── local.py
+│       └── production.py
+├── icfes_dashboard/
+│   ├── api_views.py            # Todos los endpoints JSON
+│   ├── db_utils.py             # Queries DuckDB centralizadas
+│   ├── views.py                # Vistas Django principales
+│   ├── geo_landing_views.py    # Páginas departamento/municipio
+│   ├── longtail_landing_views.py # Páginas de ranking por año
+│   ├── landing_views_simple.py # Fichas individuales de colegio
+│   ├── sitemap_views.py        # Sitemaps dinámicos
+│   ├── urls.py
 │   └── templates/
 │       └── icfes_dashboard/
-│           └── pages/
-│               └── dashboard-icfes.html
-├── reback/                     # App core
-│   └── static/
-│       └── js/
-│           └── pages/
-│               └── dashboard.icfes.js  # Lógica frontend
-├── requirements/               # Dependencias
-│   ├── base.txt
-│   ├── local.txt
-│   └── production.txt
+│           ├── pages/
+│           │   ├── dashboard-icfes.html
+│           │   ├── dashboard-historia.html
+│           │   ├── dashboard-inteligencia.html
+│           │   ├── dashboard-brecha.html
+│           │   └── school_landing_page.html
+│           ├── geo_landing_simple.html
+│           └── longtail_landing_simple.html
+├── reback/
+│   └── templates/
+│       └── partials/
+│           └── main-nav.html
 └── manage.py
 ```
 
 ---
 
-## 🧪 Testing
+## Comandos útiles
 
 ```bash
-# Ejecutar todos los tests
-pytest
-
-# Con cobertura
-coverage run -m pytest
-coverage html
-open htmlcov/index.html
-
-# Type checking
-mypy reback
-```
-
----
-
-## 🚀 Deployment
-
-### Desarrollo Local
-
-```bash
+# Desarrollo
 python manage.py runserver
-```
-
-### Producción (Pendiente)
-
-- [ ] Configurar Docker
-- [ ] Setup CI/CD (GitHub Actions)
-- [ ] Deploy en Railway/Render/AWS
-- [ ] Configurar CDN para assets
-- [ ] Implementar caché (Redis)
-
----
-
-## 📝 Configuración de Base de Datos
-
-### DuckDB Connection (Read-Only)
-
-```python
-# config/settings/base.py
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    'duckdb': {
-        'ENGINE': 'django_duckdb',
-        'NAME': 'c:/proyectos/dbt/icfes_processing/dev.duckdb',
-        'OPTIONS': {
-            'read_only': True,
-        }
-    }
-}
-```
-
-### Vista Materializada
-
-El proyecto usa `vw_fct_colegios_region` para optimizar queries regionales:
-
-```bash
-# Actualizar vista materializada
-python create_materialized_view.py
-
-# Probar endpoints
-python test_materialized_view.py
-```
-
----
-
-## 🔧 Comandos Útiles
-
-### Gestión de Usuarios
-
-```bash
-# Crear superusuario
-python manage.py createsuperuser
-
-# Cambiar contraseña
-python manage.py changepassword <username>
-```
-
-### Desarrollo
-
-```bash
-# Ejecutar servidor
-python manage.py runserver
-
-# Shell interactivo
 python manage.py shell
 
-# Limpiar sesiones
-python manage.py clearsessions
+# Producción local (simular Railway)
+DB_PATH=/ruta/prod.duckdb python manage.py runserver
+
+# Verificar que el DuckDB está accesible
+python -c "import duckdb; c = duckdb.connect('dev.duckdb', read_only=True); print(c.execute('SHOW TABLES').fetchall())"
+
+# Tests
+pytest
+
+# Linting
+ruff check .
 ```
 
-### Base de Datos
+---
 
-```bash
-# Migraciones
-python manage.py makemigrations
-python manage.py migrate
+## Autor
 
-# SQL de migraciones
-python manage.py sqlmigrate <app> <migration_number>
-```
+**Jose Gregorio Maestre** — [sabededatos.com](https://www.sabededatos.com)
 
 ---
 
----
-
-## 📈 Estrategia SEO (Programmatic SEO)
-
-El verdadero potencial de tráfico de la aplicación reside en las **Landing Pages de Colegios** (`/icfes/colegio/<slug>/`), no solo en la home.
-
-### 1. El Concepto: Programmatic SEO
-En lugar de escribir manualmente 10 artículos de blog, generamos automáticamente **22,000+ páginas únicas**, una por cada colegio en la base de datos.
-- **Query de búsqueda**: "Resultados ICFES Colegio Javiera Londoño", "Mejor colegio en Medellín", "Puntaje ICFES colegio X".
-- **Volumen**: Si cada colegio recibe solo 10 visitas/mes → **220,000 visitas/mes** de tráfico orgánico altamente cualificado.
-
-### 2. Estructura de Indexación
-Para que Google indexe estas miles de páginas sin considerarlas "Thin Content":
-- **Contenido Único**: Cada página tiene datos específicos (gráficos, rankings, brechas) que no existen en otro lugar.
-- **Sitemap Dinámico**: Un `sitemap.xml` que lista todas las URLs de colegios (ya tenemos la tabla `dim_colegios_slugs` para esto).
-- **Schema.org**: Implementar datos estructurados `School` y `EducationalOrganization` para aparecer en Rich Snippets.
-
-### 3. El Funnel de Conversión
-Estas páginas actúan como la "parte ancha" del embudo:
-1.  **Atracción**: Padre/Rector busca su colegio → Llega a nuestra Landing Page Gratuita.
-2.  **Valor**: Ve los datos básicos (2024) y se impresiona con la calidad visual.
-3.  **Conversión**: Ve un CTA "Ver histórico 10 años" o "Comparar con competencia".
-4.  **Venta**: Se registra en el Plan Freemium/Premium.
-
-### 4. Implementación Técnica
-- **Slugs**: URLs amigables SEO (`/colegio/liceo-nacional-agustin-codazzi/`) en lugar de IDs (`/colegio/12345/`).
-- **Meta Tags Dinámicos**: `<title>Resultados ICFES 2024 - Colegio X | Ranking y Análisis</title>`.
-- **Performance**: Las páginas deben cargar en <1s (DuckDB + Vistas Materializadas) para pasar los Core Web Vitals.
-
----
-
-## 📚 Documentación Adicional
-
-- [TODO de Integración](../TODO_INTEGRACION_WEB_ICFES.md)
-- [Evaluación del Proyecto](../EVALUACION_PROYECTO.md)
-- [README dbt](../dbt/icfes_processing/README.md)
-- [Django Documentation](https://docs.djangoproject.com/)
-- [DuckDB Documentation](https://duckdb.org/docs/)
-
----
-
-## 🤝 Contribución
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT.
-
----
-
-## 👤 Autor
-
-**Jose Gregorio Maestre**
-
----
-
-**⭐ Si este proyecto te resulta útil, considera darle una estrella en GitHub!**
-
+*Para contexto estratégico completo ver [ESTADO_Y_VISION.md](ESTADO_Y_VISION.md)*
