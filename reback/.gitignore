@@ -1,3 +1,15 @@
 
 # Local scripts and diagnostics
 scripts_local/
+
+# Local agent/config
+.claude/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Temporary diagnostics artifacts
+output*.txt
+temp*.html
+test_*.txt
