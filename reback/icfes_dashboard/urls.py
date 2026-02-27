@@ -91,6 +91,8 @@ urlpatterns = [
          name='hierarchy_municipalities'),
     path('api/hierarchy/schools/', views.hierarchy_schools,
          name='hierarchy_schools'),
+    path('api/hierarchy/history/', views.hierarchy_history,
+         name='hierarchy_history'),
 
     # Endpoints para Vista Individual de Colegio
     path('api/search/colegios/', views.api_search_colegios,

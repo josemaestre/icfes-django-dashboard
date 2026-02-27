@@ -635,6 +635,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Close detail panel button
+    const closeDetailBtn = document.getElementById('btn-close-detail');
+    if (closeDetailBtn) closeDetailBtn.addEventListener('click', closeDetailPanel);
 });
 
 // Load initial regions
@@ -642,6 +646,7 @@ async function loadHierarchicalTable() {
     const tbody = document.getElementById('hierarchical-tbody');
     if (!tbody) return;
 
+    closeDetailPanel();
     tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>';
 
     try {
@@ -697,6 +702,7 @@ function createRegionRow(region) {
         await toggleExpand('region', region.region, row);
     });
 
+    addDetailClickHandler(row, region, 'region');
     return row;
 }
 
@@ -806,6 +812,7 @@ function createChildRow(data, level, indentLevel) {
         });
     }
 
+    addDetailClickHandler(row, data, level);
     return row;
 }
 
@@ -859,5 +866,179 @@ function getIndentLevel(level) {
         school: 3
     };
     return indents[level] || 0;
+}
+
+// ============================================================================
+// HIERARCHY DETAIL PANEL
+// ============================================================================
+
+let _detailRadarChart = null;
+let _detailTrendChart = null;
+let _selectedDetailKey = null;
+
+const LEVEL_LABELS = { region: 'Región', department: 'Departamento', municipality: 'Municipio', school: 'Colegio' };
+const LEVEL_COLORS = { region: 'bg-primary', department: 'bg-info', municipality: 'bg-success', school: 'bg-warning text-dark' };
+const SUBJECTS = [
+    { key: 'punt_matematicas',  label: 'Matemáticas' },
+    { key: 'punt_lectura',      label: 'Lectura' },
+    { key: 'punt_c_naturales',  label: 'C. Nat.' },
+    { key: 'punt_sociales',     label: 'Sociales' },
+    { key: 'punt_ingles',       label: 'Inglés' },
+];
+
+function addDetailClickHandler(row, data, level) {
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', function (e) {
+        if (e.target.closest('.expand-toggle')) return;
+        const entityId = data.region || data.id;
+        const key = `${level}-${entityId}`;
+        if (_selectedDetailKey === key) {
+            closeDetailPanel();
+            return;
+        }
+        document.querySelectorAll('#hierarchical-tbody tr.table-active')
+            .forEach(r => r.classList.remove('table-active'));
+        row.classList.add('table-active');
+        openDetailPanel(data, level);
+    });
+}
+
+function closeDetailPanel() {
+    const panel = document.getElementById('hierarchy-detail-panel');
+    if (panel) panel.classList.add('d-none');
+    document.querySelectorAll('#hierarchical-tbody tr.table-active')
+        .forEach(r => r.classList.remove('table-active'));
+    _selectedDetailKey = null;
+}
+
+function openDetailPanel(data, level) {
+    const entityName = data.region || data.nombre || data.id || '—';
+    const entityId   = data.region || data.id;
+    _selectedDetailKey = `${level}-${entityId}`;
+
+    const panel = document.getElementById('hierarchy-detail-panel');
+    panel.classList.remove('d-none');
+
+    document.getElementById('detail-entity-name').textContent = entityName;
+    document.getElementById('detail-year-label').textContent  = `· ${hierarchyYear}`;
+
+    const badge = document.getElementById('detail-level-badge');
+    badge.textContent = LEVEL_LABELS[level] || level;
+    badge.className   = `badge ${LEVEL_COLORS[level] || 'bg-secondary'}`;
+
+    renderDetailRadar(data);
+    renderDetailMetrics(data);
+    fetchAndRenderTrend(level, entityId);
+
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+}
+
+function renderDetailRadar(data) {
+    const el = document.getElementById('detail-radar-chart');
+    if (_detailRadarChart) { _detailRadarChart.destroy(); _detailRadarChart = null; }
+
+    _detailRadarChart = new ApexCharts(el, {
+        series: [{ name: 'Puntaje', data: SUBJECTS.map(s => parseFloat((data[s.key] || 0).toFixed(1))) }],
+        chart:  { type: 'radar', height: 240, toolbar: { show: false }, fontFamily: 'inherit' },
+        xaxis:  { categories: SUBJECTS.map(s => s.label) },
+        yaxis:  { show: false },
+        fill:   { opacity: 0.15 },
+        stroke: { width: 2 },
+        markers: { size: 4 },
+        colors: ['#696cff'],
+        plotOptions: { radar: { polygons: { strokeColors: '#e2e2e2', connectorColors: '#e2e2e2' } } },
+        tooltip: { y: { formatter: v => v.toFixed(1) + ' pts' } },
+    });
+    _detailRadarChart.render();
+}
+
+function renderDetailMetrics(data) {
+    const sorted  = [...SUBJECTS].sort((a, b) => (data[b.key] || 0) - (data[a.key] || 0));
+    const best    = sorted[0];
+    const worst   = sorted[sorted.length - 1];
+    const z       = parseFloat((data.z_score     || 0).toFixed(2));
+    const cambio  = parseFloat((data.cambio_anual || 0).toFixed(1));
+    const zLabel  = z > 1 ? 'Sobre la media' : z < -1 ? 'Bajo la media' : 'En la media';
+    const zCls    = z > 1 ? 'text-success'   : z < -1 ? 'text-danger'   : 'text-warning';
+    const cCls    = cambio > 0 ? 'text-success' : cambio < 0 ? 'text-danger' : 'text-muted';
+    const cIcon   = cambio > 1 ? '⬆' : cambio < -1 ? '⬇' : '➡';
+
+    document.getElementById('detail-metrics').innerHTML = `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-baseline mb-1">
+                <span class="text-muted small">Puntaje Global</span>
+                <strong class="fs-5">${(data.punt_global || 0).toFixed(1)}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted small">Ranking</span>
+                <span class="badge bg-primary">#${data.ranking || '—'}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted small">Percentil</span>
+                <span class="fw-semibold">${Math.round(data.percentil || 0)}%</span>
+            </div>
+        </div>
+        <hr class="my-2">
+        <div class="mb-2">
+            <span class="text-muted small d-block">Tendencia anual</span>
+            <span class="${cCls} fw-semibold">${cIcon} ${cambio > 0 ? '+' : ''}${cambio}%</span>
+        </div>
+        <div class="mb-2">
+            <span class="text-muted small d-block">Z-Score</span>
+            <span class="${zCls} fw-semibold">${zLabel} (${z})</span>
+        </div>
+        <hr class="my-2">
+        <div class="mb-1">
+            <span class="text-muted small d-block">💪 Fortaleza</span>
+            <span class="text-success fw-semibold small">${best.label}</span>
+            <span class="text-muted small"> — ${(data[best.key] || 0).toFixed(1)} pts</span>
+        </div>
+        <div>
+            <span class="text-muted small d-block">⚠️ Área a mejorar</span>
+            <span class="text-danger fw-semibold small">${worst.label}</span>
+            <span class="text-muted small"> — ${(data[worst.key] || 0).toFixed(1)} pts</span>
+        </div>
+    `;
+}
+
+async function fetchAndRenderTrend(level, entityId) {
+    const el = document.getElementById('detail-trend-chart');
+    el.innerHTML = '<div class="text-center text-muted py-5"><i class="bx bx-loader bx-spin fs-3"></i></div>';
+    if (_detailTrendChart) { _detailTrendChart.destroy(); _detailTrendChart = null; }
+
+    try {
+        const resp    = await fetch(`/icfes/api/hierarchy/history/?level=${level}&id=${encodeURIComponent(entityId)}`);
+        const history = await resp.json();
+
+        if (!Array.isArray(history) || history.length < 2) {
+            el.innerHTML = '<div class="text-center text-muted py-4 small">Histórico no disponible para este nivel</div>';
+            return;
+        }
+
+        el.innerHTML = '';
+        _detailTrendChart = new ApexCharts(el, {
+            series: [
+                { name: 'Global',       data: history.map(d => parseFloat((d.punt_global       || 0).toFixed(1))) },
+                { name: 'Matemáticas',  data: history.map(d => parseFloat((d.punt_matematicas  || 0).toFixed(1))) },
+                { name: 'Lectura',      data: history.map(d => parseFloat((d.punt_lectura       || 0).toFixed(1))) },
+                { name: 'Inglés',       data: history.map(d => parseFloat((d.punt_ingles        || 0).toFixed(1))) },
+            ],
+            chart: {
+                type: 'line', height: 240,
+                toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit',
+            },
+            xaxis:  { categories: history.map(d => d.ano), labels: { rotate: -45, style: { fontSize: '10px' } } },
+            yaxis:  { labels: { formatter: v => v != null ? v.toFixed(0) : '' } },
+            stroke: { width: [3, 1.5, 1.5, 1.5], curve: 'smooth' },
+            colors: ['#696cff', '#03c3ec', '#71dd37', '#ffab00'],
+            legend: { position: 'top', fontSize: '11px', markers: { width: 8, height: 8 } },
+            tooltip: { shared: true, intersect: false, y: { formatter: v => v != null ? v.toFixed(1) + ' pts' : '—' } },
+            markers: { size: [3, 0, 0, 0] },
+            grid:   { borderColor: '#e2e2e2' },
+        });
+        _detailTrendChart.render();
+    } catch (e) {
+        el.innerHTML = '<div class="text-center text-muted py-4 small">Error al cargar histórico</div>';
+    }
 }
 

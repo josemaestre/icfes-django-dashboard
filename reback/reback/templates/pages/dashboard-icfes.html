@@ -1458,6 +1458,54 @@
         </div>
       </div>
     </div>
+
+    <!-- Panel de Detalle Interactivo -->
+    <div id="hierarchy-detail-panel" class="card border-primary mt-3 d-none">
+      <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span id="detail-level-badge" class="badge bg-primary">Región</span>
+          <h6 id="detail-entity-name" class="card-title mb-0 fw-bold"></h6>
+          <small id="detail-year-label" class="text-muted"></small>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-close-detail" title="Cerrar panel">
+          <i class="bx bx-x"></i>
+        </button>
+      </div>
+      <div class="card-body pt-3">
+        <div class="row g-4">
+
+          <!-- Radar: perfil por materia -->
+          <div class="col-lg-4">
+            <p class="text-muted small fw-semibold mb-1">
+              <i class="bx bx-radar me-1"></i>Perfil por Materia
+            </p>
+            <div id="detail-radar-chart"></div>
+          </div>
+
+          <!-- Tendencia histórica -->
+          <div class="col-lg-5">
+            <p class="text-muted small fw-semibold mb-1">
+              <i class="bx bx-line-chart me-1"></i>Evolución Histórica (desde 2000)
+            </p>
+            <div id="detail-trend-chart">
+              <div class="text-center text-muted py-5">
+                <i class="bx bx-loader bx-spin fs-3"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicadores clave -->
+          <div class="col-lg-3">
+            <p class="text-muted small fw-semibold mb-2">
+              <i class="bx bx-info-circle me-1"></i>Indicadores Clave
+            </p>
+            <div id="detail-metrics"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Mapa Geográfico Tab -->

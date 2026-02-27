@@ -1293,6 +1293,85 @@ def hierarchy_schools(request):
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
 
+
+@require_http_methods(["GET"])
+def hierarchy_history(request):
+    """
+    Endpoint: Historial de puntajes por materia para una entidad geográfica o colegio.
+    Query params: ?level=region|department|municipality|school&id=<nombre_o_colegio_sk>
+    Returns: [{ano, punt_global, punt_matematicas, punt_lectura, punt_c_naturales, punt_sociales, punt_ingles}]
+    """
+    level = request.GET.get('level', 'region')
+    entity_id = request.GET.get('id', '').strip()
+
+    if not entity_id:
+        return JsonResponse([], safe=False)
+
+    if level == 'region':
+        query = """
+            SELECT ano,
+                AVG(avg_punt_global)              AS punt_global,
+                AVG(avg_punt_matematicas)          AS punt_matematicas,
+                AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                AVG(avg_punt_ingles)               AS punt_ingles,
+                SUM(total_estudiantes)             AS total_estudiantes
+            FROM gold.vw_fct_colegios_region
+            WHERE region = ? AND ano >= 2000
+            GROUP BY ano ORDER BY ano
+        """
+    elif level == 'department':
+        query = """
+            SELECT ano,
+                AVG(avg_punt_global)              AS punt_global,
+                AVG(avg_punt_matematicas)          AS punt_matematicas,
+                AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                AVG(avg_punt_ingles)               AS punt_ingles,
+                SUM(total_estudiantes)             AS total_estudiantes
+            FROM gold.vw_fct_colegios_region
+            WHERE departamento = ? AND ano >= 2000
+            GROUP BY ano ORDER BY ano
+        """
+    elif level == 'municipality':
+        query = """
+            SELECT ano,
+                AVG(avg_punt_global)              AS punt_global,
+                AVG(avg_punt_matematicas)          AS punt_matematicas,
+                AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                AVG(avg_punt_ingles)               AS punt_ingles
+            FROM gold.fct_agg_colegios_ano
+            WHERE municipio = ? AND ano >= 2000
+            GROUP BY ano ORDER BY ano
+        """
+    elif level == 'school':
+        query = """
+            SELECT ano,
+                AVG(avg_punt_global)              AS punt_global,
+                AVG(avg_punt_matematicas)          AS punt_matematicas,
+                AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                AVG(avg_punt_ingles)               AS punt_ingles
+            FROM gold.fct_agg_colegios_ano
+            WHERE colegio_sk = ? AND ano >= 2000
+            GROUP BY ano ORDER BY ano
+        """
+    else:
+        return JsonResponse({'error': 'Nivel no válido'}, status=400)
+
+    try:
+        df = execute_query(query, params=[entity_id])
+        data = df.to_dict(orient='records')
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 # ============================================================================
 # ENDPOINTS API - SCHOOL INDIVIDUAL VIEW
 # ============================================================================
