@@ -8,7 +8,17 @@ from reback.users.subscription_models import SubscriptionPlan
 class Command(BaseCommand):
     help = 'Create initial subscription plans for ICFES Analytics'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--pilot-pro-cop',
+            type=int,
+            default=None,
+            help='Precio COP para plan Premium en piloto (ej: 20000).',
+        )
+
     def handle(self, *args, **options):
+        pilot_pro_cop = options.get('pilot_pro_cop')
+
         plans_data = [
             {
                 'tier': 'free',
@@ -32,7 +42,7 @@ class Command(BaseCommand):
                 'tier': 'basic',
                 'name': 'Basic Plan',
                 'description': 'For educators and researchers',
-                'price_monthly': 9.99,
+                'price_monthly': 39900,
                 'max_queries_per_day': 100,
                 'max_export_rows': 1000,
                 'api_access': False,
@@ -50,11 +60,11 @@ class Command(BaseCommand):
                 'tier': 'premium',
                 'name': 'Premium Plan',
                 'description': 'For institutions and advanced users',
-                'price_monthly': 29.99,
+                'price_monthly': 100000,
                 'max_queries_per_day': 1000,
                 'max_export_rows': None,  # Unlimited
                 'api_access': True,
-                'api_rate_limit': 100,  # 100 requests/hour
+                'api_rate_limit': 1000,  # 1000 requests/hour
                 'access_regions': True,
                 'access_departments': True,
                 'access_municipalities': True,
@@ -68,8 +78,8 @@ class Command(BaseCommand):
                 'tier': 'enterprise',
                 'name': 'Enterprise Plan',
                 'description': 'Custom solutions for large organizations',
-                'price_monthly': 99.99,  # Custom pricing
-                'max_queries_per_day': 10000,
+                'price_monthly': 500000,
+                'max_queries_per_day': 99999,
                 'max_export_rows': None,  # Unlimited
                 'api_access': True,
                 'api_rate_limit': None,  # Unlimited
@@ -83,6 +93,21 @@ class Command(BaseCommand):
                 'export_pdf': True,
             },
         ]
+
+        if pilot_pro_cop is not None:
+            for plan_data in plans_data:
+                if plan_data['tier'] == 'premium':
+                    plan_data['price_monthly'] = pilot_pro_cop
+                    plan_data['name'] = 'Premium Plan (Piloto)'
+                    plan_data['description'] = (
+                        'Pilot pricing for Premium while validating conversion and API demand'
+                    )
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f'[*] PILOT MODE: premium set to COP {pilot_pro_cop:,}/mes'
+                        )
+                    )
+                    break
         
         created_count = 0
         updated_count = 0
@@ -96,12 +121,16 @@ class Command(BaseCommand):
             if created:
                 created_count += 1
                 self.stdout.write(
-                    self.style.SUCCESS(f'[+] Created plan: {plan.name} (${plan.price_monthly}/mo)')
+                    self.style.SUCCESS(
+                        f'[+] Created plan: {plan.name} (COP {int(plan.price_monthly):,}/mo)'
+                    )
                 )
             else:
                 updated_count += 1
                 self.stdout.write(
-                    self.style.WARNING(f'[*] Updated plan: {plan.name} (${plan.price_monthly}/mo)')
+                    self.style.WARNING(
+                        f'[*] Updated plan: {plan.name} (COP {int(plan.price_monthly):,}/mo)'
+                    )
                 )
         
         self.stdout.write('')
