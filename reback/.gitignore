@@ -21,3 +21,4 @@ checks/storytelling_icfes_queries.sql
 scripts/debug_*.py
 scripts/inspect_*.py
 scripts/verify_seo_logic.py
+scripts/backfill_tulua.py
