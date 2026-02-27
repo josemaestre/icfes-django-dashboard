@@ -6,6 +6,8 @@ from django.templatetags.static import static
 from django.contrib.auth.decorators import login_required
 from django.template import TemplateDoesNotExist
 
+from reback.users.subscription_models import SubscriptionPlan
+
 
 def landing_page_view(request):
     """
@@ -74,6 +76,35 @@ def home_redirect_view(request):
     Redirect /landing/ traffic to root / to avoid duplicate content.
     """
     return redirect("pages:home", permanent=True)
+
+
+def pricing_view(request):
+    """Render pricing page using live plans from database."""
+    plans = {
+        plan.tier: plan
+        for plan in SubscriptionPlan.objects.filter(
+            tier__in=["free", "basic", "premium", "enterprise"],
+            is_active=True,
+        )
+    }
+
+    current_tier = ""
+    if request.user.is_authenticated:
+        subscription = getattr(request.user, "subscription", None)
+        if subscription and subscription.plan:
+            current_tier = subscription.plan.tier
+
+    return render(
+        request,
+        "pages/pricing.html",
+        {
+            "free_plan": plans.get("free"),
+            "basic_plan": plans.get("basic"),
+            "premium_plan": plans.get("premium"),
+            "enterprise_plan": plans.get("enterprise"),
+            "current_tier": current_tier,
+        },
+    )
 
 
 @login_required
