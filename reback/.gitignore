@@ -13,3 +13,11 @@ __pycache__/
 output*.txt
 temp*.html
 test_*.txt
+
+# Local one-off diagnostics (not part of product code)
+check_db.py
+explore_gold.py
+checks/storytelling_icfes_queries.sql
+scripts/debug_*.py
+scripts/inspect_*.py
+scripts/verify_seo_logic.py
