@@ -12,6 +12,7 @@ from . import (
     longtail_landing_views,
     views,
     views_ingles,
+    views_mi_colegio,
     views_school_endpoints,
 )
 
@@ -30,6 +31,14 @@ urlpatterns = [
     path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
     path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
+
+    # Mi Colegio — diagnóstico personalizado
+    path('mi-colegio/', views_mi_colegio.mi_colegio_page, name='mi_colegio'),
+    path('mi-colegio/seleccionar/', views_mi_colegio.mi_colegio_seleccionar, name='mi_colegio_seleccionar'),
+    path('mi-colegio/limpiar/', views_mi_colegio.mi_colegio_limpiar, name='mi_colegio_limpiar'),
+    path('api/colegio/buscar/', views_mi_colegio.api_colegio_buscar, name='api_colegio_buscar'),
+    path('api/colegio/<str:colegio_sk>/ml-diagnostico/', views_mi_colegio.api_colegio_ml_diagnostico, name='api_colegio_ml_diagnostico'),
+    path('api/colegio/<str:colegio_sk>/recomendaciones/', views_mi_colegio.api_colegio_recomendaciones, name='api_colegio_recomendaciones'),
 
     # Dynamic school landing pages (SEO)
     path('colegio/<slug:slug>/',
@@ -109,6 +118,8 @@ urlpatterns = [
          views_school_endpoints.api_colegio_fortalezas, name='api_colegio_fortalezas_debilidades'),
     path('api/colegio/<str:colegio_sk>/ingles/',
          views_school_endpoints.api_colegio_ingles, name='api_colegio_ingles'),
+    path('api/colegio/<str:colegio_sk>/niveles-historico/',
+         views_school_endpoints.api_colegio_niveles_historico, name='api_colegio_niveles_historico'),
     path('api/colegio/<str:colegio_sk>/comparacion/',
          views.api_colegio_comparacion, name='api_colegio_comparacion'),
     path('api/colegio/<str:colegio_sk>/resumen/',

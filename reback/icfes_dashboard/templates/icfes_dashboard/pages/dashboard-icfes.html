@@ -206,9 +206,10 @@
             <div class="card-header bg-primary text-white">
               <h5 class="my-0 text-white"><i class="mdi mdi-school me-3"></i><span id="res-nombre-colegio">NOMBRE
                   COLEGIO</span></h5>
-              <p class="mb-0 mt-2 opacity-75">
-                <span class="badge bg-light text-primary me-2" id="res-codigo-dane">CODE</span>
-                <span class="badge bg-info me-2" id="res-sector">SECTOR</span>
+              <p class="mb-0 mt-2 opacity-75 d-flex align-items-center flex-wrap gap-2">
+                <span class="badge bg-light text-primary" id="res-codigo-dane">CODE</span>
+                <span class="badge bg-info" id="res-sector">SECTOR</span>
+                <span class="badge" id="res-zscore-badge" style="display:none;"></span>
                 <span id="res-ubicacion">CIUDAD, DEPTO</span>
               </p>
             </div>
@@ -336,6 +337,29 @@
             </div>
           </div>
 
+          <!-- Evolución de Niveles de Desempeño -->
+          <div class="row" id="res-niveles-row" style="display:none;">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                    <h5 class="card-title mb-0">
+                      <i class="bx bx-bar-chart-alt-2 me-1 text-primary"></i>Evolución de Niveles de Desempeño
+                    </h5>
+                    <div class="btn-group btn-group-sm" id="dash-niveles-btns">
+                      <button class="btn btn-primary"           data-mat="mat">Matemáticas</button>
+                      <button class="btn btn-outline-secondary" data-mat="lc">Lectura</button>
+                      <button class="btn btn-outline-secondary" data-mat="cn">Ciencias</button>
+                      <button class="btn btn-outline-secondary" data-mat="sc">Sociales</button>
+                      <button class="btn btn-outline-secondary" data-mat="ing">Inglés</button>
+                    </div>
+                  </div>
+                  <div id="dash-chart-niveles" style="min-height:280px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="row">
             <div class="col-12 text-center">
               <a href="#" id="btn-ver-detalle-completo" class="btn btn-outline-primary waves-effect waves-light mt-3">
@@ -358,5 +382,6 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <script src="{% static 'js/dashboard-icfes.js' %}"></script>
   {% endblock %}

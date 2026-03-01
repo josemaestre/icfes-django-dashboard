@@ -106,21 +106,24 @@ def api_colegio_correlaciones(request, colegio_sk):
 
 @require_http_methods(["GET"])
 def api_colegio_fortalezas(request, colegio_sk):
-    """Fortalezas y debilidades por materia"""
-    query = f"""
-        SELECT colegio_sk, codigo_dane, nombre_colegio, sector,
-               departamento, municipio, materia, promedio_colegio,
-               promedio_nacional, brecha_vs_nacional, brecha_porcentual,
-               clasificacion_brecha, es_fortaleza, es_debilidad,
-               ranking_materia, es_materia_mas_fuerte, es_materia_mas_debil,
-               total_fortalezas, total_debilidades, clasificacion_general,
-               perfil_rendimiento, recomendacion, prioridad_mejora,
-               potencial_mejora_estimado
+    """Fortalezas y debilidades por materia (último año disponible)"""
+    query = """
+        SELECT colegio_sk, ano, codigo_dane, nombre_colegio, sector,
+               departamento, municipio,
+               avg_punt_matematicas, avg_punt_lectura_critica,
+               avg_punt_c_naturales, avg_punt_sociales_ciudadanas, avg_punt_ingles,
+               avg_punt_global,
+               brecha_matematicas, brecha_lectura, brecha_ciencias,
+               brecha_sociales, brecha_ingles, brecha_global,
+               materia_mas_fuerte, materia_mas_debil,
+               clasificacion_general, perfil_rendimiento,
+               urgencia_mejora, recomendacion_principal
         FROM gold.fct_colegio_fortalezas_debilidades
-        WHERE colegio_sk = {colegio_sk}
-        ORDER BY ranking_materia
+        WHERE colegio_sk = ?
+        ORDER BY ano DESC
+        LIMIT 1
     """
-    df = execute_query(query)
+    df = execute_query(query, params=[str(colegio_sk)])
     return JsonResponse(df.to_dict(orient='records'), safe=False)
 
 
@@ -332,5 +335,83 @@ def api_colegios_similares(request, colegio_sk):
     params = [colegio_sk_str, ano, cluster_id, ano, colegio_sk_str, limit]
 
     df_similares = execute_query(query_similares, params=params)
-    
+
     return JsonResponse(df_similares.to_dict(orient='records'), safe=False)
+
+
+@require_http_methods(["GET"])
+def api_colegio_niveles_historico(request, colegio_sk):
+    """
+    Evolución histórica de la distribución de niveles de desempeño (1-4)
+    por materia para un colegio. Fuente: fct_indicadores_desempeno.
+
+    Retorna todos los años disponibles con % de estudiantes en cada nivel
+    para las 4 materias clásicas + inglés (niveles MCER).
+    """
+    if not colegio_sk or not str(colegio_sk).replace("-", "").replace("_", "").isalnum():
+        return JsonResponse({"error": "colegio_sk inválido"}, status=400)
+
+    colegio_sk_str = str(colegio_sk)
+
+    query = """
+        SELECT
+            f.ano,
+            f.total_estudiantes,
+            -- Matemáticas
+            f.mat_nivel_1_insuficiente   AS mat_n1,
+            f.mat_nivel_2_minimo         AS mat_n2,
+            f.mat_nivel_3_satisfactorio  AS mat_n3,
+            f.mat_nivel_4_avanzado       AS mat_n4,
+            -- Lectura Crítica
+            f.lc_nivel_1_insuficiente    AS lc_n1,
+            f.lc_nivel_2_minimo          AS lc_n2,
+            f.lc_nivel_3_satisfactorio   AS lc_n3,
+            f.lc_nivel_4_avanzado        AS lc_n4,
+            -- Ciencias Naturales
+            f.cn_nivel_1_insuficiente    AS cn_n1,
+            f.cn_nivel_2_minimo          AS cn_n2,
+            f.cn_nivel_3_satisfactorio   AS cn_n3,
+            f.cn_nivel_4_avanzado        AS cn_n4,
+            -- Sociales y Ciudadanas
+            f.sc_nivel_1_insuficiente    AS sc_n1,
+            f.sc_nivel_2_minimo          AS sc_n2,
+            f.sc_nivel_3_satisfactorio   AS sc_n3,
+            f.sc_nivel_4_avanzado        AS sc_n4,
+            -- Inglés (MCER)
+            f.ing_nivel_pre_a1           AS ing_pre_a1,
+            f.ing_nivel_a1               AS ing_a1,
+            f.ing_nivel_a2               AS ing_a2,
+            f.ing_nivel_b1               AS ing_b1
+        FROM gold.fct_indicadores_desempeno f
+        WHERE f.colegio_bk = (
+            SELECT colegio_bk FROM gold.dim_colegios
+            WHERE colegio_sk = ? LIMIT 1
+        )
+        ORDER BY f.ano
+    """
+    df = execute_query(query, params=[colegio_sk_str])
+    if df.empty:
+        return JsonResponse([], safe=False)
+
+    rows = []
+    for _, r in df.iterrows():
+        def pct(num, tot):
+            return round(float(num or 0) / tot * 100, 1) if tot else 0
+
+        row = {"ano": str(r["ano"]), "total": int(r["total_estudiantes"] or 0)}
+
+        for prefix in ("mat", "lc", "cn", "sc"):
+            tot = sum(float(r[f"{prefix}_n{i}"] or 0) for i in range(1, 5))
+            for i in range(1, 5):
+                row[f"{prefix}_pct{i}"] = pct(r[f"{prefix}_n{i}"], tot)
+
+        # Inglés MCER
+        ing_tot = sum(float(r[k] or 0) for k in ("ing_pre_a1", "ing_a1", "ing_a2", "ing_b1"))
+        row["ing_pct_pre_a1"] = pct(r["ing_pre_a1"], ing_tot)
+        row["ing_pct_a1"]     = pct(r["ing_a1"],     ing_tot)
+        row["ing_pct_a2"]     = pct(r["ing_a2"],     ing_tot)
+        row["ing_pct_b1"]     = pct(r["ing_b1"],     ing_tot)
+
+        rows.append(row)
+
+    return JsonResponse(rows, safe=False)

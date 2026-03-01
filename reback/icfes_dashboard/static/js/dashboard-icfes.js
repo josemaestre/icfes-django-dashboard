@@ -298,10 +298,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // Cluster Info
     if (cluster && cluster.cluster_name) {
       document.getElementById('res-cluster').textContent = cluster.cluster_name;
-      document.getElementById('res-cluster-desc').textContent = 'Grupo Cluster';
+      document.getElementById('res-cluster-desc').textContent = cluster.cluster_id ? `Grupo ${cluster.cluster_id}` : 'Grupo';
     } else {
       document.getElementById('res-cluster').textContent = 'No Clasificado';
       document.getElementById('res-cluster-desc').textContent = '--';
+    }
+
+    // Z-Score badge en el header
+    const zscore = data.z_score;
+    const zbadge = document.getElementById('res-zscore-badge');
+    if (zscore && zscore.z_score_global != null && zbadge) {
+      const z = +zscore.z_score_global;
+      let cls, label;
+      if      (z >  1.5) { cls = 'bg-success';            label = `Z ${z.toFixed(2)} · Excepcional`; }
+      else if (z >  0.5) { cls = 'bg-primary';             label = `Z ${z.toFixed(2)} · Superior`; }
+      else if (z > -0.5) { cls = 'bg-secondary';           label = `Z ${z.toFixed(2)} · Promedio`; }
+      else if (z > -1.5) { cls = 'bg-warning text-dark';   label = `Z ${z.toFixed(2)} · Por mejorar`; }
+      else               { cls = 'bg-danger';              label = `Z ${z.toFixed(2)} · Crítico`; }
+      zbadge.className = `badge ${cls}`;
+      zbadge.textContent = label;
+      zbadge.style.display = '';
     }
 
     // Risk Info (P2)
@@ -344,8 +360,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnLink = document.getElementById('btn-ver-detalle-completo');
     btnLink.href = `/icfes/colegio/?sk=${info.colegio_sk}`;
 
-    // Mostrar
+    // Mostrar (el contenedor debe ser visible ANTES de renderizar ApexCharts)
     resultContainer.style.display = 'block';
+
+    // Cargar gráfico de niveles (container ya visible = ancho correcto)
+    loadDashboardNiveles(info.colegio_sk);
   }
 
   // Cerrar sugerencias al hacer click fuera
@@ -407,3 +426,89 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// ──────────────────────────────────────────────────────────────
+// Evolución de Niveles — Búsqueda de Colegio (dashboard principal)
+// ──────────────────────────────────────────────────────────────
+let _dashNivelesChart = null;
+let _dashNivelesMat   = 'mat';
+
+function loadDashboardNiveles(sk) {
+  const row = document.getElementById('res-niveles-row');
+  if (row) row.style.display = 'none';
+
+  fetch(`/icfes/api/colegio/${sk}/niveles-historico/`)
+    .then(r => r.json())
+    .then(data => {
+      if (!Array.isArray(data) || !data.length) return;
+      if (row) row.style.display = '';
+
+      // Forzar materia activa al primer botón
+      _dashNivelesMat = 'mat';
+      document.querySelectorAll('#dash-niveles-btns button').forEach(b => {
+        b.classList.toggle('btn-primary',         b.dataset.mat === 'mat');
+        b.classList.toggle('btn-outline-secondary', b.dataset.mat !== 'mat');
+      });
+
+      // Pequeño delay para que el navegador repinte antes de medir dimensiones
+      setTimeout(() => renderDashNivelesChart(data, _dashNivelesMat), 50);
+
+      // Clonar botones para limpiar listeners de búsquedas anteriores
+      document.querySelectorAll('#dash-niveles-btns button').forEach(btn => {
+        const clone = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clone, btn);
+      });
+      document.querySelectorAll('#dash-niveles-btns button').forEach(btn => {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('#dash-niveles-btns button').forEach(b => {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-outline-secondary');
+          });
+          this.classList.remove('btn-outline-secondary');
+          this.classList.add('btn-primary');
+          _dashNivelesMat = this.dataset.mat;
+          renderDashNivelesChart(data, _dashNivelesMat);
+        });
+      });
+    })
+    .catch(err => console.error('Error loading niveles:', err));
+}
+
+function renderDashNivelesChart(data, mat) {
+  const el = document.getElementById('dash-chart-niveles');
+  if (!el) return;
+
+  const cfg = {
+    mat: { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['mat_pct1', 'mat_pct2', 'mat_pct3', 'mat_pct4'] },
+    lc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['lc_pct1',  'lc_pct2',  'lc_pct3',  'lc_pct4'] },
+    cn:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['cn_pct1',  'cn_pct2',  'cn_pct3',  'cn_pct4'] },
+    sc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['sc_pct1',  'sc_pct2',  'sc_pct3',  'sc_pct4'] },
+    ing: { labels: ['Pre-A1', 'A1', 'A2', 'B1+'],                          keys: ['ing_pct_pre_a1', 'ing_pct_a1', 'ing_pct_a2', 'ing_pct_b1'] },
+  };
+  const { labels, keys } = cfg[mat] || cfg.mat;
+  const anos   = data.map(d => d.ano);
+  const colors = ['#f1416c', '#ffc700', '#17c1e8', '#50cd89'];
+  const series = labels.map((name, i) => ({
+    name,
+    data: data.map(d => d[keys[i]] || 0),
+  }));
+
+  if (_dashNivelesChart) { _dashNivelesChart.destroy(); _dashNivelesChart = null; }
+
+  _dashNivelesChart = new ApexCharts(el, {
+    chart: { type: 'bar', height: 280, stacked: true, stackType: '100%', toolbar: { show: false } },
+    series,
+    xaxis: { categories: anos },
+    colors,
+    dataLabels: {
+      enabled: true,
+      formatter: v => v > 6 ? v.toFixed(0) + '%' : '',
+      style: { fontSize: '10px', colors: ['#fff'] },
+    },
+    plotOptions: { bar: { horizontal: false, columnWidth: '60%' } },
+    legend: { position: 'top', horizontalAlign: 'left' },
+    yaxis: { labels: { formatter: v => v.toFixed(0) + '%' } },
+    tooltip: { y: { formatter: v => v.toFixed(1) + '%' } },
+  });
+  _dashNivelesChart.render();
+}

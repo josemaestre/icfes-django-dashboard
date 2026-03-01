@@ -875,6 +875,29 @@
         </div>
       </div>
 
+      <!-- Evolución Histórica de Niveles de Desempeño -->
+      <div class="row" id="nivelesHistoricoRow" style="display:none;">
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <h5 class="card-title mb-0">
+                <i class="bx bx-bar-chart-alt-2 me-1 text-primary"></i> Evolución Histórica de Niveles
+              </h5>
+              <div class="btn-group btn-group-sm" id="nivelesHistBtns">
+                <button class="btn btn-primary"           data-mat="mat">Matemáticas</button>
+                <button class="btn btn-outline-secondary" data-mat="lc">Lectura</button>
+                <button class="btn btn-outline-secondary" data-mat="cn">Ciencias</button>
+                <button class="btn btn-outline-secondary" data-mat="sc">Sociales</button>
+                <button class="btn btn-outline-secondary" data-mat="ing">Inglés</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="nivelesHistChart" style="min-height:300px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- NEW: Análisis Comparativo Section -->
       <div class="row">
         <div class="col-12 mb-3">
@@ -2178,7 +2201,7 @@
 <script src="{% static 'js/pages/dashboard.icfes.js' %}?v=7"></script>
 <script src="{% static 'js/pages/dashboard.icfes.gauges.js' %}?v=2"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.gauges.js' %}?v=2"></script>
-<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=9"></script>
+<script src="{% static 'js/pages/dashboard.icfes.school.js' %}?v=10"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.table.js' %}?v=5"></script>
 <script src="{% static 'js/pages/dashboard.icfes.school.insights.js' %}?v=2"></script>
 <script src="{% static 'js/pages/dashboard.icfes.compare.js' %}?v=7"></script>

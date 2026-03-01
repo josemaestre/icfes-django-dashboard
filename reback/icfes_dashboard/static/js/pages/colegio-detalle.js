@@ -23,7 +23,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // 4. Cargar Perfil de Inglés
     loadInglesProfile(colegioSk);
 
-    // 5. Configurar botón de IA
+    // 5. Cargar Evolución de Niveles
+    loadNivelesHistorico(colegioSk);
+
+    // 6. Configurar botón de IA
     const btnAI = document.getElementById('btn-generate-ai');
     if (btnAI) {
         btnAI.addEventListener('click', () => loadAIRecommendations(colegioSk));
@@ -273,6 +276,92 @@ function loadInglesProfile(sk) {
             console.error("Error loading Ingles:", err);
             // Hide or handle gracefully if not found
         });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Evolución de Niveles de Desempeño
+// ──────────────────────────────────────────────────────────────
+let _cdNivelesData = null;
+let _cdNivelesChart = null;
+let _cdCurrentMat  = 'mat';
+
+function loadNivelesHistorico(sk) {
+    fetch(`/icfes/api/colegio/${sk}/niveles-historico/`)
+        .then(r => r.json())
+        .then(data => {
+            _cdNivelesData = Array.isArray(data) ? data : [];
+            // No renderizar aquí: el tab está oculto y ApexCharts
+            // calcula ancho 0 en contenedores hidden → gráfico invisible.
+            // Se renderiza al mostrar el tab (shown.bs.tab).
+        })
+        .catch(err => console.error('Error loading niveles:', err));
+
+    // Renderizar cuando el tab se activa por primera vez (Bootstrap event)
+    const tabLink = document.querySelector('a[href="#niveles-desempeno"]');
+    if (tabLink) {
+        tabLink.addEventListener('shown.bs.tab', function () {
+            if (_cdNivelesData) renderCdNivelesChart(_cdCurrentMat);
+        });
+    }
+
+    // Selector de materia
+    document.querySelectorAll('#cd-niveles-btns button').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('#cd-niveles-btns button').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-outline-secondary');
+            });
+            this.classList.remove('btn-outline-secondary');
+            this.classList.add('btn-primary');
+            _cdCurrentMat = this.dataset.mat;
+            renderCdNivelesChart(_cdCurrentMat);
+        });
+    });
+}
+
+function renderCdNivelesChart(mat) {
+    const el = document.getElementById('cd-chart-niveles');
+    if (!el) return;
+    if (!_cdNivelesData || _cdNivelesData.length === 0) {
+        el.innerHTML = '<div class="text-center text-muted py-5">Sin datos disponibles</div>';
+        return;
+    }
+
+    const cfg = {
+        mat: { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'],    keys: ['mat_pct1', 'mat_pct2', 'mat_pct3', 'mat_pct4'] },
+        lc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'],    keys: ['lc_pct1',  'lc_pct2',  'lc_pct3',  'lc_pct4'] },
+        cn:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'],    keys: ['cn_pct1',  'cn_pct2',  'cn_pct3',  'cn_pct4'] },
+        sc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'],    keys: ['sc_pct1',  'sc_pct2',  'sc_pct3',  'sc_pct4'] },
+        ing: { labels: ['Pre-A1', 'A1', 'A2', 'B1+'],                             keys: ['ing_pct_pre_a1', 'ing_pct_a1', 'ing_pct_a2', 'ing_pct_b1'] },
+    };
+
+    const { labels, keys } = cfg[mat];
+    const anos = _cdNivelesData.map(d => d.ano);
+    const colors = ['#f1416c', '#ffc700', '#17c1e8', '#50cd89'];
+
+    const series = labels.map((lbl, i) => ({
+        name: lbl,
+        data: _cdNivelesData.map(d => d[keys[i]] || 0)
+    }));
+
+    if (_cdNivelesChart) { _cdNivelesChart.destroy(); }
+
+    _cdNivelesChart = new ApexCharts(el, {
+        chart: { type: 'bar', height: 320, stacked: true, stackType: '100%', toolbar: { show: false } },
+        series,
+        xaxis: { categories: anos },
+        colors,
+        dataLabels: {
+            enabled: true,
+            formatter: val => val > 6 ? val.toFixed(0) + '%' : '',
+            style: { fontSize: '11px', colors: ['#fff'] }
+        },
+        plotOptions: { bar: { horizontal: false, columnWidth: '60%' } },
+        legend: { position: 'top', horizontalAlign: 'left' },
+        yaxis: { labels: { formatter: val => val.toFixed(0) + '%' } },
+        tooltip: { y: { formatter: val => val.toFixed(1) + '%' } }
+    });
+    _cdNivelesChart.render();
 }
 
 /**

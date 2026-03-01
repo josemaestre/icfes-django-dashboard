@@ -134,6 +134,9 @@ async function loadSchoolDetail(school) {
         await loadDistribucionNiveles(school.colegio_sk);
     }
 
+    // Load niveles histórico (stacked bar — trend across years)
+    loadNivelesHistorico(school.colegio_sk);
+
     // Render historical table
     if (typeof renderPerformanceTable === 'function' && historicalData) {
         renderPerformanceTable(historicalData);
@@ -1423,3 +1426,85 @@ async function loadIndicadoresIngles(sk) {
 }
 
 window.loadIndicadoresIngles = loadIndicadoresIngles;
+
+// ──────────────────────────────────────────────────────────────────────
+// Evolución Histórica de Niveles de Desempeño (stacked 100% bar chart)
+// ──────────────────────────────────────────────────────────────────────
+let _nivelesHistChart = null;
+let _nivelesHistData  = null;
+
+async function loadNivelesHistorico(sk) {
+    const row = document.getElementById('nivelesHistoricoRow');
+    if (row) row.style.display = 'none';
+    try {
+        const res = await fetch(`/icfes/api/colegio/${sk}/niveles-historico/`);
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) return;
+
+        _nivelesHistData = data;
+        if (row) row.style.display = '';
+
+        // Wire materia buttons (clone to remove stale listeners)
+        document.querySelectorAll('#nivelesHistBtns button').forEach(btn => {
+            const clone = btn.cloneNode(true);
+            btn.parentNode.replaceChild(clone, btn);
+        });
+        document.querySelectorAll('#nivelesHistBtns button').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('#nivelesHistBtns button').forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-outline-secondary');
+                });
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-primary');
+                renderNivelesHistChart(data, this.dataset.mat);
+            });
+        });
+
+        // Small delay so the browser repaints the visible row before ApexCharts measures it
+        setTimeout(() => renderNivelesHistChart(data, 'mat'), 50);
+    } catch (e) {
+        console.error('Error loading niveles historico:', e);
+    }
+}
+
+function renderNivelesHistChart(data, mat) {
+    const el = document.getElementById('nivelesHistChart');
+    if (!el) return;
+
+    const cfg = {
+        mat: { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['mat_pct1', 'mat_pct2', 'mat_pct3', 'mat_pct4'] },
+        lc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['lc_pct1',  'lc_pct2',  'lc_pct3',  'lc_pct4'] },
+        cn:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['cn_pct1',  'cn_pct2',  'cn_pct3',  'cn_pct4'] },
+        sc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['sc_pct1',  'sc_pct2',  'sc_pct3',  'sc_pct4'] },
+        ing: { labels: ['Pre-A1', 'A1', 'A2', 'B1+'],                          keys: ['ing_pct_pre_a1', 'ing_pct_a1', 'ing_pct_a2', 'ing_pct_b1'] },
+    };
+    const { labels, keys } = cfg[mat] || cfg.mat;
+    const anos   = data.map(d => d.ano);
+    const colors = ['#f1416c', '#ffc700', '#17c1e8', '#50cd89'];
+    const series = labels.map((name, i) => ({
+        name,
+        data: data.map(d => +(d[keys[i]] || 0).toFixed(1)),
+    }));
+
+    if (_nivelesHistChart) { _nivelesHistChart.destroy(); _nivelesHistChart = null; }
+
+    _nivelesHistChart = new ApexCharts(el, {
+        chart: { type: 'bar', height: 300, stacked: true, stackType: '100%', toolbar: { show: false } },
+        series,
+        xaxis: { categories: anos },
+        colors,
+        dataLabels: {
+            enabled: true,
+            formatter: v => v > 6 ? v.toFixed(0) + '%' : '',
+            style: { fontSize: '10px', colors: ['#fff'] },
+        },
+        plotOptions: { bar: { horizontal: false, columnWidth: '60%' } },
+        legend: { position: 'top', horizontalAlign: 'left' },
+        yaxis: { labels: { formatter: v => v.toFixed(0) + '%' } },
+        tooltip: { y: { formatter: v => v.toFixed(1) + '%' } },
+    });
+    _nivelesHistChart.render();
+}
+
+window.loadNivelesHistorico = loadNivelesHistorico;

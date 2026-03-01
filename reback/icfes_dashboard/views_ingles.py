@@ -1249,7 +1249,8 @@ def api_ingles_correlaciones(request):
               AND avg_ingles IS NOT NULL
               AND avg_global IS NOT NULL
               AND estudiantes >= 10
-            USING SAMPLE 300
+            ORDER BY RANDOM()
+            LIMIT 300
         """, params=[str(ano)])
 
         return {

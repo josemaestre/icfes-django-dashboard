@@ -1,0 +1,1071 @@
+{% extends 'layout_vertical.html' %}
+{% load static %}
+
+{% block title %}Mi Colegio — Diagnóstico{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Mi Colegio' sub_title='Diagnóstico personalizado basado en datos ICFES 2024' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+{% if mi_colegio %}
+{# ================================================================ #}
+{# ESTADO 2 — Dashboard del colegio seleccionado                   #}
+{# ================================================================ #}
+
+  <!-- Header del colegio -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <h4 class="mb-1 fw-bold" id="mc-nombre">{{ mi_colegio.nombre_colegio }}</h4>
+          <span class="text-muted">
+            {{ mi_colegio.sector }} &middot; {{ mi_colegio.municipio }}, {{ mi_colegio.departamento }}
+          </span>
+          <span class="ms-2 badge bg-primary-subtle text-primary" id="mc-cluster-badge">Cargando cluster...</span>
+        </div>
+        <a href="{% url 'icfes_dashboard:mi_colegio_limpiar' %}" class="btn btn-sm btn-outline-secondary">
+          <iconify-icon icon="iconamoon:arrow-left-4-square-duotone" class="me-1"></iconify-icon>
+          Cambiar colegio
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegación sticky de secciones -->
+  <div id="mc-sticky-nav" class="mb-4" style="position:sticky;top:70px;z-index:900;background:var(--bs-body-bg);padding:8px 0;border-bottom:1px solid var(--bs-border-color);">
+    <div class="d-flex gap-3 flex-wrap">
+      <a href="#sec-comparacion" class="text-decoration-none small fw-semibold">📊 Vs País</a>
+      <a href="#sec-depto" class="text-decoration-none small fw-semibold">🗺️ Vs Depto</a>
+      <a href="#sec-fortalezas" class="text-decoration-none small fw-semibold">💪 Fortalezas</a>
+      <a href="#sec-trayectoria" class="text-decoration-none small fw-semibold">📈 Trayectoria</a>
+      <a href="#sec-ingles" class="text-decoration-none small fw-semibold">🌎 Potencial Inglés</a>
+      <a href="#sec-similares" class="text-decoration-none small fw-semibold">🏫 Colegios Similares</a>
+      <a href="#sec-recomendaciones" class="text-decoration-none small fw-semibold">💡 Recomendaciones</a>
+      <a href="#sec-story" class="text-decoration-none small fw-semibold">📖 Relato</a>
+    </div>
+  </div>
+
+  <!-- SEC 1: Vs País -->
+  <div id="sec-comparacion" class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h5 class="mb-0">📊 ¿Cómo estás vs el país?</h5></div>
+        <div class="card-body">
+          <div class="row" id="mc-kpis-nacional">
+            <div class="col text-center"><div class="spinner-border text-primary" role="status"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 2: Vs Departamento -->
+  <div id="sec-depto" class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h5 class="mb-0">🗺️ ¿Cómo estás vs tu departamento?</h5></div>
+        <div class="card-body">
+          <div class="row" id="mc-kpis-depto">
+            <div class="col text-center"><div class="spinner-border text-primary" role="status"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 3: Fortalezas y Brechas -->
+  <div id="sec-fortalezas" class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h5 class="mb-0">💪 Fortalezas y brechas por materia</h5></div>
+        <div class="card-body" id="mc-fortalezas">
+          <div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 4: Trayectoria histórica -->
+  <div id="sec-trayectoria" class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <h5 class="mb-0">📈 Tu trayectoria histórica</h5>
+          <ul class="nav nav-pills nav-sm" id="mc-tray-tabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active py-1 px-2 small" data-tab="puntaje">Puntaje promedio</button></li>
+            <li class="nav-item"><button class="nav-link py-1 px-2 small" data-tab="niveles">Evolución de niveles</button></li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <!-- Tab 1: Puntaje promedio -->
+          <div id="mc-tab-puntaje">
+            <div id="mc-chart-trayectoria" style="min-height:280px;"></div>
+          </div>
+          <!-- Tab 2: Evolución de niveles -->
+          <div id="mc-tab-niveles" style="display:none;">
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+              <span class="small text-muted me-1 align-self-center">Materia:</span>
+              <button class="btn btn-sm btn-primary mc-mat-btn" data-mat="mat">Matemáticas</button>
+              <button class="btn btn-sm btn-outline-secondary mc-mat-btn" data-mat="lc">Lectura</button>
+              <button class="btn btn-sm btn-outline-secondary mc-mat-btn" data-mat="cn">Ciencias</button>
+              <button class="btn btn-sm btn-outline-secondary mc-mat-btn" data-mat="sc">Sociales</button>
+              <button class="btn btn-sm btn-outline-secondary mc-mat-btn" data-mat="ing">Inglés</button>
+            </div>
+            <div id="mc-chart-niveles" style="min-height:300px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 5: Potencial Inglés (ML) -->
+  <div id="sec-ingles" class="row mb-4">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header"><h5 class="mb-0">🌎 Potencial en Inglés (ML-2)</h5></div>
+        <div class="card-body" id="mc-potencial-ingles">
+          <div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header"><h5 class="mb-0">🎯 Predictor B1+ (ML-1)</h5></div>
+        <div class="card-body" id="mc-predictor-b1">
+          <div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 6: Colegios similares -->
+  <div id="sec-similares" class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h5 class="mb-0">🏫 Colegios con perfil similar</h5></div>
+        <div class="card-body" id="mc-similares">
+          <div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 7: Recomendaciones -->
+  <div id="sec-recomendaciones" class="row mb-4">
+    <div class="col-12">
+      <div class="card border-warning">
+        <div class="card-header bg-warning-subtle"><h5 class="mb-0">💡 ¿Qué ajustar? — Factores de mayor impacto</h5></div>
+        <div class="card-body" id="mc-recomendaciones">
+          <div class="text-center"><div class="spinner-border text-warning" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 8: El relato del colegio (storytelling) -->
+  <div id="sec-story" class="row mb-5">
+    <div class="col-12">
+      <div class="card" style="border-top: 3px solid var(--bs-primary);">
+        <div class="card-header d-flex align-items-center gap-2 flex-wrap">
+          <h5 class="mb-0">📖 El relato</h5>
+          <div class="btn-group ms-2" id="story-mode-btns" role="group">
+            <button type="button" class="btn btn-sm btn-primary"           data-mode="rector">     Para el rector</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="estudiante">Para el estudiante</button>
+          </div>
+          <span class="badge bg-primary-subtle text-primary ms-auto small">Generado a partir de datos ICFES</span>
+        </div>
+        <div class="card-body" id="mc-story">
+          <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% else %}
+{# ================================================================ #}
+{# ESTADO 1 — Buscador (sin colegio seleccionado)                  #}
+{# ================================================================ #}
+  <div class="row justify-content-center" style="min-height:60vh;align-items:center;">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-body p-5 text-center">
+          <iconify-icon icon="iconamoon:school-duotone" style="font-size:56px;color:var(--bs-primary);" class="mb-3"></iconify-icon>
+          <h3 class="fw-bold mb-2">¿Cuál es tu colegio?</h3>
+          <p class="text-muted mb-4">Busca tu colegio y obtén un diagnóstico completo basado en los resultados ICFES 2024.</p>
+
+          <!-- Buscador con autocomplete -->
+          <div class="position-relative mb-3">
+            <input type="text" id="mc-search-input" class="form-control form-control-lg"
+                   placeholder="Escribe el nombre del colegio..." autocomplete="off">
+            <div id="mc-search-results" class="list-group position-absolute w-100 shadow"
+                 style="z-index:1000;top:100%;left:0;display:none;max-height:320px;overflow-y:auto;"></div>
+          </div>
+          <p class="text-muted small">Busca por nombre, ciudad o departamento</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+</div><!-- /container-fluid -->
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+const MC_SK   = "{{ mi_colegio.colegio_sk|default:'' }}";
+const MC_BK   = "{{ mi_colegio.colegio_bk|default:'' }}";
+const MC_SELECCIONAR_URL = "{% url 'icfes_dashboard:mi_colegio_seleccionar' %}";
+
+// ──────────────────────────────────────────
+// BUSCADOR (estado 1)
+// ──────────────────────────────────────────
+const searchInput   = document.getElementById('mc-search-input');
+const searchResults = document.getElementById('mc-search-results');
+
+if (searchInput) {
+  let timer;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = searchInput.value.trim();
+    if (q.length < 2) { searchResults.style.display = 'none'; return; }
+    timer = setTimeout(() => fetchBuscar(q), 250);
+  });
+}
+
+async function fetchBuscar(q) {
+  const res = await fetch(`{% url 'icfes_dashboard:api_colegio_buscar' %}?q=${encodeURIComponent(q)}`);
+  const data = await res.json();
+  searchResults.innerHTML = '';
+  if (!data.length) {
+    searchResults.innerHTML = '<div class="list-group-item text-muted">Sin resultados</div>';
+    searchResults.style.display = 'block';
+    return;
+  }
+  data.forEach(c => {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.className = 'list-group-item list-group-item-action';
+    a.innerHTML = `<strong>${c.nombre_colegio}</strong> <small class="text-muted">${c.municipio}, ${c.departamento} · ${c.sector}</small>`;
+    a.addEventListener('click', e => { e.preventDefault(); seleccionarColegio(c); });
+    searchResults.appendChild(a);
+  });
+  searchResults.style.display = 'block';
+}
+
+async function seleccionarColegio(c) {
+  await fetch(MC_SELECCIONAR_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify(c)
+  });
+  location.reload();
+}
+
+// ──────────────────────────────────────────
+// DASHBOARD (estado 2) — carga de secciones
+// ──────────────────────────────────────────
+if (MC_SK) {
+  Promise.all([
+    loadComparacion(),
+    loadFortalezas(),
+    loadTrayectoria(),
+    loadMlDiagnostico(),
+    loadSimilares(),
+    loadRecomendaciones(),
+    loadStory(),
+  ]);
+}
+
+// Helper: clase de color para brecha
+function brechaClass(val) {
+  if (val > 5)  return 'text-success fw-bold';
+  if (val < -5) return 'text-danger fw-bold';
+  return 'text-muted';
+}
+
+function badgeClasificacion(label) {
+  const map = {
+    'Excepcional en Inglés': 'bg-success', 'Notable en Inglés': 'bg-info',
+    'Esperado': 'bg-secondary', 'Bajo el Potencial': 'bg-warning text-dark',
+    'En Riesgo Contextual': 'bg-danger',
+    'Excepcional B1+': 'bg-success', 'Notable B1+': 'bg-info',
+    'Bajo Expectativa B1+': 'bg-warning text-dark', 'En Riesgo B1+': 'bg-danger',
+  };
+  return map[label] || 'bg-secondary';
+}
+
+// SEC 1 & 2: Comparación vs nacional y departamento
+async function loadComparacion() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/comparacion-contexto/`);
+  const data = await r.json();
+  if (!data || !data.length) return;
+  const d = data[0];
+
+  // Clasificación general para badge
+  const clsNac  = d.clasificacion_vs_nacional  || '';
+  const clsDepto = d.clasificacion_vs_departamental || '';
+
+  const materias = [
+    { nm: 'Global',       score: d.colegio_global,      ref: d.promedio_nacional_global,      brecha: d.brecha_nacional_global,      pct: d.percentil_nacional },
+    { nm: 'Inglés',       score: d.colegio_ingles,       ref: d.promedio_nacional_ingles,       brecha: d.brecha_nacional_ingles,       pct: null },
+    { nm: 'Lectura',      score: d.colegio_lectura,      ref: d.promedio_nacional_lectura,      brecha: d.brecha_nacional_lectura,      pct: null },
+    { nm: 'Matemáticas',  score: d.colegio_matematicas,  ref: d.promedio_nacional_matematicas,  brecha: d.brecha_nacional_matematicas,  pct: null },
+  ];
+
+  // Vs nacional
+  document.getElementById('mc-kpis-nacional').innerHTML =
+    `<div class="col-12 mb-2"><span class="badge bg-primary-subtle text-primary">${clsNac}</span></div>` +
+    materias.map(({nm, score, ref, brecha, pct}) => `
+    <div class="col-6 col-md-3 mb-3">
+      <div class="card border-0 bg-light h-100">
+        <div class="card-body text-center py-3">
+          <p class="text-muted small mb-1">${nm}</p>
+          <h4 class="mb-1 fw-bold">${score != null ? score.toFixed(1) : '--'}</h4>
+          <div class="text-muted small">Nac. ${ref != null ? ref.toFixed(1) : '--'}</div>
+          <small class="${brechaClass(brecha)} fw-semibold">${brecha != null ? (brecha > 0 ? '+' : '') + brecha.toFixed(1) : ''}</small>
+          ${pct != null ? `<div class="text-muted small">P${pct.toFixed(0)}</div>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Vs departamento
+  const matDepto = [
+    { nm: 'Global',       score: d.colegio_global,      ref: d.promedio_departamental_global,      brecha: d.brecha_departamental_global,      pct: d.percentil_departamental },
+    { nm: 'Inglés',       score: d.colegio_ingles,       ref: d.promedio_departamental_ingles,       brecha: d.brecha_departamental_ingles,       pct: null },
+    { nm: 'Lectura',      score: d.colegio_lectura,      ref: d.promedio_departamental_lectura,      brecha: d.brecha_departamental_lectura,      pct: null },
+    { nm: 'Matemáticas',  score: d.colegio_matematicas,  ref: d.promedio_departamental_matematicas,  brecha: d.brecha_departamental_matematicas,  pct: null },
+  ];
+  document.getElementById('mc-kpis-depto').innerHTML =
+    `<div class="col-12 mb-2"><span class="badge bg-info-subtle text-info">${clsDepto}</span></div>` +
+    matDepto.map(({nm, score, ref, brecha, pct}) => `
+    <div class="col-6 col-md-3 mb-3">
+      <div class="card border-0 bg-light h-100">
+        <div class="card-body text-center py-3">
+          <p class="text-muted small mb-1">${nm}</p>
+          <h4 class="mb-1 fw-bold">${score != null ? score.toFixed(1) : '--'}</h4>
+          <div class="text-muted small">Depto. ${ref != null ? ref.toFixed(1) : '--'}</div>
+          <small class="${brechaClass(brecha)} fw-semibold">${brecha != null ? (brecha > 0 ? '+' : '') + brecha.toFixed(1) : ''}</small>
+          ${pct != null ? `<div class="text-muted small">P${pct.toFixed(0)}</div>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// SEC 3: Fortalezas y brechas
+async function loadFortalezas() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/fortalezas-debilidades/`);
+  const data = await r.json();
+  if (!data || !data.length) { document.getElementById('mc-fortalezas').innerHTML = '<p class="text-muted">Sin datos disponibles</p>'; return; }
+  const d = data[0];
+
+  const materiasList = [
+    { label: 'Lectura Crítica',       avg: d.avg_punt_lectura_critica,    brecha: d.brecha_lectura },
+    { label: 'Matemáticas',           avg: d.avg_punt_matematicas,         brecha: d.brecha_matematicas },
+    { label: 'Ciencias Naturales',    avg: d.avg_punt_c_naturales,         brecha: d.brecha_ciencias },
+    { label: 'Sociales y Ciudadanas', avg: d.avg_punt_sociales_ciudadanas, brecha: d.brecha_sociales },
+    { label: 'Inglés',                avg: d.avg_punt_ingles,              brecha: d.brecha_ingles },
+  ].filter(m => m.avg != null);
+
+  const maxScore = 100;
+  document.getElementById('mc-fortalezas').innerHTML = `
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="alert alert-success py-2 mb-2">
+          <strong>✅ Más fuerte:</strong> ${d.materia_mas_fuerte || '--'}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="alert alert-warning py-2 mb-2">
+          <strong>⚠️ A mejorar:</strong> ${d.materia_mas_debil || '--'}
+        </div>
+      </div>
+    </div>
+    ${materiasList.map(m => `
+    <div class="mb-2">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="small fw-semibold">${m.label}</span>
+        <span class="small ${brechaClass(m.brecha)}">${m.avg != null ? m.avg.toFixed(1) : '--'}
+          ${m.brecha != null ? `(${m.brecha > 0 ? '+' : ''}${m.brecha.toFixed(1)} vs nac.)` : ''}
+        </span>
+      </div>
+      <div class="progress" style="height:8px;">
+        <div class="progress-bar ${m.brecha > 0 ? 'bg-success' : m.brecha < -5 ? 'bg-danger' : 'bg-warning'}"
+             style="width:${Math.min(100, (m.avg / maxScore) * 100).toFixed(0)}%"></div>
+      </div>
+    </div>`).join('')}
+    <p class="text-muted small mt-3 mb-0">
+      Perfil: <strong>${d.perfil_rendimiento || '--'}</strong> &middot;
+      Clasificación: <strong>${d.clasificacion_general || '--'}</strong>
+    </p>`;
+}
+
+// SEC 4: Trayectoria (gráfica ApexCharts)
+async function loadTrayectoria() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/historico/`);
+  const data = await r.json();
+  if (!data || !data.length) return;
+
+  const sorted = data.slice().sort((a, b) => a.ano.localeCompare(b.ano));
+  const anos   = sorted.map(d => d.ano);
+  // avg_punt_global está en escala 0-500 (suma); calculamos promedio de materias (0-100)
+  const global = sorted.map(d => {
+    const vals = [d.avg_punt_matematicas, d.avg_punt_lectura_critica,
+                  d.avg_punt_c_naturales, d.avg_punt_sociales_ciudadanas,
+                  d.avg_punt_ingles].filter(v => v != null && v > 0);
+    return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null;
+  });
+  const ingles = sorted.map(d => d.avg_punt_ingles ? +d.avg_punt_ingles.toFixed(1) : null);
+
+  const options = {
+    chart: { type: 'line', height: 280, toolbar: { show: false } },
+    series: [
+      { name: 'Promedio materias', data: global },
+      { name: 'Inglés', data: ingles },
+    ],
+    xaxis: { categories: anos },
+    yaxis: { min: 30, max: 100 },
+    stroke: { curve: 'smooth', width: 2 },
+    markers: { size: 4 },
+    colors: ['#1b84ff', '#f6c23e'],
+    tooltip: { shared: true },
+    legend: { position: 'top' },
+  };
+  const chart = new ApexCharts(document.getElementById('mc-chart-trayectoria'), options);
+  chart.render();
+
+  // Actualizar badge cluster en header
+  if (data[0]) {
+    const tendencia = sorted[sorted.length - 1]?.clasificacion_tendencia || '';
+    document.getElementById('mc-cluster-badge').textContent = tendencia;
+  }
+}
+
+// SEC 4b: Evolución de niveles de desempeño
+let _nivelesData = null;
+let _nivelesChart = null;
+
+async function loadNivelesHistorico() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/niveles-historico/`);
+  _nivelesData = await r.json();
+  renderNivelesChart('mat');
+}
+
+function renderNivelesChart(mat) {
+  const data = _nivelesData;
+  if (!data || !data.length) {
+    document.getElementById('mc-chart-niveles').innerHTML = '<p class="text-muted text-center pt-4">Sin datos de niveles disponibles</p>';
+    return;
+  }
+
+  const anos = data.map(d => d.ano);
+
+  const cfg = {
+    mat: { labels: ['Insuf.','Mínimo','Satisf.','Avanzado'], keys: ['mat_pct1','mat_pct2','mat_pct3','mat_pct4'] },
+    lc:  { labels: ['Insuf.','Mínimo','Satisf.','Avanzado'], keys: ['lc_pct1','lc_pct2','lc_pct3','lc_pct4'] },
+    cn:  { labels: ['Insuf.','Mínimo','Satisf.','Avanzado'], keys: ['cn_pct1','cn_pct2','cn_pct3','cn_pct4'] },
+    sc:  { labels: ['Insuf.','Mínimo','Satisf.','Avanzado'], keys: ['sc_pct1','sc_pct2','sc_pct3','sc_pct4'] },
+    ing: { labels: ['Pre-A1','A1','A2','B1+'],               keys: ['ing_pct_pre_a1','ing_pct_a1','ing_pct_a2','ing_pct_b1'] },
+  };
+  const { labels, keys } = cfg[mat] || cfg.mat;
+  const COLORS = ['#f1416c', '#ffc700', '#17c1e8', '#50cd89'];
+
+  const series = labels.map((name, i) => ({
+    name,
+    data: data.map(d => +(d[keys[i]] || 0).toFixed(1)),
+  }));
+
+  if (_nivelesChart) { _nivelesChart.destroy(); _nivelesChart = null; }
+
+  _nivelesChart = new ApexCharts(document.getElementById('mc-chart-niveles'), {
+    chart: { type: 'bar', height: 300, stacked: true, stackType: '100%', toolbar: { show: false } },
+    series,
+    xaxis: { categories: anos },
+    yaxis: { labels: { formatter: v => v.toFixed(0) + '%' } },
+    colors: COLORS,
+    legend: { position: 'top' },
+    dataLabels: {
+      enabled: true,
+      formatter: v => v > 6 ? v.toFixed(0) + '%' : '',
+      style: { fontSize: '11px', colors: ['#fff'] },
+    },
+    plotOptions: { bar: { horizontal: false, columnWidth: '60%' } },
+    tooltip: { y: { formatter: v => v.toFixed(1) + '%' } },
+  });
+  _nivelesChart.render();
+}
+
+// Tab handler SEC 4
+document.querySelectorAll('#mc-tray-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#mc-tray-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('mc-tab-puntaje').style.display = tab === 'puntaje' ? '' : 'none';
+    document.getElementById('mc-tab-niveles').style.display = tab === 'niveles'  ? '' : 'none';
+    if (tab === 'niveles' && !_nivelesData) loadNivelesHistorico();
+  });
+});
+
+// Selector de materia para niveles
+document.querySelectorAll('.mc-mat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mc-mat-btn').forEach(b => {
+      b.classList.remove('btn-primary');
+      b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-primary');
+    if (_nivelesData) renderNivelesChart(btn.dataset.mat);
+  });
+});
+
+// SEC 5: ML Diagnóstico
+async function loadMlDiagnostico() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/ml-diagnostico/`);
+  const d = await r.json();
+
+  // Potencial inglés
+  const pi = d.potencial_ingles;
+  document.getElementById('mc-potencial-ingles').innerHTML = pi ? `
+    <div class="text-center mb-3">
+      <span class="badge ${badgeClasificacion(pi.clasificacion_ingles)} fs-6 px-3 py-2">${pi.clasificacion_ingles}</span>
+    </div>
+    <div class="row text-center">
+      <div class="col-4">
+        <h4 class="fw-bold mb-0">${pi.avg_ingles != null ? pi.avg_ingles.toFixed(1) : '--'}</h4>
+        <small class="text-muted">Inglés real</small>
+      </div>
+      <div class="col-4">
+        <h4 class="fw-bold mb-0">${pi.score_ingles_esperado != null ? pi.score_ingles_esperado.toFixed(1) : '--'}</h4>
+        <small class="text-muted">Esperado</small>
+      </div>
+      <div class="col-4">
+        <h4 class="fw-bold mb-0 ${brechaClass(pi.exceso_ingles)}">${pi.exceso_ingles != null ? (pi.exceso_ingles > 0 ? '+' : '') + pi.exceso_ingles.toFixed(1) : '--'}</h4>
+        <small class="text-muted">Exceso</small>
+      </div>
+    </div>
+    <p class="text-muted small text-center mt-2 mb-0">Ranking nacional: #${pi.ranking_exceso_nacional || '--'}</p>
+  ` : '<p class="text-muted text-center">Sin datos de potencial inglés para este colegio</p>';
+
+  // Predictor B1+
+  const b1 = d.potencial_ingles;  // viene en el mismo objeto
+  const clus = d.cluster_transformador;
+  document.getElementById('mc-predictor-b1').innerHTML = b1 && b1.ing_pct_b1 != null ? `
+    <div class="text-center mb-3">
+      <span class="badge ${badgeClasificacion(b1.clasificacion_b1)} fs-6 px-3 py-2">${b1.clasificacion_b1 || '--'}</span>
+    </div>
+    <div class="row text-center">
+      <div class="col-4">
+        <h4 class="fw-bold mb-0">${b1.ing_pct_b1 != null ? b1.ing_pct_b1.toFixed(1) + '%' : '--'}</h4>
+        <small class="text-muted">B1+ real</small>
+      </div>
+      <div class="col-4">
+        <h4 class="fw-bold mb-0">${b1.pct_b1_esperado != null ? b1.pct_b1_esperado.toFixed(1) + '%' : '--'}</h4>
+        <small class="text-muted">Esperado</small>
+      </div>
+      <div class="col-4">
+        <h4 class="fw-bold mb-0 ${brechaClass(b1.exceso_b1)}">${b1.exceso_b1 != null ? (b1.exceso_b1 > 0 ? '+' : '') + b1.exceso_b1.toFixed(1) + ' pp' : '--'}</h4>
+        <small class="text-muted">Exceso</small>
+      </div>
+    </div>
+    ${clus ? `<hr class="my-3">
+    <p class="text-center mb-1"><strong>Cluster Transformador:</strong> <span class="badge bg-primary">${clus.cluster_label}</span></p>
+    <p class="text-muted small text-center mb-0">Tendencia: ${clus.tendencia > 0 ? '+' : ''}${clus.tendencia.toFixed(2)} pts/año | Nivel actual: ${clus.nivel_actual.toFixed(1)}</p>` : ''}
+  ` : '<p class="text-muted text-center">Sin datos B1+ para este colegio</p>';
+}
+
+// SEC 6: Colegios similares
+async function loadSimilares() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/similares/?limit=5`);
+  const data = await r.json();
+  const el = document.getElementById('mc-similares');
+  if (!data || !data.length) { el.innerHTML = '<p class="text-muted">Sin datos de colegios similares</p>'; return; }
+
+  el.innerHTML = `<div class="table-responsive"><table class="table table-hover table-sm">
+    <thead><tr><th>Colegio</th><th>Depto</th><th>Sector</th><th>Puntaje</th></tr></thead>
+    <tbody>${data.map(c => `
+      <tr>
+        <td>${c.nombre_colegio || c.school_name || '--'}</td>
+        <td class="text-muted small">${c.departamento || '--'}</td>
+        <td class="text-muted small">${c.sector || '--'}</td>
+        <td>${c.avg_punt_global != null ? c.avg_punt_global.toFixed(1) : '--'}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+// SEC 7: Recomendaciones
+async function loadRecomendaciones() {
+  const r = await fetch(`/icfes/api/colegio/${MC_SK}/recomendaciones/`);
+  const d = await r.json();
+  const el = document.getElementById('mc-recomendaciones');
+
+  const rec = d.recomendacion;
+  const factores = d.factores_impacto || [];
+
+  el.innerHTML = `
+    ${rec ? `
+    <div class="alert alert-warning mb-4">
+      <strong>Materia a priorizar:</strong> ${rec.materia_mas_debil || '--'}<br>
+      <span>${rec.recomendacion_principal || ''}</span>
+      ${rec.urgencia_mejora && rec.urgencia_mejora !== 'Ninguna' ?
+        `<br><span class="badge bg-danger mt-1">${rec.urgencia_mejora}</span>` : ''}
+    </div>` : ''}
+
+    <h6 class="fw-bold mb-3">Factores que más impactan el puntaje en inglés (nacional 2024)</h6>
+    <div class="row">
+      ${factores.map(f => `
+      <div class="col-md-4 mb-3">
+        <div class="card border-0 bg-light h-100">
+          <div class="card-body py-3">
+            <p class="text-muted small mb-1 text-uppercase">${f.factor}</p>
+            <p class="fw-semibold mb-1">${f.valor_factor}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="small">Puntaje inglés: <strong>${f.avg_ingles != null ? f.avg_ingles.toFixed(1) : '--'}</strong></span>
+              <span class="badge bg-success">+${f.brecha_vs_factor != null ? f.brecha_vs_factor.toFixed(0) : '--'} pts</span>
+            </div>
+            <div class="text-muted small">${f.n_estudiantes != null ? (+f.n_estudiantes).toLocaleString() : '--'} estudiantes</div>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────
+// SEC 8: Storytelling — El relato del colegio
+// ──────────────────────────────────────────────────────────────
+const _MATERIA_LABEL = {
+  matematicas: 'Matemáticas', lectura: 'Lectura Crítica',
+  ciencias: 'Ciencias Naturales', sociales: 'Sociales y Ciudadanas',
+  ingles: 'Inglés',
+};
+
+let _storyData = null; // cache para ambos modos
+
+async function loadStory() {
+  const el = document.getElementById('mc-story');
+  if (!el) return;
+  try {
+    const [cmpRes, frtRes, histRes, mlRes, recRes] = await Promise.allSettled([
+      fetch(`/icfes/api/colegio/${MC_SK}/comparacion-contexto/`).then(r => r.json()),
+      fetch(`/icfes/api/colegio/${MC_SK}/fortalezas-debilidades/`).then(r => r.json()),
+      fetch(`/icfes/api/colegio/${MC_SK}/historico/`).then(r => r.json()),
+      fetch(`/icfes/api/colegio/${MC_SK}/ml-diagnostico/`).then(r => r.json()),
+      fetch(`/icfes/api/colegio/${MC_SK}/recomendaciones/`).then(r => r.json()),
+    ]);
+    _storyData = {
+      cmp:  cmpRes.status === 'fulfilled' ? cmpRes.value : null,
+      frt:  frtRes.status === 'fulfilled' ? frtRes.value : null,
+      hist: histRes.status === 'fulfilled' ? histRes.value : [],
+      ml:   mlRes.status  === 'fulfilled' ? mlRes.value  : null,
+      rec:  recRes.status === 'fulfilled' ? recRes.value  : null,
+    };
+    renderStory(el, _storyData.cmp, _storyData.frt, _storyData.hist, _storyData.ml, _storyData.rec);
+
+    // Toggle rector / estudiante
+    document.querySelectorAll('#story-mode-btns button').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('#story-mode-btns button').forEach(b => {
+          b.classList.remove('btn-primary'); b.classList.add('btn-outline-secondary');
+        });
+        this.classList.remove('btn-outline-secondary'); this.classList.add('btn-primary');
+        if (this.dataset.mode === 'estudiante') {
+          renderStoryEstudiante(el, _storyData.cmp, _storyData.frt, _storyData.hist, _storyData.ml, _storyData.rec);
+        } else {
+          renderStory(el, _storyData.cmp, _storyData.frt, _storyData.hist, _storyData.ml, _storyData.rec);
+        }
+      });
+    });
+  } catch (e) {
+    el.innerHTML = '<p class="text-muted text-center py-4">No se pudo generar el relato</p>';
+  }
+}
+
+function renderStory(el, cmp, frt, hist, ml, rec) {
+  const chapters = [];
+  const nombre = document.getElementById('mc-nombre')?.textContent?.trim() || 'Este colegio';
+
+  // ── Cap. 1: La posición real — números crudos, sin suavizar ──
+  if (cmp && cmp.colegio_global != null) {
+    const score    = (+cmp.colegio_global).toFixed(1);
+    const pct      = cmp.percentil_nacional != null ? Math.round(+cmp.percentil_nacional) : null;
+    const cls      = cmp.clasificacion_vs_nacional || '';
+    const bNac     = cmp.brecha_nacional_global != null ? +cmp.brecha_nacional_global : null;
+    const bNacSign = bNac != null ? (bNac >= 0 ? `+${bNac.toFixed(1)}` : bNac.toFixed(1)) : null;
+    const bNacClr  = bNac != null ? (bNac >= 0 ? 'text-success' : 'text-danger') : '';
+
+    let txt = `<strong>${nombre}</strong> obtiene <strong>${score} pts</strong> de promedio global. `;
+    if (pct != null) {
+      const supera = pct;
+      const sobre  = 100 - pct;
+      txt += `Eso lo ubica por encima del <strong>${supera}% de los colegios del país</strong> —
+              solo el <strong>${sobre}%</strong> lo supera. Clasificación: <em>${cls}</em>.`;
+    }
+    if (bNacSign) {
+      txt += ` <span class="${bNacClr} fw-semibold">${bNacSign} pts</span> respecto al promedio nacional.`;
+    }
+    chapters.push({ icon: '🌍', title: 'La posición real en Colombia', text: txt });
+  }
+
+  // ── Cap. 2: Fortaleza y talón de Aquiles — directo ──
+  if (frt && frt.materia_mas_fuerte) {
+    const ft     = _MATERIA_LABEL[frt.materia_mas_fuerte] || frt.materia_mas_fuerte;
+    const db     = _MATERIA_LABEL[frt.materia_mas_debil]  || frt.materia_mas_debil;
+    const recTxt = rec?.recomendacion?.recomendacion_principal || null;
+    const urgTxt = rec?.recomendacion?.urgencia_mejora && rec.recomendacion.urgencia_mejora !== 'Ninguna'
+      ? `<span class="badge bg-danger ms-1">${rec.recomendacion.urgencia_mejora}</span>`
+      : '';
+
+    let txt = `El área donde los estudiantes más brillan: <strong>${ft}</strong>.
+               El talón de Aquiles: <strong>${db}</strong> ${urgTxt}.`;
+    if (recTxt) {
+      txt += `<br><span class="fw-semibold" style="color:var(--bs-warning-text-emphasis);">
+                → ${recTxt}
+              </span>`;
+    }
+    chapters.push({ icon: '⚡', title: 'Fortaleza y talón de Aquiles', text: txt });
+  }
+
+  // ── Cap. 3: ¿A dónde va el colegio? Tendencia sin rodeos ──
+  if (Array.isArray(hist) && hist.length >= 2) {
+    const sorted = [...hist].sort((a, b) => String(a.ano).localeCompare(String(b.ano)));
+    const getAvg = d => {
+      const v = [d.avg_punt_matematicas, d.avg_punt_lectura_critica,
+                 d.avg_punt_c_naturales, d.avg_punt_sociales_ciudadanas,
+                 d.avg_punt_ingles].filter(x => x != null && +x > 0);
+      return v.length ? v.reduce((a, b) => +a + +b, 0) / v.length : null;
+    };
+    const p0 = getAvg(sorted[0]);
+    const pN = getAvg(sorted[sorted.length - 1]);
+    if (p0 && pN) {
+      const delta    = pN - p0;
+      const signo    = delta >= 0 ? '+' : '';
+      const deltaClr = delta > 0 ? 'text-success' : delta < 0 ? 'text-danger' : 'text-muted';
+      const veredicto = delta > 1.5
+        ? '🔼 El colegio <strong>viene en ascenso</strong>. Buen momentum — hay que sostenerlo.'
+        : delta < -1.5
+        ? '🔽 El colegio <strong>viene cayendo</strong>. Es una señal de alerta que requiere acción concreta.'
+        : '↔️ El colegio <strong>se mantiene estable</strong>. La estabilidad es positiva, pero hay margen de mejora.';
+
+      chapters.push({
+        icon: '📈',
+        title: `¿A dónde va el colegio? (${sorted[0].ano}–${sorted[sorted.length-1].ano})`,
+        text: `${veredicto}
+               <br>En ${sorted.length} años el promedio pasó de <strong>${p0.toFixed(1)}</strong>
+               a <strong>${pN.toFixed(1)}</strong> —
+               <span class="${deltaClr} fw-bold">${signo}${delta.toFixed(1)} pts</span>.`,
+      });
+    }
+  }
+
+  // ── Cap. 4: Inglés — el potencial sin explotar ──
+  if (ml?.potencial_ingles) {
+    const pi   = ml.potencial_ingles;
+    const real = pi.avg_ingles        != null ? (+pi.avg_ingles).toFixed(1)         : null;
+    const esp  = pi.score_ingles_esperado != null ? (+pi.score_ingles_esperado).toFixed(1) : null;
+    const exc  = pi.exceso_ingles     != null ? +pi.exceso_ingles                   : null;
+    const cls  = pi.clasificacion_ingles || '--';
+    const b1   = pi.ing_pct_b1        != null ? (+pi.ing_pct_b1).toFixed(1)         : null;
+
+    let txt = `Clasificación de potencial: <strong>${cls}</strong>. `;
+    if (real && esp) {
+      txt += `El colegio saca <strong>${real} pts</strong> en inglés; el modelo esperaba <strong>${esp} pts</strong>. `;
+    }
+    if (exc != null) {
+      if (exc > 0) {
+        txt += `<span class="text-success fw-semibold">Supera lo esperado en +${exc.toFixed(1)} pts</span>
+                — está extrayendo más de lo que el contexto promete. Aprovechar este momentum.`;
+      } else {
+        txt += `<span class="text-danger fw-semibold">Hay ${Math.abs(exc).toFixed(1)} pts de potencial
+                sin explotar</span>. El contexto del colegio permite más — algo está bloqueando ese potencial.`;
+      }
+    }
+    if (b1) txt += ` Solo el <strong>${b1}%</strong> alcanza nivel B1+ (el mínimo que pide el mundo laboral).`;
+
+    chapters.push({ icon: '🌎', title: 'Inglés: ¿cuánto potencial está dormido?', text: txt });
+  }
+
+  // ── Cap. 5: Los factores que SÍ determinan — explícitos, con números ──
+  if (rec?.factores_impacto?.length) {
+    const factores = rec.factores_impacto.slice(0, 5);
+    const fNombre  = {
+      internet:           'Internet en casa',
+      computador:         'Computador en casa',
+      libros:             'Libros en el hogar',
+      edu_madre:          'Educación de la madre',
+      edu_padre:          'Educación del padre',
+      dedicacion_internet:'Tiempo diario en internet',
+      dedicacion_lectura: 'Tiempo diario de lectura',
+    };
+
+    const filas = factores.map(f => {
+      const nombre  = fNombre[f.factor] || f.factor;
+      const brecha  = f.brecha_vs_factor != null ? (+f.brecha_vs_factor).toFixed(0) : '--';
+      const avg     = f.avg_ingles       != null ? (+f.avg_ingles).toFixed(0)        : '--';
+      const nEst    = f.n_estudiantes    != null ? (+f.n_estudiantes).toLocaleString() : '';
+      return `
+        <div class="d-flex align-items-start gap-2 py-2 border-bottom">
+          <span class="badge bg-success fs-6 mt-1 flex-shrink-0">+${brecha} pts</span>
+          <div>
+            <span class="fw-semibold">${nombre}</span>
+            <span class="text-muted small"> — condición: <em>${f.valor_factor}</em></span><br>
+            <span class="small text-secondary">Promedio inglés: <strong>${avg} pts</strong>
+            ${nEst ? `· <strong>${nEst}</strong> estudiantes en este grupo` : ''}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    chapters.push({
+      icon: '💡',
+      title: 'Lo que SÍ determina los resultados — sin filtros',
+      text: `El análisis de <strong>17 millones de estudiantes ICFES</strong> muestra cuántos puntos
+             de diferencia real genera cada factor en inglés:
+             <div class="mt-3">${filas}</div>
+             <div class="alert alert-primary mt-3 mb-0 py-2 px-3" style="font-size:13px;">
+               <strong>Mensaje directo:</strong> Estos números no son hipótesis — son la diferencia
+               real medida entre grupos de estudiantes. Tenerlos claros permite al colegio actuar
+               <em>exactamente</em> donde el impacto es mayor, no donde parece lógico actuar.
+             </div>`,
+    });
+  }
+
+  if (!chapters.length) {
+    el.innerHTML = '<p class="text-muted text-center py-4">No hay suficientes datos para generar el relato</p>';
+    return;
+  }
+
+  // ── Timeline visual ──
+  el.innerHTML = `
+    <div class="story-timeline ps-2">
+      ${chapters.map((c, i) => `
+        <div class="d-flex gap-3 pb-4 position-relative">
+          ${i < chapters.length - 1
+            ? `<div style="position:absolute;left:15px;top:36px;bottom:0;width:2px;background:var(--bs-primary-border-subtle);"></div>`
+            : ''}
+          <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--bs-primary);
+                      color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;z-index:1;">
+            ${c.icon}
+          </div>
+          <div class="flex-grow-1 pt-1">
+            <h6 class="fw-bold mb-2">${c.title}</h6>
+            <div class="text-secondary" style="line-height:1.7;">${c.text}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Vista ESTUDIANTE — habla de tú, directa, sin condescendencia
+// ──────────────────────────────────────────────────────────────
+function renderStoryEstudiante(el, cmp, frt, hist, ml, rec) {
+  const chapters = [];
+  const nombre = document.getElementById('mc-nombre')?.textContent?.trim() || 'Tu colegio';
+
+  // ── Cap. 1: Tu punto de partida real ──
+  if (cmp && cmp.colegio_global != null) {
+    const score = (+cmp.colegio_global).toFixed(1);
+    const pct   = cmp.percentil_nacional != null ? Math.round(+cmp.percentil_nacional) : null;
+    const cls   = cmp.clasificacion_vs_nacional || '';
+    const bNac  = cmp.brecha_nacional_global != null ? +cmp.brecha_nacional_global : null;
+    const bSign = bNac != null ? (bNac >= 0 ? `+${bNac.toFixed(1)}` : bNac.toFixed(1)) : null;
+    const bClr  = bNac != null ? (bNac >= 0 ? 'text-success' : 'text-danger') : '';
+
+    let txt = `<strong>${nombre}</strong> tiene un promedio de <strong>${score} pts</strong>. `;
+    if (pct != null) {
+      txt += `Eso significa que estudias en un colegio que supera al <strong>${pct}% del país</strong>. Ese es tu punto de partida — y es ${pct >= 50 ? 'un buen punto de partida' : 'un reto que vale la pena asumir'}.`;
+    }
+    if (bSign) {
+      txt += ` <span class="${bClr} fw-semibold">${bSign} pts</span> respecto al promedio nacional (<em>${cls}</em>).`;
+    }
+    chapters.push({ icon: '📍', title: 'Tu punto de partida', text: txt });
+  }
+
+  // ── Cap. 2: Lo que les sale bien y lo que más les cuesta ──
+  if (frt && frt.materia_mas_fuerte) {
+    const ft  = _MATERIA_LABEL[frt.materia_mas_fuerte] || frt.materia_mas_fuerte;
+    const db  = _MATERIA_LABEL[frt.materia_mas_debil]  || frt.materia_mas_debil;
+    const rec_txt = rec?.recomendacion?.recomendacion_principal || null;
+    const urgBadge = rec?.recomendacion?.urgencia_mejora && rec.recomendacion.urgencia_mejora !== 'Ninguna'
+      ? `<span class="badge bg-danger ms-1">${rec.recomendacion.urgencia_mejora}</span>` : '';
+
+    let txt = `En tu colegio, la materia donde más brillan los estudiantes es <strong>${ft}</strong>.
+               Donde más se quedan atrás: <strong>${db}</strong> ${urgBadge}.`;
+    if (rec_txt) {
+      txt += `<br><span class="fw-semibold" style="color:var(--bs-warning-text-emphasis);">→ ${rec_txt}</span>`;
+    }
+    if (frt.materia_mas_debil === 'ingles' || frt.materia_mas_debil === 'Inglés') {
+      txt += `<br><span class="text-info small">El inglés tiene algo especial: es la materia que más se mejora
+              con práctica <em>fuera</em> del aula. Series, música, apps — eso cuenta.</span>`;
+    }
+    chapters.push({ icon: '⚡', title: 'Lo que les sale bien y lo que más les cuesta', text: txt });
+  }
+
+  // ── Cap. 3: La trayectoria — en qué momento entras ──
+  if (Array.isArray(hist) && hist.length >= 2) {
+    const sorted = [...hist].sort((a, b) => String(a.ano).localeCompare(String(b.ano)));
+    const getAvg = d => {
+      const v = [d.avg_punt_matematicas, d.avg_punt_lectura_critica,
+                 d.avg_punt_c_naturales, d.avg_punt_sociales_ciudadanas,
+                 d.avg_punt_ingles].filter(x => x != null && +x > 0);
+      return v.length ? v.reduce((a, b) => +a + +b, 0) / v.length : null;
+    };
+    const p0 = getAvg(sorted[0]);
+    const pN = getAvg(sorted[sorted.length - 1]);
+    if (p0 && pN) {
+      const delta = pN - p0;
+      const signo = delta >= 0 ? '+' : '';
+      const dClr  = delta > 0 ? 'text-success' : delta < 0 ? 'text-danger' : 'text-muted';
+      const msg   = delta > 1.5
+        ? 'Los estudiantes que te precedieron <strong>mejoraron el colegio</strong>. Estás entrando en un momento de buen momentum — aprovéchalo.'
+        : delta < -1.5
+        ? 'El rendimiento ha venido cayendo en los últimos años. Eso importa porque el ambiente académico te rodea. <strong>Tu generación puede ser la que revierta eso.</strong>'
+        : 'El colegio ha mantenido resultados estables. Eso es positivo — y también significa que hay espacio para dar el siguiente salto.';
+
+      chapters.push({
+        icon: '📈',
+        title: `En qué momento llegas (${sorted[0].ano}–${sorted[sorted.length-1].ano})`,
+        text: `${msg}
+               <br><span class="text-muted small">El promedio pasó de ${p0.toFixed(1)} a ${pN.toFixed(1)}
+               — <span class="${dClr} fw-semibold">${signo}${delta.toFixed(1)} pts</span> en ${sorted.length} años.</span>`,
+      });
+    }
+  }
+
+  // ── Cap. 4: El inglés — potencial real vs lo que está pasando ──
+  if (ml?.potencial_ingles) {
+    const pi   = ml.potencial_ingles;
+    const real = pi.avg_ingles              != null ? (+pi.avg_ingles).toFixed(1)         : null;
+    const esp  = pi.score_ingles_esperado   != null ? (+pi.score_ingles_esperado).toFixed(1) : null;
+    const exc  = pi.exceso_ingles           != null ? +pi.exceso_ingles                   : null;
+    const b1   = pi.ing_pct_b1             != null ? (+pi.ing_pct_b1).toFixed(1)         : null;
+
+    let txt = '';
+    if (real && esp) {
+      txt += `Tu colegio saca <strong>${real} pts</strong> en inglés. El modelo dice que, dado su contexto, podría sacar <strong>${esp} pts</strong>. `;
+    }
+    if (exc != null) {
+      if (exc > 0) {
+        txt += `<span class="text-success fw-semibold">Supera lo esperado en +${exc.toFixed(1)} pts</span>. Eso quiere decir que en tu colegio algo está funcionando bien en inglés — hay que saber qué es y sostenerlo.`;
+      } else {
+        txt += `<span class="text-danger fw-semibold">Hay ${Math.abs(exc).toFixed(1)} pts de potencial que no se está aprovechando.</span>
+                Eso no es fatalidad — significa que hay margen de mejora real esperando a quien lo tome en serio.`;
+      }
+    }
+    if (b1) {
+      const pct = parseFloat(b1);
+      txt += ` Actualmente el <strong>${b1}%</strong> alcanza nivel B1+ en inglés.
+               ${pct < 10 ? `Eso es bajo — y el B1 es el nivel mínimo que piden muchos trabajos y universidades internacionales.`
+                          : pct < 20 ? `Hay campo para crecer — el B1 abre puertas reales en el mundo laboral.`
+                          : `Eso es por encima del promedio nacional — un logro real.`}`;
+    }
+    chapters.push({ icon: '🌎', title: 'Tu inglés — el potencial que está esperando', text: txt });
+  }
+
+  // ── Cap. 5: Lo que TÚ puedes hacer — explícito, con evidencia ──
+  if (rec?.factores_impacto?.length) {
+    const factores = rec.factores_impacto.slice(0, 5);
+    const fNombre  = {
+      internet:            'Tener internet en casa',
+      computador:          'Tener computador en casa',
+      libros:              'Tener libros en el hogar',
+      edu_madre:           'Educación de tu mamá',
+      edu_padre:           'Educación de tu papá',
+      dedicacion_internet: 'Cuánto tiempo usas internet al día',
+      dedicacion_lectura:  'Cuánto lees al día',
+    };
+    const fAccion = {
+      internet:            'Si lo tienes — úsalo para practicar inglés real: series, podcasts, YouTube en inglés. No solo redes.',
+      computador:          'Si lo tienes — practica mecanografía, usa apps de inglés, crea cosas.',
+      libros:              'Lee lo que sea. Cualquier lectura activa tu cerebro de una manera que nada más reemplaza.',
+      edu_madre:           null, // handled specially
+      edu_padre:           null, // handled specially
+      dedicacion_internet: 'El internet puede ser tu mejor herramienta o tu mayor distractor. La diferencia la decides tú.',
+      dedicacion_lectura:  '30 minutos de lectura diaria tienen más impacto en tu cerebro que 3 horas de redes sociales.',
+    };
+
+    const filas = factores.map(f => {
+      const nom     = fNombre[f.factor]  || f.factor;
+      const accion  = fAccion[f.factor];
+      const brecha  = f.brecha_vs_factor != null ? (+f.brecha_vs_factor).toFixed(0) : '--';
+      const avg     = f.avg_ingles       != null ? (+f.avg_ingles).toFixed(0)        : '--';
+      const esPadres = f.factor === 'edu_madre' || f.factor === 'edu_padre';
+
+      const mensajeEspecial = esPadres
+        ? `<div class="mt-1 p-2 rounded" style="background:#fff3cd;font-size:12px;">
+             <strong>Esto no lo puedes cambiar</strong> — pero sí puedes romper ese ciclo.
+             Los estudiantes cuya mamá tiene postgrado sacan +${brecha} pts. Tú puedes ser
+             la razón por la que tu hijo algún día tenga esa ventaja.
+           </div>`
+        : accion ? `<div class="text-info small mt-1">→ ${accion}</div>` : '';
+
+      return `
+        <div class="py-2 border-bottom">
+          <div class="d-flex align-items-start gap-2">
+            <span class="badge bg-success fs-6 flex-shrink-0 mt-1">+${brecha} pts</span>
+            <div class="flex-grow-1">
+              <span class="fw-semibold">${nom}</span>
+              <span class="text-muted small"> — condición: <em>${f.valor_factor}</em>
+              · promedio inglés: <strong>${avg} pts</strong></span>
+              ${mensajeEspecial}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    chapters.push({
+      icon: '🎯',
+      title: 'Lo que TÚ puedes hacer — con evidencia real',
+      text: `Esto es lo que el análisis de <strong>17 millones de estudiantes ICFES</strong>
+             muestra que más impacta el puntaje en inglés. Cada número es una diferencia real medida:
+             <div class="mt-3">${filas}</div>
+             <div class="alert alert-success mt-3 mb-0 py-2 px-3" style="font-size:13px;">
+               <strong>La conclusión más importante:</strong> Algunos de estos factores no los puedes
+               controlar. Pero los que sí puedes — internet, lectura, dedicación — tienen un impacto
+               demostrado de decenas de puntos. <em>Eso es tuyo si decides tomarlo.</em>
+             </div>`,
+    });
+  }
+
+  if (!chapters.length) {
+    el.innerHTML = '<p class="text-muted text-center py-4">No hay datos suficientes</p>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="alert alert-info py-2 px-3 mb-4" style="font-size:13px;">
+      <strong>Esta vista está pensada para estudiantes.</strong>
+      Habla directamente de lo que los datos dicen sobre tu colegio y lo que puedes hacer con eso.
+    </div>
+    <div class="story-timeline ps-2">
+      ${chapters.map((c, i) => `
+        <div class="d-flex gap-3 pb-4 position-relative">
+          ${i < chapters.length - 1
+            ? `<div style="position:absolute;left:15px;top:36px;bottom:0;width:2px;background:var(--bs-primary-border-subtle);"></div>`
+            : ''}
+          <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--bs-primary);
+                      color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;z-index:1;">
+            ${c.icon}
+          </div>
+          <div class="flex-grow-1 pt-1">
+            <h6 class="fw-bold mb-2">${c.title}</h6>
+            <div class="text-secondary" style="line-height:1.7;">${c.text}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// Utilidad CSRF
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+// Cerrar autocomplete al hacer click fuera
+document.addEventListener('click', e => {
+  if (searchResults && !searchResults.contains(e.target) && e.target !== searchInput) {
+    searchResults.style.display = 'none';
+  }
+});
+</script>
+{% endblock page_content %}

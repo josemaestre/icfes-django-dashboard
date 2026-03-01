@@ -207,6 +207,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#niveles-desempeno" role="tab">
+                            <span class="d-block d-sm-none"><i class="bx bx-bar-chart-alt-2"></i></span>
+                            <span class="d-none d-sm-block">Niveles</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#ia-recommendations" role="tab">
                             <span class="d-block d-sm-none"><i class="far fa-envelope"></i></span>
                             <span class="d-none d-sm-block">Análisis IA</span>
@@ -304,6 +310,27 @@
                                     <div id="chart-mcer-colegio" style="height: 200px;"></div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Evolución de Niveles -->
+                    <div class="tab-pane" id="niveles-desempeno" role="tabpanel">
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h4 class="card-title mb-0">Evolución de Niveles de Desempeño</h4>
+                            </div>
+                            <p class="text-muted mb-3">Distribución porcentual de estudiantes por nivel en cada año.</p>
+
+                            <!-- Materia selector -->
+                            <div class="btn-group mb-3 flex-wrap" role="group" id="cd-niveles-btns">
+                                <button type="button" class="btn btn-sm btn-primary" data-mat="mat">Matemáticas</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-mat="lc">Lectura</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-mat="cn">Ciencias</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-mat="sc">Sociales</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-mat="ing">Inglés MCER</button>
+                            </div>
+
+                            <div id="cd-chart-niveles" style="min-height:320px;"></div>
                         </div>
                     </div>
 
