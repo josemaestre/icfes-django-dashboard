@@ -316,6 +316,30 @@ def api_ingles_brechas(request):
         if story_row.get('hogar_postgrado') and story_row.get('hogar_ninguno'):
             brecha_hogar = round(float(story_row['hogar_postgrado']) - float(story_row['hogar_ninguno']), 1)
 
+        # Query 4: bilingüe vs no bilingüe
+        q_bilingue = """
+        SELECT tipo_colegio, avg_ingles, n_estudiantes AS total
+        FROM gold.fct_ingles_brecha_bilingue
+        ORDER BY avg_ingles DESC
+        """
+        df_bilingue = execute_query(q_bilingue)
+
+        # Query 5: calendario A vs B
+        q_calendario = """
+        SELECT calendario, avg_ingles, n_estudiantes AS total
+        FROM gold.fct_ingles_brecha_calendario
+        ORDER BY avg_ingles DESC
+        """
+        df_calendario = execute_query(q_calendario)
+
+        # Query 6: urbano vs rural
+        q_area = """
+        SELECT area, avg_ingles, n_estudiantes AS total
+        FROM gold.fct_ingles_brecha_area
+        ORDER BY avg_ingles DESC
+        """
+        df_area = execute_query(q_area)
+
         return {
             'por_estrato': df_estrato.to_dict(orient='records') if not df_estrato.empty else [],
             'por_acceso': df_acceso.to_dict(orient='records') if not df_acceso.empty else [],
@@ -328,6 +352,9 @@ def api_ingles_brechas(request):
                 'n_postgrado':     int(story_row.get('n_postgrado') or 0),
                 'n_ninguno':       int(story_row.get('n_ninguno') or 0),
             },
+            'por_bilingue':   df_bilingue.to_dict(orient='records') if not df_bilingue.empty else [],
+            'por_calendario': df_calendario.to_dict(orient='records') if not df_calendario.empty else [],
+            'por_area':       df_area.to_dict(orient='records') if not df_area.empty else [],
         }
 
     try:
@@ -826,6 +853,7 @@ def api_ingles_colegios_top(request):
         FROM gold.fct_agg_colegios_ano a
         WHERE {where_m.replace("estudiantes > 0", "a.total_estudiantes > 0").replace("cole_depto_ubicacion", "a.departamento")}
           AND a.avg_punt_ingles IS NOT NULL
+          AND a.nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
         ORDER BY a.avg_punt_ingles DESC
         LIMIT 10
         """
@@ -1145,4 +1173,154 @@ def api_ingles_ai_analisis(request):
 
     except Exception as e:
         logger.exception("api_ingles_ai_analisis POST error")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ---------------------------------------------------------------------------
+# API: Correlación de Inglés con otras materias
+# GET /api/ingles/correlaciones/?ano=2024
+# ---------------------------------------------------------------------------
+@require_GET
+def api_ingles_correlaciones(request):
+    """
+    Correlación de avg_ingles con cada materia del ICFES a nivel de colegio-año.
+    Fuente: gold.icfes_master_resumen (school-level averages, filterable by año).
+
+    Devuelve:
+      correlaciones: [{materia, corr, n_colegios, label}]
+      scatter_sample: muestra de puntos (colegio, avg_ingles, avg_X) para scatter
+    """
+    ano = request.GET.get('ano', '2024')
+
+    def fetch():
+        query = """
+        SELECT
+            ROUND(CORR(avg_ingles, avg_matematicas),   3) AS corr_matematicas,
+            ROUND(CORR(avg_ingles, avg_lectura),        3) AS corr_lectura,
+            ROUND(CORR(avg_ingles, avg_naturales),      3) AS corr_naturales,
+            ROUND(CORR(avg_ingles, avg_sociales),       3) AS corr_sociales,
+            ROUND(CORR(avg_ingles, avg_global),         3) AS corr_global,
+            COUNT(*) AS n_colegios
+        FROM gold.icfes_master_resumen
+        WHERE ano = ?
+          AND avg_ingles    IS NOT NULL
+          AND avg_matematicas IS NOT NULL
+          AND avg_lectura   IS NOT NULL
+          AND avg_naturales IS NOT NULL
+          AND avg_sociales  IS NOT NULL
+          AND estudiantes   >= 10
+        """
+        df = execute_query(query, params=[str(ano)])
+        if df.empty:
+            return {'correlaciones': [], 'scatter_sample': []}
+
+        row = df.iloc[0]
+        n   = int(row['n_colegios'])
+
+        materias = [
+            ('corr_global',       'Puntaje Global',        '#6610f2'),
+            ('corr_lectura',      'Lectura Crítica',       '#0d6efd'),
+            ('corr_matematicas',  'Matemáticas',           '#fd7e14'),
+            ('corr_naturales',    'C. Naturales',          '#198754'),
+            ('corr_sociales',     'Soc. y Ciudadanas',     '#20c997'),
+        ]
+
+        correlaciones = []
+        for col, label, color in materias:
+            v = row.get(col)
+            if v is not None and not (isinstance(v, float) and pd.isna(v)):
+                correlaciones.append({
+                    'materia':    col.replace('corr_', ''),
+                    'label':      label,
+                    'corr':       round(float(v), 3),
+                    'color':      color,
+                    'n_colegios': n,
+                })
+
+        # Muestra de scatter (inglés vs global) — 300 colegios aleatorios
+        df_scatter = execute_query("""
+            SELECT
+                cole_mcpio_ubicacion  AS nombre_colegio,
+                ROUND(avg_ingles, 1)  AS x,
+                ROUND(avg_global, 1)  AS y,
+                cole_naturaleza       AS sector
+            FROM gold.icfes_master_resumen
+            WHERE ano = ?
+              AND avg_ingles IS NOT NULL
+              AND avg_global IS NOT NULL
+              AND estudiantes >= 10
+            USING SAMPLE 300
+        """, params=[str(ano)])
+
+        return {
+            'correlaciones':  sorted(correlaciones, key=lambda r: abs(r['corr']), reverse=True),
+            'scatter_sample': df_scatter.to_dict(orient='records') if not df_scatter.empty else [],
+            'ano':            ano,
+        }
+
+    try:
+        cache_key = f"ingles_correlaciones_{ano}"
+        return JsonResponse({'data': _cached(cache_key, _CACHE_TTL, fetch)})
+    except Exception as e:
+        logger.error(f"api_ingles_correlaciones error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def api_ingles_tendencias_regionales(request):
+    """
+    Serie histórica de inglés por región (6 regiones × años).
+    Filtra años con avg_punt_ingles > 0 para excluir datos previos al formato 100-500.
+    """
+    desde = request.GET.get('desde', '2010')
+
+    def fetch():
+        query = """
+        SELECT
+            ano,
+            region,
+            ROUND(avg_punt_ingles, 2)       AS avg_ingles,
+            ROUND(yoy_growth_ingles_pct, 2) AS yoy_ingles,
+            clasificacion_tendencia
+        FROM gold.tendencias_regionales
+        WHERE region IS NOT NULL
+          AND avg_punt_ingles > 0
+          AND CAST(ano AS INTEGER) >= CAST(? AS INTEGER)
+        ORDER BY region, ano
+        """
+        df = execute_query(query, params=[desde])
+        if df.empty:
+            return {'series': [], 'regions': []}
+
+        # Construir estructura: {region → [{ano, avg_ingles, yoy_ingles}]}
+        regions_order = sorted(df['region'].unique().tolist())
+        anos = sorted(df['ano'].unique().tolist())
+
+        # Paleta de 6 colores para las regiones
+        palette = ['#0d6efd', '#dc3545', '#198754', '#fd7e14', '#6610f2', '#20c997']
+
+        series = []
+        for i, region in enumerate(regions_order):
+            sub = df[df['region'] == region].sort_values('ano')
+            label_short = (region
+                           .replace('Región ', '')
+                           .replace('Eje Cafetero - Antioquia', 'Eje Cafetero'))
+            series.append({
+                'region':  region,
+                'label':   label_short,
+                'color':   palette[i % len(palette)],
+                'data':    sub[['ano', 'avg_ingles', 'yoy_ingles']].to_dict(orient='records'),
+            })
+
+        return {
+            'series':   series,
+            'anos':     anos,
+            'desde':    desde,
+        }
+
+    try:
+        cache_key = f"ingles_tendencias_regionales_{desde}"
+        return JsonResponse({'data': _cached(cache_key, _CACHE_TTL, fetch)})
+    except Exception as e:
+        logger.error(f"api_ingles_tendencias_regionales error: {e}")
         return JsonResponse({'error': str(e)}, status=500)

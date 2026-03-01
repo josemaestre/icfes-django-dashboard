@@ -75,6 +75,47 @@ function loadSchoolSummary(sk) {
                 document.getElementById('cluster-name').textContent = "No clasificado";
             }
 
+            // -- Potencial Educativo Global (ML) --
+            const pot = data.potencial;
+            const potEl = document.getElementById('potencial-card');
+            if (pot && pot.clasificacion && potEl) {
+                const colorMap = {
+                    'Excepcional':        '#198754',
+                    'Por encima':         '#20c997',
+                    'Esperado':           '#6c757d',
+                    'Bajo el Potencial':  '#fd7e14',
+                    'En Riesgo Contextual': '#dc3545',
+                };
+                const color = colorMap[pot.clasificacion] || '#6c757d';
+                const exceso = pot.exceso !== null ? (pot.exceso > 0 ? '+' + pot.exceso.toFixed(1) : pot.exceso.toFixed(1)) : 'N/D';
+                const pct  = pot.percentil_exceso !== null ? pot.percentil_exceso.toFixed(0) + '%' : 'N/D';
+                const rkn  = pot.ranking_exceso_nacional || 'N/D';
+                const rkd  = pot.ranking_exceso_depto || 'N/D';
+
+                potEl.innerHTML = `
+                    <div class="text-center mb-3">
+                        <span class="badge fs-6 px-3 py-2" style="background:${color};">${pot.clasificacion}</span>
+                    </div>
+                    <div class="row text-center g-2 mb-2">
+                        <div class="col-6">
+                            <div class="p-2 rounded" style="background:#f8f9fa;">
+                                <div class="fw-bold" style="color:${color};font-size:1.2rem;">${exceso}</div>
+                                <div class="text-muted" style="font-size:11px;">Exceso vs esperado</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 rounded" style="background:#f8f9fa;">
+                                <div class="fw-bold" style="font-size:1.2rem;">${pct}</div>
+                                <div class="text-muted" style="font-size:11px;">Percentil nacional</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="small text-muted text-center">
+                        Ranking nacional: <strong>#${rkn}</strong> &nbsp;|&nbsp; Depto: <strong>#${rkd}</strong>
+                    </div>`;
+                document.getElementById('potencial-card-wrapper').style.display = '';
+            }
+
             // -- Análisis Materias --
             const analisis = data.analisis;
             if (analisis) {

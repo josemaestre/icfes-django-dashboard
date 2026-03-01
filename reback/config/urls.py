@@ -10,6 +10,7 @@ from icfes_dashboard import sitemap_views
 from reback import seo_views
 
 home_redirect_view = RedirectView.as_view(url='/', permanent=True)
+legacy_icfes_dashboard_redirect = RedirectView.as_view(url='/icfes/', permanent=False)
 
 urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
@@ -18,13 +19,14 @@ urlpatterns = [
     path("users/", include("reback.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     path("landing/", home_redirect_view),  # Redirect /landing/ to /
+    path("icfes-dashboard/", legacy_icfes_dashboard_redirect),
 
     # Favicon — must be before the catch-all pages include to avoid dynamic_pages_view
     path("favicon.ico", seo_views.favicon_view),
 
-    path("", include("reback.pages.urls", namespace="pages")),
     path('icfes/', include('icfes_dashboard.urls')),
     path('payments/', include('reback.users.stripe_urls', namespace='payments')),
+    path("", include("reback.pages.urls", namespace="pages")),
 
     # SEO
     path("robots.txt", seo_views.robots_txt),

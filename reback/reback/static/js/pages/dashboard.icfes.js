@@ -1008,37 +1008,110 @@ async function fetchAndRenderTrend(level, entityId) {
 
     try {
         const resp    = await fetch(`/icfes/api/hierarchy/history/?level=${level}&id=${encodeURIComponent(entityId)}`);
-        const history = await resp.json();
+        const payload = await resp.json();
 
-        if (!Array.isArray(history) || history.length < 2) {
-            el.innerHTML = '<div class="text-center text-muted py-4 small">Histórico no disponible para este nivel</div>';
+        // Handle error response from server
+        if (!Array.isArray(payload)) {
+            el.innerHTML = `<div class="text-center text-muted py-4 small">Error al cargar histórico${payload.error ? ': ' + payload.error : ''}</div>`;
             return;
+        }
+        const history = payload;
+
+        if (history.length < 2) {
+            el.innerHTML = '<div class="text-center text-muted py-4 small">Datos históricos insuficientes para este nivel</div>';
+            return;
+        }
+
+        const hasNacional = history.some(d => d.nacional_global != null);
+
+        const series = [
+            { name: 'Global',       data: history.map(d => +((d.punt_global       || 0).toFixed(1))) },
+            { name: 'Matemáticas',  data: history.map(d => +((d.punt_matematicas  || 0).toFixed(1))) },
+            { name: 'Lectura',      data: history.map(d => +((d.punt_lectura       || 0).toFixed(1))) },
+            { name: 'Inglés',       data: history.map(d => +((d.punt_ingles        || 0).toFixed(1))) },
+        ];
+        if (hasNacional) {
+            series.push({ name: 'Nac. promedio', data: history.map(d => d.nacional_global != null ? +d.nacional_global.toFixed(1) : null) });
         }
 
         el.innerHTML = '';
         _detailTrendChart = new ApexCharts(el, {
-            series: [
-                { name: 'Global',       data: history.map(d => parseFloat((d.punt_global       || 0).toFixed(1))) },
-                { name: 'Matemáticas',  data: history.map(d => parseFloat((d.punt_matematicas  || 0).toFixed(1))) },
-                { name: 'Lectura',      data: history.map(d => parseFloat((d.punt_lectura       || 0).toFixed(1))) },
-                { name: 'Inglés',       data: history.map(d => parseFloat((d.punt_ingles        || 0).toFixed(1))) },
-            ],
+            series,
             chart: {
                 type: 'line', height: 240,
                 toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit',
             },
             xaxis:  { categories: history.map(d => d.ano), labels: { rotate: -45, style: { fontSize: '10px' } } },
             yaxis:  { labels: { formatter: v => v != null ? v.toFixed(0) : '' } },
-            stroke: { width: [3, 1.5, 1.5, 1.5], curve: 'smooth' },
-            colors: ['#696cff', '#03c3ec', '#71dd37', '#ffab00'],
+            stroke: {
+                width:     hasNacional ? [3, 1.5, 1.5, 1.5, 2]     : [3, 1.5, 1.5, 1.5],
+                curve:     'smooth',
+                dashArray: hasNacional ? [0, 0, 0, 0, 6]           : [0, 0, 0, 0],
+            },
+            colors: hasNacional
+                ? ['#696cff', '#03c3ec', '#71dd37', '#ffab00', '#a8adb5']
+                : ['#696cff', '#03c3ec', '#71dd37', '#ffab00'],
             legend: { position: 'top', fontSize: '11px', markers: { width: 8, height: 8 } },
             tooltip: { shared: true, intersect: false, y: { formatter: v => v != null ? v.toFixed(1) + ' pts' : '—' } },
-            markers: { size: [3, 0, 0, 0] },
+            markers: { size: hasNacional ? [3, 0, 0, 0, 0] : [3, 0, 0, 0] },
             grid:   { borderColor: '#e2e2e2' },
         });
         _detailTrendChart.render();
+
+        renderDetailKPIs(history);
     } catch (e) {
         el.innerHTML = '<div class="text-center text-muted py-4 small">Error al cargar histórico</div>';
+    }
+}
+
+function renderDetailKPIs(history) {
+    if (!history || history.length === 0) return;
+
+    // Best year
+    const bestRow = history.reduce((best, d) =>
+        (d.punt_global || 0) > (best.punt_global || 0) ? d : best, history[0]);
+
+    // Latest year
+    const latest = history[history.length - 1];
+
+    // vs Nacional
+    const hasNacional = latest.nacional_global != null;
+    const vsNacional  = hasNacional ? (latest.punt_global || 0) - latest.nacional_global : null;
+
+    // Tendencia: last-year change
+    let tendencia = null, tendenciaLabel = '';
+    if (history.length >= 2) {
+        const prev = history[history.length - 2];
+        tendencia = (latest.punt_global || 0) - (prev.punt_global || 0);
+        const pct = ((tendencia / (prev.punt_global || 1)) * 100).toFixed(1);
+        tendenciaLabel = (tendencia >= 0 ? '+' : '') + pct + `% vs ${prev.ano}`;
+    }
+
+    document.getElementById('kpi-mejor-ano').textContent     = (bestRow.punt_global || 0).toFixed(1) + ' pts';
+    document.getElementById('kpi-mejor-ano-year').textContent = `en ${bestRow.ano}`;
+
+    document.getElementById('kpi-actual').textContent     = (latest.punt_global || 0).toFixed(1) + ' pts';
+    document.getElementById('kpi-actual-year').textContent = `año ${latest.ano}`;
+
+    const vsEl = document.getElementById('kpi-vs-nacional');
+    if (vsNacional !== null) {
+        vsEl.textContent  = (vsNacional >= 0 ? '+' : '') + vsNacional.toFixed(1) + ' pts';
+        vsEl.className    = `fw-bold fs-6 mb-0 ${vsNacional >= 0 ? 'text-success' : 'text-danger'}`;
+    } else {
+        vsEl.textContent = '—';
+        vsEl.className   = 'fw-bold fs-6 mb-0';
+    }
+
+    const tEl   = document.getElementById('kpi-tendencia');
+    const tLblEl = document.getElementById('kpi-tendencia-label');
+    if (tendencia !== null) {
+        tEl.textContent  = tendencia >= 0 ? '↑ Subiendo' : '↓ Bajando';
+        tEl.className    = `fw-bold fs-6 mb-0 ${tendencia >= 0 ? 'text-success' : 'text-danger'}`;
+        tLblEl.textContent = tendenciaLabel;
+    } else {
+        tEl.textContent  = '—';
+        tEl.className    = 'fw-bold fs-6 mb-0';
+        tLblEl.textContent = '';
     }
 }
 

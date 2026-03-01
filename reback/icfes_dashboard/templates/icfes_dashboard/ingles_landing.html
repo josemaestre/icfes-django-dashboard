@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:image" content="{{ seo.og_image }}">
+    <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f3f6fb; font-family:"Segoe UI",Tahoma,sans-serif; }
+        .hero { background:linear-gradient(135deg,#0f4c81 0%,#0f766e 100%); color:#fff; padding:54px 0 44px; }
+        .cardx { background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.08); padding:20px; margin-bottom:18px; }
+        .kpi-label { color:#5b6472; text-transform:uppercase; font-size:.76rem; letter-spacing:.08em; }
+        .kpi-value { font-size:1.9rem; font-weight:700; color:#15417a; }
+        .badge-chip { display:inline-block; background:#e6fffa; color:#0f766e; padding:4px 9px; border-radius:999px; font-size:.78rem; font-weight:700; margin-right:6px; margin-bottom:5px; }
+        .score { font-size:1.22rem; font-weight:700; color:#15417a; }
+        .b1 { color:#0f766e; font-weight:700; }
+        .cta-btn { background:#1e4d92; color:#fff; border-radius:999px; padding:10px 18px; text-decoration:none; font-weight:700; display:inline-block; }
+        .cta-btn:hover { color:#fff; background:#173c71; }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="container">
+            <h1 class="display-6 mb-2">
+                Mejores colegios en inglés
+                {% if departamento %}en {{ departamento }}{% else %}en Colombia{% endif %}
+            </h1>
+            <p class="mb-0">Ranking {{ latest_year }} con badges de desempeño, % B1+ y acceso directo a perfiles ICFES.</p>
+        </div>
+    </section>
+
+    <main class="container my-4">
+        <div class="row">
+            <div class="col-lg-3">
+                <div class="cardx">
+                    <h5 class="mb-3">Filtrar departamento</h5>
+                    <div class="d-grid gap-2">
+                        <a href="/icfes/ingles-seo/" class="btn btn-sm {% if not departamento %}btn-primary{% else %}btn-outline-primary{% endif %}">Colombia</a>
+                        {% for dep in departments %}
+                        <a href="/icfes/ingles-seo/departamento/{{ dep.slug }}/" class="btn btn-sm {% if departamento == dep.name %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {{ dep.name }} ({{ dep.avg_ingles }})
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="cardx text-center">
+                            <div class="kpi-label">Promedio Inglés</div>
+                            <div class="kpi-value">{{ kpis.avg_ingles|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="cardx text-center">
+                            <div class="kpi-label">% B1+ agregado</div>
+                            <div class="kpi-value">{{ kpis.pct_b1_nacional|default:"N/A" }}%</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="cardx text-center">
+                            <div class="kpi-label">Colegios analizados</div>
+                            <div class="kpi-value">{{ kpis.total_colegios|default:"0" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cardx">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                        <h4 class="mb-2">Top colegios en inglés ({{ latest_year }})</h4>
+                        <a href="/icfes/ingles/" class="btn btn-outline-secondary btn-sm">Ver dashboard completo</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Colegio</th>
+                                    <th>Ubicación</th>
+                                    <th>Inglés</th>
+                                    <th>B1+</th>
+                                    <th>Badges</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in top_schools %}
+                                <tr>
+                                    <td><strong>{{ row.rank }}</strong></td>
+                                    <td>{{ row.nombre }}</td>
+                                    <td>{{ row.municipio }}, {{ row.departamento }}</td>
+                                    <td class="score">{{ row.avg_ingles|default:"-" }}</td>
+                                    <td class="b1">{{ row.ing_pct_b1|default:"-" }}%</td>
+                                    <td>
+                                        {% for badge in row.badges %}
+                                            <span class="badge-chip">{{ badge }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% if row.slug %}
+                                            <a href="/icfes/colegio/{{ row.slug }}/" class="btn btn-sm btn-outline-primary">Ver perfil</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="cardx text-center">
+                    <h4>¿Quieres el diagnóstico premium de inglés?</h4>
+                    <p class="mb-3">Desbloquea comparativos completos, alertas y reportes descargables para colegios y departamentos.</p>
+                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                        <a href="/pricing/?utm_source=seo&utm_medium=ingles_landing&utm_campaign=cta_planes" class="cta-btn">Ver planes</a>
+                        <a href="/accounts/signup/?utm_source=seo&utm_medium=ingles_landing&utm_campaign=cta_signup" class="btn btn-outline-primary">Crear cuenta gratis</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

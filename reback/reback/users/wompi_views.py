@@ -4,12 +4,13 @@ Handles checkout, webhooks, and subscription management.
 """
 import json
 import logging
+from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_POST
 from django.urls import reverse
 from django.utils import timezone
 
@@ -37,8 +38,12 @@ def wompi_checkout(request):
         # Generate unique reference (Use int timestamp to avoid float precision issues)
         reference = f"sub-{plan.tier}-{request.user.id}-{int(timezone.now().timestamp())}"
         
-        # Amount in cents
-        amount_in_cents = int(float(plan.price_monthly) * 100)
+        # Amount in cents (deterministic rounding for signature stability)
+        amount_in_cents = int(
+            (Decimal(plan.price_monthly) * Decimal("100")).quantize(
+                Decimal("1"), rounding=ROUND_HALF_UP
+            )
+        )
         
         # Get Public Key from settings
         public_key = settings.WOMPI_PUBLIC_KEY
@@ -53,17 +58,15 @@ def wompi_checkout(request):
         signature_source = f"{reference}{amount_in_cents}COP{integrity_secret}"
         integrity_signature = hashlib.sha256(signature_source.encode('utf-8')).hexdigest()
         
-        # LOGS DETALLADOS PARA DEBUG
-        logger.info("="*50)
-        logger.info("WOMPI CHECKOUT PARAMETERS:")
-        logger.info(f"Reference: {reference}")
-        logger.info(f"Amount (Cents): {amount_in_cents}")
-        logger.info(f"Currency: COP")
-        logger.info(f"Integrity Secret: {integrity_secret[:20]}...")
-        logger.info(f"Public Key: {public_key[:20]}...")
-        logger.info(f"Signature Source: {signature_source}")
-        logger.info(f"Generated Signature: {integrity_signature}")
-        logger.info("="*50)
+        if settings.PAYMENTS_DEBUG_LOGS:
+            logger.info("="*50)
+            logger.info("WOMPI CHECKOUT PARAMETERS:")
+            logger.info("Reference: %s", reference)
+            logger.info("Amount (Cents): %s", amount_in_cents)
+            logger.info("Currency: COP")
+            logger.info("Public Key Prefix: %s", public_key[:12])
+            logger.info("Generated Signature Prefix: %s", integrity_signature[:12])
+            logger.info("="*50)
         
         context = {
             'plan': plan,
@@ -75,6 +78,7 @@ def wompi_checkout(request):
             'success_url': request.build_absolute_uri(reverse('payments:wompi_success')),
             'cancel_url': request.build_absolute_uri(reverse('payments:cancel')),
             'user_type_choices': User.USER_TYPE_CHOICES,
+            'payments_debug_logs': settings.PAYMENTS_DEBUG_LOGS,
         }
         
         return render(request, 'payments/wompi_checkout.html', context)
@@ -93,19 +97,27 @@ def wompi_webhook(request):
     - transaction.updated: Payment status changed
     """
     try:
-        # Get signature from headers
-        signature = request.META.get('HTTP_X_EVENT_SIGNATURE', '')
-        
         # Parse event data
         event_data = json.loads(request.body)
+
+        # Official Wompi checksum header. Keep fallback to body for local tests.
+        checksum = request.META.get('HTTP_X_EVENT_CHECKSUM', '')
+        if not checksum:
+            checksum = (event_data.get('signature', {}) or {}).get('checksum', '')
         
-        # Verify signature
-        if not wompi_client.verify_event_signature(event_data, signature):
-            logger.warning("Invalid webhook signature")
+        # Verify checksum
+        if not wompi_client.verify_event_signature(event_data, checksum):
+            logger.warning("Invalid webhook checksum")
             return HttpResponse(status=401)
         
         # Handle event
         event_type = event_data.get('event')
+
+        if settings.PAYMENTS_DEBUG_LOGS and event_type == 'transaction.updated':
+            tx = (event_data.get('data', {}) or {}).get('transaction', {}) or {}
+            logger.info("WOMPI TX KEYS: %s", list(tx.keys()))
+            logger.info("WOMPI payment_method: %s", tx.get('payment_method'))
+            logger.info("WOMPI payment_link: %s", tx.get('payment_link'))
         
         if event_type == 'transaction.updated':
             handle_transaction_updated(event_data['data']['transaction'])
@@ -138,8 +150,19 @@ def handle_transaction_updated(transaction):
             user = User.objects.get(id=user_id)
             plan = SubscriptionPlan.objects.get(tier=plan_tier)
             
-            # Get payment source ID for recurring payments
-            payment_source_id = transaction.get('payment_method', {}).get('payment_source_id', '')
+            # Get payment source ID for recurring payments (robust paths)
+            payment_method = transaction.get('payment_method') or {}
+            payment_link = transaction.get('payment_link') or {}
+            payment_source_id = (
+                payment_method.get('payment_source_id')
+                or payment_link.get('payment_source_id')
+                or ''
+            )
+
+            existing = UserSubscription.objects.filter(user=user).first()
+            fallback_payment_source_id = (
+                existing.wompi_payment_method_id if existing else ''
+            )
             
             # Create or update subscription
             subscription, created = UserSubscription.objects.update_or_create(
@@ -147,7 +170,8 @@ def handle_transaction_updated(transaction):
                 defaults={
                     'plan': plan,
                     'wompi_subscription_id': transaction['id'],
-                    'wompi_payment_method_id': payment_source_id,
+                    # Do not overwrite a previously saved source id with empty value
+                    'wompi_payment_method_id': payment_source_id or fallback_payment_source_id,
                     'is_active': True,
                     'start_date': timezone.now(),
                 }

@@ -63,7 +63,7 @@ function createGlobalGauge(score) {
 
     const options = {
         chart: {
-            height: 280,
+            height: 340,
             type: 'radialBar',
         },
         plotOptions: {
@@ -132,7 +132,7 @@ function createGlobalGauge(score) {
 function createSubjectGauge(elementId, score, color) {
     const options = {
         chart: {
-            height: 180,
+            height: 220,
             type: 'radialBar',
         },
         plotOptions: {
@@ -145,7 +145,7 @@ function createSubjectGauge(elementId, score, color) {
                     },
                     value: {
                         offsetY: 5,
-                        fontSize: '18px',
+                        fontSize: '22px',
                         fontWeight: 'bold',
                         formatter: function (val) {
                             return Math.round(val);

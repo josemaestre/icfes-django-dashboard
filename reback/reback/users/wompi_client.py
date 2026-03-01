@@ -2,11 +2,12 @@
 Wompi API Client for payment processing.
 Documentation: https://docs.wompi.co/
 """
-import requests
 import hashlib
 import logging
-from django.conf import settings
 from typing import Dict, Optional
+
+import requests
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -114,35 +115,74 @@ class WompiClient:
             logger.error(f"Error getting transaction: {str(e)}")
             return {"error": str(e)}
     
-    def verify_event_signature(self, event_data: Dict, signature: str) -> bool:
+    def _get_property_value(self, data: Dict, property_path: str) -> str:
+        """Resolve a dotted property path inside event data."""
+        def snake_to_camel(value: str) -> str:
+            parts = value.split("_")
+            return parts[0] + "".join(p.capitalize() for p in parts[1:])
+
+        def camel_to_snake(value: str) -> str:
+            out = []
+            for ch in value:
+                if ch.isupper():
+                    out.append("_")
+                    out.append(ch.lower())
+                else:
+                    out.append(ch)
+            return "".join(out).lstrip("_")
+
+        current = data
+        for key in property_path.split('.'):
+            if isinstance(current, dict) and key in current:
+                current = current[key]
+                continue
+
+            # Compatibility for occasional camelCase/snake_case differences
+            alt_keys = [snake_to_camel(key), camel_to_snake(key)]
+            matched = False
+            for alt_key in alt_keys:
+                if isinstance(current, dict) and alt_key in current:
+                    current = current[alt_key]
+                    matched = True
+                    break
+            if matched:
+                continue
+
+            return ""
+
+        return "" if current is None else str(current)
+
+    def verify_event_signature(self, event_data: Dict, checksum: str) -> bool:
         """
-        Verify webhook event signature.
+        Verify webhook checksum using Wompi official algorithm.
         
         Args:
             event_data: The event data from webhook
-            signature: The signature from webhook headers
+            checksum: The checksum from X-Event-Checksum header or body signature.checksum
         
         Returns:
-            True if signature is valid
+            True if checksum is valid
         """
         try:
-            # Wompi signature format: timestamp.signature
-            timestamp, received_signature = signature.split('.')
-            
-            # Create signature string
-            event_id = event_data.get('id', '')
-            event_type = event_data.get('event', '')
-            signature_string = f"{event_id}{event_type}{timestamp}"
-            
-            # Calculate expected signature
-            expected_signature = hashlib.sha256(
-                f"{signature_string}{self.events_secret}".encode()
-            ).hexdigest()
-            
-            return expected_signature == received_signature
+            if not checksum:
+                return False
+
+            signature = event_data.get("signature", {}) or {}
+            properties = signature.get("properties", []) or []
+            timestamp = event_data.get("timestamp", "")
+            data = event_data.get("data", {}) or {}
+
+            if not properties or timestamp == "":
+                return False
+
+            values = "".join(self._get_property_value(data, prop) for prop in properties)
+            payload_to_sign = f"{values}{timestamp}{self.events_secret}"
+            expected_checksum = hashlib.sha256(payload_to_sign.encode("utf-8")).hexdigest()
+
+            return expected_checksum.lower() == checksum.lower()
             
         except Exception as e:
-            logger.error(f"Error verifying signature: {str(e)}")
+            logger.error(f"Error verifying webhook checksum: {str(e)}")
             return False
     
     def tokenize_card(

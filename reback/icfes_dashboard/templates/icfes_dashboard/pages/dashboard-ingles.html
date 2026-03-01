@@ -42,7 +42,30 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <!-- ══ NAVEGACIÓN STICKY ════════════════════════════════════════════ -->
+    <div id="dash-sticky-nav" class="mb-3" style="position:sticky;top:70px;z-index:900;">
+        <div class="card py-2 px-3 shadow-sm">
+            <div class="d-flex gap-1 flex-wrap align-items-center" style="font-size:11px;">
+                <span class="text-muted me-1" style="font-size:10px;letter-spacing:.5px;text-transform:uppercase;">Ir a:</span>
+                <a href="#sec-kpi"        class="btn btn-sm btn-outline-secondary py-0 px-2">KPIs</a>
+                <a href="#sec-tendencia"  class="btn btn-sm btn-outline-secondary py-0 px-2">Evolución</a>
+                <a href="#sec-brechas"    class="btn btn-sm btn-outline-danger    py-0 px-2">Brechas</a>
+                <a href="#sec-animo"      class="btn btn-sm btn-outline-info      py-0 px-2">Estado Ánimo</a>
+                <a href="#sec-corr"       class="btn btn-sm btn-outline-primary   py-0 px-2">Correlación</a>
+                <a href="#sec-potencial"  class="btn btn-sm btn-outline-success   py-0 px-2">Potencial ML</a>
+                <a href="#sec-mapa"       class="btn btn-sm btn-outline-secondary py-0 px-2">Mapa</a>
+                <a href="#sec-ranking"    class="btn btn-sm btn-outline-secondary py-0 px-2">Ranking</a>
+                <a href="#sec-prediccion" class="btn btn-sm btn-outline-warning   py-0 px-2">Predicción</a>
+                <a href="#sec-prioridad"  class="btn btn-sm btn-outline-secondary py-0 px-2">Prioridad</a>
+                <a href="#sec-clusters"   class="btn btn-sm btn-outline-secondary py-0 px-2">Clusters</a>
+                <a href="#sec-regiones"  class="btn btn-sm btn-outline-teal      py-0 px-2" style="color:#0d9488;border-color:#0d9488;">Regiones</a>
+                <a href="#sec-ia"        class="btn btn-sm btn-outline-secondary py-0 px-2">Análisis IA</a>
+            </div>
+        </div>
+    </div>
+
     <!-- KPI CARDS -->
+    <div id="sec-kpi"></div>
     <div class="row" id="kpi-row">
         <!-- Promedio Nacional -->
         <div class="col-md-3">
@@ -209,6 +232,49 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         DIAGNÓSTICO RÁPIDO — Panel de sparklines
+         Muestra de un vistazo: evolución MCER + tendencia de puntajes
+         Datos: api_ingles_mcer_historico + api_ingles_tendencia (ya cacheados)
+    ══════════════════════════════════════════════════════════════ -->
+    <div class="row mt-3" id="spark-section">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3 px-4">
+                    <div class="row g-0">
+
+                        <!-- Panel izquierdo: Distribución MCER (6/12) -->
+                        <div class="col-md-6 pe-md-4">
+                            <p class="text-uppercase fw-semibold text-secondary mb-2" style="font-size:10px;letter-spacing:.8px;">
+                                <i class="bx bx-bar-chart-alt-2 me-1"></i>Niveles MCER
+                                <span class="ms-2 text-muted fw-normal" id="spark-period-left" style="text-transform:none;letter-spacing:0;">— cargando</span>
+                            </p>
+                            <div id="spark-mcer-rows">
+                                <div class="text-muted text-center py-2" style="font-size:12px;">
+                                    <div class="spinner-border spinner-border-sm me-1"></div> Cargando...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel derecho: Tendencia de puntajes (6/12 — border-start como separador) -->
+                        <div class="col-md-6 ps-md-4 mt-3 mt-md-0 border-start">
+                            <p class="text-uppercase fw-semibold text-secondary mb-2" style="font-size:10px;letter-spacing:.8px;">
+                                <i class="bx bx-trending-up me-1"></i>Tendencia de Puntajes
+                                <span class="ms-2 text-muted fw-normal" id="spark-period-right" style="text-transform:none;letter-spacing:0;">— cargando</span>
+                            </p>
+                            <div id="spark-tend-rows">
+                                <div class="text-muted text-center py-2" style="font-size:12px;">
+                                    <div class="spinner-border spinner-border-sm me-1"></div> Cargando...
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- STORYTELLING: Narrativa dinámica del inglés en Colombia -->
     <div class="row mt-3 mb-1" id="story-section">
         <div class="col-12">
@@ -231,6 +297,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-tendencia"></div>
     <!-- ROW 1: Charts -->
     <div class="row mt-2">
         <!-- Tendencia Histórica -->
@@ -291,6 +358,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-brechas"></div>
     <!-- ROW 3: Brechas Socioeconómicas -->
     <div class="row mt-4">
         <div class="col-12">
@@ -377,6 +445,45 @@ Idioma Extranjero' %}
                             </div>
                         </div>
                     </div>
+                    <!-- Brechas institucionales: bilingüe, calendario, área -->
+                    <hr class="my-4">
+                    <h6 class="fw-semibold mb-3" style="font-size:13px;">
+                        <i class="bx bx-buildings me-1 text-danger"></i>Brechas por Tipo de Institución
+                        <span class="ms-2 text-muted fw-normal" style="font-size:11px;">Colegio bilingüe, calendario y zona geográfica</span>
+                    </h6>
+                    <div class="row g-4" id="brechas-institucional">
+                        <!-- Bilingüe vs No Bilingüe -->
+                        <div class="col-md-4">
+                            <h6 class="fw-medium text-muted mb-2" style="font-size:12px;">
+                                <i class="bx bx-globe me-1"></i>Bilingüe vs No Bilingüe
+                            </h6>
+                            <div style="position:relative;height:140px;">
+                                <canvas id="chart-bilingue"></canvas>
+                            </div>
+                            <div id="insight-bilingue" class="mt-2 text-muted d-none" style="font-size:11px;"></div>
+                        </div>
+                        <!-- Calendario A vs B -->
+                        <div class="col-md-4">
+                            <h6 class="fw-medium text-muted mb-2" style="font-size:12px;">
+                                <i class="bx bx-calendar me-1"></i>Calendario A vs Calendario B
+                            </h6>
+                            <div style="position:relative;height:140px;">
+                                <canvas id="chart-calendario"></canvas>
+                            </div>
+                            <div id="insight-calendario" class="mt-2 text-muted d-none" style="font-size:11px;"></div>
+                        </div>
+                        <!-- Urbano vs Rural -->
+                        <div class="col-md-4">
+                            <h6 class="fw-medium text-muted mb-2" style="font-size:12px;">
+                                <i class="bx bx-map-pin me-1"></i>Urbano vs Rural
+                            </h6>
+                            <div style="position:relative;height:140px;">
+                                <canvas id="chart-area"></canvas>
+                            </div>
+                            <div id="insight-area" class="mt-2 text-muted d-none" style="font-size:11px;"></div>
+                        </div>
+                    </div>
+
                     <div id="brechas-loading" class="text-center py-4">
                         <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
                         <span class="text-muted" style="font-size:13px;">Calculando brechas socioeconómicas...</span>
@@ -386,6 +493,48 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <!-- ROW 3.5: Correlación Inglés vs Otras Materias -->
+    <div id="sec-corr"></div>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-1">
+                        <i class="bx bx-scatter-chart me-2 text-primary"></i>Correlación: Inglés y Otras Materias
+                    </h4>
+                    <p class="text-muted mb-3" style="font-size:13px;">
+                        ¿Mejorar en inglés se asocia con mejorar en todo lo demás? Correlación de Pearson entre el
+                        promedio de inglés y cada área del ICFES a nivel de colegio.
+                        <strong>0.78 con el puntaje global</strong> — la mayor correlación inter-materia del dataset.
+                    </p>
+                    <div class="row g-4">
+                        <!-- Barras de correlación -->
+                        <div class="col-lg-5">
+                            <div style="position:relative;height:220px;">
+                                <canvas id="chart-correlacion-barras"></canvas>
+                            </div>
+                        </div>
+                        <!-- Scatter inglés vs global -->
+                        <div class="col-lg-7">
+                            <h6 class="fw-medium text-muted mb-2" style="font-size:12px;">
+                                <i class="bx bx-dots-horizontal-rounded me-1"></i>Scatter por colegio: Inglés vs Puntaje Global
+                                <span class="ms-2 badge bg-primary-subtle text-primary-emphasis fw-normal" style="font-size:10px;">muestra 300 colegios</span>
+                            </h6>
+                            <div style="position:relative;height:220px;">
+                                <canvas id="chart-scatter-ingles"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="corr-loading" class="text-center py-3 d-none">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        <span class="text-muted" style="font-size:13px;">Calculando correlaciones...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sec-animo"></div>
     <!-- ROW 4: Estado de Ánimo vs Inglés -->
     <div class="row mt-4">
         <div class="col-12">
@@ -407,6 +556,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-potencial"></div>
     <!-- ROW 5: Potencial en Inglés por Colegio (ML) -->
     <div class="row mt-4">
         <!-- Colegios Transformadores -->
@@ -473,6 +623,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-mapa"></div>
     <!-- ROW 6: Mapa de Rendimiento Departamental -->
     <div class="row mt-4">
         <div class="col-12">
@@ -493,6 +644,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-ranking"></div>
     <!-- ROW 7: Tabla de Excelencia (Top Colegios) -->
     <div class="row mt-4">
         <div class="col-12">
@@ -576,6 +728,7 @@ Idioma Extranjero' %}
     </div>
 
 
+    <div id="sec-prediccion"></div>
     <!-- ROW 9: Predicciones de Inglés 2025 (GBM ML) -->
     <div class="row mt-4">
         <div class="col-12 mb-2">
@@ -641,6 +794,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-prioridad"></div>
     <!-- ROW 10: Prioridad de Intervención en Inglés -->
     <div class="row mt-4">
         <div class="col-12">
@@ -687,6 +841,7 @@ Idioma Extranjero' %}
         </div>
     </div>
 
+    <div id="sec-clusters"></div>
     <!-- ROW 11: Clusters Departamentales por Trayectoria -->
     <div class="row mt-4 mb-4">
         <div class="col-12 mb-2">
@@ -705,7 +860,39 @@ Idioma Extranjero' %}
         </div>
     </div>
 
-    <!-- ROW 12: Análisis Narrativo con IA -->
+    <div id="sec-regiones"></div>
+    <!-- ROW 12: Tendencias Regionales de Inglés -->
+    <div class="row mt-4 mb-2">
+        <div class="col-12 mb-2">
+            <h5 class="fw-semibold mb-0">
+                <i class="bx bx-line-chart me-2" style="color:#0d9488;"></i>Inglés por Región: Trayectorias Históricas
+                <span class="badge ms-2" style="font-size:11px; background:#e0f2f1; color:#0d9488;">6 regiones · desde 2010</span>
+            </h5>
+            <p class="text-muted mb-0" style="font-size:13px;">Evolución del promedio de inglés por macro-región. Las brechas regionales revelan patrones estructurales persistentes.</p>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-4 align-items-start">
+                        <div class="col-lg-9">
+                            <canvas id="chart-regiones-ingles" style="min-height:460px;"></canvas>
+                        </div>
+                        <div class="col-lg-3">
+                            <h6 class="fw-semibold mb-3">Promedio 2024 por Región</h6>
+                            <div id="regiones-ranking-list" class="text-muted" style="font-size:13px;">
+                                <div class="spinner-border spinner-border-sm me-2"></div>Cargando...
+                            </div>
+                            <hr class="my-3">
+                            <div id="regiones-insight" class="text-muted" style="font-size:12.5px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sec-ia"></div>
+    <!-- ROW 13: Análisis Narrativo con IA -->
     <div class="row mt-4 mb-4">
         <div class="col-12">
             <div class="card" style="border-top: 3px solid #6f42c1;">
@@ -883,6 +1070,8 @@ Idioma Extranjero' %}
         var chartMapaDepto = null;
         var chartSerie = null;
         var modalIngles = null;
+        var chartCorrBarras = null;
+        var chartScatter = null;
 
         function getAno() { return document.getElementById('filter-ano').value; }
         function getDepto() { return document.getElementById('filter-depto').value; }
@@ -903,6 +1092,7 @@ Idioma Extranjero' %}
         document.getElementById('filter-depto').addEventListener('change', loadAll);
 
         function loadAll() {
+            loadSparklines();
             loadStory();
             loadKpis();
             loadTendencia();
@@ -916,6 +1106,7 @@ Idioma Extranjero' %}
             loadPrediccion();
             loadPrioridad('');
             loadAnalisisIA();
+            loadCorrelacion();
         }
 
         // ── KPIs ──────────────────────────────────────────────
@@ -1182,8 +1373,66 @@ Idioma Extranjero' %}
                     renderEstrato(data.por_estrato || []);
                     renderAcceso(data.por_acceso || []);
                     renderEducacion(data.por_educacion_padre || [], data.por_educacion_madre || [], data.story_educacion || null);
+                    renderBrecha2(data.por_bilingue   || [], 'chart-bilingue',   'tipo_colegio', '#0d6efd', 'insight-bilingue',   'Bilingüe',   'No Bilingüe');
+                    renderBrecha2(data.por_calendario || [], 'chart-calendario',  'calendario',   '#6610f2', 'insight-calendario', 'Calendario B', 'Calendario A');
+                    renderBrecha2(data.por_area       || [], 'chart-area',        'area',         '#198754', 'insight-area',       'Urbano',      'Rural');
                 })
                 .catch(e => console.error('loadBrechas error', e));
+        }
+
+        /* Renderiza un horizontal bar chart de 2 categorías con insight de brecha */
+        var chartBilingue = null, chartCalendario = null, chartArea = null;
+        function renderBrecha2(items, canvasId, labelKey, color, insightId, labelA, labelB) {
+            if (!items.length) return;
+            var ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            // destruir si ya existe
+            if (canvasId === 'chart-bilingue'   && chartBilingue)   { chartBilingue.destroy(); }
+            if (canvasId === 'chart-calendario'  && chartCalendario)  { chartCalendario.destroy(); }
+            if (canvasId === 'chart-area'        && chartArea)        { chartArea.destroy(); }
+
+            var labels = items.map(d => d[labelKey]);
+            var values = items.map(d => num(d.avg_ingles));
+            var chart  = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [color + 'cc', color + '44'],
+                        borderColor:     [color, color + '88'],
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: c => ' ' + c.raw.toFixed(1) + ' pts' } }
+                    },
+                    scales: {
+                        x: { min: 40, ticks: { font: { size: 10 } }, grid: { color: 'rgba(128,128,128,.1)' } },
+                        y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+            if (canvasId === 'chart-bilingue')   chartBilingue   = chart;
+            if (canvasId === 'chart-calendario')  chartCalendario = chart;
+            if (canvasId === 'chart-area')        chartArea       = chart;
+
+            // Insight de brecha
+            if (items.length >= 2) {
+                var sorted = [...items].sort((a, b) => num(b.avg_ingles) - num(a.avg_ingles));
+                var gap    = (num(sorted[0].avg_ingles) - num(sorted[sorted.length-1].avg_ingles)).toFixed(1);
+                var el     = document.getElementById(insightId);
+                if (el) {
+                    el.innerHTML = '<i class="bx bx-right-arrow-alt me-1"></i>Brecha: <strong>' + gap + ' pts</strong>';
+                    el.classList.remove('d-none');
+                }
+            }
         }
 
         function renderEstrato(items) {
@@ -2120,10 +2369,364 @@ Idioma Extranjero' %}
                 });
         });
 
+        // ── Diagnóstico Rápido: Sparklines ───────────────────
+        function mkSparkSvg(values, color, w, h) {
+            w = w || 100; h = h || 24;
+            if (!values || values.length < 2) return '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"></svg>';
+            var min = Math.min.apply(null, values);
+            var max = Math.max.apply(null, values);
+            var range = max - min || 1;
+            var n = values.length;
+            var pts = values.map(function(v, i) {
+                var x = ((i / (n - 1)) * (w - 2) + 1).toFixed(1);
+                var y = (h - 3 - ((v - min) / range) * (h - 6) + 1).toFixed(1);
+                return x + ',' + y;
+            });
+            var polyLine = pts.join(' ');
+            var fillPath = '1,' + (h - 1) + ' ' + polyLine + ' ' + (w - 1) + ',' + (h - 1);
+            return '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="display:block;overflow:visible;">' +
+                '<polygon points="' + fillPath + '" fill="' + color + '" opacity=".12"/>' +
+                '<polyline points="' + polyLine + '" fill="none" stroke="' + color +
+                    '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>' +
+                '<circle cx="' + pts[n - 1].split(',')[0] + '" cy="' + pts[n - 1].split(',')[1] + '" r="2.5" fill="' + color + '"/>' +
+                '</svg>';
+        }
+
+        function mkSparkRow(label, values, color, currentVal, suffix, trendUp, labelColor) {
+            var n = values.length;
+            var arrowHtml = '';
+            if (trendUp !== null && n >= 2) {
+                var delta = (values[n - 1] - values[n - 2]);
+                var aColor = trendUp ? '#198754' : '#dc3545';
+                var aIcon  = trendUp ? '▲' : '▼';
+                arrowHtml = '<span style="font-size:9px;color:' + aColor + ';margin-left:2px;">' + aIcon + '</span>';
+            }
+            return '<div class="d-flex align-items-center" style="padding:4px 0;border-bottom:1px solid var(--bs-border-color);">' +
+                '<span style="width:48px;font-size:11px;color:#6c757d;flex-shrink:0;line-height:1.2;">' + label + '</span>' +
+                '<div style="flex:1;min-width:0;padding:0 6px;">' + mkSparkSvg(values, color) + '</div>' +
+                '<span style="width:56px;text-align:right;font-size:13px;font-weight:700;color:' + (labelColor || color) + ';flex-shrink:0;">' +
+                    currentVal + suffix + '</span>' +
+                arrowHtml +
+                '</div>';
+        }
+
+        function loadSparklines() {
+            var depto = getDepto();
+            var deptoParam = depto ? 'departamento=' + encodeURIComponent(depto) : '';
+            var errHtml = '<p class="text-danger mb-0" style="font-size:12px;">Error al cargar.</p>';
+
+            // Ambos paneles comparten datos: mcer para izquierda y parte derecha,
+            // tendencia solo para puntaje inglés en la derecha.
+            var mcerCache = null;
+            var tendCache = null;
+
+            function renderRight() {
+                if (!mcerCache || !tendCache) return; // esperar los dos
+
+                var mData = mcerCache;
+                var tData = tendCache;
+                var mn = mData.length;
+                var tn = tData.length;
+                if (!mn || !tn) {
+                    document.getElementById('spark-tend-rows').innerHTML =
+                        '<p class="text-muted mb-0" style="font-size:12px;">Sin datos.</p>';
+                    return;
+                }
+
+                var mCur  = mData[mn - 1];
+                var mPrev = mData[mn - 2] || mCur;
+                var tCur  = tData[tn - 1];
+                var tPrev = tData[tn - 2] || tCur;
+                var tBase = tData[0];
+
+                // Series para las sparklines del panel derecho
+                var ingles  = tData.map(function(d) { return num(d.promedio_ingles); });
+                var b1serie = mData.map(function(d) { return num(d.pct_b1); });
+                var a2plus  = mData.map(function(d) { return num(d.pct_a2) + num(d.pct_b1); });
+                var deltaBase = num(tCur.promedio_ingles) - num(tBase.promedio_ingles);
+
+                // Período del panel derecho usa rango de tendencia
+                var tAnos = tData.map(function(d) { return d.ano; });
+                document.getElementById('spark-period-right').textContent =
+                    tAnos[0] + '\u2013' + tAnos[tn - 1];
+
+                var rows = [
+                    // Puntaje inglés (misma escala 0-100, coherente)
+                    mkSparkRow('Inglés',
+                        ingles, '#0d6efd',
+                        num(tCur.promedio_ingles).toFixed(1), ' pts',
+                        num(tCur.promedio_ingles) > num(tPrev.promedio_ingles)),
+
+                    // % que supera el nivel básico (A2 + B1)
+                    mkSparkRow('≥ A2',
+                        a2plus, '#0dcaf0',
+                        (num(mCur.pct_a2) + num(mCur.pct_b1)).toFixed(1), '%',
+                        (num(mCur.pct_a2) + num(mCur.pct_b1)) > (num(mPrev.pct_a2) + num(mPrev.pct_b1))),
+
+                    // % B1+ — la meta del MEN
+                    mkSparkRow('B1 +',
+                        b1serie, '#198754',
+                        num(mCur.pct_b1).toFixed(1), '%',
+                        num(mCur.pct_b1) > num(mPrev.pct_b1)),
+
+                    // Ganancia total desde año base (solo dos puntos — dirección clara)
+                    mkSparkRow('vs ' + tBase.ano,
+                        [num(tBase.promedio_ingles), num(tCur.promedio_ingles)],
+                        deltaBase >= 0 ? '#198754' : '#dc3545',
+                        (deltaBase >= 0 ? '+' : '') + deltaBase.toFixed(1), ' pts',
+                        deltaBase >= 0),
+                ];
+                document.getElementById('spark-tend-rows').innerHTML = rows.join('');
+            }
+
+            // ── Panel izquierdo: distribución MCER ────────────
+            fetch(withBust('/icfes/api/ingles/mcer-historico/?' + deptoParam))
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    var data = json.data || [];
+                    if (!data.length) {
+                        document.getElementById('spark-mcer-rows').innerHTML =
+                            '<p class="text-muted mb-0" style="font-size:12px;">Sin datos disponibles.</p>';
+                        return;
+                    }
+                    mcerCache = data;
+                    var n   = data.length;
+                    var cur  = data[n - 1];
+                    var prev = data[n - 2] || cur;
+                    var anos = data.map(function(d) { return d.ano; });
+                    document.getElementById('spark-period-left').textContent =
+                        anos[0] + '\u2013' + anos[n - 1];
+
+                    var rows = [
+                        mkSparkRow('Pre A1',
+                            data.map(function(d) { return num(d.pct_pre_a1); }),
+                            '#dc3545', num(cur.pct_pre_a1).toFixed(1), '%',
+                            num(cur.pct_pre_a1) > num(prev.pct_pre_a1)),
+                        mkSparkRow('A1',
+                            data.map(function(d) { return num(d.pct_a1); }),
+                            '#fd7e14', num(cur.pct_a1).toFixed(1), '%',
+                            num(cur.pct_a1) > num(prev.pct_a1)),
+                        mkSparkRow('A2',
+                            data.map(function(d) { return num(d.pct_a2); }),
+                            '#0dcaf0', num(cur.pct_a2).toFixed(1), '%',
+                            num(cur.pct_a2) > num(prev.pct_a2)),
+                        mkSparkRow('B1 +',
+                            data.map(function(d) { return num(d.pct_b1); }),
+                            '#198754', num(cur.pct_b1).toFixed(1), '%',
+                            num(cur.pct_b1) > num(prev.pct_b1)),
+                    ];
+                    document.getElementById('spark-mcer-rows').innerHTML = rows.join('');
+                    renderRight();
+                })
+                .catch(function() {
+                    document.getElementById('spark-mcer-rows').innerHTML = errHtml;
+                });
+
+            // ── Datos de puntaje: solo inglés (escala 0-100) ──
+            fetch(withBust('/icfes/api/ingles/tendencia/?' + deptoParam))
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    tendCache = (json.data || []).filter(function(d) { return d.ano >= 2014; });
+                    renderRight();
+                })
+                .catch(function() {
+                    document.getElementById('spark-tend-rows').innerHTML = errHtml;
+                });
+        }
+
+        // ── Correlación Inglés vs Otras Materias ────────────
+        function loadCorrelacion() {
+            var ano = getAno() || '2024';
+            var url = '/icfes/api/ingles/correlaciones/?ano=' + ano;
+            fetch(withBust(url))
+                .then(r => r.json())
+                .then(json => {
+                    var d = json.data || {};
+                    var corrs = d.correlaciones || [];
+                    var scatter = d.scatter_sample || [];
+                    if (!corrs.length) return;
+
+                    // Chart 1: barras horizontales de correlación
+                    var ctx1 = document.getElementById('chart-correlacion-barras').getContext('2d');
+                    if (chartCorrBarras) { chartCorrBarras.destroy(); }
+                    chartCorrBarras = new Chart(ctx1, {
+                        type: 'bar',
+                        data: {
+                            labels: corrs.map(c => c.label),
+                            datasets: [{
+                                label: 'Correlación con Inglés (r)',
+                                data: corrs.map(c => c.corr),
+                                backgroundColor: corrs.map(c => c.color + 'bb'),
+                                borderColor:     corrs.map(c => c.color),
+                                borderWidth: 1,
+                                borderRadius: 5,
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: { label: c => ' r = ' + c.raw.toFixed(3) } }
+                            },
+                            scales: {
+                                x: { min: 0, max: 1, ticks: { font: { size: 10 } }, grid: { color: 'rgba(128,128,128,.1)' } },
+                                y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                            }
+                        }
+                    });
+
+                    // Chart 2: scatter inglés vs global
+                    if (scatter.length) {
+                        var oficial  = scatter.filter(p => (p.sector||'').toUpperCase().includes('OFICIAL') && !(p.sector||'').toUpperCase().includes('NO'));
+                        var privado  = scatter.filter(p => (p.sector||'').toUpperCase().includes('NO') || (p.sector||'').toUpperCase().includes('PRIVADO'));
+                        var ctx2 = document.getElementById('chart-scatter-ingles').getContext('2d');
+                        if (chartScatter) { chartScatter.destroy(); }
+                        chartScatter = new Chart(ctx2, {
+                            type: 'scatter',
+                            data: {
+                                datasets: [
+                                    {
+                                        label: 'Oficial',
+                                        data: oficial.map(p => ({ x: p.x, y: p.y, label: p.nombre_colegio })),
+                                        backgroundColor: 'rgba(13,110,253,.35)',
+                                        pointRadius: 3,
+                                    },
+                                    {
+                                        label: 'No Oficial',
+                                        data: privado.map(p => ({ x: p.x, y: p.y, label: p.nombre_colegio })),
+                                        backgroundColor: 'rgba(253,126,20,.45)',
+                                        pointRadius: 3,
+                                    },
+                                ]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 10 } },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(c) {
+                                                var p = c.raw;
+                                                return (p.label || '') + ' — Inglés: ' + p.x + ' | Global: ' + p.y;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: { title: { display: true, text: 'Puntaje Inglés', font: { size: 10 } }, ticks: { font: { size: 9 } } },
+                                    y: { title: { display: true, text: 'Puntaje Global', font: { size: 10 } }, ticks: { font: { size: 9 } } }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(e => console.error('loadCorrelacion error', e));
+        }
+
+        // ── Tendencias Regionales ──────────────────────────────────────────────
+        var chartRegiones = null;
+
+        function loadTendenciasRegionales() {
+            fetch('/icfes/api/ingles/tendencias-regionales/?desde=2010')
+                .then(r => r.json())
+                .then(function(json) {
+                    var d = json.data || {};
+                    var series = d.series || [];
+                    var anos   = d.anos   || [];
+                    if (!series.length || !anos.length) return;
+
+                    // ── Line chart ──────────────────────────────────────────
+                    var datasets = series.map(function(s) {
+                        var byAno = {};
+                        s.data.forEach(function(pt) { byAno[pt.ano] = pt.avg_ingles; });
+                        return {
+                            label:           s.label,
+                            data:            anos.map(function(a) { return byAno[a] || null; }),
+                            borderColor:     s.color,
+                            backgroundColor: s.color + '22',
+                            pointRadius:     2,
+                            tension:         0.3,
+                            spanGaps:        true,
+                        };
+                    });
+
+                    var ctx = document.getElementById('chart-regiones-ingles').getContext('2d');
+                    if (chartRegiones) { chartRegiones.destroy(); }
+                    chartRegiones = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels: anos, datasets: datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(c) {
+                                            var v = c.parsed.y;
+                                            return c.dataset.label + ': ' + (v !== null ? v.toFixed(1) : 'N/D');
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { ticks: { font: { size: 9 }, maxTicksLimit: 10 } },
+                                y: {
+                                    title: { display: true, text: 'Promedio Inglés', font: { size: 10 } },
+                                    ticks: { font: { size: 9 } }
+                                }
+                            }
+                        }
+                    });
+
+                    // ── Ranking 2024 ─────────────────────────────────────────
+                    var anoUltimo = anos[anos.length - 1];
+                    var ranking = series.map(function(s) {
+                        var last = s.data.filter(function(pt) { return pt.ano === anoUltimo; })[0];
+                        return { label: s.label, color: s.color, val: last ? last.avg_ingles : null };
+                    }).filter(function(r) { return r.val !== null; })
+                      .sort(function(a, b) { return b.val - a.val; });
+
+                    var listEl = document.getElementById('regiones-ranking-list');
+                    if (listEl) {
+                        listEl.innerHTML = ranking.map(function(r, i) {
+                            var bar = Math.round((r.val / 75) * 100);
+                            return '<div class="mb-2">' +
+                                '<div class="d-flex justify-content-between mb-1">' +
+                                    '<span><span class="fw-semibold">' + (i+1) + '.</span> ' + r.label + '</span>' +
+                                    '<span class="fw-bold" style="color:' + r.color + ';">' + r.val.toFixed(1) + '</span>' +
+                                '</div>' +
+                                '<div class="progress" style="height:5px;">' +
+                                    '<div class="progress-bar" style="width:' + bar + '%;background:' + r.color + ';"></div>' +
+                                '</div></div>';
+                        }).join('');
+                    }
+
+                    // ── Insight ──────────────────────────────────────────────
+                    if (ranking.length >= 2) {
+                        var top  = ranking[0];
+                        var bot  = ranking[ranking.length - 1];
+                        var gap  = (top.val - bot.val).toFixed(1);
+                        var insEl = document.getElementById('regiones-insight');
+                        if (insEl) {
+                            insEl.innerHTML = '<i class="bx bx-info-circle me-1 text-teal"></i>' +
+                                'En ' + anoUltimo + ', <strong style="color:' + top.color + ';">' + top.label + '</strong>' +
+                                ' lidera con <strong>' + top.val.toFixed(1) + ' pts</strong>. ' +
+                                'La brecha con <strong style="color:' + bot.color + ';">' + bot.label + '</strong>' +
+                                ' (' + bot.val.toFixed(1) + ' pts) es de <strong>' + gap + ' puntos</strong>.';
+                        }
+                    }
+                })
+                .catch(function(e) { console.error('loadTendenciasRegionales error', e); });
+        }
+
         // Initialize
         loadAll();
-        loadBrechas();  // Solo una vez (no depende de filtros)
-        loadClustersDepto();  // Solo una vez (datos estáticos)
+        loadBrechas();             // Solo una vez (no depende de filtros)
+        loadClustersDepto();       // Solo una vez (datos estáticos)
+        loadTendenciasRegionales(); // Solo una vez (datos históricos estáticos)
 
     })();
 </script>

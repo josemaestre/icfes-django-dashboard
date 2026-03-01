@@ -17,10 +17,22 @@ django.setup()
 from django.conf import settings
 from reback.users.models import User
 
-def generate_signature(event_id, event_type, timestamp, secret):
-    """Generates the Wompi signature."""
-    signature_string = f"{event_id}{event_type}{timestamp}"
-    return hashlib.sha256(f"{signature_string}{secret}".encode()).hexdigest()
+def generate_checksum(payload, secret):
+    """Generates the Wompi webhook checksum from signature.properties."""
+    properties = payload.get("signature", {}).get("properties", [])
+    data = payload.get("data", {})
+    timestamp = payload.get("timestamp")
+
+    def resolve(path):
+        current = data
+        for key in path.split("."):
+            if not isinstance(current, dict):
+                return ""
+            current = current.get(key)
+        return "" if current is None else str(current)
+
+    values = "".join(resolve(prop) for prop in properties)
+    return hashlib.sha256(f"{values}{timestamp}{secret}".encode()).hexdigest()
 
 def simulate_approved_payment(user_email, plan_tier='premium', amount_in_cents=100000):
     """Simulates an APPROVED transaction webhook from Wompi."""
@@ -73,27 +85,19 @@ def simulate_approved_payment(user_email, plan_tier='premium', amount_in_cents=1
         "id": event_id
     }
 
-    # 2. Generate Signature Header
-    # Wompi sends signature in header X-Event-Signature: timestamp.checksum
-    signature_hash = generate_signature(event_id, event_type, timestamp, "test_events_pAgyO90vXNik4WKEpTHdifl2lRmWIsC2")
-    header_signature = f"{timestamp}.{signature_hash}"
+    # 2. Generate checksum for body + header
+    checksum = generate_checksum(payload, settings.WOMPI_EVENTS_SECRET)
+    payload["signature"]["checksum"] = checksum
 
     print(f"\n🚀 Sending Webhook to localhost...")
     print(f"Payload Reference: {reference}")
-    print(f"Signature Header: {header_signature}")
+    print(f"Checksum: {checksum}")
 
     # 3. Send POST request
     url = "http://localhost:8000/payments/wompi/webhook/"
-    headers = {
-        "Content-Type": "application/json",
-        "HTTP_X_EVENT_SIGNATURE": header_signature # Django converts X-Header to HTTP_X_HEADER
-    }
-    
-    # Note: requests library uses 'X-Event-Signature', Django sees 'HTTP_X_EVENT_SIGNATURE'
-    # We send standard header.
     requests_headers = {
         "Content-Type": "application/json",
-        "X-Event-Signature": header_signature
+        "X-Event-Checksum": checksum
     }
 
     try:

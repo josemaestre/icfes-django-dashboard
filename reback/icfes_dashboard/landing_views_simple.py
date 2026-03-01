@@ -93,21 +93,23 @@ def _find_school_by_slug(conn, slug):
         logger.warning("dim_colegios_slugs unavailable, using fallback lookup: %s", exc)
 
     municipio_hint = _extract_municipio_hint(slug)
+    # dim_colegios tiene nombres canónicos completos → generate_school_slug produce el slug correcto.
+    # fct_colegio_historico usa abreviaciones (ej: "I.E.") que generan slugs distintos.
     fallback_query = """
-        SELECT DISTINCT
-            codigo_dane AS codigo,
+        SELECT
+            colegio_bk  AS codigo,
             nombre_colegio,
             municipio,
             departamento,
             sector,
-            NULL AS direccion,
-            NULL AS telefono,
-            NULL AS email,
-            NULL AS rector
-        FROM gold.fct_colegio_historico
-        WHERE codigo_dane IS NOT NULL
-          AND nombre_colegio IS NOT NULL
+            direccion,
+            telefono,
+            email,
+            rector
+        FROM gold.dim_colegios
+        WHERE nombre_colegio IS NOT NULL
           AND municipio IS NOT NULL
+          AND sector != 'SINTETICO'
           AND LOWER(municipio) LIKE ?
     """
     candidates = conn.execute(
@@ -370,6 +372,7 @@ def school_landing_page(request, slug):
             historical_chart = {"years": [], "scores": [], "has_data": False}
             comparison = None
             indicators = None
+            indicator_badges = []
             performance_signals = {}
             action_recommendations = []
             narrative_summary = ""
@@ -475,6 +478,92 @@ def school_landing_page(request, slug):
                         "lc_excelencia": _to_float(indicators_data[7]),
                         "ing_b1": _to_float(indicators_data[8]),
                     }
+
+                    prev_indicators_query = """
+                        SELECT
+                            pct_excelencia_integral,
+                            pct_competencia_satisfactoria_integral,
+                            pct_perfil_stem_avanzado,
+                            pct_perfil_humanistico_avanzado
+                        FROM gold.fct_indicadores_desempeno
+                        WHERE colegio_bk = ?
+                          AND ano = ?
+                        LIMIT 1
+                    """
+                    prev_row = conn.execute(
+                        resolve_schema(prev_indicators_query), [codigo, str(int(latest_year) - 1)]
+                    ).fetchone()
+
+                    percentile_query = """
+                        WITH curr AS (
+                            SELECT
+                                pct_excelencia_integral AS excelencia_integral,
+                                pct_competencia_satisfactoria_integral AS competencia_satisfactoria,
+                                pct_perfil_stem_avanzado AS perfil_stem,
+                                pct_perfil_humanistico_avanzado AS perfil_humanistico
+                            FROM gold.fct_indicadores_desempeno
+                            WHERE colegio_bk = ?
+                              AND ano = ?
+                            LIMIT 1
+                        ),
+                        base AS (
+                            SELECT
+                                pct_excelencia_integral,
+                                pct_competencia_satisfactoria_integral,
+                                pct_perfil_stem_avanzado,
+                                pct_perfil_humanistico_avanzado
+                            FROM gold.fct_indicadores_desempeno
+                            WHERE ano = ?
+                        )
+                        SELECT
+                            ROUND(100.0 * SUM(CASE WHEN base.pct_excelencia_integral <= curr.excelencia_integral THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS rank_excelencia,
+                            ROUND(100.0 * SUM(CASE WHEN base.pct_competencia_satisfactoria_integral <= curr.competencia_satisfactoria THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS rank_competencia,
+                            ROUND(100.0 * SUM(CASE WHEN base.pct_perfil_stem_avanzado <= curr.perfil_stem THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS rank_stem,
+                            ROUND(100.0 * SUM(CASE WHEN base.pct_perfil_humanistico_avanzado <= curr.perfil_humanistico THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS rank_humanistico
+                        FROM base
+                        CROSS JOIN curr
+                    """
+                    percentile_row = conn.execute(
+                        resolve_schema(percentile_query), [codigo, latest_year, latest_year]
+                    ).fetchone()
+
+                    def _rank_tag(percentile):
+                        if percentile is None:
+                            return "Sin ranking nacional"
+                        if percentile >= 95:
+                            return "Top 5% nacional"
+                        if percentile >= 90:
+                            return "Top 10% nacional"
+                        if percentile >= 80:
+                            return "Top 20% nacional"
+                        if percentile >= 70:
+                            return "Top 30% nacional"
+                        return "En desarrollo"
+
+                    badge_defs = [
+                        ("Excelencia Integral", "Nivel 4 en todas las materias", "excelencia_integral", 0, 0, "bi-trophy-fill", "#f59e0b"),
+                        ("Competencia Satisfactoria", "Nivel 3+ en todas las materias", "competencia_satisfactoria", 1, 1, "bi-patch-check-fill", "#22c55e"),
+                        ("Perfil STEM Avanzado", "Nivel 4 en Math & Ciencias", "perfil_stem", 2, 2, "bi-cpu-fill", "#3b82f6"),
+                        ("Perfil Humanístico Avanzado", "Nivel 4 en Lectura & Sociales", "perfil_humanistico", 3, 3, "bi-book-fill", "#a855f7"),
+                    ]
+                    for title, subtitle, key, prev_idx, rank_idx, icon, color in badge_defs:
+                        value = indicators.get(key)
+                        prev_value = _to_float(prev_row[prev_idx]) if prev_row else None
+                        delta = _to_float(value - prev_value) if value is not None and prev_value is not None else None
+                        percentile = _to_float(percentile_row[rank_idx]) if percentile_row else None
+                        indicator_badges.append(
+                            {
+                                "title": title,
+                                "subtitle": subtitle,
+                                "value": value,
+                                "delta": delta,
+                                "delta_display": _format_signed(delta, " pp") if delta is not None else "Sin histórico",
+                                "delta_class": "positive" if delta is not None and delta >= 0 else "negative",
+                                "rank_label": _rank_tag(percentile),
+                                "icon": icon,
+                                "color": color,
+                            }
+                        )
 
                 global_history = [v for v in historical_chart["scores"] if v is not None]
                 if len(global_history) >= 2:
@@ -765,6 +854,7 @@ def school_landing_page(request, slug):
                 },
                 "comparison": comparison,
                 "indicators": indicators,
+                "indicator_badges": indicator_badges,
                 "performance_signals": performance_signals,
                 "action_recommendations": action_recommendations,
                 "narrative_summary": narrative_summary,

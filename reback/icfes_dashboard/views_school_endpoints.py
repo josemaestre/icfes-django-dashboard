@@ -323,6 +323,7 @@ def api_colegios_similares(request, colegio_sk):
         WHERE c.cluster_id = ?
           AND c.ano = ?
           AND f.colegio_sk != ? -- Excluir el propio colegio
+          AND f.nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
         ORDER BY diff_score ASC
         LIMIT ?
     """

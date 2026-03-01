@@ -39,7 +39,7 @@ function createSchoolGlobalGauge(score) {
 
     const options = {
         chart: {
-            height: 280,
+            height: 340,
             type: 'radialBar',
         },
         plotOptions: {
@@ -105,7 +105,7 @@ function createSchoolGlobalGauge(score) {
 function createSchoolSubjectGauge(elementId, score, color) {
     const options = {
         chart: {
-            height: 140,
+            height: 200,
             type: 'radialBar',
         },
         plotOptions: {
@@ -113,7 +113,7 @@ function createSchoolSubjectGauge(elementId, score, color) {
                 startAngle: -135,
                 endAngle: 135,
                 hollow: {
-                    size: '60%'
+                    size: '55%'
                 },
                 dataLabels: {
                     name: {
@@ -121,7 +121,7 @@ function createSchoolSubjectGauge(elementId, score, color) {
                     },
                     value: {
                         offsetY: 5,
-                        fontSize: '16px',
+                        fontSize: '20px',
                         fontWeight: 'bold',
                         formatter: function (val) {
                             return Math.round(val);

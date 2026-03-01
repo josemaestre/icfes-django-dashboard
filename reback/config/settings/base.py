@@ -93,6 +93,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="")
 PERF_LOGGING_ENABLED = env.bool("PERF_LOGGING_ENABLED", default=False)
 CACHE_DEBUG_HEADER_ENABLED = env.bool("CACHE_DEBUG_HEADER_ENABLED", default=False)
+PAYMENTS_DEBUG_LOGS = env.bool("PAYMENTS_DEBUG_LOGS", default=False)
 
 # APPS
 # ------------------------------------------------------------------------------

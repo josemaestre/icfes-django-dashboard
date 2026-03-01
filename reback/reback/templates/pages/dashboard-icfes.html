@@ -226,37 +226,41 @@
 
       <!-- Subject Gauges -->
       <div class="col-xxl-8 col-lg-7">
-        <div class="card">
+        <div class="card h-100">
           <div class="card-header">
             <h5 class="card-title mb-0">
               <i class="bx bx-book-open me-1"></i> Desempeño por Materia
             </h5>
           </div>
           <div class="card-body">
-            <div class="row text-center">
-              <div class="col">
+            <!-- Fila 1: 3 materias -->
+            <div class="row text-center g-0 mb-0">
+              <div class="col-4">
                 <div id="gauge-lectura" class="apex-charts"></div>
-                <p class="text-muted small mb-0 mt-1">Lectura Crítica</p>
-                <h6 class="mb-0 mt-1" id="gauge-lectura-value">--</h6>
+                <p class="text-muted small mb-0" style="margin-top:-8px;">Lectura Crítica</p>
+                <h6 class="mb-2 mt-1" id="gauge-lectura-value">--</h6>
               </div>
-              <div class="col">
+              <div class="col-4">
                 <div id="gauge-matematicas" class="apex-charts"></div>
-                <p class="text-muted small mb-0 mt-1">Matemáticas</p>
-                <h6 class="mb-0 mt-1" id="gauge-matematicas-value">--</h6>
+                <p class="text-muted small mb-0" style="margin-top:-8px;">Matemáticas</p>
+                <h6 class="mb-2 mt-1" id="gauge-matematicas-value">--</h6>
               </div>
-              <div class="col">
+              <div class="col-4">
                 <div id="gauge-ciencias" class="apex-charts"></div>
-                <p class="text-muted small mb-0 mt-1">C. Naturales</p>
-                <h6 class="mb-0 mt-1" id="gauge-ciencias-value">--</h6>
+                <p class="text-muted small mb-0" style="margin-top:-8px;">C. Naturales</p>
+                <h6 class="mb-2 mt-1" id="gauge-ciencias-value">--</h6>
               </div>
-              <div class="col">
+            </div>
+            <!-- Fila 2: 2 materias centradas -->
+            <div class="row text-center g-0 justify-content-center">
+              <div class="col-4">
                 <div id="gauge-sociales" class="apex-charts"></div>
-                <p class="text-muted small mb-0 mt-1">Sociales</p>
+                <p class="text-muted small mb-0" style="margin-top:-8px;">Sociales</p>
                 <h6 class="mb-0 mt-1" id="gauge-sociales-value">--</h6>
               </div>
-              <div class="col">
+              <div class="col-4">
                 <div id="gauge-ingles" class="apex-charts"></div>
-                <p class="text-muted small mb-0 mt-1">Inglés</p>
+                <p class="text-muted small mb-0" style="margin-top:-8px;">Inglés</p>
                 <h6 class="mb-0 mt-1" id="gauge-ingles-value">--</h6>
               </div>
             </div>
@@ -662,6 +666,7 @@
                   </div>
                   <ul class="list-unstyled mb-0 mt-2" id="schoolRiesgoFactores">
                   </ul>
+                  <div class="alert alert-light border-0 mt-2 mb-0 py-2 px-3" id="schoolRiesgoNarrativa" style="font-size:12.5px; display:none;"></div>
                 </div>
               </div>
             </div>
@@ -691,44 +696,39 @@
 
                 <!-- Subject Gauges -->
                 <div class="col-xxl-8 col-lg-7">
-                  <div class="row">
-                    <!-- Lectura Crítica -->
-                    <div class="col-md-2 col-4 mb-3">
+                  <!-- Fila 1: 3 materias -->
+                  <div class="row g-0 text-center">
+                    <div class="col-4">
                       <div id="school-gauge-lectura"></div>
-                      <p class="text-center small mt-1 mb-0">Lectura</p>
-                      <p class="text-center small mb-0" id="school-gauge-lectura-value">0</p>
+                      <p class="text-center small mt-1 mb-0">Lectura Crítica</p>
+                      <p class="text-center small mb-2 fw-semibold" id="school-gauge-lectura-value">0</p>
                       <div id="school-gauge-lectura-comparison" class="text-center small"></div>
                     </div>
-
-                    <!-- Matemáticas -->
-                    <div class="col-md-2 col-4 mb-3">
+                    <div class="col-4">
                       <div id="school-gauge-matematicas"></div>
                       <p class="text-center small mt-1 mb-0">Matemáticas</p>
-                      <p class="text-center small mb-0" id="school-gauge-matematicas-value">0</p>
+                      <p class="text-center small mb-2 fw-semibold" id="school-gauge-matematicas-value">0</p>
                       <div id="school-gauge-matematicas-comparison" class="text-center small"></div>
                     </div>
-
-                    <!-- C. Naturales -->
-                    <div class="col-md-2 col-4 mb-3">
+                    <div class="col-4">
                       <div id="school-gauge-ciencias"></div>
                       <p class="text-center small mt-1 mb-0">C. Naturales</p>
-                      <p class="text-center small mb-0" id="school-gauge-ciencias-value">0</p>
+                      <p class="text-center small mb-2 fw-semibold" id="school-gauge-ciencias-value">0</p>
                       <div id="school-gauge-ciencias-comparison" class="text-center small"></div>
                     </div>
-
-                    <!-- Sociales -->
-                    <div class="col-md-2 col-4 mb-3">
+                  </div>
+                  <!-- Fila 2: 2 materias centradas -->
+                  <div class="row g-0 text-center justify-content-center">
+                    <div class="col-4">
                       <div id="school-gauge-sociales"></div>
                       <p class="text-center small mt-1 mb-0">Sociales</p>
-                      <p class="text-center small mb-0" id="school-gauge-sociales-value">0</p>
+                      <p class="text-center small mb-0 fw-semibold" id="school-gauge-sociales-value">0</p>
                       <div id="school-gauge-sociales-comparison" class="text-center small"></div>
                     </div>
-
-                    <!-- Inglés -->
-                    <div class="col-md-2 col-4 mb-3">
+                    <div class="col-4">
                       <div id="school-gauge-ingles"></div>
                       <p class="text-center small mt-1 mb-0">Inglés</p>
-                      <p class="text-center small mb-0" id="school-gauge-ingles-value">0</p>
+                      <p class="text-center small mb-0 fw-semibold" id="school-gauge-ingles-value">0</p>
                       <div id="school-gauge-ingles-comparison" class="text-center small"></div>
                     </div>
                   </div>
@@ -1157,6 +1157,104 @@
                 </div>
               </div>
 
+              <!-- Inglés MCER Section -->
+              <div id="inglesSection" style="display: none;">
+                <div class="row mb-3">
+                  <div class="col-12">
+                    <div class="alert mb-0" style="background:linear-gradient(135deg,#0d9488 0%,#0891b2 100%);color:#fff;border:none;">
+                      <h6 class="alert-heading mb-1">
+                        <i class="bx bx-world me-1"></i> Inglés — Perfil MCER
+                        <span class="badge bg-white text-dark ms-2" style="font-size:0.6rem;">NUEVO</span>
+                      </h6>
+                      <p class="mb-0 small" style="opacity:.85;">Distribución por nivel MCER (A1 · A2 · B1+) y comparación con el promedio nacional</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- KPI cards -->
+                <div class="row mb-3 g-3 row-cols-2 row-cols-md-5">
+                  <div class="col">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                      <div class="card-body py-3">
+                        <p class="text-muted small mb-1">Puntaje Inglés</p>
+                        <h4 class="mb-0 fw-bold" id="ing-kpi-puntaje">--</h4>
+                        <small id="ing-kpi-puntaje-vs" class="text-muted">vs nacional --</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                      <div class="card-body py-3">
+                        <p class="text-muted small mb-1">Nivel B1+</p>
+                        <h4 class="mb-0 fw-bold text-success" id="ing-kpi-b1">--</h4>
+                        <small id="ing-kpi-b1-vs" class="text-muted">nacional --</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                      <div class="card-body py-3">
+                        <p class="text-muted small mb-1">Nivel A2</p>
+                        <h4 class="mb-0 fw-bold text-primary" id="ing-kpi-a2">--</h4>
+                        <small id="ing-kpi-a2-vs" class="text-muted">nacional --</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                      <div class="card-body py-3">
+                        <p class="text-muted small mb-1">Nivel A1</p>
+                        <h4 class="mb-0 fw-bold text-warning" id="ing-kpi-a1">--</h4>
+                        <small id="ing-kpi-a1-vs" class="text-muted">nacional --</small>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- KPI diferenciador: Inglés Fortaleza/Lastre -->
+                  <div class="col">
+                    <div class="card h-100 shadow-sm text-center border-2" id="ing-kpi-desviacion-card">
+                      <div class="card-body py-3">
+                        <p class="text-muted small mb-1" style="font-size:11px;">¿Fortaleza o Lastre?</p>
+                        <h4 class="mb-0 fw-bold" id="ing-kpi-desviacion">--</h4>
+                        <small id="ing-kpi-desviacion-label" class="fw-semibold" style="font-size:11px;">vs otras materias</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chart row -->
+                <div class="row mb-3 g-3">
+                  <!-- MCER stacked bar -->
+                  <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm h-100">
+                      <div class="card-header bg-transparent border-0 pb-0">
+                        <h6 class="mb-0">Distribución MCER — Colegio vs Nacional</h6>
+                      </div>
+                      <div class="card-body">
+                        <div id="chartIngMcer" style="min-height:220px;"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Historical trend -->
+                  <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm h-100">
+                      <div class="card-header bg-transparent border-0 pb-0">
+                        <h6 class="mb-0">Evolución Puntaje Inglés</h6>
+                      </div>
+                      <div class="card-body">
+                        <div id="chartIngHistorico" style="min-height:220px;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Insight bar -->
+                <div class="row mb-3">
+                  <div class="col-12">
+                    <div class="alert alert-light border-start border-4 py-2 px-3 mb-0" id="ingInsight" style="border-color:#0d9488!important;font-size:13px;"></div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Z-Score Explanation -->
               <div class="row mb-4" id="zscoreExplanation" style="display: none;">
                 <div class="col-12">
@@ -1472,6 +1570,39 @@
         </button>
       </div>
       <div class="card-body pt-3">
+
+        <!-- KPI tiles -->
+        <div class="row g-2 mb-3" id="detail-kpi-row">
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-2 text-center h-100">
+              <p class="text-muted small mb-0">Mejor Año</p>
+              <p class="fw-bold fs-6 mb-0" id="kpi-mejor-ano">—</p>
+              <p class="text-muted x-small mb-0" id="kpi-mejor-ano-year" style="font-size:.72rem"></p>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-2 text-center h-100">
+              <p class="text-muted small mb-0">Año Actual</p>
+              <p class="fw-bold fs-6 mb-0" id="kpi-actual">—</p>
+              <p class="text-muted mb-0" id="kpi-actual-year" style="font-size:.72rem"></p>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-2 text-center h-100">
+              <p class="text-muted small mb-0">vs Nacional</p>
+              <p class="fw-bold fs-6 mb-0" id="kpi-vs-nacional">—</p>
+              <p class="text-muted mb-0" style="font-size:.72rem">promedio país</p>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-2 text-center h-100">
+              <p class="text-muted small mb-0">Tendencia</p>
+              <p class="fw-bold fs-6 mb-0" id="kpi-tendencia">—</p>
+              <p class="text-muted mb-0" id="kpi-tendencia-label" style="font-size:.72rem"></p>
+            </div>
+          </div>
+        </div>
+
         <div class="row g-4">
 
           <!-- Radar: perfil por materia -->
@@ -1485,7 +1616,7 @@
           <!-- Tendencia histórica -->
           <div class="col-lg-5">
             <p class="text-muted small fw-semibold mb-1">
-              <i class="bx bx-line-chart me-1"></i>Evolución Histórica (desde 2000)
+              <i class="bx bx-line-chart me-1"></i>Evolución Histórica
             </p>
             <div id="detail-trend-chart">
               <div class="text-center text-muted py-5">
@@ -1511,14 +1642,26 @@
   <!-- Mapa Geográfico Tab -->
   <div class="tab-pane fade" id="mapa-geografico" role="tabpanel">
     <div class="card">
-      <div class="card-header">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
         <h5 class="card-title mb-0">
           <i class="bx bx-map me-2"></i>
-          Mapa de Concentración de Estudiantes
+          <span id="mapaTituloTexto">Mapa de Concentración de Estudiantes</span>
         </h5>
+        <!-- Modo toggle -->
+        <div class="btn-group" role="group">
+          <input type="radio" class="btn-check" name="mapaMode" id="modHeatmap" value="heatmap" checked>
+          <label class="btn btn-outline-secondary btn-sm" for="modHeatmap">
+            <i class="bx bx-cloud me-1"></i>Estudiantes
+          </label>
+          <input type="radio" class="btn-check" name="mapaMode" id="modColegios" value="colegios">
+          <label class="btn btn-outline-primary btn-sm" for="modColegios">
+            <i class="bx bx-buildings me-1"></i>Colegios
+          </label>
+        </div>
       </div>
       <div class="card-body">
-        <!-- Filtros -->
+        <!-- Filtros modo Estudiantes -->
+        <div id="filtrosHeatmap">
         <div class="row mb-3">
           <div class="col-md-3">
             <label class="form-label">Categoría</label>
@@ -1657,7 +1800,67 @@
           </div>
         </div>
 
-        <!-- Estadísticas -->
+        </div><!-- /filtrosHeatmap -->
+
+        <!-- Filtros modo Colegios -->
+        <div id="filtrosColegios" style="display:none;">
+          <div class="row mb-3 g-3">
+            <div class="col-md-3">
+              <label class="form-label">Año</label>
+              <select id="mapaColegiosAno" class="form-select">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Capa de datos</label>
+              <select id="mapaCapa" class="form-select">
+                <option value="rendimiento">🟢 Rendimiento Global</option>
+                <option value="riesgo">🔴 Riesgo ML</option>
+                <option value="potencial">✨ Potencial Contextual</option>
+                <option value="ingles">🌐 Inglés (% B1+)</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Departamento</label>
+              <select id="mapaColegiosDepto" class="form-select">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="w-100">
+                <div id="mapaColegiosLeyenda" class="p-2 rounded small" style="background:#f8f9fa;min-height:42px;"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Stats colegios -->
+          <div class="row mb-3 g-2" id="statsColegios">
+            <div class="col-6 col-md-3">
+              <div class="card bg-light border-0"><div class="card-body text-center p-2">
+                <h5 class="mb-0" id="statColegiosTotal">--</h5><small class="text-muted">Colegios en mapa</small>
+              </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card border-success border-0 bg-success bg-opacity-10"><div class="card-body text-center p-2">
+                <h5 class="mb-0 text-success" id="statColegiosTop">--</h5><small class="text-muted">Alto desempeño</small>
+              </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card border-warning border-0 bg-warning bg-opacity-10"><div class="card-body text-center p-2">
+                <h5 class="mb-0 text-warning" id="statColegiosMedio">--</h5><small class="text-muted">Desempeño medio</small>
+              </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card border-danger border-0 bg-danger bg-opacity-10"><div class="card-body text-center p-2">
+                <h5 class="mb-0 text-danger" id="statColegiosBajo">--</h5><small class="text-muted">Bajo desempeño</small>
+              </div></div>
+            </div>
+          </div>
+        </div><!-- /filtrosColegios -->
+
+        <!-- Estadísticas heatmap -->
+        <div id="statsHeatmap">
         <div class="row mb-3">
           <div class="col-md-3">
             <div class="card bg-light">
@@ -1694,14 +1897,14 @@
         </div>
 
         <!-- Leyenda -->
-        <div class="alert alert-info mb-3">
+        <div class="alert alert-info mb-3" id="alertaHeatmap">
           <strong>Interpretación del Mapa:</strong>
           <span id="mapaLeyenda">
             Las zonas más <strong class="text-success">intensas</strong> indican mayor concentración de estudiantes
-            con
-            excelencia integral.
+            con excelencia integral.
           </span>
         </div>
+        </div><!-- /statsHeatmap -->
 
         <!-- Mapa -->
         <div id="mapHeatmap" style="height: 600px; border-radius: 8px; border: 1px solid #dee2e6;"></div>
@@ -1985,5 +2188,5 @@
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
 <!-- Geographic Map JS -->
-<script src="{% static 'js/pages/dashboard.icfes.map.js' %}?v=1"></script>
+<script src="{% static 'js/pages/dashboard.icfes.map.js' %}?v=2"></script>
 {% endblock extra_javascript %}

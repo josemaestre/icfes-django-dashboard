@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import cache_page
+import logging
 import pandas as pd
 import json
 import unicodedata
@@ -18,6 +19,8 @@ from .db_utils import (
     get_promedios_ubicacion
 )
 from .views_school_endpoints import *
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_departamento_variants(name):
@@ -120,10 +123,18 @@ def inteligencia_educativa_dashboard(request):
 
 def ingles_dashboard(request):
     """Vista del dashboard de Bilingüismo/Inglés."""
-    context = {
-        'anos_disponibles': get_anos_disponibles(),
-        'departamentos': get_departamentos(),
-    }
+    try:
+        context = {
+            'anos_disponibles': get_anos_disponibles(),
+            'departamentos': get_departamentos(),
+        }
+    except Exception:
+        # Degradar de forma segura para no devolver 500 por fallas temporales de DB/S3.
+        logger.exception("Failed loading context for /icfes/ingles/")
+        context = {
+            'anos_disponibles': [],
+            'departamentos': [],
+        }
     return render(request, 'icfes_dashboard/pages/dashboard-ingles.html', context)
 
 
@@ -256,6 +267,7 @@ def colegios_destacados(request):
             WHERE ano = ?
                 AND ranking_nacional IS NOT NULL
                 AND total_estudiantes >= 10
+                AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
             GROUP BY colegio_sk
         )
         SELECT
@@ -871,10 +883,11 @@ def api_tendencias_nacionales(request):
             AVG(avg_punt_sociales_ciudadanas) as punt_sociales,
             AVG(avg_punt_ingles) as punt_ingles
         FROM gold.fct_agg_colegios_ano
+        WHERE nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
         GROUP BY ano
         ORDER BY ano
     """
-    
+
     df = execute_query(query)
     data = df.to_dict(orient='records')
     return JsonResponse(data, safe=False)
@@ -906,6 +919,7 @@ def api_comparacion_sectores_chart(request):
             SUM(total_estudiantes) as total_estudiantes
         FROM gold.fct_agg_colegios_ano
         WHERE ano = ?
+          AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
         GROUP BY sector
         ORDER BY sector
     """
@@ -938,6 +952,7 @@ def api_ranking_departamentos(request):
             SUM(total_estudiantes) as total_estudiantes
         FROM gold.fct_agg_colegios_ano
         WHERE ano = ?
+          AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
         GROUP BY departamento
         ORDER BY promedio DESC
         LIMIT ?
@@ -1181,6 +1196,7 @@ def hierarchy_municipalities(request):
                 SUM(total_estudiantes) as total_estudiantes
             FROM gold.fct_agg_colegios_ano
             WHERE ano = ? AND departamento = ?
+              AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
             GROUP BY municipio
         ),
         previous_year AS (
@@ -1189,6 +1205,7 @@ def hierarchy_municipalities(request):
                 AVG(avg_punt_global) as punt_global_anterior
             FROM gold.fct_agg_colegios_ano
             WHERE ano = ? AND departamento = ?
+              AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
             GROUP BY municipio
         ),
         departmental_stats AS (
@@ -1252,6 +1269,7 @@ def hierarchy_schools(request):
                 SUM(total_estudiantes) as total_estudiantes
             FROM gold.fct_agg_colegios_ano
             WHERE ano = ? AND municipio = ?
+              AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
             GROUP BY colegio_sk
         ),
         previous_year AS (
@@ -1260,6 +1278,7 @@ def hierarchy_schools(request):
                 AVG(avg_punt_global) as punt_global_anterior
             FROM gold.fct_agg_colegios_ano
             WHERE ano = ? AND municipio = ?
+              AND nombre_colegio != 'COLEGIO SINTETICO POR MUNICIPIO'
             GROUP BY colegio_sk
         ),
         municipal_stats AS (
@@ -1297,9 +1316,10 @@ def hierarchy_schools(request):
 @require_http_methods(["GET"])
 def hierarchy_history(request):
     """
-    Endpoint: Historial de puntajes por materia para una entidad geográfica o colegio.
-    Query params: ?level=region|department|municipality|school&id=<nombre_o_colegio_sk>
-    Returns: [{ano, punt_global, punt_matematicas, punt_lectura, punt_c_naturales, punt_sociales, punt_ingles}]
+    Historial de puntajes para una entidad geográfica o colegio + promedio nacional.
+    Params: ?level=region|department|municipality|school&id=<nombre_o_colegio_sk>
+    Returns: [{ano, punt_global, punt_matematicas, punt_lectura, punt_c_naturales,
+               punt_sociales, punt_ingles, total_estudiantes, nacional_global}]
     """
     level = request.GET.get('level', 'region')
     entity_id = request.GET.get('id', '').strip()
@@ -1307,59 +1327,101 @@ def hierarchy_history(request):
     if not entity_id:
         return JsonResponse([], safe=False)
 
+    # Nacional subquery reutilizable (ano como entero para JOIN seguro)
+    nacional_cte = """
+        nacional AS (
+            SELECT CAST(ano AS INTEGER) AS ano,
+                   promedio_nacional   AS nacional_global
+            FROM gold.fct_estadisticas_anuales
+        )
+    """
+
+    # strip_accents + upper normaliza variantes: "Boyacá" == "BOYACA" == "BOYACÁ"
+    norm = "strip_accents(upper(trim({}))) = strip_accents(upper(trim(?)))"
+
     if level == 'region':
-        query = """
-            SELECT ano,
-                AVG(avg_punt_global)              AS punt_global,
-                AVG(avg_punt_matematicas)          AS punt_matematicas,
-                AVG(avg_punt_lectura_critica)      AS punt_lectura,
-                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
-                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
-                AVG(avg_punt_ingles)               AS punt_ingles,
-                SUM(total_estudiantes)             AS total_estudiantes
-            FROM gold.vw_fct_colegios_region
-            WHERE region = ? AND ano >= 2000
-            GROUP BY ano ORDER BY ano
+        query = f"""
+            WITH entity_data AS (
+                SELECT CAST(ano AS INTEGER)            AS ano,
+                    AVG(avg_punt_global)              AS punt_global,
+                    AVG(avg_punt_matematicas)          AS punt_matematicas,
+                    AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                    AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                    AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                    AVG(avg_punt_ingles)               AS punt_ingles,
+                    SUM(total_estudiantes)             AS total_estudiantes
+                FROM gold.vw_fct_colegios_region
+                WHERE {norm.format('region')}
+                GROUP BY ano
+            ),
+            {nacional_cte}
+            SELECT e.*, n.nacional_global
+            FROM entity_data e
+            LEFT JOIN nacional n ON e.ano = n.ano
+            ORDER BY e.ano
         """
     elif level == 'department':
-        query = """
-            SELECT ano,
-                AVG(avg_punt_global)              AS punt_global,
-                AVG(avg_punt_matematicas)          AS punt_matematicas,
-                AVG(avg_punt_lectura_critica)      AS punt_lectura,
-                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
-                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
-                AVG(avg_punt_ingles)               AS punt_ingles,
-                SUM(total_estudiantes)             AS total_estudiantes
-            FROM gold.vw_fct_colegios_region
-            WHERE departamento = ? AND ano >= 2000
-            GROUP BY ano ORDER BY ano
+        query = f"""
+            WITH entity_data AS (
+                SELECT CAST(ano AS INTEGER)            AS ano,
+                    AVG(avg_punt_global)              AS punt_global,
+                    AVG(avg_punt_matematicas)          AS punt_matematicas,
+                    AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                    AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                    AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                    AVG(avg_punt_ingles)               AS punt_ingles,
+                    SUM(total_estudiantes)             AS total_estudiantes
+                FROM gold.vw_fct_colegios_region
+                WHERE {norm.format('departamento')}
+                GROUP BY ano
+            ),
+            {nacional_cte}
+            SELECT e.*, n.nacional_global
+            FROM entity_data e
+            LEFT JOIN nacional n ON e.ano = n.ano
+            ORDER BY e.ano
         """
     elif level == 'municipality':
-        query = """
-            SELECT ano,
-                AVG(avg_punt_global)              AS punt_global,
-                AVG(avg_punt_matematicas)          AS punt_matematicas,
-                AVG(avg_punt_lectura_critica)      AS punt_lectura,
-                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
-                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
-                AVG(avg_punt_ingles)               AS punt_ingles
-            FROM gold.fct_agg_colegios_ano
-            WHERE municipio = ? AND ano >= 2000
-            GROUP BY ano ORDER BY ano
+        query = f"""
+            WITH entity_data AS (
+                SELECT CAST(ano AS INTEGER)            AS ano,
+                    AVG(avg_punt_global)              AS punt_global,
+                    AVG(avg_punt_matematicas)          AS punt_matematicas,
+                    AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                    AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                    AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                    AVG(avg_punt_ingles)               AS punt_ingles,
+                    SUM(total_estudiantes)             AS total_estudiantes
+                FROM gold.fct_agg_colegios_ano
+                WHERE {norm.format('municipio')}
+                GROUP BY ano
+            ),
+            {nacional_cte}
+            SELECT e.*, n.nacional_global
+            FROM entity_data e
+            LEFT JOIN nacional n ON e.ano = n.ano
+            ORDER BY e.ano
         """
     elif level == 'school':
-        query = """
-            SELECT ano,
-                AVG(avg_punt_global)              AS punt_global,
-                AVG(avg_punt_matematicas)          AS punt_matematicas,
-                AVG(avg_punt_lectura_critica)      AS punt_lectura,
-                AVG(avg_punt_c_naturales)          AS punt_c_naturales,
-                AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
-                AVG(avg_punt_ingles)               AS punt_ingles
-            FROM gold.fct_agg_colegios_ano
-            WHERE colegio_sk = ? AND ano >= 2000
-            GROUP BY ano ORDER BY ano
+        query = f"""
+            WITH entity_data AS (
+                SELECT CAST(ano AS INTEGER)            AS ano,
+                    AVG(avg_punt_global)              AS punt_global,
+                    AVG(avg_punt_matematicas)          AS punt_matematicas,
+                    AVG(avg_punt_lectura_critica)      AS punt_lectura,
+                    AVG(avg_punt_c_naturales)          AS punt_c_naturales,
+                    AVG(avg_punt_sociales_ciudadanas)  AS punt_sociales,
+                    AVG(avg_punt_ingles)               AS punt_ingles,
+                    SUM(total_estudiantes)             AS total_estudiantes
+                FROM gold.fct_agg_colegios_ano
+                WHERE colegio_sk = ?
+                GROUP BY ano
+            ),
+            {nacional_cte}
+            SELECT e.*, n.nacional_global
+            FROM entity_data e
+            LEFT JOIN nacional n ON e.ano = n.ano
+            ORDER BY e.ano
         """
     else:
         return JsonResponse({'error': 'Nivel no válido'}, status=400)
@@ -1673,6 +1735,24 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
+    # Potencial Educativo Global (ML)
+    query_potencial = """
+        SELECT p.clasificacion, p.exceso,
+               ROUND(p.percentil_exceso, 1)        AS percentil_exceso,
+               p.ranking_exceso_nacional,
+               p.ranking_exceso_depto,
+               ROUND(p.avg_global, 2)              AS avg_global,
+               ROUND(p.score_esperado, 2)          AS score_esperado
+        FROM gold.fct_potencial_educativo p
+        WHERE p.colegio_bk = (
+            SELECT DISTINCT codigo_dane
+            FROM gold.fct_colegio_historico
+            WHERE colegio_sk = ?
+            LIMIT 1
+        )
+        LIMIT 1
+    """
+
     try:
         df_basico = execute_query(query_basico, params=[colegio_sk_str])
         df_ultimo = execute_query(query_ultimo, params=[colegio_sk_str, colegio_sk_str])
@@ -1699,6 +1779,13 @@ def api_colegio_resumen(request, colegio_sk):
     except Exception:
         pass
 
+    # Potencial educativo - separate try/catch (ML table, may be absent)
+    df_potencial = pd.DataFrame()
+    try:
+        df_potencial = execute_query(query_potencial, params=[colegio_sk_str])
+    except Exception:
+        pass
+
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
 
@@ -1718,6 +1805,20 @@ def api_colegio_resumen(request, colegio_sk):
             'factores_principales': factores,
         }
 
+    # Build potencial data
+    potencial_data = {}
+    if not df_potencial.empty:
+        row_p = df_potencial.iloc[0]
+        potencial_data = {
+            'clasificacion':          row_p.get('clasificacion'),
+            'exceso':                 round(float(row_p['exceso']), 2) if row_p.get('exceso') is not None else None,
+            'percentil_exceso':       round(float(row_p['percentil_exceso']), 1) if row_p.get('percentil_exceso') is not None else None,
+            'ranking_exceso_nacional': int(row_p['ranking_exceso_nacional']) if row_p.get('ranking_exceso_nacional') is not None else None,
+            'ranking_exceso_depto':   int(row_p['ranking_exceso_depto']) if row_p.get('ranking_exceso_depto') is not None else None,
+            'avg_global':             round(float(row_p['avg_global']), 2) if row_p.get('avg_global') is not None else None,
+            'score_esperado':         round(float(row_p['score_esperado']), 2) if row_p.get('score_esperado') is not None else None,
+        }
+
     resumen = {
         'info_basica': df_basico.to_dict(orient='records')[0],
         'ultimo_ano': df_ultimo.to_dict(orient='records')[0] if not df_ultimo.empty else {},
@@ -1726,6 +1827,7 @@ def api_colegio_resumen(request, colegio_sk):
         'analisis': df_fd.to_dict(orient='records')[0] if not df_fd.empty else {},
         'cluster': df_cluster.to_dict(orient='records')[0] if not df_cluster.empty else {},
         'riesgo': riesgo_data,
+        'potencial': potencial_data,
     }
 
     return JsonResponse(resumen, safe=False)
@@ -2248,96 +2350,90 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
         except (ValueError, TypeError):
             return JsonResponse({'error': 'Parámetro ano inválido'}, status=400)
 
-    # Query para calcular indicadores al vuelo
-    query = f"""
-        SELECT
-            ano,
-            COUNT(*) as total_estudiantes,
-            
-            -- Excelencia Integral: Nivel 4 (>70) en TODAS las materias
-            SUM(CASE WHEN 
-                punt_matematicas > 70 AND 
-                punt_lectura_critica > 70 AND
-                punt_c_naturales > 70 AND
-                punt_sociales_ciudadanas > 70 AND
-                punt_ingles > 70
-            THEN 1 ELSE 0 END) as count_excelencia,
-            
-            -- Competencia Satisfactoria: Nivel 3+ (>55) en TODAS las materias
-            SUM(CASE WHEN 
-                punt_matematicas > 55 AND 
-                punt_lectura_critica > 55 AND
-                punt_c_naturales > 55 AND
-                punt_sociales_ciudadanas > 55 AND
-                punt_ingles > 55
-            THEN 1 ELSE 0 END) as count_satisfactoria,
-            
-            -- Perfil STEM Avanzado: Nivel 4 (>70) en Matematicas y Ciencias
-            SUM(CASE WHEN 
-                punt_matematicas > 70 AND 
-                punt_c_naturales > 70
-            THEN 1 ELSE 0 END) as count_stem,
-            
-            -- Perfil Humanístico Avanzado: Nivel 4 (>70) en Lectura y Sociales
-            SUM(CASE WHEN 
-                punt_lectura_critica > 70 AND 
-                punt_sociales_ciudadanas > 70
-            THEN 1 ELSE 0 END) as count_humanistico,
-            
-            -- Riesgo Alto: Nivel 1 (<=40) en 2+ materias
+    _INDICATOR_CASES = """
+            SUM(CASE WHEN punt_matematicas > 70 AND punt_lectura_critica > 70 AND
+                punt_c_naturales > 70 AND punt_sociales_ciudadanas > 70 AND punt_ingles > 70
+            THEN 1 ELSE 0 END) AS count_excelencia,
+            SUM(CASE WHEN punt_matematicas > 55 AND punt_lectura_critica > 55 AND
+                punt_c_naturales > 55 AND punt_sociales_ciudadanas > 55 AND punt_ingles > 55
+            THEN 1 ELSE 0 END) AS count_satisfactoria,
+            SUM(CASE WHEN punt_matematicas > 70 AND punt_c_naturales > 70
+            THEN 1 ELSE 0 END) AS count_stem,
+            SUM(CASE WHEN punt_lectura_critica > 70 AND punt_sociales_ciudadanas > 70
+            THEN 1 ELSE 0 END) AS count_humanistico,
             SUM(CASE WHEN (
                 (CASE WHEN punt_matematicas <= 40 THEN 1 ELSE 0 END) +
                 (CASE WHEN punt_lectura_critica <= 40 THEN 1 ELSE 0 END) +
                 (CASE WHEN punt_c_naturales <= 40 THEN 1 ELSE 0 END) +
                 (CASE WHEN punt_sociales_ciudadanas <= 40 THEN 1 ELSE 0 END) +
                 (CASE WHEN punt_ingles <= 40 THEN 1 ELSE 0 END)
-            ) >= 2 THEN 1 ELSE 0 END) as count_riesgo
+            ) >= 2 THEN 1 ELSE 0 END) AS count_riesgo
+    """
 
+    query_school = f"""
+        SELECT ano, COUNT(*) AS total_estudiantes,
+               {_INDICATOR_CASES}
         FROM gold.fact_icfes_analytics
         WHERE colegio_sk = ?
         {ano_filter}
-        GROUP BY ano
-        ORDER BY ano DESC
-        LIMIT 5
+        GROUP BY ano ORDER BY ano DESC LIMIT 5
     """
 
     try:
-        df = execute_query(query, params=params)
+        df = execute_query(query_school, params=params)
 
         if df.empty:
             return JsonResponse([], safe=False)
 
-        # Procesar resultados y calcular porcentajes
+        # Fetch national averages for the same years
+        anos_list = df['ano'].tolist()
+        placeholders = ','.join(['?' for _ in anos_list])
+        query_nacional = f"""
+            SELECT ano, COUNT(*) AS total_nac,
+                   {_INDICATOR_CASES}
+            FROM gold.fact_icfes_analytics
+            WHERE ano IN ({placeholders})
+            GROUP BY ano
+        """
+        df_nac = execute_query(query_nacional, params=anos_list)
+        nac_map = {}
+        for _, nr in df_nac.iterrows():
+            t = nr['total_nac']
+            if t > 0:
+                nac_map[int(nr['ano'])] = {
+                    'excelencia':    round(nr['count_excelencia']    / t * 100, 2),
+                    'competencia':   round(nr['count_satisfactoria'] / t * 100, 2),
+                    'stem':          round(nr['count_stem']          / t * 100, 2),
+                    'humanistico':   round(nr['count_humanistico']   / t * 100, 2),
+                    'riesgo':        round(nr['count_riesgo']        / t * 100, 2),
+                }
+
+        # Procesar resultados
         results = []
         for _, row in df.iterrows():
             total = row['total_estudiantes']
-            if total == 0: continue
-
+            if total == 0:
+                continue
+            yr = int(row['ano'])
+            nac = nac_map.get(yr, {})
             item = {
-                'ano': int(row['ano']),
-                'colegio_bk': colegio_sk, # Placeholder
+                'ano': yr,
                 'total_estudiantes': int(total),
-                
-                # Indicadores calculados
-                'pct_excelencia_integral': round(row['count_excelencia'] / total * 100, 2),
+                'pct_excelencia_integral':             round(row['count_excelencia']    / total * 100, 2),
                 'pct_competencia_satisfactoria_integral': round(row['count_satisfactoria'] / total * 100, 2),
-                'pct_perfil_stem_avanzado': round(row['count_stem'] / total * 100, 2),
-                'pct_perfil_humanistico_avanzado': round(row['count_humanistico'] / total * 100, 2),
-                'pct_riesgo_alto': round(row['count_riesgo'] / total * 100, 2),
-                
-                # Placeholders para comparación nacional (no disponible sin tabla agregada)
-                'nacional_excelencia': 0,
-                'nacional_competencia': 0,
-                'nacional_stem': 0,
-                'nacional_humanistico': 0,
-                'nacional_riesgo': 0,
-                
-                # Placeholders para rankings
+                'pct_perfil_stem_avanzado':            round(row['count_stem']          / total * 100, 2),
+                'pct_perfil_humanistico_avanzado':     round(row['count_humanistico']   / total * 100, 2),
+                'pct_riesgo_alto':                     round(row['count_riesgo']        / total * 100, 2),
+                'nacional_excelencia':  nac.get('excelencia',  0),
+                'nacional_competencia': nac.get('competencia', 0),
+                'nacional_stem':        nac.get('stem',        0),
+                'nacional_humanistico': nac.get('humanistico', 0),
+                'nacional_riesgo':      nac.get('riesgo',      0),
                 'ranking_excelencia': 0,
                 'ranking_competencia': 0,
                 'ranking_stem': 0,
                 'ranking_humanistico': 0,
-                'ranking_riesgo': 0
+                'ranking_riesgo': 0,
             }
             results.append(item)
 
@@ -2350,6 +2446,93 @@ def api_colegio_indicadores_excelencia(request, colegio_sk):
             'error': 'Error calculando indicadores',
             'details': str(e)
         }, status=500)
+
+
+@require_http_methods(["GET"])
+def api_colegio_indicadores_ingles(request, colegio_sk):
+    """
+    Endpoint: Indicadores de inglés MCER por colegio.
+    Retorna distribución A1/A2/B1+, puntaje histórico y comparación nacional.
+    Fuentes: fct_colegio_historico + fct_indicadores_desempeno.
+    """
+    if not colegio_sk or not str(colegio_sk).replace('-', '').replace('_', '').isalnum():
+        return JsonResponse({'error': 'colegio_sk inválido'}, status=400)
+
+    query_school = """
+        SELECT h.ano,
+               ROUND(h.avg_punt_ingles, 1)               AS avg_punt_ingles,
+               ROUND(h.avg_punt_matematicas, 1)           AS avg_punt_matematicas,
+               ROUND(h.avg_punt_lectura_critica, 1)       AS avg_punt_lectura,
+               ROUND(h.avg_punt_c_naturales, 1)           AS avg_punt_c_naturales,
+               ROUND(h.avg_punt_sociales_ciudadanas, 1)   AS avg_punt_sociales,
+               ROUND(h.avg_punt_ingles - (
+                   h.avg_punt_matematicas + h.avg_punt_lectura_critica +
+                   h.avg_punt_c_naturales + h.avg_punt_sociales_ciudadanas
+               ) / 4.0, 1)                                AS desviacion_ingles,
+               i.ing_nivel_a1, i.ing_nivel_a2, i.ing_nivel_b1,
+               ROUND(i.ing_pct_b1, 1)                    AS ing_pct_b1,
+               ROUND(i.ing_pct_a2_o_superior, 1)         AS ing_pct_a2_sup,
+               i.total_estudiantes
+        FROM gold.fct_colegio_historico h
+        JOIN gold.fct_indicadores_desempeno i
+          ON i.colegio_bk = h.codigo_dane AND i.ano = h.ano
+        WHERE h.colegio_sk = ?
+        ORDER BY h.ano DESC
+        LIMIT 6
+    """
+    try:
+        df = execute_query(query_school, params=[str(colegio_sk)])
+        if df.empty:
+            return JsonResponse({'error': 'Sin datos de inglés para este colegio'}, status=404)
+
+        anos = df['ano'].tolist()
+        placeholders = ','.join(['?' for _ in anos])
+        query_nac = f"""
+            SELECT ano,
+                   ROUND(SUM(ing_nivel_a1)*100.0/NULLIF(SUM(ing_nivel_a1+ing_nivel_a2+ing_nivel_b1),0),1) AS nac_pct_a1,
+                   ROUND(SUM(ing_nivel_a2)*100.0/NULLIF(SUM(ing_nivel_a1+ing_nivel_a2+ing_nivel_b1),0),1) AS nac_pct_a2,
+                   ROUND(SUM(ing_nivel_b1)*100.0/NULLIF(SUM(ing_nivel_a1+ing_nivel_a2+ing_nivel_b1),0),1) AS nac_pct_b1,
+                   ROUND(SUM(ing_pct_b1 * total_estudiantes)/NULLIF(SUM(total_estudiantes),0),1)          AS nac_avg_pct_b1
+            FROM gold.fct_indicadores_desempeno
+            WHERE ano IN ({placeholders})
+            GROUP BY ano
+        """
+        df_nac = execute_query(query_nac, params=anos)
+        nac_map = {}
+        for _, nr in df_nac.iterrows():
+            nac_map[str(nr['ano'])] = {
+                'pct_a1':       float(nr['nac_pct_a1']       or 0),
+                'pct_a2':       float(nr['nac_pct_a2']       or 0),
+                'pct_b1':       float(nr['nac_pct_b1']       or 0),
+                'avg_pct_b1':   float(nr['nac_avg_pct_b1']   or 0),
+            }
+
+        rows = []
+        for _, r in df.iterrows():
+            total_mcer = (r['ing_nivel_a1'] or 0) + (r['ing_nivel_a2'] or 0) + (r['ing_nivel_b1'] or 0)
+            nac = nac_map.get(str(r['ano']), {})
+            rows.append({
+                'ano':              str(r['ano']),
+                'avg_punt_ingles':  float(r['avg_punt_ingles'] or 0),
+                'total_estudiantes': int(r['total_estudiantes'] or 0),
+                'pct_a1':  round(r['ing_nivel_a1'] / total_mcer * 100, 1) if total_mcer else 0,
+                'pct_a2':  round(r['ing_nivel_a2'] / total_mcer * 100, 1) if total_mcer else 0,
+                'pct_b1':  round(r['ing_nivel_b1'] / total_mcer * 100, 1) if total_mcer else 0,
+                'pct_b1_directo':   float(r['ing_pct_b1']   or 0),
+                'pct_a2_sup':       float(r['ing_pct_a2_sup'] or 0),
+                'desviacion_ingles': float(r['desviacion_ingles']) if r['desviacion_ingles'] is not None else None,
+                'nac_pct_a1':       nac.get('pct_a1', 0),
+                'nac_pct_a2':       nac.get('pct_a2', 0),
+                'nac_pct_b1':       nac.get('pct_b1', 0),
+                'nac_avg_pct_b1':   nac.get('avg_pct_b1', 0),
+            })
+
+        return JsonResponse({'data': rows})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @require_http_methods(["GET"])
@@ -2558,6 +2741,100 @@ def api_colegio_distribucion_niveles(request, colegio_sk):
 # ============================================================================
 # ENDPOINTS API - MAPA GEOGRÁFICO
 # ============================================================================
+
+@require_http_methods(["GET"])
+def api_mapa_colegios(request):
+    """
+    Retorna colegios con coordenadas y métricas para el mapa de marcadores.
+    Query params:
+      - ano: año (default 2024)
+      - capa: rendimiento | riesgo | potencial | ingles (default rendimiento)
+      - departamento: filtro opcional
+    """
+    ano = request.GET.get('ano', '2024')
+    capa = request.GET.get('capa', 'rendimiento')
+    departamento = request.GET.get('departamento', '')
+
+    try:
+        ano_int = int(ano)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'ano inválido'}, status=400)
+
+    depto_filter = "AND d.departamento = ?" if departamento else ""
+    params = [str(ano_int)]
+    if departamento:
+        params.append(departamento)
+
+    query = f"""
+        SELECT
+            a.colegio_sk,
+            d.nombre_colegio,
+            d.municipio,
+            d.departamento,
+            d.sector,
+            ROUND(d.latitud, 5)          AS lat,
+            ROUND(d.longitud, 5)         AS lng,
+            ROUND(a.avg_punt_global, 1)  AS puntaje,
+            a.ranking_nacional,
+            a.total_estudiantes,
+            r.nivel_riesgo,
+            ROUND(r.prob_declive * 100, 1) AS prob_declive,
+            p.clasificacion              AS potencial,
+            ROUND(i.ing_pct_b1, 1)       AS pct_b1,
+            ROUND(a.avg_punt_ingles, 1)  AS avg_ingles
+        FROM gold.fct_agg_colegios_ano a
+        JOIN gold.dim_colegios d ON d.colegio_sk = a.colegio_sk
+        LEFT JOIN gold.fct_riesgo_colegios r
+               ON r.colegio_sk = a.colegio_sk AND r.ano = ?
+        LEFT JOIN gold.fct_potencial_educativo p
+               ON p.colegio_bk = d.colegio_bk
+        LEFT JOIN gold.fct_indicadores_desempeno i
+               ON i.colegio_bk = d.colegio_bk AND i.ano = ?
+        WHERE a.ano = ?
+          AND d.sector != 'SINTETICO'
+          AND d.latitud IS NOT NULL
+          AND d.longitud IS NOT NULL
+          AND d.latitud BETWEEN -5 AND 14
+          AND d.longitud BETWEEN -82 AND -66
+          {depto_filter}
+    """
+    # params: ano (riesgo), ano (indicadores), ano (where a.ano), [depto]
+    full_params = [ano_int, ano_int, ano_int]
+    if departamento:
+        full_params.append(departamento)
+
+    try:
+        df = execute_query(query, params=full_params)
+        if df.empty:
+            return JsonResponse({'colegios': [], 'total': 0})
+
+        colegios = []
+        for _, r in df.iterrows():
+            colegios.append({
+                'sk':         r['colegio_sk'],
+                'nombre':     r['nombre_colegio'],
+                'municipio':  r['municipio'],
+                'depto':      r['departamento'],
+                'sector':     r['sector'],
+                'lat':        float(r['lat']),
+                'lng':        float(r['lng']),
+                'puntaje':    round(float(r['puntaje'] or 0), 1),
+                'ranking':    int(r['ranking_nacional']) if r['ranking_nacional'] else None,
+                'estudiantes': int(r['total_estudiantes'] or 0),
+                'nivel_riesgo':  r['nivel_riesgo'],
+                'prob_declive':  float(r['prob_declive'] or 0) if r['prob_declive'] else None,
+                'potencial':     r['potencial'],
+                'pct_b1':        float(r['pct_b1'] or 0) if r['pct_b1'] else None,
+                'avg_ingles':    float(r['avg_ingles'] or 0) if r['avg_ingles'] else None,
+            })
+
+        return JsonResponse({'colegios': colegios, 'total': len(colegios)})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
+
 
 @require_http_methods(["GET"])
 def api_mapa_estudiantes_heatmap(request):

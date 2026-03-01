@@ -1,22 +1,192 @@
 // Global variables
 let map;
 let heatLayer;
+let colegiosLayer = null;   // LayerGroup for school markers
 let currentCategoria = 'excelencia_integral';
+let currentMapMode = 'heatmap'; // 'heatmap' | 'colegios'
 
 // Initialize Leaflet map
 function initMap() {
-    // Center on Colombia
     map = L.map('mapHeatmap').setView([4.5709, -74.2973], 6);
-
-    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18,
         minZoom: 5
     }).addTo(map);
-
-    // Load initial data
     loadHeatmapData();
+}
+
+// ── Mode toggle (event delegation — works regardless of DOM timing) ───────────
+document.addEventListener('change', function (e) {
+    if (!e.target || e.target.name !== 'mapaMode') return;
+
+    currentMapMode = e.target.value;
+    const isColegios = currentMapMode === 'colegios';
+
+    const filtrosHeatmap  = document.getElementById('filtrosHeatmap');
+    const filtrosColegios = document.getElementById('filtrosColegios');
+    const statsHeatmap    = document.getElementById('statsHeatmap');
+    const alertaHeatmap   = document.getElementById('alertaHeatmap');
+    const tituloTexto     = document.getElementById('mapaTituloTexto');
+
+    if (filtrosHeatmap)  filtrosHeatmap.style.display  = isColegios ? 'none' : '';
+    if (filtrosColegios) filtrosColegios.style.display = isColegios ? '' : 'none';
+    if (statsHeatmap)    statsHeatmap.style.display    = isColegios ? 'none' : '';
+    if (alertaHeatmap)   alertaHeatmap.style.display   = isColegios ? 'none' : '';
+    if (tituloTexto)     tituloTexto.textContent       = isColegios
+        ? 'Mapa de Colegios — Inteligencia por Capas'
+        : 'Mapa de Concentración de Estudiantes';
+
+    if (!map) return; // Map not initialized yet (tab not shown)
+
+    if (isColegios) {
+        if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+        loadColegiosMap();
+    } else {
+        if (colegiosLayer) { map.removeLayer(colegiosLayer); colegiosLayer = null; }
+        loadHeatmapData();
+    }
+});
+
+// ── School marker map ─────────────────────────────────────────────────────────
+const CAPA_CONFIG = {
+    rendimiento: {
+        label: 'Color por <strong>puntaje global</strong>: 🟢 ≥300 · 🟡 250-300 · 🔴 &lt;250',
+        color: c => c.puntaje >= 300 ? '#198754' : c.puntaje >= 250 ? '#ffc107' : '#dc3545',
+        value: c => c.puntaje,
+        fmt: c => `Puntaje: <strong>${c.puntaje}</strong> | Ranking: #${(c.ranking || '—').toLocaleString()}`
+    },
+    riesgo: {
+        label: 'Color por <strong>nivel de riesgo ML</strong>: 🔴 Alto · 🟡 Medio · 🟢 Bajo',
+        color: c => c.nivel_riesgo === 'Alto' ? '#dc3545' : c.nivel_riesgo === 'Medio' ? '#ffc107' : '#198754',
+        value: c => c.prob_declive || 0,
+        fmt: c => `Riesgo: <strong>${c.nivel_riesgo || 'N/D'}</strong> | Prob. declive: ${c.prob_declive != null ? c.prob_declive + '%' : '—'}`
+    },
+    potencial: {
+        label: 'Color por <strong>potencial contextual ML</strong>: 🟢 Excepcional/Por encima · 🟡 Esperado · 🔴 Bajo/En riesgo',
+        color: c => ['Excepcional','Por encima'].includes(c.potencial) ? '#0d9488'
+                  : c.potencial === 'Esperado' ? '#6c757d'
+                  : c.potencial ? '#fd7e14' : '#adb5bd',
+        value: c => 1,
+        fmt: c => `Potencial: <strong>${c.potencial || 'N/D'}</strong>`
+    },
+    ingles: {
+        label: 'Color por <strong>% estudiantes en B1+</strong>: 🟢 ≥20% · 🟡 10-20% · 🔴 &lt;10%',
+        color: c => c.pct_b1 == null ? '#adb5bd' : c.pct_b1 >= 20 ? '#0891b2' : c.pct_b1 >= 10 ? '#fbbf24' : '#ef4444',
+        value: c => c.pct_b1 || 0,
+        fmt: c => `Inglés B1+: <strong>${c.pct_b1 != null ? c.pct_b1 + '%' : 'N/D'}</strong> | Puntaje inglés: ${c.avg_ingles || '—'}`
+    }
+};
+
+async function loadColegiosMap() {
+    if (!map) return;
+    const ano   = document.getElementById('mapaColegiosAno')?.value || '2024';
+    const capa  = document.getElementById('mapaCapa')?.value || 'rendimiento';
+    const depto = document.getElementById('mapaColegiosDepto')?.value || '';
+
+    document.getElementById('mapLoading').style.display = 'block';
+    document.getElementById('mapHeatmap').style.opacity = '0.5';
+
+    try {
+        const params = new URLSearchParams({ ano, capa });
+        if (depto) params.append('departamento', depto);
+        const resp = await fetch(`/icfes/api/mapa-colegios/?${params}`);
+        const json = await resp.json();
+        const colegios = json.colegios || [];
+
+        // Remove old layer
+        if (colegiosLayer) { map.removeLayer(colegiosLayer); }
+        colegiosLayer = L.layerGroup();
+        const cfg = CAPA_CONFIG[capa];
+
+        // Update legend
+        document.getElementById('mapaColegiosLeyenda').innerHTML = cfg.label;
+
+        // Stats counters
+        let alto = 0, medio = 0, bajo = 0;
+
+        colegios.forEach(c => {
+            const color = cfg.color(c);
+            const radius = Math.max(5, Math.min(12, 5 + Math.sqrt(c.estudiantes || 0) / 10));
+
+            const marker = L.circleMarker([c.lat, c.lng], {
+                radius,
+                fillColor: color,
+                color: '#fff',
+                weight: 1,
+                opacity: 0.9,
+                fillOpacity: 0.8
+            });
+
+            // Popup
+            const sectorBadge = c.sector === 'OFICIAL'
+                ? '<span class="badge bg-primary">Oficial</span>'
+                : '<span class="badge bg-warning text-dark">Privado</span>';
+
+            marker.bindPopup(`
+                <div style="min-width:200px;font-size:13px;">
+                  <strong>${c.nombre}</strong><br>
+                  <small class="text-muted">${c.municipio}, ${c.depto}</small>
+                  ${sectorBadge}<br><hr class="my-1">
+                  ${cfg.fmt(c)}<br>
+                  <small>Estudiantes: ${(c.estudiantes || 0).toLocaleString()}</small><br>
+                  <a href="/icfes/colegio/?sk=${c.sk}" target="_blank" class="btn btn-sm btn-outline-primary mt-1 w-100">
+                    Ver detalle →
+                  </a>
+                </div>
+            `, { maxWidth: 240 });
+
+            marker.addTo(colegiosLayer);
+
+            // Count for stats
+            if (color === '#198754' || color === '#0d9488' || color === '#0891b2') alto++;
+            else if (color === '#ffc107' || color === '#6c757d' || color === '#fbbf24') medio++;
+            else bajo++;
+        });
+
+        colegiosLayer.addTo(map);
+
+        // Update stats
+        document.getElementById('statColegiosTotal').textContent = colegios.length.toLocaleString();
+        document.getElementById('statColegiosTop').textContent   = alto.toLocaleString();
+        document.getElementById('statColegiosMedio').textContent = medio.toLocaleString();
+        document.getElementById('statColegiosBajo').textContent  = bajo.toLocaleString();
+
+        // Fit map
+        if (colegios.length > 0) {
+            const bounds = L.latLngBounds(colegios.map(c => [c.lat, c.lng]));
+            map.fitBounds(bounds, { padding: [40, 40] });
+        }
+
+    } catch (err) {
+        console.error('Error loading colegios map:', err);
+    } finally {
+        document.getElementById('mapLoading').style.display = 'none';
+        document.getElementById('mapHeatmap').style.opacity = '1';
+    }
+}
+
+// Listeners for colegios mode filters
+document.getElementById('mapaColegiosAno')?.addEventListener('change', () => { if (currentMapMode === 'colegios') loadColegiosMap(); });
+document.getElementById('mapaCapa')?.addEventListener('change', () => { if (currentMapMode === 'colegios') loadColegiosMap(); });
+document.getElementById('mapaColegiosDepto')?.addEventListener('change', () => { if (currentMapMode === 'colegios') loadColegiosMap(); });
+
+// Populate departamentos for colegios mode (reuse existing API)
+async function loadColegiosDeptos() {
+    try {
+        const ano = document.getElementById('mapaColegiosAno')?.value || '2024';
+        const resp = await fetch(`/icfes/api/mapa-departamentos/?ano=${ano}`);
+        const data = await resp.json();
+        const sel = document.getElementById('mapaColegiosDepto');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Todos</option>';
+        data.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.departamento;
+            opt.textContent = d.departamento;
+            sel.appendChild(opt);
+        });
+    } catch (e) { console.warn('Error loading deptos for colegios:', e); }
 }
 
 // Load heatmap data
@@ -202,7 +372,8 @@ async function loadMunicipios(departamento) {
 document.getElementById('mapa-tab')?.addEventListener('shown.bs.tab', function () {
     if (!map) {
         initMap();
-        loadDepartamentos();  // Load departments on first load
+        loadDepartamentos();
+        loadColegiosDeptos();
     } else {
         map.invalidateSize();
     }

@@ -124,6 +124,11 @@ async function loadSchoolDetail(school) {
         await loadIndicadoresExcelencia(school.colegio_sk);
     }
 
+    // Load inglés MCER indicators
+    if (typeof loadIndicadoresIngles === 'function') {
+        await loadIndicadoresIngles(school.colegio_sk);
+    }
+
     // Load niveles distribution (donut chart)
     if (typeof loadDistribucionNiveles === 'function') {
         await loadDistribucionNiveles(school.colegio_sk);
@@ -212,26 +217,80 @@ async function loadSchoolResumen(sk) {
             if (data.riesgo && data.riesgo.nivel_riesgo) {
                 riesgoRow.style.display = '';
 
+                const riesgo = data.riesgo;
+                const prob = riesgo.prob_declive * 100;
+                const nivel = riesgo.nivel_riesgo;
+
                 const badge = document.getElementById('schoolRiesgoBadge');
                 const riskColors = { 'Alto': 'bg-danger', 'Medio': 'bg-warning text-dark', 'Bajo': 'bg-success' };
-                badge.className = `badge rounded-pill fs-6 px-3 py-2 ${riskColors[data.riesgo.nivel_riesgo] || 'bg-secondary'}`;
-                badge.textContent = `Riesgo ${data.riesgo.nivel_riesgo}`;
+                badge.className = `badge rounded-pill fs-6 px-3 py-2 ${riskColors[nivel] || 'bg-secondary'}`;
+                badge.textContent = `Riesgo ${nivel}`;
 
                 const card = document.getElementById('schoolRiesgoCard');
                 const borderColors = { 'Alto': 'border-danger', 'Medio': 'border-warning', 'Bajo': 'border-success' };
-                card.className = `card border ${borderColors[data.riesgo.nivel_riesgo] || ''}`;
+                card.className = `card border ${borderColors[nivel] || ''}`;
 
-                document.getElementById('schoolRiesgoProb').textContent =
-                    `${(data.riesgo.prob_declive * 100).toFixed(1)}%`;
+                document.getElementById('schoolRiesgoProb').textContent = `${prob.toFixed(1)}%`;
 
+                // ── Factores con valores ──────────────────────────────────────
                 const factoresEl = document.getElementById('schoolRiesgoFactores');
                 factoresEl.innerHTML = '';
-                if (data.riesgo.factores_principales && data.riesgo.factores_principales.length > 0) {
-                    data.riesgo.factores_principales.slice(0, 3).forEach(f => {
+                const fmt = (v, d=1) => (typeof v === 'number') ? v.toFixed(d) : (v ?? '?');
+                const featureDescriptions = {
+                    'cambio_ranking_nacional':    (v) => v < 0
+                        ? `Mejoró ${Math.abs(v).toFixed(0)} pos. en ranking (saltos grandes pueden revertirse)`
+                        : `Cayó ${Math.abs(v).toFixed(0)} posiciones en ranking`,
+                    'ranking_nacional':           (v) => `Ranking nacional: #${Math.round(v).toLocaleString()} de ~9.000 colegios`,
+                    'avg_punt_global':            (v) => `Puntaje promedio: ${fmt(v)} pts`,
+                    'promedio_historico_global':  (v) => `Promedio histórico: ${fmt(v)} pts`,
+                    'volatilidad_global':         (v) => `Volatilidad histórica: ±${fmt(v)} pts/año`,
+                    'cambio_porcentual_global':   (v) => v >= 0 ? `Mejora reciente: +${fmt(v)}%` : `Caída reciente: ${fmt(v)}%`,
+                    'cambio_absoluto_global':     (v) => v >= 0 ? `Ganó ${fmt(v)} pts este año` : `Perdió ${fmt(Math.abs(v))} pts este año`,
+                    'brecha_nacional_global':     (v) => `${v > 0 ? 'Supera' : 'Por debajo de'} la media nacional en ${fmt(Math.abs(v))} pts`,
+                };
+                if (riesgo.factores_principales && riesgo.factores_principales.length > 0) {
+                    riesgo.factores_principales.slice(0, 3).forEach(f => {
                         const li = document.createElement('li');
-                        li.innerHTML = `<small class="text-muted"><i class="bx bx-right-arrow-alt me-1"></i>${formatRiskFeatureName(f.feature)}</small>`;
+                        let desc;
+                        try {
+                            desc = featureDescriptions[f.feature]
+                                ? featureDescriptions[f.feature](f.value)
+                                : `${formatRiskFeatureName(f.feature)}: ${fmt(f.value)}`;
+                        } catch (e) {
+                            desc = `${formatRiskFeatureName(f.feature)}: ${f.value ?? '?'}`;
+                        }
+                        li.className = 'mb-1';
+                        li.innerHTML = `<small><i class="bx bx-right-arrow-alt me-1 text-warning"></i>${desc}</small>`;
                         factoresEl.appendChild(li);
                     });
+                }
+
+                // ── Narrativa contextual ──────────────────────────────────────
+                const narrativaEl = document.getElementById('schoolRiesgoNarrativa');
+                if (narrativaEl) {
+                    try {
+                        const ultimo = data.ultimo_ano || {};
+                        const cambioAbs = ultimo.cambio_absoluto_global;
+                        const clasificacion = ultimo.clasificacion_tendencia || '';
+
+                        let narrativa = '';
+                        if (prob < 30) {
+                            narrativa = `<span class="text-success fw-semibold">Señal positiva:</span> Con solo ${prob.toFixed(0)}% de probabilidad, este colegio tiene bajo riesgo de retroceso. La tendencia reciente es sólida.`;
+                        } else if (prob < 50) {
+                            narrativa = `<span class="text-warning fw-semibold">Señal mixta:</span> `;
+                            if (cambioAbs && cambioAbs > 0) {
+                                narrativa += `El colegio mejoró ${cambioAbs.toFixed(1)} pts ("${clasificacion}"), pero el modelo detecta volatilidad histórica. Un ${prob.toFixed(0)}% de probabilidad de ajuste es típico en colegios que escalan rápido — no implica colapso, sino posible estabilización.`;
+                            } else {
+                                narrativa += `El modelo detecta señales de alerta moderadas. Monitorear en el próximo periodo.`;
+                            }
+                        } else {
+                            narrativa = `<span class="text-danger fw-semibold">Alerta:</span> ${prob.toFixed(0)}% de probabilidad de declive. Los factores señalados requieren atención preventiva.`;
+                        }
+                        narrativaEl.innerHTML = `<i class="bx bx-bulb me-1"></i>${narrativa}`;
+                        narrativaEl.style.display = '';
+                    } catch (e) {
+                        console.warn('Error rendering narrativa:', e);
+                    }
                 }
             } else {
                 riesgoRow.style.display = 'none';
@@ -420,21 +479,40 @@ async function loadSchoolComparacion(sk, resumenData = null, historicalData = nu
         const chartData = await response.json();
 
         // Radar chart - Now with 4 series (Colegio, Municipal, Departamental, Nacional)
+        // API returns Chart.js format (label), ApexCharts needs (name) — convert here
+        const radarSeries = (chartData.datasets || []).map(ds => ({
+            name: ds.name || ds.label || 'Serie',
+            data: ds.data
+        }));
+
+        // ApexCharts radar ignores yaxis.min — use offset trick instead:
+        // subtract a base from all values so the polygon fills the chart,
+        // then restore real values in axis labels and tooltips.
+        const allVals = radarSeries.flatMap(s => s.data).filter(v => v > 0);
+        const radarBase = allVals.length
+            ? Math.max(0, Math.floor(Math.min(...allVals) / 5) * 5 - 5)
+            : 0;
+        const radarMax  = allVals.length ? Math.ceil(Math.max(...allVals) / 5) * 5 + 2 : 100;
+
+        const radarSeriesOffset = radarSeries.map(s => ({
+            name: s.name,
+            data: s.data.map(v => +(v - radarBase).toFixed(2))
+        }));
+
         const radarOptions = {
-            series: chartData.datasets,
+            series: radarSeriesOffset,
             chart: {
                 type: 'radar',
-                height: 350
+                height: 380,
+                toolbar: { show: false }
             },
             yaxis: {
                 show: true,
                 min: 0,
-                max: 100,
+                max: radarMax - radarBase,
                 tickAmount: 5,
                 labels: {
-                    formatter: function (val) {
-                        return Math.round(val);
-                    }
+                    formatter: val => Math.round(val + radarBase)
                 }
             },
             xaxis: {
@@ -442,9 +520,7 @@ async function loadSchoolComparacion(sk, resumenData = null, historicalData = nu
             },
             tooltip: {
                 y: {
-                    formatter: function (val) {
-                        return val ? val.toFixed(2) : '0.00';
-                    }
+                    formatter: val => (val + radarBase).toFixed(1) + ' pts'
                 }
             },
             colors: [colors.primary, colors.warning, colors.info, colors.success],
@@ -452,25 +528,14 @@ async function loadSchoolComparacion(sk, resumenData = null, historicalData = nu
                 radar: {
                     polygons: {
                         strokeColors: '#b0b0b0',
-                        fill: {
-                            colors: ['#e0e0e0', '#ececec']
-                        }
+                        fill: { colors: ['#f5f5f5', '#ebebeb'] }
                     }
                 }
             },
-            fill: {
-                opacity: 0.3
-            },
-            stroke: {
-                width: 2
-            },
-            markers: {
-                size: 4
-            },
-            legend: {
-                show: true,
-                position: 'bottom'
-            }
+            fill: { opacity: 0.35 },
+            stroke: { width: 2 },
+            markers: { size: 4 },
+            legend: { show: true, position: 'bottom' }
         };
 
         if (schoolCharts.radar) schoolCharts.radar.destroy();
@@ -1179,3 +1244,182 @@ function updateNivelesLeyenda(subjectData) {
 
 // Export function to be called from loadSchoolDetail
 window.loadDistribucionNiveles = loadDistribucionNiveles;
+
+// ============================================================================
+// INGLÉS — PERFIL MCER
+// ============================================================================
+
+let chartIngMcer = null;
+let chartIngHistorico = null;
+
+async function loadIndicadoresIngles(sk) {
+    const section = document.getElementById('inglesSection');
+    if (!section) return;
+
+    try {
+        const resp = await fetch(`/icfes/api/colegio/${sk}/indicadores-ingles/`);
+        if (!resp.ok) { section.style.display = 'none'; return; }
+        const json = await resp.json();
+        const rows = json.data || [];
+        if (!rows.length) { section.style.display = 'none'; return; }
+
+        section.style.display = '';
+        const actual = rows[0]; // año más reciente
+
+        // ── KPIs ────────────────────────────────────────────────────────────
+        const fmtDiff = (val, nac) => {
+            const d = val - nac;
+            const cls = d >= 0 ? 'text-success' : 'text-danger';
+            const icon = d >= 0 ? '▲' : '▼';
+            return `<span class="${cls}">${icon} ${Math.abs(d).toFixed(1)} vs nac ${nac.toFixed(1)}%</span>`;
+        };
+
+        document.getElementById('ing-kpi-puntaje').textContent = actual.avg_punt_ingles.toFixed(1);
+        // national avg punt ingles - approximate from known data
+        document.getElementById('ing-kpi-puntaje-vs').textContent = `vs nacional ~51.5`;
+
+        document.getElementById('ing-kpi-b1').textContent = actual.pct_b1.toFixed(1) + '%';
+        document.getElementById('ing-kpi-b1-vs').innerHTML = fmtDiff(actual.pct_b1, actual.nac_pct_b1);
+
+        document.getElementById('ing-kpi-a2').textContent = actual.pct_a2.toFixed(1) + '%';
+        document.getElementById('ing-kpi-a2-vs').innerHTML = fmtDiff(actual.pct_a2, actual.nac_pct_a2);
+
+        document.getElementById('ing-kpi-a1').textContent = actual.pct_a1.toFixed(1) + '%';
+        // For A1 lower is better
+        const diffA1 = actual.pct_a1 - actual.nac_pct_a1;
+        const clsA1 = diffA1 <= 0 ? 'text-success' : 'text-danger';
+        const iconA1 = diffA1 <= 0 ? '▼' : '▲';
+        document.getElementById('ing-kpi-a1-vs').innerHTML =
+            `<span class="${clsA1}">${iconA1} ${Math.abs(diffA1).toFixed(1)} vs nac ${actual.nac_pct_a1.toFixed(1)}%</span>`;
+
+        // ── KPI: Inglés Fortaleza / Lastre ───────────────────────────────────
+        const desv = actual.desviacion_ingles;
+        const desvEl    = document.getElementById('ing-kpi-desviacion');
+        const desvLabel = document.getElementById('ing-kpi-desviacion-label');
+        const desvCard  = document.getElementById('ing-kpi-desviacion-card');
+        if (desvEl && desv !== null && desv !== undefined) {
+            const sign = desv >= 0 ? '+' : '';
+            desvEl.textContent = sign + desv.toFixed(1) + ' pts';
+            if (desv >= 5) {
+                desvEl.className = 'mb-0 fw-bold text-success';
+                desvLabel.textContent = '💪 Gran Fortaleza';
+                desvCard.style.borderColor = '#198754';
+            } else if (desv >= 1) {
+                desvEl.className = 'mb-0 fw-bold text-success';
+                desvLabel.textContent = '✓ Fortaleza';
+                desvCard.style.borderColor = '#20c997';
+            } else if (desv >= -1) {
+                desvEl.className = 'mb-0 fw-bold text-secondary';
+                desvLabel.textContent = '↔ Equilibrado';
+                desvCard.style.borderColor = '#6c757d';
+            } else if (desv >= -5) {
+                desvEl.className = 'mb-0 fw-bold text-warning';
+                desvLabel.textContent = '⚠ Lastre leve';
+                desvCard.style.borderColor = '#ffc107';
+            } else {
+                desvEl.className = 'mb-0 fw-bold text-danger';
+                desvLabel.textContent = '🔴 Lastre crítico';
+                desvCard.style.borderColor = '#dc3545';
+            }
+        }
+
+        // ── MCER stacked bar chart ───────────────────────────────────────────
+        if (chartIngMcer) { chartIngMcer.destroy(); chartIngMcer = null; }
+        chartIngMcer = new ApexCharts(document.querySelector('#chartIngMcer'), {
+            chart: { type: 'bar', height: 220, stacked: true, toolbar: { show: false } },
+            plotOptions: { bar: { horizontal: true, barHeight: '55%' } },
+            series: [
+                { name: 'B1+',  data: [actual.pct_b1, actual.nac_pct_b1] },
+                { name: 'A2',   data: [actual.pct_a2, actual.nac_pct_a2] },
+                { name: 'A1',   data: [actual.pct_a1, actual.nac_pct_a1] },
+            ],
+            colors: ['#198754', '#0d6efd', '#ffc107'],
+            xaxis: {
+                categories: ['Tu Colegio', 'Nacional'],
+                labels: { formatter: v => v.toFixed(1) + '%' }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: v => v > 3 ? v.toFixed(1) + '%' : '',
+                style: { fontSize: '11px', colors: ['#fff'] }
+            },
+            tooltip: { y: { formatter: v => v.toFixed(1) + '%' } },
+            legend: { position: 'top', fontSize: '12px' },
+        });
+        chartIngMcer.render();
+
+        // ── Historical trend line ─────────────────────────────────────────────
+        if (chartIngHistorico) { chartIngHistorico.destroy(); chartIngHistorico = null; }
+        const anos   = rows.map(r => r.ano).reverse();
+        const scores = rows.map(r => r.avg_punt_ingles).reverse();
+        const pctB1  = rows.map(r => r.pct_b1).reverse();
+
+        chartIngHistorico = new ApexCharts(document.querySelector('#chartIngHistorico'), {
+            chart: { type: 'line', height: 220, toolbar: { show: false } },
+            series: [
+                { name: 'Puntaje Inglés', data: scores, type: 'line' },
+                { name: '% B1+',          data: pctB1,  type: 'line' },
+            ],
+            stroke: { curve: 'smooth', width: [2, 2], dashArray: [0, 4] },
+            colors: ['#0891b2', '#198754'],
+            xaxis: { categories: anos },
+            yaxis: [
+                { title: { text: 'Puntaje' }, min: 0, max: 100 },
+                { opposite: true, title: { text: '% B1+' }, min: 0, max: 100 },
+            ],
+            markers: { size: 4 },
+            legend: { position: 'top', fontSize: '12px' },
+            tooltip: { shared: true, intersect: false },
+        });
+        chartIngHistorico.render();
+
+        // ── Insight contextual ───────────────────────────────────────────────
+        const insightEl = document.getElementById('ingInsight');
+        if (insightEl) {
+            const b1    = actual.pct_b1;
+            const nacB1 = actual.nac_pct_b1;
+            const d     = actual.desviacion_ingles;
+            const trend = rows.length > 1 ? (rows[0].avg_punt_ingles - rows[rows.length - 1].avg_punt_ingles) : 0;
+            let msg = '';
+
+            // Bloque 1: posición vs nacional en B1+
+            if (b1 >= nacB1 * 1.5) {
+                msg = `<i class="bx bx-trophy text-success me-1"></i><strong>Colegio destacado en inglés:</strong> ${b1.toFixed(1)}% alcanza B1+ — ${(b1 - nacB1).toFixed(1)} pp por encima del nacional (${nacB1.toFixed(1)}%).`;
+            } else if (b1 >= nacB1) {
+                msg = `<i class="bx bx-check-circle text-success me-1"></i><strong>Por encima del promedio:</strong> ${b1.toFixed(1)}% en B1+ vs nacional ${nacB1.toFixed(1)}%.`;
+            } else {
+                msg = `<i class="bx bx-info-circle text-warning me-1"></i><strong>Oportunidad de mejora:</strong> Solo ${b1.toFixed(1)}% alcanza B1+, frente al ${nacB1.toFixed(1)}% nacional.`;
+            }
+
+            // Bloque 2: fortaleza/lastre relativo
+            if (d !== null && d !== undefined) {
+                if (d >= 5) {
+                    msg += ` Inglés es la <strong>gran fortaleza diferenciadora</strong> del colegio: supera sus otras materias en ${d.toFixed(1)} pts — un activo académico poco común.`;
+                } else if (d >= 1) {
+                    msg += ` Inglés supera el promedio de las otras materias en ${d.toFixed(1)} pts — fortaleza relativa valiosa.`;
+                } else if (d >= -1) {
+                    msg += ` Inglés está equilibrado con el resto del perfil académico (${d >= 0 ? '+' : ''}${d.toFixed(1)} pts vs otras materias).`;
+                } else if (d >= -5) {
+                    msg += ` <strong>Atención:</strong> Inglés arrastra el puntaje global — ${Math.abs(d).toFixed(1)} pts por debajo del promedio de las otras materias.`;
+                } else {
+                    msg += ` <strong>Alerta:</strong> Inglés es el lastre más crítico: ${Math.abs(d).toFixed(1)} pts por debajo de sus propias otras materias. Impacto directo en el puntaje global.`;
+                }
+            }
+
+            // Bloque 3: tendencia
+            if (trend > 3) {
+                msg += ` <span class="text-success">Tendencia positiva: +${trend.toFixed(1)} pts en el período.</span>`;
+            } else if (trend < -3) {
+                msg += ` <span class="text-danger">Tendencia negativa: ${trend.toFixed(1)} pts en el período.</span>`;
+            }
+
+            insightEl.innerHTML = msg;
+        }
+
+    } catch (e) {
+        console.error('Error loading inglés indicators:', e);
+        if (section) section.style.display = 'none';
+    }
+}
+
+window.loadIndicadoresIngles = loadIndicadoresIngles;

@@ -74,9 +74,12 @@
 <script>
     // B2B user types that should show organization field
     const b2bTypes = ['principal', 'government', 'researcher', 'preicfes', 'language_academy', 'consultant'];
+    const paymentsDebug = {{ payments_debug_logs|yesno:"true,false" }};
 
     document.addEventListener('DOMContentLoaded', function () {
-        console.log('1. DOM cargado.');
+        if (paymentsDebug) {
+            console.log('Wompi checkout DOM listo');
+        }
 
         // Handle organization field visibility
         const userTypeSelect = document.getElementById('user_type');
@@ -96,57 +99,71 @@
         try {
             var publicKey = '{{ wompi_public_key }}';
             var integritySignature = '{{ integrity_signature }}';
-            console.log('KEY:', publicKey);
-            console.log('SIGNATURE:', integritySignature); // DEBUG
+            if (paymentsDebug) {
+                console.log('Wompi key prefix:', publicKey.slice(0, 12));
+                console.log('Wompi signature prefix:', integritySignature.slice(0, 12));
+            }
 
             var checkout = new WidgetCheckout({
                 currency: 'COP',
                 amountInCents: {{ amount_in_cents| unlocalize }},
-        reference: '{{ reference }}',
-        signature: '{{ integrity_signature }}',
-        publicKey: publicKey,
-        customerData: {
-        email: '{{ customer_email }}',
-        fullName: '{{ request.user.name|default:customer_email }}'
-    }
+                reference: '{{ reference }}',
+                publicKey: publicKey,
+                signature: {
+                    integrity: integritySignature
+                },
+                customerData: {
+                    email: '{{ customer_email }}',
+                    fullName: '{{ request.user.name|default:customer_email }}'
+                }
             });
 
-    payButton.addEventListener('click', function () {
-        console.log('Click!');
-        checkout.open(function (result) {
-            var transaction = result.transaction;
-            console.log('Transaction:', transaction);
-
-            if (transaction.status === 'APPROVED') {
-                document.getElementById('loading').style.display = 'block';
-                payButton.style.display = 'none';
-
-                // Get user_type and organization_name
-                var userType = document.getElementById('user_type').value;
-                var organizationName = document.getElementById('organization_name').value;
-
-                // Build success URL with user_type params
-                var successUrl = '{{ success_url }}' + '?id=' + transaction.id;
-                if (userType) {
-                    successUrl += '&user_type=' + encodeURIComponent(userType);
-                    if (organizationName) {
-                        successUrl += '&organization_name=' + encodeURIComponent(organizationName);
-                    }
+            payButton.addEventListener('click', function () {
+                if (paymentsDebug) {
+                    console.log('Abriendo widget Wompi');
                 }
+                checkout.open(function (result) {
+                    var transaction = result && result.transaction ? result.transaction : null;
+                    if (!transaction) {
+                        document.getElementById('error-msg').innerText = "No se pudo iniciar el pago. Intenta nuevamente.";
+                        document.getElementById('error-msg').style.display = 'block';
+                        return;
+                    }
 
-                // Manual redirect ONLY on success
-                window.location.href = successUrl;
-            } else if (transaction.status === 'DECLINED' || transaction.status === 'ERROR') {
-                document.getElementById('error-msg').innerText = "Pago " + transaction.status;
-                document.getElementById('error-msg').style.display = 'block';
-            }
-        });
-    });
+                    if (paymentsDebug) {
+                        console.log('Estado transaccion:', transaction.status);
+                    }
+
+                    if (transaction.status === 'APPROVED') {
+                        document.getElementById('loading').style.display = 'block';
+                        payButton.style.display = 'none';
+
+                        // Get user_type and organization_name
+                        var userType = document.getElementById('user_type').value;
+                        var organizationName = document.getElementById('organization_name').value;
+
+                        // Build success URL with user_type params
+                        var successUrl = '{{ success_url }}' + '?id=' + transaction.id;
+                        if (userType) {
+                            successUrl += '&user_type=' + encodeURIComponent(userType);
+                            if (organizationName) {
+                                successUrl += '&organization_name=' + encodeURIComponent(organizationName);
+                            }
+                        }
+
+                        // Manual redirect ONLY on success
+                        window.location.href = successUrl;
+                    } else if (transaction.status === 'DECLINED' || transaction.status === 'ERROR') {
+                        document.getElementById('error-msg').innerText = "Pago " + transaction.status;
+                        document.getElementById('error-msg').style.display = 'block';
+                    }
+                });
+            });
 
         } catch (e) {
-        console.error('Initial Error:', e);
-        alert('Error: ' + e);
-    }
+            console.error('Initial Error:', e);
+            alert('Error: ' + e);
+        }
     });
 
 </script>

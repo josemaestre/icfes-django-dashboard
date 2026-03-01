@@ -6,6 +6,7 @@ from . import (
     api_views,
     export_views,
     geo_landing_views,
+    ingles_landing_views,
     invitacion_views,
     landing_views_simple as landing_views,
     longtail_landing_views,
@@ -23,6 +24,9 @@ urlpatterns = [
     path('brecha/', views.brecha_educativa_dashboard, name='brecha_educativa'),
     path('ejecutivo/', views.resumen_ejecutivo_dashboard, name='resumen_ejecutivo'),
     path('ingles/', views.ingles_dashboard, name='ingles_dashboard'),
+    path('ingles-seo/', ingles_landing_views.ingles_hub_page, name='ingles_seo_hub'),
+    path('ingles-seo/departamento/<slug:departamento_slug>/',
+         ingles_landing_views.ingles_department_page, name='ingles_department_landing'),
     path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
     path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
@@ -126,11 +130,16 @@ urlpatterns = [
     path('api/colegio/<str:colegio_sk>/indicadores-excelencia/',
          views.api_colegio_indicadores_excelencia, name='api_colegio_indicadores_excelencia'),
 
+    # Endpoint de Indicadores de Inglés MCER por colegio
+    path('api/colegio/<str:colegio_sk>/indicadores-ingles/',
+         views.api_colegio_indicadores_ingles, name='api_colegio_indicadores_ingles'),
+
     # Endpoint de Distribución de Niveles de Desempeño (NUEVO - gráficas donut estilo ICFES)
     path('api/colegio/<str:colegio_sk>/distribucion-niveles/',
          views.api_colegio_distribucion_niveles, name='api_colegio_distribucion_niveles'),
 
-    # Endpoint de Mapa Geográfico (NUEVO - heatmap de estudiantes)
+    # Endpoints de Mapa Geográfico
+    path('api/mapa-colegios/', views.api_mapa_colegios, name='api_mapa_colegios'),
     path('api/mapa-estudiantes-heatmap/', views.api_mapa_estudiantes_heatmap,
          name='api_mapa_estudiantes_heatmap'),
     path('api/mapa-departamentos/', views.api_mapa_departamentos,
@@ -188,6 +197,8 @@ urlpatterns = [
     path('api/ingles/clusters-depto/', views_ingles.api_ingles_clusters_depto, name='api_ingles_clusters_depto'),
     path('api/ingles/prediccion/', views_ingles.api_ingles_prediccion, name='api_ingles_prediccion'),
     path('api/ingles/ai-analisis/', views_ingles.api_ingles_ai_analisis, name='api_ingles_ai_analisis'),
+    path('api/ingles/correlaciones/', views_ingles.api_ingles_correlaciones, name='api_ingles_correlaciones'),
+    path('api/ingles/tendencias-regionales/', views_ingles.api_ingles_tendencias_regionales, name='api_ingles_tendencias_regionales'),
 
     # API endpoints for enhanced user profile
     path('api/schools/search/', api_views.search_schools, name='search_schools'),
