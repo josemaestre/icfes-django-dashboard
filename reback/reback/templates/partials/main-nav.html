@@ -80,13 +80,13 @@
         <div class="collapse" id="sidebarCampanas">
           <ul class="nav sub-navbar-nav">
             <li class="sub-nav-item">
-              <a class="sub-nav-link" href="/admin/icfes_dashboard/campaign/">Ver campañas</a>
+              <a class="sub-nav-link" href="{% url 'admin:icfes_dashboard_campaign_changelist' %}">Ver campañas</a>
             </li>
             <li class="sub-nav-item">
-              <a class="sub-nav-link" href="/admin/icfes_dashboard/campaignprospect/">Ver prospectos</a>
+              <a class="sub-nav-link" href="{% url 'admin:icfes_dashboard_campaignprospect_changelist' %}">Ver prospectos</a>
             </li>
             <li class="sub-nav-item">
-              <a class="sub-nav-link" href="/admin/">Admin general</a>
+              <a class="sub-nav-link" href="{% url 'admin:index' %}">Admin general</a>
             </li>
           </ul>
         </div>
