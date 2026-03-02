@@ -3,6 +3,117 @@ Django models for ICFES data from dbt gold layer.
 These are read-only models that map to DuckDB tables.
 """
 from django.db import models
+from django.utils import timezone
+
+
+# ============================================================================
+# MÓDULO DE CAMPAÑAS COMERCIALES
+# Gestión de outbound sales a colegios privados
+# ============================================================================
+
+class Campaign(models.Model):
+    """
+    Representa una campaña de outbound sales.
+    Cada campaña agrupa un lote de prospectos con configuración propia.
+    """
+    ESTADO_CHOICES = [
+        ('borrador',    'Borrador'),
+        ('activa',      'Activa'),
+        ('pausada',     'Pausada'),
+        ('completada',  'Completada'),
+    ]
+
+    nombre            = models.CharField(max_length=150)
+    lote              = models.IntegerField(default=1, help_text="Número de lote (1, 2, 3...)")
+    estado            = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='borrador')
+    descripcion       = models.TextField(blank=True, help_text="Segmento objetivo, estrategia, notas")
+
+    # Configuración de envío
+    email_remitente   = models.EmailField(default='icfes@sabededatos.com')
+    nombre_remitente  = models.CharField(max_length=100, default='Jose Maestre',
+                                         help_text="Nombre que ve el destinatario. Para Tier 1 usar nombre personal.")
+
+    # Parámetros del lote importado
+    ciudades_objetivo = models.TextField(blank=True, help_text="Ciudades incluidas, separadas por coma")
+    top_n_por_ciudad  = models.IntegerField(default=10, help_text="Top N colegios por ciudad")
+
+    # Fechas
+    fecha_creacion    = models.DateTimeField(auto_now_add=True)
+    fecha_lanzamiento = models.DateTimeField(null=True, blank=True)
+    fecha_completada  = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+        verbose_name = 'Campaña'
+        verbose_name_plural = 'Campañas'
+
+    def __str__(self):
+        return f"[Lote {self.lote}] {self.nombre} — {self.get_estado_display()}"
+
+    @property
+    def total_prospectos(self):
+        return self.prospects.count()
+
+    @property
+    def stats(self):
+        qs = self.prospects
+        return {
+            'total':      qs.count(),
+            'pendiente':  qs.filter(estado='pendiente').count(),
+            'enviado':    qs.filter(estado='enviado').count(),
+            'respondio':  qs.filter(estado='respondio').count(),
+            'demo':       qs.filter(estado='demo').count(),
+            'trial':      qs.filter(estado='trial').count(),
+            'cliente':    qs.filter(estado='cliente').count(),
+            'descartado': qs.filter(estado='descartado').count(),
+        }
+
+
+class CampaignProspect(models.Model):
+    """
+    Prospecto individual dentro de una campaña.
+    Datos copiados desde DuckDB al importar — Postgres solo para tracking.
+    """
+    ESTADO_CHOICES = [
+        ('pendiente',   'Pendiente'),
+        ('enviado',     'Email enviado'),
+        ('respondio',   'Respondió'),
+        ('demo',        'Demo agendada'),
+        ('trial',       'Trial activo'),
+        ('cliente',     'Cliente pagando'),
+        ('descartado',  'Descartado'),
+    ]
+
+    campaign         = models.ForeignKey(Campaign, on_delete=models.CASCADE,
+                                         related_name='prospects')
+
+    # Datos del colegio (snapshot desde DuckDB)
+    nombre_colegio   = models.CharField(max_length=255)
+    rector           = models.CharField(max_length=255, blank=True)
+    email            = models.EmailField()
+    telefono         = models.CharField(max_length=50, blank=True)
+    municipio        = models.CharField(max_length=100)
+    departamento     = models.CharField(max_length=100)
+    slug             = models.CharField(max_length=255)
+    avg_punt_global  = models.FloatField(default=0)
+    rank_municipio   = models.IntegerField(default=0,
+                                           help_text="Posición dentro de su municipio por puntaje")
+    demo_url         = models.URLField(max_length=500)
+
+    # Tracking de campaña
+    estado           = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    fecha_envio      = models.DateTimeField(null=True, blank=True)
+    fecha_respuesta  = models.DateTimeField(null=True, blank=True)
+    notas            = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['municipio', 'rank_municipio']
+        verbose_name = 'Prospecto'
+        verbose_name_plural = 'Prospectos'
+        unique_together = [['campaign', 'email']]
+
+    def __str__(self):
+        return f"{self.nombre_colegio} ({self.municipio}) — {self.get_estado_display()}"
 
 
 class FactIcfesAnalytics(models.Model):

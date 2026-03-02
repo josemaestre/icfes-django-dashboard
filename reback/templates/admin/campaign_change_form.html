@@ -1,0 +1,31 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+  {{ block.super }}
+
+  {% if show_lanzar_btn %}
+  <div class="submit-row" style="margin-top:8px;">
+    <a href="{{ lanzar_url }}"
+       onclick="return confirm('¿Lanzar campaña? Esto marcará todos los prospectos como listos para contactar.')"
+       style="display:inline-block;padding:10px 24px;background:#198754;color:#fff;
+              font-size:15px;font-weight:700;border-radius:6px;text-decoration:none;
+              border:none;cursor:pointer;">
+      🚀 LANZAR CAMPAÑA
+    </a>
+    <span style="margin-left:12px;color:#6c757d;font-size:13px;">
+      Cambia el estado de Borrador → Activa y registra la fecha de lanzamiento.
+    </span>
+  </div>
+  {% endif %}
+
+  {% if show_completar_btn %}
+  <div class="submit-row" style="margin-top:8px;">
+    <a href="{{ completar_url }}"
+       onclick="return confirm('¿Marcar campaña como completada?')"
+       style="display:inline-block;padding:10px 24px;background:#0d6efd;color:#fff;
+              font-size:15px;font-weight:700;border-radius:6px;text-decoration:none;">
+      ✅ MARCAR COMO COMPLETADA
+    </a>
+  </div>
+  {% endif %}
+{% endblock %}
