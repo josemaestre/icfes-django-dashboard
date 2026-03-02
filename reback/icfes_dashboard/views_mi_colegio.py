@@ -16,6 +16,7 @@ Endpoints:
 
 import json
 
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
@@ -30,6 +31,7 @@ SESSION_KEY = "mi_colegio"
 # Página principal
 # ---------------------------------------------------------------------------
 
+@login_required
 def mi_colegio_page(request):
     """Vista principal: buscador si no hay colegio en session, dashboard si hay."""
     mi_colegio = request.session.get(SESSION_KEY)
@@ -70,6 +72,7 @@ def mi_colegio_seleccionar(request):
         return JsonResponse({"error": str(e)}, status=400)
 
 
+@login_required
 def mi_colegio_limpiar(request):
     """Elimina el colegio de session y vuelve al buscador."""
     request.session.pop(SESSION_KEY, None)

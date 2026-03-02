@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import cache_page
+from django.contrib.auth.decorators import login_required
 import logging
 import pandas as pd
 import json
@@ -75,6 +76,7 @@ def _dept_key(value):
 # VISTAS PRINCIPALES
 # ============================================================================
 
+@login_required
 def icfes_dashboard(request):
     """Vista principal del dashboard ICFES."""
     context = {
@@ -84,6 +86,7 @@ def icfes_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-icfes.html', context)
 
 
+@login_required
 def dashboard_charts(request):
     """Vista del dashboard con gráficos interactivos."""
     context = {
@@ -93,6 +96,7 @@ def dashboard_charts(request):
     return render(request, 'icfes_dashboard/pages/dashboard-icfes-charts.html', context)
 
 
+@login_required
 def brecha_educativa_dashboard(request):
     """Vista del dashboard de brechas educativas: Oficial vs No Oficial."""
     context = {
@@ -102,6 +106,7 @@ def brecha_educativa_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-brecha.html', context)
 
 
+@login_required
 def resumen_ejecutivo_dashboard(request):
     """Vista de resumen ejecutivo de storytelling ICFES."""
     context = {
@@ -111,16 +116,19 @@ def resumen_ejecutivo_dashboard(request):
     return render(request, 'icfes_dashboard/pages/resumen-ejecutivo-icfes.html', context)
 
 
+@login_required
 def historia_educacion_dashboard(request):
     """Vista de storytelling: Historia de la Educación Colombiana."""
     return render(request, 'icfes_dashboard/pages/dashboard-historia.html', {})
 
 
+@login_required
 def inteligencia_educativa_dashboard(request):
     """Vista de Inteligencia Educativa: 4 narrativas ML-driven."""
     return render(request, 'icfes_dashboard/pages/dashboard-inteligencia.html', {})
 
 
+@login_required
 def ingles_dashboard(request):
     """Vista del dashboard de Bilingüismo/Inglés."""
     try:
@@ -2088,6 +2096,7 @@ Responde ÚNICAMENTE con el JSON, sin texto adicional."""
         }, status=500)
 
 
+@login_required
 def colegio_detalle_page(request):
     '''Vista de la página de detalle individual del colegio'''
     return render(request, 'icfes_dashboard/pages/colegio-detalle.html')
