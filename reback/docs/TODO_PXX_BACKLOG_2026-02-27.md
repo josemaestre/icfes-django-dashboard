@@ -129,11 +129,14 @@
 
 **Criterio de cierre:** `SELECT COUNT(*) FROM gold.fct_agg_colegios_ano WHERE municipio IN ('Bogotá','Medellín') AND ano='2024'` retorna > 0, y el JOIN con `icfes_silver.colegios` en email retorna > 0 para Cali 2024.
 
-**TODO dbt — Consistencia del surrogate key `colegio_sk`:**
-- [ ] Actualmente `colegio_sk` es un MD5 VARCHAR generado de forma inconsistente: cada modelo hashea campos distintos, produciendo hashes diferentes para el mismo colegio. Esto rompe JOINs entre `dim_colegios` y `fct_agg_colegios_ano`.
-- [ ] Usar `{{ dbt_utils.generate_surrogate_key(['colegio_bk']) }}` (o macro equivalente) en **todos** los modelos que crean `colegio_sk`, siempre desde el mismo campo (`colegio_bk` normalizado sin prefijo de sede).
-- [ ] Considerar migrar a `BIGINT` (hash numérico) en lugar de VARCHAR MD5 para mejor performance en joins.
-- [ ] Prerequisito: normalizar `colegio_bk` (fix prefijo de sede) antes de regenerar el SK.
+**TODO dbt — Consistencia del surrogate key `colegio_sk`: ✅ APLICADO 2026-03-02**
+- [x] Macro `macros/sk/normalize_dane_code.sql` creada: `LPAD(RIGHT(TRIM(code), 12), 12, '0')` — elimina prefijo de sede y garantiza 12 dígitos.
+- [x] `silver/colegios_historicos_icfes` CTE: `codigo_colegio` ahora usa `normalize_dane_code()` en lugar del raw `cole_cod_dane_establecimiento`.
+- [x] `silver/colegios_ano.sql` `standardized_schools`: `colegio_ano_sk` ahora usa `TRIM(LPAD(codigo_colegio, 12, '0'))` — consistente con `icfes.sql`.
+- [x] `silver/icfes.sql`: `colegio_ano_sk` ELSE branch cambió de `TRIM(LPAD(code, 12, '0'))` a `LPAD(RIGHT(TRIM(code), 12), 12, '0')` — elimina prefijo de sede antes de padding.
+- [x] `import_campaign_prospects.py`: JOIN cambiado de `colegio_sk` a `colegio_bk`, INNER→LEFT JOIN, guardrail convertido a warning.
+- [ ] Migrar a BIGINT (hash DuckDB) — baja prioridad, post-lanzamiento.
+- **Requiere:** `dbt build --full-refresh --select silver.icfes silver.colegios_ano silver.colegios silver.alumnos gold` tras push a EC2.
 
 ### P11 - Módulo de Campañas Comerciales — Operación y Evolución
 

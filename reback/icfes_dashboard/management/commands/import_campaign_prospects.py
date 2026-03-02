@@ -108,6 +108,11 @@ class Command(BaseCommand):
         self.stdout.write("")
 
         # ── 1. Query DuckDB ────────────────────────────────────────────
+        # NOTA: Usamos colegio_bk (código DANE normalizado) como join key en lugar
+        # de colegio_sk, ya que es el identificador de negocio estable. El JOIN
+        # con fct_agg_colegios_ano es LEFT JOIN opcional: la mayoría de colegios
+        # con email en dim_colegios son jardines/escuelas que no presentan ICFES.
+        # Si hay score disponible, se usa para ranking; si no, se ordena por nombre.
         if segmento == 'ciudad':
             placeholders = ', '.join(['?' for _ in ciudades])
             query = f"""
@@ -123,11 +128,14 @@ class Command(BaseCommand):
                         f.avg_punt_global,
                         ROW_NUMBER() OVER (
                             PARTITION BY d.municipio
-                            ORDER BY f.avg_punt_global DESC
+                            ORDER BY
+                                CASE WHEN f.avg_punt_global IS NULL THEN 1 ELSE 0 END,
+                                COALESCE(f.avg_punt_global, 0) DESC,
+                                d.nombre_colegio ASC
                         ) AS rank_municipio
                     FROM gold.dim_colegios d
-                    JOIN gold.fct_agg_colegios_ano f
-                        ON f.colegio_sk = d.colegio_sk
+                    LEFT JOIN gold.fct_agg_colegios_ano f
+                        ON f.colegio_bk = d.colegio_bk
                         AND f.ano = CAST(? AS VARCHAR)
                         AND f.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                     LEFT JOIN gold.dim_colegios_slugs s
@@ -136,7 +144,6 @@ class Command(BaseCommand):
                       AND d.municipio IN ({placeholders})
                       AND d.email IS NOT NULL
                       AND TRIM(d.email) != ''
-                      AND f.avg_punt_global > 0
                 )
                 SELECT *
                 FROM ranked
@@ -155,10 +162,10 @@ class Command(BaseCommand):
             query = f"""
                 WITH ult_puntaje AS (
                     SELECT
-                        colegio_sk,
+                        colegio_bk,
                         avg_punt_global,
                         ROW_NUMBER() OVER (
-                            PARTITION BY colegio_sk
+                            PARTITION BY colegio_bk
                             ORDER BY CAST(ano AS INTEGER) DESC
                         ) AS rn
                     FROM gold.fct_agg_colegios_ano
@@ -180,19 +187,18 @@ class Command(BaseCommand):
                             PARTITION BY d.departamento
                             ORDER BY
                                 CASE WHEN u.avg_punt_global IS NULL THEN 1 ELSE 0 END,
-                                u.avg_punt_global DESC,
+                                COALESCE(u.avg_punt_global, 0) DESC,
                                 d.nombre_colegio ASC
                         ) AS rank_municipio
                     FROM gold.dim_colegios d
                     LEFT JOIN ult_puntaje u
-                        ON u.colegio_sk = d.colegio_sk
+                        ON u.colegio_bk = d.colegio_bk
                        AND u.rn = 1
                     LEFT JOIN gold.dim_colegios_slugs s
                         ON s.codigo = d.colegio_bk
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                       AND d.email IS NOT NULL
                       AND TRIM(d.email) != ''
-                      AND u.avg_punt_global IS NOT NULL
                       {dep_filter}
                 )
                 SELECT *
@@ -229,13 +235,12 @@ class Command(BaseCommand):
                             CASE
                                 WHEN d.email IS NOT NULL
                                      AND TRIM(d.email) != ''
-                                     AND f.avg_punt_global > 0
                                 THEN 1 ELSE 0
                             END
                         ) AS aptos
                     FROM gold.dim_colegios d
-                    JOIN gold.fct_agg_colegios_ano f
-                        ON f.colegio_sk = d.colegio_sk
+                    LEFT JOIN gold.fct_agg_colegios_ano f
+                        ON f.colegio_bk = d.colegio_bk
                         AND f.ano = CAST(? AS VARCHAR)
                         AND f.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
@@ -256,13 +261,13 @@ class Command(BaseCommand):
                         SUM(CASE WHEN u.avg_punt_global IS NOT NULL THEN 1 ELSE 0 END) AS con_puntaje
                     FROM gold.dim_colegios d
                     LEFT JOIN (
-                        SELECT colegio_sk, avg_punt_global
+                        SELECT colegio_bk, avg_punt_global
                         FROM (
                             SELECT
-                                colegio_sk,
+                                colegio_bk,
                                 avg_punt_global,
                                 ROW_NUMBER() OVER (
-                                    PARTITION BY colegio_sk
+                                    PARTITION BY colegio_bk
                                     ORDER BY CAST(ano AS INTEGER) DESC
                                 ) AS rn
                             FROM gold.fct_agg_colegios_ano
@@ -271,7 +276,7 @@ class Command(BaseCommand):
                               AND avg_punt_global > 0
                         ) t
                         WHERE rn = 1
-                    ) u ON u.colegio_sk = d.colegio_sk
+                    ) u ON u.colegio_bk = d.colegio_bk
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                       AND d.email IS NOT NULL
                       AND TRIM(d.email) != ''
@@ -304,14 +309,12 @@ class Command(BaseCommand):
             return
 
         total = len(df)
-        invalid_scores = int((df['avg_punt_global'].isna() | (df['avg_punt_global'] <= 0)).sum())
-        if invalid_scores > 0:
-            self.stderr.write(self.style.ERROR(
-                "Guardrail activado: "
-                f"{invalid_scores}/{total} prospectos tienen avg_punt_global inválido (<= 0 o NULL). "
-                "Importación cancelada para evitar campañas con promedio 0.0."
+        sin_score = int((df['avg_punt_global'].isna() | (df['avg_punt_global'] <= 0)).sum())
+        if sin_score > 0:
+            self.stdout.write(self.style.WARNING(
+                f"  ⚠  {sin_score}/{total} prospectos sin puntaje ICFES "
+                "(colegios SINEB que no presentan ICFES — se incluyen con score=0)."
             ))
-            return
         self.stdout.write(self.style.SUCCESS(f"OK — {total} prospectos encontrados"))
 
         # ── 2. Resumen por segmento ─────────────────────────────────────
