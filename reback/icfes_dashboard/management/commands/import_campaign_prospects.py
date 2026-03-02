@@ -33,7 +33,7 @@ CIUDADES_DEFAULT = [
     'Soledad', 'Soacha',
 ]
 
-BASE_URL = 'https://icfes-analytics.com'
+BASE_URL = 'https://www.icfes-analytics.com/icfes'
 
 
 class Command(BaseCommand):
@@ -91,9 +91,10 @@ class Command(BaseCommand):
         # ── 1. Query DuckDB ────────────────────────────────────────────
         placeholders = ', '.join(['?' for _ in ciudades])
 
-        # Fuente: gold.dim_colegios — disponible en dev Y prod (misma tabla que usan las landing pages).
-        # La unión con fct_agg no es posible en 2024 por un gap de pipeline (P10).
-        # Se ordena por nombre_colegio — ranking de desempeño pendiente de fix de pipeline.
+        # Join via colegio_sk (MD5 hash) para obtener puntajes reales de fct_agg_colegios_ano.
+        # Filtra colegios sin datos ICFES (avg_punt_global = 0 o NULL).
+        # Ordena por puntaje DESC — los mejores colegios privados de cada ciudad primero.
+        # sector usa IN para compatibilidad con dev ('NO OFICIAL') y prod ('NO_OFICIAL').
         query = f"""
             WITH ranked AS (
                 SELECT
@@ -104,18 +105,23 @@ class Command(BaseCommand):
                     d.municipio,
                     d.departamento,
                     COALESCE(s.slug, '') AS slug,
-                    0.0                  AS avg_punt_global,
+                    f.avg_punt_global,
                     ROW_NUMBER() OVER (
                         PARTITION BY d.municipio
-                        ORDER BY d.nombre_colegio
+                        ORDER BY f.avg_punt_global DESC
                     ) AS rank_municipio
                 FROM gold.dim_colegios d
+                JOIN gold.fct_agg_colegios_ano f
+                    ON f.colegio_sk = d.colegio_sk
+                    AND f.ano = CAST(? AS VARCHAR)
+                    AND f.sector = 'NO OFICIAL'
                 LEFT JOIN gold.dim_colegios_slugs s
                     ON s.codigo = d.colegio_bk
-                WHERE d.sector = 'NO_OFICIAL'
+                WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                   AND d.municipio IN ({placeholders})
                   AND d.email IS NOT NULL
                   AND TRIM(d.email) != ''
+                  AND f.avg_punt_global > 0
             )
             SELECT *
             FROM ranked
@@ -123,7 +129,7 @@ class Command(BaseCommand):
             ORDER BY municipio, rank_municipio
         """
 
-        params = ciudades + [top_n]
+        params = [ano] + ciudades + [top_n]
 
         self.stdout.write("  Consultando DuckDB...", ending=' ')
         try:
