@@ -130,7 +130,16 @@ class Command(BaseCommand):
         try:
             df = execute_query(query, params=params)
         except Exception as e:
-            self.stderr.write(self.style.ERROR(f"Error en DuckDB: {e}"))
+            err = str(e)
+            self.stderr.write(self.style.ERROR(f"Error en DuckDB: {err}"))
+            if 'icfes_silver' in err or 'colegios' in err.lower():
+                self.stderr.write(self.style.WARNING(
+                    "\n  NOTA: El prod DuckDB solo tiene tablas gold (sin icfes_silver.colegios).\n"
+                    "  Corre este comando LOCALMENTE apuntando al Postgres de Railway:\n\n"
+                    "    DATABASE_URL=<railway_postgres_url> \\\n"
+                    "    python manage.py import_campaign_prospects --settings=config.settings.railway\n\n"
+                    "  Esto usa tu DuckDB local (con emails) y escribe en Railway Postgres."
+                ))
             return
 
         if df.empty:
