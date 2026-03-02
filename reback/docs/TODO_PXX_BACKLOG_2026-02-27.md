@@ -129,6 +129,35 @@
 
 **Criterio de cierre:** `SELECT COUNT(*) FROM gold.fct_agg_colegios_ano WHERE municipio IN ('Bogotá','Medellín') AND ano='2024'` retorna > 0, y el JOIN con `icfes_silver.colegios` en email retorna > 0 para Cali 2024.
 
+### P11 - Módulo de Campañas Comerciales — Operación y Evolución
+
+**Estado actual (2026-03-01):** Campaña #1 importada y lista para lanzar.
+- 80 prospectos (8 ciudades × 10 colegios privados) con email, rector, teléfono y demo URL.
+- Datos desde `gold.dim_colegios` (disponible en dev y prod).
+- Gestión desde `/admin-icfes-2026/icfes_dashboard/campaign/`.
+
+**Próximos pasos operativos (hacer ya):**
+- [ ] Lanzar Campaña #1: ir al admin → abrir campaña → clic en **🚀 LANZAR CAMPAÑA**.
+- [ ] Exportar CSV: admin → Ver prospectos → seleccionar todos → "Exportar a CSV".
+- [ ] Decidir herramienta de envío (Mailchimp, Brevo, envío manual) y enviar primer batch.
+- [ ] A medida que lleguen respuestas, marcar estado en admin (Respondió / Demo / Trial / Cliente).
+
+**Speech / pitch sugerido para el email:**
+> "Rector/a [nombre], le escribo desde ICFES Analytics. Su colegio [nombre colegio] tiene
+> un análisis completo de sus resultados ICFES 2024 disponible en [demo_url]. Incluye
+> comparación vs el país, fortalezas por materia, trayectoria histórica y potencial en inglés.
+> ¿Le parece si agendamos 20 minutos para revisarlo juntos?"
+
+**Mejoras técnicas pendientes:**
+- [ ] Agregar integración de envío de email directo desde el admin (Anymail/SendGrid).
+- [ ] Tracking de apertura y clicks en los emails enviados.
+- [ ] Campaña #2: Bogotá + Medellín (requiere fix P10 de pipeline primero).
+- [ ] Agregar columna `avg_punt_global` real desde `fct_agg` una vez resuelto P10.
+- [ ] Vista de pipeline Kanban (visual por estado) en el admin o en una página dedicada.
+- [ ] Automatizar importación periódica (Celery beat task mensual para nuevas ciudades).
+
+**Criterio de cierre P11:** primer cliente pagando proveniente de esta campaña.
+
 ---
 
 ## Notas operativas
