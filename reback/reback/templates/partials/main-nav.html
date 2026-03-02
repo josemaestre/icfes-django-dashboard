@@ -59,6 +59,7 @@
 
       {% if request.user.is_superuser %}
       <li class="menu-title">Administration</li>
+
       <li class="nav-item">
         <a class="nav-link" href="{% url 'users:management_list' %}">
           <span class="nav-icon">
@@ -67,6 +68,30 @@
           <span class="nav-text"> User Management </span>
         </a>
       </li>
+
+      <li class="nav-item">
+        <a class="nav-link menu-arrow" href="#sidebarCampanas" data-bs-toggle="collapse" role="button"
+          aria-expanded="false" aria-controls="sidebarCampanas">
+          <span class="nav-icon">
+            <iconify-icon icon="iconamoon:send-duotone"></iconify-icon>
+          </span>
+          <span class="nav-text"> Campañas </span>
+        </a>
+        <div class="collapse" id="sidebarCampanas">
+          <ul class="nav sub-navbar-nav">
+            <li class="sub-nav-item">
+              <a class="sub-nav-link" href="/admin/icfes_dashboard/campaign/">Ver campañas</a>
+            </li>
+            <li class="sub-nav-item">
+              <a class="sub-nav-link" href="/admin/icfes_dashboard/campaignprospect/">Ver prospectos</a>
+            </li>
+            <li class="sub-nav-item">
+              <a class="sub-nav-link" href="/admin/">Admin general</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+
       {% endif %}
 
     </ul>
