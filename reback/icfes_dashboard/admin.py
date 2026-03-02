@@ -216,6 +216,13 @@ class CampaignAdmin(admin.ModelAdmin):
 
     def completar_campana_view(self, request, pk):
         campaign = get_object_or_404(Campaign, pk=pk)
+        if campaign.estado != 'activa':
+            messages.warning(
+                request,
+                f"Solo se puede completar una campaña activa. "
+                f"Estado actual: {campaign.get_estado_display()}"
+            )
+            return redirect(reverse('admin:icfes_dashboard_campaign_change', args=[pk]))
         campaign.estado = 'completada'
         campaign.fecha_completada = timezone.now()
         campaign.save()

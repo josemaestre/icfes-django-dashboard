@@ -129,6 +129,12 @@
 
 **Criterio de cierre:** `SELECT COUNT(*) FROM gold.fct_agg_colegios_ano WHERE municipio IN ('Bogotá','Medellín') AND ano='2024'` retorna > 0, y el JOIN con `icfes_silver.colegios` en email retorna > 0 para Cali 2024.
 
+**TODO dbt — Consistencia del surrogate key `colegio_sk`:**
+- [ ] Actualmente `colegio_sk` es un MD5 VARCHAR generado de forma inconsistente: cada modelo hashea campos distintos, produciendo hashes diferentes para el mismo colegio. Esto rompe JOINs entre `dim_colegios` y `fct_agg_colegios_ano`.
+- [ ] Usar `{{ dbt_utils.generate_surrogate_key(['colegio_bk']) }}` (o macro equivalente) en **todos** los modelos que crean `colegio_sk`, siempre desde el mismo campo (`colegio_bk` normalizado sin prefijo de sede).
+- [ ] Considerar migrar a `BIGINT` (hash numérico) en lugar de VARCHAR MD5 para mejor performance en joins.
+- [ ] Prerequisito: normalizar `colegio_bk` (fix prefijo de sede) antes de regenerar el SK.
+
 ### P11 - Módulo de Campañas Comerciales — Operación y Evolución
 
 **Estado actual (2026-03-01):** Campaña #1 importada y lista para lanzar.
