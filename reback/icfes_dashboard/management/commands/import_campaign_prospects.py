@@ -91,32 +91,31 @@ class Command(BaseCommand):
         # ── 1. Query DuckDB ────────────────────────────────────────────
         placeholders = ', '.join(['?' for _ in ciudades])
 
-        # Nota: se usa icfes_silver.colegios como fuente de contacto (tiene emails).
-        # La unión con fct_agg no es posible en 2024 por un gap de pipeline
-        # (colegio_bk del registro no coincide con colegio_bk de los resultados ICFES).
+        # Fuente: gold.dim_colegios — disponible en dev Y prod (misma tabla que usan las landing pages).
+        # La unión con fct_agg no es posible en 2024 por un gap de pipeline (P10).
         # Se ordena por nombre_colegio — ranking de desempeño pendiente de fix de pipeline.
         query = f"""
             WITH ranked AS (
                 SELECT
-                    c.nombre_colegio,
-                    c.rector,
-                    c.email,
-                    c.telefono,
-                    c.municipio,
-                    c.departamento,
+                    d.nombre_colegio,
+                    d.rector,
+                    d.email,
+                    d.telefono,
+                    d.municipio,
+                    d.departamento,
                     COALESCE(s.slug, '') AS slug,
                     0.0                  AS avg_punt_global,
                     ROW_NUMBER() OVER (
-                        PARTITION BY c.municipio
-                        ORDER BY c.nombre_colegio
+                        PARTITION BY d.municipio
+                        ORDER BY d.nombre_colegio
                     ) AS rank_municipio
-                FROM icfes_silver.colegios c
+                FROM gold.dim_colegios d
                 LEFT JOIN gold.dim_colegios_slugs s
-                    ON s.codigo = c.colegio_bk
-                WHERE c.sector = 'NO_OFICIAL'
-                  AND c.municipio IN ({placeholders})
-                  AND c.email IS NOT NULL
-                  AND TRIM(c.email) != ''
+                    ON s.codigo = d.colegio_bk
+                WHERE d.sector = 'NO_OFICIAL'
+                  AND d.municipio IN ({placeholders})
+                  AND d.email IS NOT NULL
+                  AND TRIM(d.email) != ''
             )
             SELECT *
             FROM ranked
