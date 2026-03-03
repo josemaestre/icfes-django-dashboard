@@ -10,10 +10,12 @@ Endpoints:
 """
 import logging
 
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 
 from .db_utils import get_duckdb_connection, resolve_schema
 
@@ -272,3 +274,49 @@ def api_ml_ia_analisis(request):
     except Exception as e:
         logger.warning("api_ml_ia_analisis: %s", e)
         return JsonResponse({'disponible': False})
+
+
+# ---------------------------------------------------------------------------
+# API — Generar análisis IA bajo demanda (staff only)
+# ---------------------------------------------------------------------------
+
+@login_required
+@require_POST
+def api_ml_generate_ia(request):
+    """Dispara la generación del análisis narrativo IA (solo staff)."""
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': 'Permiso denegado'}, status=403)
+
+    from django.conf import settings
+    if not getattr(settings, 'ANTHROPIC_API_KEY', ''):
+        return JsonResponse({'ok': False, 'error': 'ANTHROPIC_API_KEY no configurada'}, status=400)
+
+    from .management.commands.generate_ml_ia_analisis import (
+        _get_ml_data, _build_prompt, _llamar_api, _parse_sections, _guardar,
+    )
+    from .models import MlAnalisisIA
+
+    ano    = int(request.POST.get('ano', 2024))
+    forzar = request.POST.get('forzar', '') in ('1', 'true', 'yes')
+
+    if not forzar:
+        exists = MlAnalisisIA.objects.filter(
+            ano_referencia=ano, estado=MlAnalisisIA.ESTADO_ACTIVO
+        ).exists()
+        if exists:
+            return JsonResponse({
+                'ok': False,
+                'error': 'Ya existe análisis activo. Envía forzar=1 para regenerar.',
+            })
+
+    try:
+        data        = _get_ml_data(ano)
+        prompt      = _build_prompt(data, ano)
+        analisis_md, tokens_in, tokens_out = _llamar_api(prompt)
+        sections    = _parse_sections(analisis_md)
+        obj         = _guardar(ano, analisis_md, sections, tokens_in, tokens_out)
+        logger.info("api_ml_generate_ia: ok id=%s tokens_out=%s", obj.pk, tokens_out)
+        return JsonResponse({'ok': True, 'id': obj.pk, 'tokens': tokens_out})
+    except Exception as e:
+        logger.error("api_ml_generate_ia error: %s", e)
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)

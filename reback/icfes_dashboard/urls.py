@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/ml/riesgo/', views_ml.api_ml_riesgo, name='api_ml_riesgo'),
     path('api/ml/b1/', views_ml.api_ml_b1, name='api_ml_b1'),
     path('api/ml/ia-analisis/', views_ml.api_ml_ia_analisis, name='api_ml_ia_analisis'),
+    path('api/ml/generate-ia/', views_ml.api_ml_generate_ia, name='api_ml_generate_ia'),
 
     # API endpoints — Dashboard Social (NBI, conectividad, presidentes, generaciones)
     path('api/social/kpis/', views.api_social_kpis, name='api_social_kpis'),

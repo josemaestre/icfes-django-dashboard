@@ -123,11 +123,20 @@
                                              style="font-size:0.92rem; white-space:pre-line;"></div>
                                     </div>
                                 </div>
-                                <div id="shap-ia-unavailable" class="d-none text-center py-2">
-                                    <span class="text-muted small">
+                                <div id="shap-ia-unavailable" class="d-none text-center py-3">
+                                    <p class="text-muted small mb-2">
                                         <i class="bx bx-info-circle me-1"></i>
                                         Análisis narrativo no generado aún. Se genera automáticamente en el próximo deploy.
-                                    </span>
+                                    </p>
+                                    {% if request.user.is_staff %}
+                                    <button class="btn btn-warning btn-sm" id="btn-generate-ia"
+                                            onclick="generateIaAnalysis()">
+                                        <i class="bx bx-brain me-1"></i>Generar análisis IA ahora
+                                    </button>
+                                    <p class="text-muted mt-1 mb-0" style="font-size:11px;">
+                                        Solo staff · puede tardar ~1–2 minutos
+                                    </p>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

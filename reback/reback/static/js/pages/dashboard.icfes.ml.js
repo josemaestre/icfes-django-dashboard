@@ -358,6 +358,62 @@ async function loadIaAnalisis() {
 }
 
 // ---------------------------------------------------------------------------
+// 6. Generar análisis IA bajo demanda (staff only)
+// ---------------------------------------------------------------------------
+function generateIaAnalysis(forzar = false) {
+    const btn = document.getElementById('btn-generate-ia');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' +
+            'Generando (~1–2 min)…';
+    }
+
+    const csrfToken = document.cookie
+        .split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('csrftoken='))
+        ?.split('=')[1] || '';
+
+    const body = new FormData();
+    body.append('ano', '2024');
+    if (forzar) body.append('forzar', '1');
+
+    fetch('/icfes/api/ml/generate-ia/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body,
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            if (btn) {
+                btn.innerHTML = '<i class="bx bx-check me-1"></i>Generado · recargando…';
+                btn.classList.replace('btn-warning', 'btn-success');
+            }
+            setTimeout(() => {
+                hideEl('shap-ia-unavailable');
+                showEl('shap-ia-loading');
+                loadIaAnalisis();
+            }, 800);
+        } else {
+            alert('Error: ' + d.error);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-brain me-1"></i>Generar análisis IA ahora';
+            }
+        }
+    })
+    .catch(err => {
+        alert('Error de conexión: ' + err.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bx bx-brain me-1"></i>Generar análisis IA ahora';
+        }
+    });
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function showEl(id) {
