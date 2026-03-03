@@ -1,0 +1,221 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}IA & Modelos ML — ICFES Analytics{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='IA & Modelos ML' sub_title='XGBoost · SHAP · K-Means · Riesgo · B1 Inglés' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- ══════════════════════════════════════════════════════════
+         HERO
+    ══════════════════════════════════════════════════════════ -->
+    <div class="card mb-4 border-0 text-white"
+         style="background: linear-gradient(135deg,#0d1b2a 0%,#1b2838 55%,#1a3a4a 100%) !important;">
+        <div class="card-body py-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h3 class="text-white mb-1">
+                        <i class="bx bx-brain me-2 text-info"></i>Inteligencia Artificial aplicada al ICFES
+                    </h3>
+                    <p class="text-white-50 mb-0">
+                        Modelos entrenados sobre 5M registros (2014-2024). XGBoost + SHAP revela cuántos puntos
+                        aporta cada factor socioeconómico. K-Means agrupa colegios en arquetipos por contexto.
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="row g-2 mt-2 mt-md-0">
+                        <div class="col-6 col-lg-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-5 fw-bold text-warning" id="kpi-r2">--</div>
+                                <div class="small text-white-50">R² modelo SHAP</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-5 fw-bold text-info" id="kpi-mae">-- pts</div>
+                                <div class="small text-white-50">MAE predictor</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-5 fw-bold text-success" id="kpi-clusters">--</div>
+                                <div class="small text-white-50">Arquetipos</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-5 fw-bold text-danger" id="kpi-riesgo">--</div>
+                                <div class="small text-white-50">Colegios en riesgo</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 1 — SHAP: ¿Qué determina el puntaje?
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                    <h5 class="mb-0">
+                        <i class="bx bx-bar-chart-alt-2 text-warning me-2"></i>
+                        ¿Qué determina el puntaje ICFES?
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        Importancia SHAP (TreeExplainer) — puntos promedio que cada factor mueve el puntaje global.
+                        Modelo XGBoost entrenado a nivel estudiante (5M filas, 2014–2024).
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div id="shap-pending-msg" class="text-center text-muted py-5 d-none">
+                        <i class="bx bx-loader-alt bx-spin fs-1 text-warning"></i>
+                        <p class="mt-2">Modelo en entrenamiento. Disponible en ~20 min.</p>
+                    </div>
+                    <div id="shap-charts-wrapper">
+                        <div class="row">
+                            <div class="col-lg-7">
+                                <h6 class="text-muted small mb-2">Importancia media |SHAP| por feature</h6>
+                                <div id="chart-shap-bar" style="min-height:340px;"></div>
+                            </div>
+                            <div class="col-lg-5">
+                                <h6 class="text-muted small mb-2">Efecto del estrato sobre el puntaje predicho</h6>
+                                <div id="chart-shap-estrato" style="min-height:340px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 2 — Arquetipos de colegios (Social Clusters)
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                    <h5 class="mb-0">
+                        <i class="bx bx-git-branch text-info me-2"></i>
+                        Arquetipos de colegios por contexto socioeconómico
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        K-Means sobre NBI, conectividad, estrato promedio, puntaje global e inglés.
+                        Cada punto del scatter es un colegio proyectado en 2D (PCA).
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div id="clusters-pending-msg" class="text-center text-muted py-5 d-none">
+                        <i class="bx bx-loader-alt bx-spin fs-1 text-info"></i>
+                        <p class="mt-2">Clustering en proceso. Disponible en unos minutos.</p>
+                    </div>
+                    <div id="clusters-wrapper">
+                        <!-- Cards de perfiles -->
+                        <div id="cluster-cards" class="row g-3 mb-4"></div>
+                        <!-- Scatter PCA -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="text-muted small mb-1">
+                                    Mapa de colegios — PCA 2D
+                                    <span class="text-muted" id="pca-variance-label"></span>
+                                </h6>
+                                <div id="chart-cluster-scatter" style="min-height:400px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 3 — Colegios en Riesgo & B1 Overperformers
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-4">
+        <!-- Riesgo de declive -->
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h5 class="mb-0">
+                                <i class="bx bx-error-circle text-danger me-2"></i>Alertas de riesgo
+                            </h5>
+                            <p class="text-muted small mb-0">Colegios con mayor probabilidad de declive (XGBoost v2)</p>
+                        </div>
+                        <div id="riesgo-badges" class="d-flex gap-2"></div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="sticky-top bg-white">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th>Depto</th>
+                                    <th class="text-end">Prob.</th>
+                                    <th class="text-center">Nivel</th>
+                                </tr>
+                            </thead>
+                            <tbody id="riesgo-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B1 Overperformers -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h5 class="mb-0">
+                                <i class="bx bx-medal text-success me-2"></i>Colegios que superan su predicción B1
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                Exceso real vs esperado — modelo XGBoost OOF
+                                <span class="text-muted" id="b1-model-info"></span>
+                            </p>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="btn-b1-oficial"
+                                    onclick="loadB1('OFICIAL')">Oficial</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-b1-privado"
+                                    onclick="loadB1('NO OFICIAL')">Privado</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="sticky-top bg-white">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th>Depto</th>
+                                    <th class="text-end">%B1 real</th>
+                                    <th class="text-end">Exceso</th>
+                                </tr>
+                            </thead>
+                            <tbody id="b1-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script src="{% static 'js/pages/dashboard.icfes.ml.js' %}"></script>
+{% endblock extra_javascript %}

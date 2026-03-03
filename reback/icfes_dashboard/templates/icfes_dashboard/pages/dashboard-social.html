@@ -1,0 +1,485 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Contexto Social — ICFES Analytic{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Contexto Social' sub_title='NBI · Internet · Presidentes · Generaciones' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- ══════════════════════════════════════════════════════════
+         HERO — Intro narrativa + KPIs
+    ══════════════════════════════════════════════════════════ -->
+    <div class="card mb-4 border-0 bg-dark text-white" style="background: linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%) !important;">
+        <div class="card-body py-4">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h3 class="text-white mb-1">El contexto social de la educación colombiana</h3>
+                    <p class="text-white-50 mb-0">
+                        28 años de resultados ICFES cruzados con pobreza estructural (NBI), conectividad a internet,
+                        períodos presidenciales y generaciones. Lo que los puntajes no te cuentan solos.
+                    </p>
+                </div>
+                <div class="col-md-5">
+                    <div class="row g-3 mt-1 mt-md-0">
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-4 fw-bold text-warning" id="kpi-mun-nbi">--</div>
+                                <div class="small text-white-50">Municipios con datos NBI</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-4 fw-bold text-info" id="kpi-nbi-prom">--%</div>
+                                <div class="small text-white-50">NBI promedio nacional</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-4 fw-bold text-success" id="kpi-mun-inet">--</div>
+                                <div class="small text-white-50">Municipios con internet</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded p-3 text-center">
+                                <div class="fs-4 fw-bold text-danger" id="kpi-brecha">-- pts</div>
+                                <div class="small text-white-50">Brecha privado vs público 2024</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 1 — "Donde naces importa más que donde estudias"
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-danger fs-6 px-3 py-2">1</span>
+                <h5 class="mb-0">Donde naces importa más que donde estudias</h5>
+            </div>
+            <p class="text-muted mb-3">
+                El índice de Necesidades Básicas Insatisfechas (NBI) del DANE 2018 predice el puntaje ICFES
+                con una diferencia de <strong>55 puntos</strong> entre municipios ricos y pobres.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Bar chart: 4 categorías NBI vs puntaje -->
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Puntaje ICFES por nivel de pobreza NBI (2024)</h6>
+                    <small class="text-muted">Promedio municipal por categoría</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-nbi-bars" style="min-height:260px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scatter: cada municipio NBI vs puntaje -->
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">NBI vs Puntaje — cada municipio (2024)</h6>
+                    <small class="text-muted">Línea roja = tendencia lineal (r² y pendiente calculados sobre todos los municipios)</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-scatter" style="min-height:260px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini tabla: evolución 2010 vs 2023 por NBI -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-start border-danger border-3">
+                <div class="card-body py-3">
+                    <h6 class="text-danger mb-3">La brecha se amplía: evolución 2010 → 2024 por nivel NBI</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="tabla-nbi-evolucion">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nivel NBI</th>
+                                    <th class="text-center">Puntaje 2010</th>
+                                    <th class="text-center">Puntaje 2024</th>
+                                    <th class="text-center">Cambio</th>
+                                    <th class="text-center">Municipios</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-nbi-evolucion">
+                                <tr><td colspan="5" class="text-center text-muted py-3">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 2 — "La excepción que inspira"
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2">2</span>
+                <h5 class="mb-0">La excepción que inspira</h5>
+            </div>
+            <p class="text-muted mb-3">
+                Colegios que logran excelencia académica en municipios con alta pobreza estructural.
+                Son enclaves de oportunidad en contextos difíciles.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h6 class="card-title mb-0">Colegios héroes — Top rendimiento en municipios pobres</h6>
+                        <small class="text-muted">Solo colegios con ≥ 5 estudiantes presentando el examen en 2024</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 small">NBI mínimo:</label>
+                        <select class="form-select form-select-sm" id="filter-nbi-heroes" style="width:110px;">
+                            <option value="40">40%</option>
+                            <option value="50">50%</option>
+                            <option value="60">60%</option>
+                            <option value="70">70%</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">#</th>
+                                    <th>Colegio</th>
+                                    <th>Municipio</th>
+                                    <th>Depto</th>
+                                    <th class="text-center">NBI%</th>
+                                    <th class="text-center">Puntaje</th>
+                                    <th class="text-center">Ranking Nal.</th>
+                                    <th class="text-center">Sector</th>
+                                    <th class="text-center">Estudiantes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-heroes">
+                                <tr><td colspan="9" class="text-center text-muted py-3">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 3 — "La brecha digital tiene nombre y apellido"
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-info fs-6 px-3 py-2">3</span>
+                <h5 class="mb-0">La brecha digital tiene nombre y apellido</h5>
+            </div>
+            <p class="text-muted mb-3">
+                El internet residencial correlaciona con los puntajes, pero no uniformemente.
+                Inglés es la materia más sensible a la conectividad — Netflix, YouTube y redes sociales enseñan.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Correlación internet vs puntaje por materia</h6>
+                    <small class="text-muted">Pearson 2024 — qué materia mejora más con más internet</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-correlacion-materias" style="min-height:260px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Puntaje por nivel de conectividad residencial</h6>
+                    <small class="text-muted">% hogares con internet fijo (MinTIC Q3-2023)</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-conectividad-tiers" style="min-height:260px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 4 — "28 años de política educativa"
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-secondary fs-6 px-3 py-2">4</span>
+                <h5 class="mb-0">28 años de política educativa, año a año</h5>
+            </div>
+            <p class="text-muted mb-3">
+                El pico histórico fue en <strong>2016</strong> — el año del Acuerdo de Paz con las FARC.
+                La brecha privado-público nunca ha sido tan grande como bajo el gobierno actual.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Puntaje nacional 2000–2024 por presidente y eventos clave</h6>
+                    <small class="text-muted">
+                        Serie comparable desde el año 2000 (nuevo formato ICFES) ·
+                        <span class="text-warning fw-medium">Datos 1996-1999 excluidos — escala anterior incomparable</span> ·
+                        Salto en 2010 por adopción de Saber 11
+                    </small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-serie-historica" style="min-height:380px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Brecha privado vs público por gobierno</h6>
+                    <small class="text-muted">Puntos de diferencia en favor del sector privado</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-brecha-gobierno" style="min-height:260px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Puntaje oficial vs privado por gobierno</h6>
+                    <small class="text-muted">Puntaje promedio por sector en cada período presidencial</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-sector-gobierno" style="min-height:260px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 5 — "De los Millennials a la Generación IA"
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-success fs-6 px-3 py-2">5</span>
+                <h5 class="mb-0">De los Millennials a la Generación IA</h5>
+            </div>
+            <p class="text-muted mb-3">
+                Cada transición tecnológica coincide con una mejora en los puntajes de inglés.
+                El efecto del postconflicto fue mixto — algunos departamentos mejoraron, otros empeoraron.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Puntaje por era tecnológica</h6>
+                    <small class="text-muted">Global, Inglés y Matemáticas — promedio por era</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-eras" style="min-height:280px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Efecto postconflicto (2017 en adelante)</h6>
+                    <small class="text-muted">Departamentos históricamente afectados por el conflicto armado</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-postconflicto" style="min-height:280px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECCIÓN 6 — El piso social importa: Estrato socioeconómico
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge fs-6 px-3 py-2" style="background:#6f42c1;">6</span>
+                <h5 class="mb-0">El piso social importa — Estrato y educación</h5>
+            </div>
+            <p class="text-muted mb-3">
+                Colombia tiene 6 estratos socioeconómicos. La brecha entre Estrato 1 y Estrato 6 es de
+                <strong>28 puntos globales y 15 puntos en inglés</strong> en 2023.
+                Los estudiantes <em>"Sin Estrato"</em> — sin catastro municipal, generalmente rurales dispersos —
+                son los más vulnerables: por debajo incluso del Estrato 1.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">Puntaje global por estrato (2024)</h6>
+                    <small class="text-muted">Promedio individual — de menor a mayor nivel socioeconómico</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-estrato-bars" style="min-height:290px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="card-title mb-0">La brecha no cierra — E1 vs E6 (2014–2024)</h6>
+                    <small class="text-muted">Puntaje global individual · escala comparable desde reforma ICFES 2014 · área sombreada = brecha</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-estrato-evolucion" style="min-height:290px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card border-start border-danger border-3">
+                <div class="card-body py-3 text-center">
+                    <div class="fs-4 fw-bold text-danger" id="kpi-est-brecha-global">-- pts</div>
+                    <div class="small text-muted">Brecha E1→E6 (global)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-info border-3">
+                <div class="card-body py-3 text-center">
+                    <div class="fs-4 fw-bold text-info" id="kpi-est-brecha-ingles">-- pts</div>
+                    <div class="small text-muted">Brecha E1→E6 (inglés)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-3">
+                <div class="card-body py-3 text-center">
+                    <div class="fs-4 fw-bold text-warning" id="kpi-est-sin-estrato">--</div>
+                    <div class="small text-muted">Puntaje "Sin Estrato"</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-success border-3">
+                <div class="card-body py-3 text-center">
+                    <div class="fs-4 fw-bold text-success" id="kpi-est-n-e1">--</div>
+                    <div class="small text-muted">Estudiantes Estrato 1 (2024)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         SECCIÓN 7 — Mapa de desigualdad educativa
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge fs-6 px-3 py-2 bg-secondary">7</span>
+                <h5 class="mb-0">La geografía de la desigualdad educativa</h5>
+            </div>
+            <p class="text-muted mb-3">
+                El mapa habla solo. Chocó y Vaupés en rojo. Bogotá, Quindío y Boyacá en verde.
+                28 años de datos, condensados en un color por departamento.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h6 class="card-title mb-0">Puntaje ICFES por departamento — 2024</h6>
+                        <small class="text-muted">Pase el mouse sobre un departamento para ver detalles</small>
+                    </div>
+                    <div class="btn-group btn-group-sm" role="group" id="mapa-toggle">
+                        <button type="button" class="btn btn-primary active" data-mode="puntaje">Puntaje Global</button>
+                        <button type="button" class="btn btn-outline-danger" data-mode="nbi">NBI Pobreza</button>
+                        <button type="button" class="btn btn-outline-info" data-mode="ingles">Inglés</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="mapa-colombia"
+                         data-geojson-url="{% static 'js/geo/colombia-deptos.json' %}"
+                         style="height:520px; border-radius:0 0 8px 8px;"></div>
+                </div>
+                <!-- Leyenda inline del mapa -->
+                <div class="card-footer bg-transparent border-0 py-2">
+                    <div id="mapa-leyenda" class="d-flex align-items-center gap-3 flex-wrap small text-muted">
+                        <span>Cargando leyenda...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nota metodológica -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light border-0">
+                <div class="card-body py-3">
+                    <h6 class="text-muted mb-2"><i class="bx bx-info-circle me-1"></i> Nota metodológica</h6>
+                    <div class="row g-2 small text-muted">
+                        <div class="col-md-4">
+                            <strong>NBI:</strong> DANE — Censo CNPV 2018. Datos estáticos de 1.123 municipios.
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Conectividad:</strong> MinTIC — datos.gov.co Q3-2023 (1.117 municipios).
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Join:</strong> <code>SUBSTRING(colegio_bk, 2, 5)</code> extrae el código DANE del municipio del colegio.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock page_content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock extra_css %}
+
+{% block extra_javascript %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{% static 'js/pages/dashboard.icfes.social.js' %}"></script>
+{% endblock extra_javascript %}

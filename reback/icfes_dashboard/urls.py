@@ -13,6 +13,7 @@ from . import (
     views,
     views_ingles,
     views_mi_colegio,
+    views_ml,
     views_school_endpoints,
 )
 
@@ -30,6 +31,26 @@ urlpatterns = [
          ingles_landing_views.ingles_department_page, name='ingles_department_landing'),
     path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
     path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
+    path('social/', views.social_dashboard, name='social_dashboard'),
+    path('ml/', views_ml.ml_dashboard, name='ml_dashboard'),
+
+    # API endpoints — Dashboard IA & Modelos ML
+    path('api/ml/shap/', views_ml.api_ml_shap, name='api_ml_shap'),
+    path('api/ml/social-clusters/', views_ml.api_ml_social_clusters, name='api_ml_social_clusters'),
+    path('api/ml/riesgo/', views_ml.api_ml_riesgo, name='api_ml_riesgo'),
+    path('api/ml/b1/', views_ml.api_ml_b1, name='api_ml_b1'),
+
+    # API endpoints — Dashboard Social (NBI, conectividad, presidentes, generaciones)
+    path('api/social/kpis/', views.api_social_kpis, name='api_social_kpis'),
+    path('api/social/nbi-brechas/', views.api_social_nbi_brechas, name='api_social_nbi_brechas'),
+    path('api/social/colegios-heroes/', views.api_social_colegios_heroes, name='api_social_colegios_heroes'),
+    path('api/social/scatter-municipios/', views.api_social_scatter_municipios, name='api_social_scatter_municipios'),
+    path('api/social/conectividad-materias/', views.api_social_conectividad_materias, name='api_social_conectividad_materias'),
+    path('api/social/serie-historica-contexto/', views.api_social_serie_historica, name='api_social_serie_historica'),
+    path('api/social/era-tecnologica/', views.api_social_era_tecnologica, name='api_social_era_tecnologica'),
+    path('api/social/brecha-sector-gobierno/', views.api_social_brecha_sector, name='api_social_brecha_sector'),
+    path('api/social/estrato/', views.api_social_estrato, name='api_social_estrato'),
+    path('api/social/mapa-departamentos/', views.api_social_mapa_departamentos, name='api_social_mapa_departamentos'),
     path('colegio/', views.colegio_detalle_page, name='colegio_detalle_page'),
 
     # Mi Colegio — diagnóstico personalizado
