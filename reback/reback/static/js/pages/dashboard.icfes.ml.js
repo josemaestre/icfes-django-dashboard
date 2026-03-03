@@ -342,6 +342,12 @@ async function loadIaAnalisis() {
             showEl('oportunidad-ia-wrapper');
         }
 
+        // Palancas (recomendaciones prescriptivas)
+        if (data.palancas_narrative) {
+            document.getElementById('palancas-ia-text').textContent = data.palancas_narrative;
+            document.getElementById('palancas-ia-row').style.display = '';
+        }
+
         // Panel completo colapsable
         if (data.analisis_md) {
             document.getElementById('ia-model-badge').textContent = data.modelo_ia;

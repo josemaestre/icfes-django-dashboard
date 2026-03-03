@@ -6,7 +6,10 @@ Endpoints:
   GET /icfes/api/ml/shap/               → SHAP importances + partial dependence estrato
   GET /icfes/api/ml/social-clusters/    → arquetipos sociales (clusters + scatter PCA)
   GET /icfes/api/ml/riesgo/             → colegios en riesgo de declive
-  GET /icfes/api/ml/b1-overperformers/  → colegios que superan predicción B1
+  GET /icfes/api/ml/b1/                 → colegios que superan predicción B1
+  GET /icfes/api/ml/partial-all/        → partial dependence de todas las variables accionables
+  GET /icfes/api/ml/palancas/?colegio_bk=X → top-3 palancas de mejora para un colegio
+  POST /icfes/api/ml/generate-ia/       → genera narrativa IA (staff only)
 """
 import logging
 
@@ -264,6 +267,7 @@ def api_ml_ia_analisis(request):
             'clusters_narrative': obj.clusters_narrative,
             'riesgo_narrative': obj.riesgo_narrative,
             'oportunidad_narrative': obj.oportunidad_narrative,
+            'palancas_narrative': obj.palancas_narrative,
             'analisis_md': obj.analisis_md,
             'modelo_ia': obj.modelo_ia,
             'fecha_generacion': obj.fecha_generacion.isoformat(),
@@ -274,6 +278,122 @@ def api_ml_ia_analisis(request):
     except Exception as e:
         logger.warning("api_ml_ia_analisis: %s", e)
         return JsonResponse({'disponible': False})
+
+
+# ---------------------------------------------------------------------------
+# API — Partial dependence de TODAS las variables accionables
+# ---------------------------------------------------------------------------
+
+@login_required
+@require_GET
+def api_ml_partial_all(request):
+    """Retorna curvas de partial dependence para todas las variables accionables."""
+    try:
+        q = resolve_schema("""
+            SELECT
+                feature, feature_label, icono,
+                value_num, value_label,
+                puntaje_predicho, delta_vs_min,
+                model_mae, model_r2
+            FROM gold.fct_ml_partial_dependence
+            ORDER BY feature, value_num
+        """)
+        with get_duckdb_connection() as con:
+            rows = con.execute(q).fetchall()
+
+        # Agrupar por feature
+        curves = {}
+        for r in rows:
+            feat = r[0]
+            if feat not in curves:
+                curves[feat] = {
+                    'feature':       feat,
+                    'feature_label': r[1],
+                    'icono':         r[2],
+                    'model_mae':     round(float(r[7]), 2),
+                    'model_r2':      round(float(r[8]), 3),
+                    'points':        [],
+                }
+            curves[feat]['points'].append({
+                'value_num':       float(r[3]),
+                'value_label':     r[4],
+                'puntaje_predicho': round(float(r[5]), 1),
+                'delta_vs_min':    round(float(r[6]), 1),
+            })
+
+        return JsonResponse({'curves': list(curves.values())})
+
+    except Exception as e:
+        logger.warning("api_ml_partial_all: tablas aún no generadas — %s", e)
+        return JsonResponse({'curves': [], 'pending': True})
+
+
+# ---------------------------------------------------------------------------
+# API — Top palancas de mejora para un colegio específico
+# ---------------------------------------------------------------------------
+
+@login_required
+@require_GET
+def api_ml_palancas_colegio(request):
+    """Retorna top-3 palancas de mejora para el colegio indicado.
+
+    Query params:
+        colegio_bk  — clave del colegio (ej. c105001000001)
+        sector      — filtro opcional de sector para búsquedas sin colegio_bk
+    """
+    colegio_bk = request.GET.get('colegio_bk', '').strip()
+    if not colegio_bk:
+        return JsonResponse({'error': 'colegio_bk requerido'}, status=400)
+
+    try:
+        q = resolve_schema(f"""
+            SELECT
+                colegio_bk, nombre_colegio, departamento, sector,
+                n_estudiantes, puntaje_actual,
+                palanca_rank, feature, feature_label, icono,
+                delta_pts, descripcion
+            FROM gold.fct_ml_palancas_colegio
+            WHERE colegio_bk = '{colegio_bk}'
+            ORDER BY palanca_rank
+        """)
+        with get_duckdb_connection() as con:
+            rows = con.execute(q).fetchall()
+
+        if not rows:
+            return JsonResponse({'encontrado': False, 'colegio_bk': colegio_bk})
+
+        info = {
+            'colegio_bk':    rows[0][0],
+            'nombre_colegio': rows[0][1],
+            'departamento':  rows[0][2],
+            'sector':        rows[0][3],
+            'n_estudiantes': int(rows[0][4]),
+            'puntaje_actual': float(rows[0][5]),
+        }
+        palancas = [
+            {
+                'rank':          int(r[6]),
+                'feature':       r[7],
+                'feature_label': r[8],
+                'icono':         r[9],
+                'delta_pts':     round(float(r[10]), 1),
+                'descripcion':   r[11],
+            }
+            for r in rows
+        ]
+        puntaje_potencial = round(
+            info['puntaje_actual'] + sum(p['delta_pts'] for p in palancas), 1
+        )
+        return JsonResponse({
+            'encontrado':       True,
+            'colegio':          info,
+            'palancas':         palancas,
+            'puntaje_potencial': puntaje_potencial,
+        })
+
+    except Exception as e:
+        logger.error("api_ml_palancas_colegio error: %s", e)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # ---------------------------------------------------------------------------

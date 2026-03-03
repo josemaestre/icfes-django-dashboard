@@ -613,10 +613,11 @@ class MlAnalisisIA(models.Model):
     analisis_md = models.TextField()
 
     # Secciones individuales parseadas del markdown
-    shap_narrative       = models.TextField(blank=True)  # ###SHAP###
-    clusters_narrative   = models.TextField(blank=True)  # ###CLUSTERS###
-    riesgo_narrative     = models.TextField(blank=True)  # ###RIESGO###
-    oportunidad_narrative = models.TextField(blank=True) # ###OPORTUNIDAD###
+    shap_narrative        = models.TextField(blank=True)  # ###SHAP###
+    clusters_narrative    = models.TextField(blank=True)  # ###CLUSTERS###
+    riesgo_narrative      = models.TextField(blank=True)  # ###RIESGO###
+    oportunidad_narrative = models.TextField(blank=True)  # ###OPORTUNIDAD###
+    palancas_narrative    = models.TextField(blank=True)  # ###PALANCAS###
 
     # Metadatos
     modelo_ia        = models.CharField(max_length=100, default='claude-sonnet-4-6')

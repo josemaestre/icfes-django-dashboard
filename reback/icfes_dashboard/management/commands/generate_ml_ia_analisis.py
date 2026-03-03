@@ -91,6 +91,35 @@ def _get_ml_data(ano: int) -> dict:
         LIMIT 5
     """)
 
+    # Partial dependence de variables accionables (para recomendaciones cuantificadas)
+    try:
+        data['partial_all'] = execute_query("""
+            SELECT feature, feature_label, icono,
+                   value_label, delta_vs_min
+            FROM gold.fct_ml_partial_dependence
+            WHERE feature IN (
+                'fami_tieneinternet', 'fami_tienecomputador',
+                'fami_numlibros', 'fami_educacionmadre',
+                'estu_horassemanatrabaja'
+            )
+            ORDER BY feature, value_num
+        """)
+    except Exception:
+        data['partial_all'] = None
+
+    # Top palancas nacionales (promedio por feature)
+    try:
+        data['palancas_nacional'] = execute_query("""
+            SELECT feature_label, icono,
+                   ROUND(AVG(delta_pts), 1) AS delta_promedio,
+                   COUNT(DISTINCT colegio_bk)   AS n_colegios
+            FROM gold.fct_ml_palancas_colegio
+            GROUP BY feature_label, icono
+            ORDER BY delta_promedio DESC
+        """)
+    except Exception:
+        data['palancas_nacional'] = None
+
     return data
 
 
@@ -99,12 +128,14 @@ def _get_ml_data(ano: int) -> dict:
 # ---------------------------------------------------------------------------
 
 def _build_prompt(data: dict, ano: int) -> str:
-    shap_df    = data['shap']
-    partial_df = data['partial']
-    clust_df   = data['clusters']
-    riesgo_df  = data['riesgo_stats']
-    riesgo_top = data['riesgo_top']
-    b1_top     = data['b1_top']
+    shap_df          = data['shap']
+    partial_df       = data['partial']
+    clust_df         = data['clusters']
+    riesgo_df        = data['riesgo_stats']
+    riesgo_top       = data['riesgo_top']
+    b1_top           = data['b1_top']
+    partial_all      = data.get('partial_all')
+    palancas_nac     = data.get('palancas_nacional')
 
     # Formatear SHAP
     shap_lines = '\n'.join(
@@ -147,6 +178,23 @@ def _build_prompt(data: dict, ano: int) -> str:
         for i, (_, r) in enumerate(b1_top.iterrows())
     )
 
+    # Palancas accionables: impacto máximo por variable
+    palancas_lines = ''
+    if palancas_nac is not None and not palancas_nac.empty:
+        palancas_lines = '\n'.join(
+            f"  - {r['icono']} {r['feature_label']}: +{r['delta_promedio']} pts promedio "
+            f"({int(r['n_colegios'])} colegios con esta oportunidad)"
+            for _, r in palancas_nac.iterrows()
+        )
+
+    # Partial dependence de binarias (internet, computador)
+    pd_internet = ''
+    if partial_all is not None and not partial_all.empty:
+        inet = partial_all[partial_all['feature'] == 'fami_tieneinternet']
+        if len(inet) >= 2:
+            delta_inet = float(inet[inet['value_label'].str.contains('Tiene')]['delta_vs_min'].iloc[0])
+            pd_internet = f"Internet: +{delta_inet:.1f} pts si pasa de sin acceso a con acceso"
+
     prompt = f"""Eres un analista experto en educación colombiana con profundo conocimiento en ciencia de datos,
 política pública educativa y contexto socioeconómico de Colombia.
 
@@ -176,10 +224,15 @@ Top 5 colegios en mayor riesgo:
 Top 5 'overperformers':
 {b1_lines}
 
+### Palancas de Mejora Cuantificadas (Simulador de Intervenciones)
+Impacto esperado si la palanca se aplica a los colegios que más lo necesitan:
+{palancas_lines if palancas_lines else '  (tabla aún no generada)'}
+Ejemplo de cuantificación directa: {pd_internet if pd_internet else 'ver partial dependence'}
+
 ---
 ## INSTRUCCIONES DE FORMATO
 
-Genera 4 secciones con estos marcadores exactos. Cada sección: 3-4 párrafos fluidos,
+Genera 5 secciones con estos marcadores exactos. Cada sección: 3-4 párrafos fluidos,
 tono analítico pero accesible, usa los datos concretos para ilustrar los puntos.
 NO uses bullets ni listas — solo prosa narrativa de alta calidad.
 
@@ -210,6 +263,18 @@ Estos son los "casos imposibles según el modelo" — contexto difícil pero
 resultados excepcionales. ¿Qué hace especiales a estos colegios?
 ¿Qué lecciones replicables hay aquí para la política educativa colombiana?
 Termina con un mensaje esperanzador sobre lo que es posible.]
+
+###PALANCAS###
+[Narrativa de recomendaciones de política pública basadas en el simulador de palancas.
+Usa los datos cuantificados del impacto por variable (palancas_lines).
+Para cada palanca, describe: QUÉ se puede hacer, CUÁNTO impacto esperar en puntos,
+QUIÉN debe actuar (estado, municipio, colegio, familia) y QUÉ programas exitosos
+en Colombia o América Latina ya lo han demostrado.
+Ordena las palancas de mayor a menor impacto. Sé específico: no "mejorar la educación"
+sino "garantizar conectividad en los {palancas_nac.iloc[0]['n_colegios'] if palancas_nac is not None and not palancas_nac.empty else 'X'} colegios identificados
+sumaría en promedio X pts a sus estudiantes".
+Termina con una visión: si se aplicaran las 3 palancas principales a los colegios
+identificados como prioridad, ¿qué cambio sistémico es posible para Colombia?]
 """
     return prompt
 
@@ -242,7 +307,7 @@ def _llamar_api(prompt: str):
 # ---------------------------------------------------------------------------
 
 def _parse_sections(text: str) -> dict:
-    markers = ['SHAP', 'CLUSTERS', 'RIESGO', 'OPORTUNIDAD']
+    markers = ['SHAP', 'CLUSTERS', 'RIESGO', 'OPORTUNIDAD', 'PALANCAS']
     sections = {}
     for i, marker in enumerate(markers):
         next_marker = markers[i + 1] if i + 1 < len(markers) else None
@@ -277,6 +342,7 @@ def _guardar(ano: int, analisis_md: str, sections: dict,
         clusters_narrative=sections.get('clusters', ''),
         riesgo_narrative=sections.get('riesgo', ''),
         oportunidad_narrative=sections.get('oportunidad', ''),
+        palancas_narrative=sections.get('palancas', ''),
         modelo_ia=MODEL_IA,
         tokens_input=tokens_in,
         tokens_output=tokens_out,
@@ -358,6 +424,6 @@ class Command(BaseCommand):
             f'\n  OK: MlAnalisisIA id={obj.pk} guardado '
             f'({tokens_out} tokens, {len(analisis_md)} chars)\n'
         ))
-        for key in ['shap', 'clusters', 'riesgo', 'oportunidad']:
+        for key in ['shap', 'clusters', 'riesgo', 'oportunidad', 'palancas']:
             n = len(sections.get(key, ''))
             self.stdout.write(f'     {key}: {n} chars')
