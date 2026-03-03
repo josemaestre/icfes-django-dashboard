@@ -593,3 +593,42 @@ class InglesAnalisisIA(models.Model):
     def __str__(self):
         ref = self.parametro or 'nacional'
         return f"[{self.estado}] {self.tipo} {ref} {self.ano_referencia} ({self.fecha_generacion:%Y-%m-%d %H:%M})"
+
+
+class MlAnalisisIA(models.Model):
+    """
+    Análisis narrativo IA de los modelos ML (SHAP + Clusters + Riesgo + B1).
+
+    Generado por: manage.py generate_ml_ia_analisis
+    Servido por:  api_ml_ia_analisis (views_ml.py)
+    Almacenado en PostgreSQL, no en DuckDB.
+    """
+    ano_referencia  = models.IntegerField()
+
+    ESTADO_ACTIVO    = 'activo'
+    ESTADO_ARCHIVADO = 'archivado'
+    estado = models.CharField(max_length=20, default=ESTADO_ACTIVO)
+
+    # Análisis completo
+    analisis_md = models.TextField()
+
+    # Secciones individuales parseadas del markdown
+    shap_narrative       = models.TextField(blank=True)  # ###SHAP###
+    clusters_narrative   = models.TextField(blank=True)  # ###CLUSTERS###
+    riesgo_narrative     = models.TextField(blank=True)  # ###RIESGO###
+    oportunidad_narrative = models.TextField(blank=True) # ###OPORTUNIDAD###
+
+    # Metadatos
+    modelo_ia        = models.CharField(max_length=100, default='claude-sonnet-4-6')
+    fecha_generacion = models.DateTimeField(auto_now_add=True)
+    tokens_input     = models.IntegerField(null=True, blank=True)
+    tokens_output    = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['ano_referencia', 'estado'])]
+        ordering = ['-fecha_generacion']
+        verbose_name = 'Análisis IA - ML'
+        verbose_name_plural = 'Análisis IA - ML'
+
+    def __str__(self):
+        return f"[{self.estado}] ML {self.ano_referencia} ({self.fecha_generacion:%Y-%m-%d %H:%M})"

@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/ml/social-clusters/', views_ml.api_ml_social_clusters, name='api_ml_social_clusters'),
     path('api/ml/riesgo/', views_ml.api_ml_riesgo, name='api_ml_riesgo'),
     path('api/ml/b1/', views_ml.api_ml_b1, name='api_ml_b1'),
+    path('api/ml/ia-analisis/', views_ml.api_ml_ia_analisis, name='api_ml_ia_analisis'),
 
     # API endpoints — Dashboard Social (NBI, conectividad, presidentes, generaciones)
     path('api/social/kpis/', views.api_social_kpis, name='api_social_kpis'),

@@ -4,7 +4,7 @@
 {% block title %}IA & Modelos ML — ICFES Analytics{% endblock title %}
 
 {% block page_title %}
-{% include "partials/page-title.html" with page_title='IA & Modelos ML' sub_title='XGBoost · SHAP · K-Means · Riesgo · B1 Inglés' %}
+{% include "partials/page-title.html" with page_title='IA & Modelos ML' sub_title='XGBoost · SHAP · K-Means · Storytelling con IA Generativa' %}
 {% endblock page_title %}
 
 {% block page_content %}
@@ -17,36 +17,42 @@
          style="background: linear-gradient(135deg,#0d1b2a 0%,#1b2838 55%,#1a3a4a 100%) !important;">
         <div class="card-body py-4">
             <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h3 class="text-white mb-1">
-                        <i class="bx bx-brain me-2 text-info"></i>Inteligencia Artificial aplicada al ICFES
+                <div class="col-md-7">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-warning text-dark me-2 small">IA Generativa</span>
+                        <span class="badge bg-info text-dark small">XGBoost + SHAP</span>
+                    </div>
+                    <h3 class="text-white mb-2" id="hero-headline">
+                        <i class="bx bx-brain me-2 text-info"></i>
+                        Inteligencia Artificial aplicada al ICFES
                     </h3>
-                    <p class="text-white-50 mb-0">
-                        Modelos entrenados sobre 5M registros (2014-2024). XGBoost + SHAP revela cuántos puntos
-                        aporta cada factor socioeconómico. K-Means agrupa colegios en arquetipos por contexto.
+                    <p class="text-white-50 mb-0" id="hero-subheadline">
+                        Modelos entrenados sobre 7.3M registros (2014–2024). El análisis narrativo
+                        fue generado por Claude — interpreta qué revelan los datos sobre la equidad
+                        educativa en Colombia.
                     </p>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <div class="row g-2 mt-2 mt-md-0">
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6">
                             <div class="bg-white bg-opacity-10 rounded p-3 text-center">
                                 <div class="fs-5 fw-bold text-warning" id="kpi-r2">--</div>
                                 <div class="small text-white-50">R² modelo SHAP</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6">
                             <div class="bg-white bg-opacity-10 rounded p-3 text-center">
                                 <div class="fs-5 fw-bold text-info" id="kpi-mae">-- pts</div>
                                 <div class="small text-white-50">MAE predictor</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6">
                             <div class="bg-white bg-opacity-10 rounded p-3 text-center">
                                 <div class="fs-5 fw-bold text-success" id="kpi-clusters">--</div>
                                 <div class="small text-white-50">Arquetipos</div>
                             </div>
                         </div>
-                        <div class="col-6 col-lg-3">
+                        <div class="col-6">
                             <div class="bg-white bg-opacity-10 rounded p-3 text-center">
                                 <div class="fs-5 fw-bold text-danger" id="kpi-riesgo">--</div>
                                 <div class="small text-white-50">Colegios en riesgo</div>
@@ -59,20 +65,27 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
-         SECCIÓN 1 — SHAP: ¿Qué determina el puntaje?
+         SECCIÓN 1 — SHAP + Narrativa IA
     ══════════════════════════════════════════════════════════ -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                    <h5 class="mb-0">
-                        <i class="bx bx-bar-chart-alt-2 text-warning me-2"></i>
-                        ¿Qué determina el puntaje ICFES?
-                    </h5>
-                    <p class="text-muted small mb-0">
-                        Importancia SHAP (TreeExplainer) — puntos promedio que cada factor mueve el puntaje global.
-                        Modelo XGBoost entrenado a nivel estudiante (5M filas, 2014–2024).
-                    </p>
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">
+                                <i class="bx bx-bar-chart-alt-2 text-warning me-2"></i>
+                                ¿Qué determina el puntaje ICFES?
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                Importancia SHAP (TreeExplainer) — puntos promedio que cada factor mueve el puntaje global.
+                                Modelo XGBoost entrenado a nivel estudiante (7.3M filas, 2014–2024).
+                            </p>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle small px-2">
+                            <i class="bx bx-brain me-1"></i>Narrativa IA
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="shap-pending-msg" class="text-center text-muted py-5 d-none">
@@ -80,7 +93,7 @@
                         <p class="mt-2">Modelo en entrenamiento. Disponible en ~20 min.</p>
                     </div>
                     <div id="shap-charts-wrapper">
-                        <div class="row">
+                        <div class="row g-4">
                             <div class="col-lg-7">
                                 <h6 class="text-muted small mb-2">Importancia media |SHAP| por feature</h6>
                                 <div id="chart-shap-bar" style="min-height:340px;"></div>
@@ -88,6 +101,34 @@
                             <div class="col-lg-5">
                                 <h6 class="text-muted small mb-2">Efecto del estrato sobre el puntaje predicho</h6>
                                 <div id="chart-shap-estrato" style="min-height:340px;"></div>
+                            </div>
+                            <!-- Narrativa IA SHAP -->
+                            <div class="col-12">
+                                <div id="shap-ia-loading" class="text-center py-2">
+                                    <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
+                                    <span class="text-muted small">Cargando análisis IA...</span>
+                                </div>
+                                <div id="shap-ia-wrapper" class="d-none">
+                                    <div class="border-top pt-3">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-2 flex-shrink-0">
+                                                <i class="bx bx-brain text-warning fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold small">Interpretación IA — ¿Qué determina el puntaje?</div>
+                                                <div class="text-muted" style="font-size:11px;" id="shap-ia-meta"></div>
+                                            </div>
+                                        </div>
+                                        <div id="shap-ia-text" class="text-secondary lh-lg"
+                                             style="font-size:0.92rem; white-space:pre-line;"></div>
+                                    </div>
+                                </div>
+                                <div id="shap-ia-unavailable" class="d-none text-center py-2">
+                                    <span class="text-muted small">
+                                        <i class="bx bx-info-circle me-1"></i>
+                                        Análisis narrativo no generado aún. Se genera automáticamente en el próximo deploy.
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -97,20 +138,27 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
-         SECCIÓN 2 — Arquetipos de colegios (Social Clusters)
+         SECCIÓN 2 — Arquetipos K-Means + Narrativa IA
     ══════════════════════════════════════════════════════════ -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                    <h5 class="mb-0">
-                        <i class="bx bx-git-branch text-info me-2"></i>
-                        Arquetipos de colegios por contexto socioeconómico
-                    </h5>
-                    <p class="text-muted small mb-0">
-                        K-Means sobre NBI, conectividad, estrato promedio, puntaje global e inglés.
-                        Cada punto del scatter es un colegio proyectado en 2D (PCA).
-                    </p>
+                <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">
+                                <i class="bx bx-git-branch text-info me-2"></i>
+                                Arquetipos de colegios por contexto socioeconómico
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                K-Means sobre NBI, conectividad, estrato promedio, puntaje global e inglés.
+                                Cada punto del scatter es un colegio proyectado en 2D (PCA).
+                            </p>
+                        </div>
+                        <span class="badge bg-info-subtle text-info border border-info-subtle small px-2">
+                            <i class="bx bx-brain me-1"></i>Narrativa IA
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="clusters-pending-msg" class="text-center text-muted py-5 d-none">
@@ -118,9 +166,7 @@
                         <p class="mt-2">Clustering en proceso. Disponible en unos minutos.</p>
                     </div>
                     <div id="clusters-wrapper">
-                        <!-- Cards de perfiles -->
                         <div id="cluster-cards" class="row g-3 mb-4"></div>
-                        <!-- Scatter PCA -->
                         <div class="row">
                             <div class="col-12">
                                 <h6 class="text-muted small mb-1">
@@ -130,6 +176,22 @@
                                 <div id="chart-cluster-scatter" style="min-height:400px;"></div>
                             </div>
                         </div>
+                        <!-- Narrativa IA Clusters -->
+                        <div id="clusters-ia-wrapper" class="d-none mt-3">
+                            <div class="border-top pt-3">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-info bg-opacity-10 p-2 me-2 flex-shrink-0">
+                                        <i class="bx bx-brain text-info fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold small">Interpretación IA — Los 5 arquetipos de Colombia</div>
+                                        <div class="text-muted" style="font-size:11px;">Análisis sociológico generado por Claude</div>
+                                    </div>
+                                </div>
+                                <div id="clusters-ia-text" class="text-secondary lh-lg"
+                                     style="font-size:0.92rem; white-space:pre-line;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,25 +199,25 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
-         SECCIÓN 3 — Colegios en Riesgo & B1 Overperformers
+         SECCIÓN 3 — Riesgo & B1 Overperformers + Narrativas IA
     ══════════════════════════════════════════════════════════ -->
     <div class="row mb-4">
         <!-- Riesgo de declive -->
         <div class="col-lg-6 mb-4 mb-lg-0">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                    <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">
                                 <i class="bx bx-error-circle text-danger me-2"></i>Alertas de riesgo
                             </h5>
                             <p class="text-muted small mb-0">Colegios con mayor probabilidad de declive (XGBoost v2)</p>
                         </div>
-                        <div id="riesgo-badges" class="d-flex gap-2"></div>
+                        <div id="riesgo-badges" class="d-flex gap-1 flex-wrap"></div>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
                             <thead class="sticky-top bg-white">
                                 <tr>
@@ -168,6 +230,14 @@
                             <tbody id="riesgo-tbody"></tbody>
                         </table>
                     </div>
+                    <div id="riesgo-ia-wrapper" class="d-none border-top p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bx bx-brain text-danger me-2 flex-shrink-0"></i>
+                            <span class="fw-semibold small">Interpretación IA — Sistema de alertas</span>
+                        </div>
+                        <div id="riesgo-ia-text" class="text-secondary small lh-lg"
+                             style="white-space:pre-line;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -176,7 +246,7 @@
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                    <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">
                                 <i class="bx bx-medal text-success me-2"></i>Colegios que superan su predicción B1
@@ -195,7 +265,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+                    <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
                         <table class="table table-sm table-hover mb-0">
                             <thead class="sticky-top bg-white">
                                 <tr>
@@ -207,6 +277,48 @@
                             </thead>
                             <tbody id="b1-tbody"></tbody>
                         </table>
+                    </div>
+                    <div id="oportunidad-ia-wrapper" class="d-none border-top p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bx bx-brain text-success me-2 flex-shrink-0"></i>
+                            <span class="fw-semibold small">Interpretación IA — Casos de éxito</span>
+                        </div>
+                        <div id="oportunidad-ia-text" class="text-secondary small lh-lg"
+                             style="white-space:pre-line;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECCIÓN 4 — Análisis completo colapsable
+    ══════════════════════════════════════════════════════════ -->
+    <div class="row mb-4" id="ia-full-panel-row" style="display:none;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-left:4px solid #f7b731 !important;">
+                <div class="card-header bg-warning bg-opacity-10 border-0 pt-3 pb-2">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-brain text-warning fs-4 me-2"></i>
+                            <div>
+                                <div class="fw-bold">
+                                    Análisis Narrativo Completo
+                                    <span id="ia-model-badge" class="badge bg-warning text-dark small ms-1"></span>
+                                </div>
+                                <div class="text-muted" style="font-size:11px;" id="ia-full-meta"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#ia-full-collapse">
+                            <i class="bx bx-chevron-down me-1"></i>Ver análisis completo
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="ia-full-collapse">
+                    <div class="card-body">
+                        <div id="ia-full-text" class="text-secondary lh-lg"
+                             style="font-size:0.92rem; white-space:pre-line;"></div>
                     </div>
                 </div>
             </div>

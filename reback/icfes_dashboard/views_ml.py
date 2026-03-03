@@ -239,3 +239,33 @@ def api_ml_b1(request):
     except Exception as e:
         logger.error("api_ml_b1 error: %s", e)
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ---------------------------------------------------------------------------
+# API — Análisis narrativo IA de modelos ML
+# ---------------------------------------------------------------------------
+
+@login_required
+@require_GET
+def api_ml_ia_analisis(request):
+    """Devuelve el análisis narrativo IA pre-generado (MlAnalisisIA)."""
+    from .models import MlAnalisisIA
+    ano = int(request.GET.get('ano', 2024))
+    try:
+        obj = MlAnalisisIA.objects.filter(
+            ano_referencia=ano, estado=MlAnalisisIA.ESTADO_ACTIVO
+        ).latest('fecha_generacion')
+        return JsonResponse({
+            'disponible': True,
+            'ano_referencia': obj.ano_referencia,
+            'shap_narrative': obj.shap_narrative,
+            'clusters_narrative': obj.clusters_narrative,
+            'riesgo_narrative': obj.riesgo_narrative,
+            'oportunidad_narrative': obj.oportunidad_narrative,
+            'analisis_md': obj.analisis_md,
+            'modelo_ia': obj.modelo_ia,
+            'fecha_generacion': obj.fecha_generacion.isoformat(),
+            'tokens_output': obj.tokens_output,
+        })
+    except MlAnalisisIA.DoesNotExist:
+        return JsonResponse({'disponible': False})

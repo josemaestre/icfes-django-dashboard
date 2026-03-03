@@ -1,19 +1,15 @@
 /**
  * Dashboard IA & Modelos ML
- * Fetches: /icfes/api/ml/shap/  /api/ml/social-clusters/  /api/ml/riesgo/  /api/ml/b1/
+ * Carga datos de modelos ML + narrativa IA generativa (Claude).
  */
 
 const ML_URLS = {
-    shap:     '/icfes/api/ml/shap/',
-    clusters: '/icfes/api/ml/social-clusters/',
-    riesgo:   '/icfes/api/ml/riesgo/',
-    b1:       '/icfes/api/ml/b1/',
+    shap:       '/icfes/api/ml/shap/',
+    clusters:   '/icfes/api/ml/social-clusters/',
+    riesgo:     '/icfes/api/ml/riesgo/',
+    b1:         '/icfes/api/ml/b1/',
+    iaAnalisis: '/icfes/api/ml/ia-analisis/',
 };
-
-const CLUSTER_COLORS = [
-    '#e63946','#f4a261','#2a9d8f','#457b9d','#6a4c93',
-    '#264653','#e9c46a','#43aa8b',
-];
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -23,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadClusters();
     loadRiesgo();
     loadB1('OFICIAL');
+    loadIaAnalisis();
 });
 
 // ---------------------------------------------------------------------------
@@ -30,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ---------------------------------------------------------------------------
 async function loadShap() {
     try {
-        const res = await fetch(ML_URLS.shap);
+        const res  = await fetch(ML_URLS.shap);
         const data = await res.json();
 
         if (data.pending || !data.importances || data.importances.length === 0) {
@@ -39,10 +36,14 @@ async function loadShap() {
             return;
         }
 
-        // KPIs from first row
         const m = data.importances[0];
         document.getElementById('kpi-r2').textContent  = m.model_r2.toFixed(3);
         document.getElementById('kpi-mae').textContent = m.model_mae.toFixed(1) + ' pts';
+
+        // Headline dinámico en el hero
+        document.getElementById('hero-headline').innerHTML =
+            `<i class="bx bx-brain me-2 text-info"></i>` +
+            `"${m.label}" es el factor que más determina el puntaje ICFES`;
 
         renderShapBar(data.importances);
         renderShapEstrato(data.partial_estrato);
@@ -57,11 +58,11 @@ function renderShapBar(importances) {
     const values = importances.map(d => d.shap_pts);
     const colors = values.map((v, i) => i === 0 ? '#f4a261' : (i < 3 ? '#e9c46a' : '#adb5bd'));
 
-    const options = {
+    new ApexCharts(document.getElementById('chart-shap-bar'), {
         series: [{ name: 'Importancia SHAP (pts)', data: values }],
         chart: { type: 'bar', height: 340, toolbar: { show: false } },
         plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '65%' } },
-        colors: colors,
+        colors,
         dataLabels: {
             enabled: true,
             formatter: v => v.toFixed(1) + ' pts',
@@ -70,12 +71,9 @@ function renderShapBar(importances) {
         },
         xaxis: { categories: labels, labels: { style: { fontSize: '12px' } } },
         yaxis: { labels: { style: { fontSize: '11px' } } },
-        tooltip: {
-            y: { formatter: v => v.toFixed(2) + ' pts promedio' },
-        },
+        tooltip: { y: { formatter: v => v.toFixed(2) + ' pts promedio' } },
         grid: { borderColor: '#f0f0f0' },
-    };
-    new ApexCharts(document.getElementById('chart-shap-bar'), options).render();
+    }).render();
 }
 
 function renderShapEstrato(partial) {
@@ -84,7 +82,7 @@ function renderShapEstrato(partial) {
     const values = partial.map(d => d.puntaje_predicho);
     const brecha = (values[values.length - 1] - values[1]).toFixed(1);
 
-    const options = {
+    new ApexCharts(document.getElementById('chart-shap-estrato'), {
         series: [{ name: 'Puntaje predicho', data: values }],
         chart: { type: 'line', height: 340, toolbar: { show: false } },
         stroke: { curve: 'smooth', width: 3 },
@@ -93,29 +91,26 @@ function renderShapEstrato(partial) {
         xaxis: { categories: labels, labels: { style: { fontSize: '11px' } } },
         yaxis: { labels: { formatter: v => v.toFixed(0) } },
         annotations: {
-            yaxis: [],
-            xaxis: [],
             points: [{
                 x: labels[labels.length - 1],
                 y: values[values.length - 1],
                 label: {
-                    text: `+${brecha} pts vs E1`,
+                    text: `${brecha} pts vs E1`,
                     style: { background: '#2a9d8f', color: '#fff', fontSize: '11px' },
                 },
             }],
         },
         tooltip: { y: { formatter: v => v.toFixed(1) + ' pts predichos' } },
         grid: { borderColor: '#f0f0f0' },
-    };
-    new ApexCharts(document.getElementById('chart-shap-estrato'), options).render();
+    }).render();
 }
 
 // ---------------------------------------------------------------------------
-// 2. Social Clusters
+// 2. Social Clusters (K-Means + PCA)
 // ---------------------------------------------------------------------------
 async function loadClusters() {
     try {
-        const res = await fetch(ML_URLS.clusters);
+        const res  = await fetch(ML_URLS.clusters);
         const data = await res.json();
 
         if (data.pending || !data.profiles || data.profiles.length === 0) {
@@ -127,7 +122,6 @@ async function loadClusters() {
 
         document.getElementById('kpi-clusters').textContent = data.profiles.length;
 
-        // Varianza PCA
         if (data.profiles[0]) {
             const p = data.profiles[0];
             document.getElementById('pca-variance-label').textContent =
@@ -144,10 +138,11 @@ async function loadClusters() {
 
 function renderClusterCards(profiles) {
     const container = document.getElementById('cluster-cards');
-    const cols = profiles.length <= 4 ? 'col-md-6 col-lg-3' : 'col-md-6 col-xl-4';
+    const cols = profiles.length <= 4 ? 'col-md-6 col-lg-3' : 'col-md-6 col-xl-4 col-lg-6';
     container.innerHTML = profiles.map(p => `
         <div class="${cols}">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid ${p.cluster_color} !important;">
+            <div class="card border-0 shadow-sm h-100"
+                 style="border-left: 4px solid ${p.cluster_color} !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center mb-2">
                         <span class="badge rounded-pill me-2"
@@ -188,10 +183,6 @@ function renderClusterCards(profiles) {
 }
 
 function renderClusterScatter(scatter, profiles) {
-    const colorMap = {};
-    profiles.forEach(p => { colorMap[p.cluster_id] = p.cluster_color; });
-
-    // Group by cluster_id
     const grouped = {};
     scatter.forEach(d => {
         if (!grouped[d.cluster_id]) {
@@ -209,7 +200,7 @@ function renderClusterScatter(scatter, profiles) {
     }));
     const colors = Object.values(grouped).map(g => g.color);
 
-    const options = {
+    new ApexCharts(document.getElementById('chart-cluster-scatter'), {
         series,
         chart: {
             type: 'scatter', height: 400, toolbar: { show: false },
@@ -231,8 +222,7 @@ function renderClusterScatter(scatter, profiles) {
         },
         legend: { position: 'bottom', fontSize: '12px' },
         grid: { borderColor: '#f0f0f0' },
-    };
-    new ApexCharts(document.getElementById('chart-cluster-scatter'), options).render();
+    }).render();
 }
 
 // ---------------------------------------------------------------------------
@@ -240,24 +230,20 @@ function renderClusterScatter(scatter, profiles) {
 // ---------------------------------------------------------------------------
 async function loadRiesgo() {
     try {
-        const res = await fetch(ML_URLS.riesgo);
+        const res  = await fetch(ML_URLS.riesgo);
         const data = await res.json();
         if (data.error) return;
 
-        // KPI
         const alto = data.stats['Alto'] || 0;
         document.getElementById('kpi-riesgo').textContent = alto.toLocaleString();
 
-        // Badges
-        const badgesEl = document.getElementById('riesgo-badges');
-        badgesEl.innerHTML = Object.entries(data.stats).map(([nivel, n]) => {
-            const color = nivel === 'Alto' ? 'danger' : nivel === 'Medio' ? 'warning' : 'success';
-            return `<span class="badge bg-${color}">${nivel}: ${n.toLocaleString()}</span>`;
-        }).join('');
+        document.getElementById('riesgo-badges').innerHTML =
+            Object.entries(data.stats).map(([nivel, n]) => {
+                const color = nivel === 'Alto' ? 'danger' : nivel === 'Medio' ? 'warning' : 'success';
+                return `<span class="badge bg-${color}">${nivel}: ${n.toLocaleString()}</span>`;
+            }).join('');
 
-        // Tabla
-        const tbody = document.getElementById('riesgo-tbody');
-        tbody.innerHTML = data.colegios.map(c => {
+        document.getElementById('riesgo-tbody').innerHTML = data.colegios.map(c => {
             const color = c.nivel_riesgo === 'Alto' ? 'danger' : 'warning';
             return `<tr>
                 <td class="small">${c.nombre}</td>
@@ -278,12 +264,11 @@ async function loadRiesgo() {
 // 4. B1 Overperformers
 // ---------------------------------------------------------------------------
 async function loadB1(sector) {
-    // Toggle buttons
     document.getElementById('btn-b1-oficial').classList.toggle('active', sector === 'OFICIAL');
     document.getElementById('btn-b1-privado').classList.toggle('active', sector !== 'OFICIAL');
 
     try {
-        const res = await fetch(`${ML_URLS.b1}?sector=${encodeURIComponent(sector)}`);
+        const res  = await fetch(`${ML_URLS.b1}?sector=${encodeURIComponent(sector)}`);
         const data = await res.json();
         if (data.error) return;
 
@@ -293,8 +278,7 @@ async function loadB1(sector) {
                 ` R²=${m.model_r2} MAE=${m.model_mae}pp`;
         }
 
-        const tbody = document.getElementById('b1-tbody');
-        tbody.innerHTML = data.colegios.map(c => `
+        document.getElementById('b1-tbody').innerHTML = data.colegios.map(c => `
             <tr>
                 <td class="small">${c.nombre}</td>
                 <td class="small text-muted">${c.departamento}</td>
@@ -306,4 +290,81 @@ async function loadB1(sector) {
     } catch (e) {
         console.warn('loadB1 error:', e);
     }
+}
+
+// ---------------------------------------------------------------------------
+// 5. Narrativa IA generativa (Claude, pre-generada)
+// ---------------------------------------------------------------------------
+async function loadIaAnalisis() {
+    showEl('shap-ia-loading');
+
+    try {
+        const res  = await fetch(ML_URLS.iaAnalisis);
+        const data = await res.json();
+
+        hideEl('shap-ia-loading');
+
+        if (!data.disponible) {
+            showEl('shap-ia-unavailable');
+            return;
+        }
+
+        const fecha = new Date(data.fecha_generacion).toLocaleDateString('es-CO', {
+            day: '2-digit', month: 'short', year: 'numeric',
+        });
+        const metaText =
+            `Generado por ${data.modelo_ia} · ${fecha} · ${(data.tokens_output || 0).toLocaleString()} tokens`;
+
+        // SHAP
+        if (data.shap_narrative) {
+            document.getElementById('shap-ia-meta').textContent = metaText;
+            document.getElementById('shap-ia-text').textContent = data.shap_narrative;
+            showEl('shap-ia-wrapper');
+        } else {
+            showEl('shap-ia-unavailable');
+        }
+
+        // Clusters
+        if (data.clusters_narrative) {
+            document.getElementById('clusters-ia-text').textContent = data.clusters_narrative;
+            showEl('clusters-ia-wrapper');
+        }
+
+        // Riesgo
+        if (data.riesgo_narrative) {
+            document.getElementById('riesgo-ia-text').textContent = data.riesgo_narrative;
+            showEl('riesgo-ia-wrapper');
+        }
+
+        // Oportunidad (B1)
+        if (data.oportunidad_narrative) {
+            document.getElementById('oportunidad-ia-text').textContent = data.oportunidad_narrative;
+            showEl('oportunidad-ia-wrapper');
+        }
+
+        // Panel completo colapsable
+        if (data.analisis_md) {
+            document.getElementById('ia-model-badge').textContent = data.modelo_ia;
+            document.getElementById('ia-full-meta').textContent = metaText;
+            document.getElementById('ia-full-text').textContent = data.analisis_md;
+            document.getElementById('ia-full-panel-row').style.display = '';
+        }
+
+    } catch (e) {
+        console.warn('loadIaAnalisis error:', e);
+        hideEl('shap-ia-loading');
+        showEl('shap-ia-unavailable');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function showEl(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('d-none');
+}
+function hideEl(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('d-none');
 }
