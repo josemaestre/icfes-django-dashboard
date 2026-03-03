@@ -348,13 +348,17 @@ def api_ml_palancas_colegio(request):
     try:
         q = resolve_schema(f"""
             SELECT
-                colegio_bk, nombre_colegio, departamento, sector,
-                n_estudiantes, puntaje_actual,
-                palanca_rank, feature, feature_label, icono,
-                delta_pts, descripcion
-            FROM gold.fct_ml_palancas_colegio
-            WHERE colegio_bk = '{colegio_bk}'
-            ORDER BY palanca_rank
+                p.colegio_bk,
+                COALESCE(NULLIF(d.nombre_colegio, ''), NULLIF(p.nombre_colegio, ''), p.colegio_bk) AS nombre_colegio,
+                COALESCE(NULLIF(d.departamento, ''),   NULLIF(p.departamento, ''),   '')            AS departamento,
+                COALESCE(NULLIF(d.sector, ''),         NULLIF(p.sector, ''),         '')            AS sector,
+                p.n_estudiantes, p.puntaje_actual,
+                p.palanca_rank, p.feature, p.feature_label, p.icono,
+                p.delta_pts, p.descripcion
+            FROM gold.fct_ml_palancas_colegio p
+            LEFT JOIN gold.dim_colegios d ON d.colegio_bk = p.colegio_bk
+            WHERE p.colegio_bk = '{colegio_bk}'
+            ORDER BY p.palanca_rank
         """)
         with get_duckdb_connection() as con:
             rows = con.execute(q).fetchall()
@@ -418,11 +422,15 @@ def api_ml_palancas_nacional(request):
         """)
         q_top = resolve_schema("""
             SELECT
-                colegio_bk, nombre_colegio, departamento, sector,
-                ROUND(puntaje_actual, 1)        AS puntaje_actual,
-                ROUND(SUM(delta_pts), 1)        AS delta_total
-            FROM gold.fct_ml_palancas_colegio
-            GROUP BY colegio_bk, nombre_colegio, departamento, sector, puntaje_actual
+                p.colegio_bk,
+                COALESCE(NULLIF(d.nombre_colegio, ''), NULLIF(p.nombre_colegio, ''), p.colegio_bk) AS nombre,
+                COALESCE(NULLIF(d.departamento, ''),   NULLIF(p.departamento, ''),   '')            AS departamento,
+                COALESCE(NULLIF(d.sector, ''),         NULLIF(p.sector, ''),         '')            AS sector,
+                ROUND(p.puntaje_actual, 1)              AS puntaje_actual,
+                ROUND(SUM(p.delta_pts), 1)              AS delta_total
+            FROM gold.fct_ml_palancas_colegio p
+            LEFT JOIN gold.dim_colegios d ON d.colegio_bk = p.colegio_bk
+            GROUP BY p.colegio_bk, nombre, departamento, sector, p.puntaje_actual
             ORDER BY delta_total DESC
             LIMIT 20
         """)
