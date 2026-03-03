@@ -3715,42 +3715,15 @@ def api_social_estrato(request):
     """Puntaje por estrato socioeconómico (E1–E6 + Sin Estrato) — snapshot 2024 + evolución 2014-2024."""
     try:
         snapshot = execute_query("""
-            SELECT
-                fami_estratovivienda AS estrato,
-                CASE fami_estratovivienda
-                    WHEN 'Sin Estrato' THEN 0
-                    WHEN 'Estrato 1'   THEN 1
-                    WHEN 'Estrato 2'   THEN 2
-                    WHEN 'Estrato 3'   THEN 3
-                    WHEN 'Estrato 4'   THEN 4
-                    WHEN 'Estrato 5'   THEN 5
-                    WHEN 'Estrato 6'   THEN 6
-                    ELSE 99
-                END AS orden,
-                ROUND(AVG(punt_global),      1) AS global,
-                ROUND(AVG(punt_ingles),      1) AS ingles,
-                ROUND(AVG(punt_matematicas), 1) AS mat,
-                COUNT(*) AS n_estudiantes
-            FROM icfes_silver.icfes
-            WHERE ano = '2024'
-              AND fami_estratovivienda IS NOT NULL
-              AND fami_estratovivienda != 'None'
-            GROUP BY fami_estratovivienda, orden
+            SELECT estrato, orden, global, ingles, mat, n_estudiantes
+            FROM gold.fct_social_estrato
             ORDER BY orden
         """)
 
         evolucion = execute_query("""
-            SELECT
-                CAST(ano AS INTEGER)    AS anio,
-                fami_estratovivienda    AS estrato,
-                ROUND(AVG(punt_global), 1) AS global,
-                ROUND(AVG(punt_ingles), 1) AS ingles
-            FROM icfes_silver.icfes
-            WHERE fami_estratovivienda IN ('Estrato 1', 'Estrato 6')
-              AND CAST(ano AS INTEGER) >= 2014
-              AND ano IS NOT NULL
-            GROUP BY ano, fami_estratovivienda
-            ORDER BY CAST(ano AS INTEGER), fami_estratovivienda
+            SELECT anio, estrato, global, ingles
+            FROM gold.fct_social_estrato_evolucion
+            ORDER BY anio, estrato
         """)
 
         return JsonResponse({
