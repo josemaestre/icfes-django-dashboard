@@ -3362,3 +3362,434 @@ def api_panorama_riesgo(request):
         'distribucion': distribucion,
         'top_riesgo': top_riesgo,
     })
+
+
+# =============================================================================
+# DASHBOARD SOCIAL — Contexto Socioeconómico (NBI, Conectividad, Presidentes)
+# =============================================================================
+
+@login_required
+def social_dashboard(request):
+    """Dashboard de contexto social: NBI, conectividad, presidentes, generaciones."""
+    return render(request, 'icfes_dashboard/pages/dashboard-social.html', {})
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_kpis(request):
+    """4 KPIs de encabezado: municipios con NBI, NBI nacional prom, con internet, brecha pub/priv."""
+    try:
+        kpis = execute_query("""
+            SELECT
+                COUNT(DISTINCT n.codigo_municipio)                  AS municipios_con_nbi,
+                ROUND(AVG(n.pct_nbi_total), 1)                      AS nbi_nacional_prom,
+                (SELECT COUNT(DISTINCT codigo_municipio)
+                 FROM gold.dim_municipio_conectividad)               AS municipios_con_internet,
+                (SELECT ROUND(AVG(CASE WHEN UPPER(sector)='NO OFICIAL' THEN avg_punt_global END)
+                            - AVG(CASE WHEN UPPER(sector)='OFICIAL'     THEN avg_punt_global END), 1)
+                 FROM gold.fct_agg_colegios_ano
+                 WHERE ano='2024')                                   AS brecha_priv_pub_2024
+            FROM gold.dim_municipio_nbi n
+        """)
+        return JsonResponse(kpis.to_dict(orient='records')[0])
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_nbi_brechas(request):
+    """Puntaje promedio por categoría NBI (4 tiers) — 2024 y evolución 2010 vs 2024."""
+    try:
+        brechas = execute_query("""
+            WITH scores AS (
+                SELECT SUBSTRING(colegio_bk, 2, 5) AS cod_mun,
+                       CAST(ano AS INTEGER) AS anio,
+                       AVG(avg_punt_global) AS puntaje
+                FROM gold.fct_agg_colegios_ano
+                WHERE ano IN ('2010', '2024')
+                GROUP BY cod_mun, ano
+            ),
+            joined AS (
+                SELECT s.anio, s.puntaje,
+                    CASE
+                        WHEN n.pct_nbi_total < 10  THEN 'NBI < 10%'
+                        WHEN n.pct_nbi_total < 25  THEN 'NBI 10-25%'
+                        WHEN n.pct_nbi_total < 50  THEN 'NBI 25-50%'
+                        ELSE                            'NBI >= 50%'
+                    END AS cat_nbi,
+                    CASE
+                        WHEN n.pct_nbi_total < 10  THEN 1
+                        WHEN n.pct_nbi_total < 25  THEN 2
+                        WHEN n.pct_nbi_total < 50  THEN 3
+                        ELSE                            4
+                    END AS orden
+                FROM scores s
+                JOIN gold.dim_municipio_nbi n ON CAST(n.codigo_municipio AS VARCHAR) = s.cod_mun
+            )
+            SELECT cat_nbi, orden, anio,
+                   COUNT(*) AS n_municipios,
+                   ROUND(AVG(puntaje), 1) AS puntaje_prom
+            FROM joined
+            GROUP BY cat_nbi, orden, anio
+            ORDER BY orden, anio
+        """)
+        return JsonResponse(brechas.to_dict(orient='records'), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 30)
+def api_social_colegios_heroes(request):
+    """Colegios con mejor puntaje en municipios con NBI > umbral (default 40%)."""
+    nbi_min = float(request.GET.get('nbi_min', 40))
+    try:
+        heroes = execute_query(f"""
+            SELECT
+                c.nombre_colegio,
+                c.municipio,
+                c.departamento,
+                ROUND(c.avg_punt_global, 1)  AS puntaje,
+                c.ranking_nacional,
+                ROUND(n.pct_nbi_total, 1)    AS pct_nbi,
+                c.sector,
+                c.total_estudiantes
+            FROM gold.fct_agg_colegios_ano c
+            JOIN gold.dim_municipio_nbi n
+              ON CAST(n.codigo_municipio AS VARCHAR) = SUBSTRING(c.colegio_bk, 2, 5)
+            WHERE c.ano = '2024'
+              AND n.pct_nbi_total > {nbi_min}
+              AND c.total_estudiantes >= 5
+            ORDER BY c.avg_punt_global DESC
+            LIMIT 25
+        """)
+        return JsonResponse(heroes.to_dict(orient='records'), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def api_social_scatter_municipios(request):
+    """Scatter: cada municipio con NBI (X), puntaje 2024 (Y) y conectividad (color/size)."""
+    try:
+        scatter = execute_query("""
+            WITH scores AS (
+                SELECT SUBSTRING(colegio_bk, 2, 5) AS cod_mun,
+                       MIN(municipio) AS municipio,
+                       MIN(departamento) AS departamento,
+                       ROUND(AVG(avg_punt_global), 1) AS puntaje,
+                       SUM(total_estudiantes) AS estudiantes
+                FROM gold.fct_agg_colegios_ano
+                WHERE ano = '2024'
+                GROUP BY cod_mun
+            )
+            SELECT
+                s.municipio, s.departamento,
+                s.puntaje,
+                ROUND(n.pct_nbi_total, 1) AS nbi,
+                COALESCE(ROUND(c.pct_residencial, 1), 0) AS pct_internet,
+                s.estudiantes,
+                COALESCE(c.tecnologia_predominante, 'Sin datos') AS tecnologia
+            FROM scores s
+            JOIN gold.dim_municipio_nbi n ON CAST(n.codigo_municipio AS VARCHAR) = s.cod_mun
+            LEFT JOIN gold.dim_municipio_conectividad c ON CAST(c.codigo_municipio AS VARCHAR) = s.cod_mun
+            WHERE n.pct_nbi_total IS NOT NULL AND s.estudiantes > 20
+            ORDER BY s.puntaje DESC
+        """)
+        return JsonResponse(scatter.to_dict(orient='records'), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_conectividad_materias(request):
+    """Correlación internet residencial vs cada materia + tiers conectividad vs puntaje."""
+    try:
+        correlaciones = execute_query("""
+            WITH datos AS (
+                SELECT
+                    c.avg_punt_matematicas        AS mat,
+                    c.avg_punt_lectura_critica     AS lec,
+                    c.avg_punt_c_naturales         AS nat,
+                    c.avg_punt_sociales_ciudadanas AS soc,
+                    c.avg_punt_ingles              AS ing,
+                    ct.pct_residencial             AS pct_inet
+                FROM gold.fct_agg_colegios_ano c
+                JOIN gold.dim_municipio_conectividad ct
+                  ON CAST(ct.codigo_municipio AS VARCHAR) = SUBSTRING(c.colegio_bk, 2, 5)
+                WHERE c.ano = '2024' AND ct.pct_residencial IS NOT NULL
+            )
+            SELECT 'Inglés'               AS materia, 1 AS orden, ROUND(CORR(ing, pct_inet), 3) AS correlacion FROM datos
+            UNION ALL SELECT 'Lectura Crítica', 2, ROUND(CORR(lec, pct_inet), 3) FROM datos
+            UNION ALL SELECT 'Soc. y Ciudadanas', 3, ROUND(CORR(soc, pct_inet), 3) FROM datos
+            UNION ALL SELECT 'C. Naturales', 4, ROUND(CORR(nat, pct_inet), 3) FROM datos
+            UNION ALL SELECT 'Matemáticas', 5, ROUND(CORR(mat, pct_inet), 3) FROM datos
+            ORDER BY orden
+        """)
+
+        tiers = execute_query("""
+            WITH datos AS (
+                SELECT
+                    AVG(c.avg_punt_global) AS puntaje,
+                    CASE
+                        WHEN ct.pct_residencial IS NULL OR ct.pct_residencial = 0 THEN 'Sin internet'
+                        WHEN ct.pct_residencial < 20 THEN 'Baja (<20%)'
+                        WHEN ct.pct_residencial < 50 THEN 'Media (20-50%)'
+                        ELSE 'Alta (>50%)'
+                    END AS nivel,
+                    CASE
+                        WHEN ct.pct_residencial IS NULL OR ct.pct_residencial = 0 THEN 1
+                        WHEN ct.pct_residencial < 20 THEN 2
+                        WHEN ct.pct_residencial < 50 THEN 3
+                        ELSE 4
+                    END AS orden
+                FROM gold.fct_agg_colegios_ano c
+                LEFT JOIN gold.dim_municipio_conectividad ct
+                  ON CAST(ct.codigo_municipio AS VARCHAR) = SUBSTRING(c.colegio_bk, 2, 5)
+                WHERE c.ano = '2024'
+                GROUP BY nivel, orden
+            )
+            SELECT nivel, orden, ROUND(puntaje, 1) AS puntaje FROM datos ORDER BY orden
+        """)
+
+        return JsonResponse({
+            'correlaciones': correlaciones.to_dict(orient='records'),
+            'tiers': tiers.to_dict(orient='records'),
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_serie_historica(request):
+    """Serie 1996-2024: puntaje por año con contexto presidencial y eventos."""
+    try:
+        serie = execute_query("""
+            SELECT
+                CAST(f.ano AS INTEGER)                    AS anio,
+                ROUND(AVG(f.avg_punt_global), 1)          AS prom_global,
+                ROUND(AVG(f.avg_punt_ingles), 1)          AS prom_ingles,
+                ROUND(AVG(f.avg_punt_matematicas), 1)     AS prom_mat,
+                MIN(a.presidente)                         AS presidente,
+                MIN(a.era_tecnologica)                    AS era_tecnologica,
+                MIN(a.generacion_estudiante)              AS generacion,
+                BOOL_OR(a.pandemia_covid)                 AS covid,
+                BOOL_OR(a.paro_nacional)                  AS paro,
+                BOOL_OR(a.postconflicto)                  AS postconflicto,
+                MIN(a.nota_historica)                     AS nota_historica
+            FROM gold.fct_agg_colegios_ano f
+            JOIN gold.dim_ano_contexto a ON a.ano = CAST(f.ano AS INTEGER)
+            GROUP BY CAST(f.ano AS INTEGER)
+            ORDER BY anio
+        """)
+        return JsonResponse(serie.to_dict(orient='records'), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_era_tecnologica(request):
+    """Puntaje promedio por era tecnológica (pre-internet, YouTube, smartphones, IA)."""
+    try:
+        eras = execute_query("""
+            WITH base AS (
+                SELECT
+                    CAST(f.ano AS INTEGER) AS anio,
+                    AVG(f.avg_punt_global)         AS puntaje,
+                    AVG(f.avg_punt_ingles)          AS ingles,
+                    AVG(f.avg_punt_matematicas)    AS mat,
+                    a.youtube_existe,
+                    a.smartphones_masivos,
+                    a.chatgpt_disponible
+                FROM gold.fct_agg_colegios_ano f
+                JOIN gold.dim_ano_contexto a ON a.ano = CAST(f.ano AS INTEGER)
+                GROUP BY CAST(f.ano AS INTEGER), a.youtube_existe, a.smartphones_masivos, a.chatgpt_disponible
+            )
+            SELECT
+                CASE
+                    WHEN chatgpt_disponible  THEN 'Era IA (2022+)'
+                    WHEN smartphones_masivos THEN 'Era Smartphones (2012-2021)'
+                    WHEN youtube_existe      THEN 'Era YouTube (2005-2011)'
+                    ELSE                         'Pre-Internet (hasta 2004)'
+                END AS era,
+                CASE
+                    WHEN chatgpt_disponible  THEN 4
+                    WHEN smartphones_masivos THEN 3
+                    WHEN youtube_existe      THEN 2
+                    ELSE                         1
+                END AS orden,
+                COUNT(*) AS anos,
+                ROUND(AVG(puntaje), 1) AS prom_global,
+                ROUND(AVG(ingles), 1)  AS prom_ingles,
+                ROUND(AVG(mat), 1)     AS prom_mat
+            FROM base
+            GROUP BY era, orden
+            ORDER BY orden
+        """)
+
+        postconflicto = execute_query("""
+            WITH base AS (
+                SELECT
+                    UPPER(f.departamento) AS dpto,
+                    CASE WHEN CAST(f.ano AS INTEGER) <= 2016
+                         THEN 'pre' ELSE 'post' END AS periodo,
+                    AVG(f.avg_punt_global) AS puntaje
+                FROM gold.fct_agg_colegios_ano f
+                WHERE UPPER(f.departamento) IN (
+                    'CHOCO','LA GUAJIRA','ARAUCA','CAUCA','PUTUMAYO',
+                    'VICHADA','GUAINIA','CAQUETA','CORDOBA','AMAZONAS'
+                )
+                GROUP BY UPPER(f.departamento),
+                         CASE WHEN CAST(f.ano AS INTEGER) <= 2016 THEN 'pre' ELSE 'post' END
+            )
+            SELECT dpto,
+                   ROUND(MAX(CASE WHEN periodo='pre'  THEN puntaje END), 1) AS antes_2016,
+                   ROUND(MAX(CASE WHEN periodo='post' THEN puntaje END), 1) AS despues_2016,
+                   ROUND(MAX(CASE WHEN periodo='post' THEN puntaje END)
+                       - MAX(CASE WHEN periodo='pre'  THEN puntaje END), 1) AS cambio
+            FROM base
+            GROUP BY dpto
+            ORDER BY cambio DESC
+        """)
+
+        return JsonResponse({
+            'eras': eras.to_dict(orient='records'),
+            'postconflicto': postconflicto.to_dict(orient='records'),
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_brecha_sector(request):
+    """Brecha puntaje oficial vs no-oficial por período de gobierno."""
+    try:
+        brecha = execute_query("""
+            WITH base AS (
+                SELECT
+                    CASE
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 1994 AND 1998 THEN 'Samper 94-98'
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 1998 AND 2002 THEN 'Pastrana 98-02'
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 2002 AND 2006 THEN 'Uribe I 02-06'
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 2006 AND 2010 THEN 'Uribe II 06-10'
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 2010 AND 2014 THEN 'Santos I 10-14'
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 2014 AND 2018 THEN 'Santos II 14-18'
+                        WHEN CAST(f.ano AS INTEGER) BETWEEN 2018 AND 2022 THEN 'Duque 18-22'
+                        ELSE 'Petro 22-26'
+                    END AS gobierno,
+                    CAST(f.ano AS INTEGER) AS anio_ord,
+                    UPPER(f.sector) AS sector,
+                    AVG(f.avg_punt_global) AS puntaje
+                FROM gold.fct_agg_colegios_ano f
+                WHERE UPPER(f.sector) IN ('OFICIAL', 'NO OFICIAL')
+                GROUP BY gobierno, CAST(f.ano AS INTEGER), UPPER(f.sector)
+            ),
+            gob_sector AS (
+                SELECT gobierno, MIN(anio_ord) AS ord, sector, AVG(puntaje) AS puntaje
+                FROM base GROUP BY gobierno, sector
+            )
+            SELECT
+                o.gobierno,
+                o.ord,
+                ROUND(o.puntaje, 1) AS oficial,
+                ROUND(p.puntaje, 1) AS privado,
+                ROUND(p.puntaje - o.puntaje, 1) AS brecha
+            FROM gob_sector o
+            JOIN gob_sector p ON o.gobierno = p.gobierno AND p.sector = 'NO OFICIAL'
+            WHERE o.sector = 'OFICIAL'
+            ORDER BY o.ord
+        """)
+        return JsonResponse(brecha.to_dict(orient='records'), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_estrato(request):
+    """Puntaje por estrato socioeconómico (E1–E6 + Sin Estrato) — snapshot 2024 + evolución 2014-2024."""
+    try:
+        snapshot = execute_query("""
+            SELECT
+                fami_estratovivienda AS estrato,
+                CASE fami_estratovivienda
+                    WHEN 'Sin Estrato' THEN 0
+                    WHEN 'Estrato 1'   THEN 1
+                    WHEN 'Estrato 2'   THEN 2
+                    WHEN 'Estrato 3'   THEN 3
+                    WHEN 'Estrato 4'   THEN 4
+                    WHEN 'Estrato 5'   THEN 5
+                    WHEN 'Estrato 6'   THEN 6
+                    ELSE 99
+                END AS orden,
+                ROUND(AVG(punt_global),      1) AS global,
+                ROUND(AVG(punt_ingles),      1) AS ingles,
+                ROUND(AVG(punt_matematicas), 1) AS mat,
+                COUNT(*) AS n_estudiantes
+            FROM icfes_silver.icfes
+            WHERE ano = '2024'
+              AND fami_estratovivienda IS NOT NULL
+              AND fami_estratovivienda != 'None'
+            GROUP BY fami_estratovivienda, orden
+            ORDER BY orden
+        """)
+
+        evolucion = execute_query("""
+            SELECT
+                CAST(ano AS INTEGER)    AS anio,
+                fami_estratovivienda    AS estrato,
+                ROUND(AVG(punt_global), 1) AS global,
+                ROUND(AVG(punt_ingles), 1) AS ingles
+            FROM icfes_silver.icfes
+            WHERE fami_estratovivienda IN ('Estrato 1', 'Estrato 6')
+              AND CAST(ano AS INTEGER) >= 2014
+              AND ano IS NOT NULL
+            GROUP BY ano, fami_estratovivienda
+            ORDER BY CAST(ano AS INTEGER), fami_estratovivienda
+        """)
+
+        return JsonResponse({
+            'snapshot':  snapshot.to_dict(orient='records'),
+            'evolucion': evolucion.to_dict(orient='records'),
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@cache_page(60 * 60)
+def api_social_mapa_departamentos(request):
+    """Puntaje + NBI + Inglés por departamento (2024) para el mapa coroplético."""
+    try:
+        data = execute_query("""
+            WITH base AS (
+                SELECT
+                    SUBSTRING(f.colegio_bk, 2, 2)                              AS cod_dpto,
+                    UPPER(MIN(f.departamento))                                  AS departamento,
+                    ROUND(AVG(f.avg_punt_global), 1)                           AS puntaje,
+                    ROUND(AVG(f.avg_punt_ingles), 1)                           AS ingles,
+                    ROUND(AVG(f.avg_punt_matematicas), 1)                      AS matematicas,
+                    ROUND(AVG(n.pct_nbi_total), 1)                             AS nbi,
+                    COUNT(DISTINCT SUBSTRING(f.colegio_bk, 2, 5))              AS n_municipios,
+                    SUM(f.total_estudiantes)::INT                               AS total_est
+                FROM gold.fct_agg_colegios_ano f
+                LEFT JOIN gold.dim_municipio_nbi n
+                    ON CAST(n.codigo_municipio AS VARCHAR) = SUBSTRING(f.colegio_bk, 2, 5)
+                WHERE f.ano = '2024'
+                GROUP BY SUBSTRING(f.colegio_bk, 2, 2)
+            )
+            SELECT
+                cod_dpto, departamento, puntaje, ingles, matematicas, nbi,
+                n_municipios, total_est,
+                ROW_NUMBER() OVER (ORDER BY puntaje DESC) AS ranking
+            FROM base
+            ORDER BY puntaje DESC
+        """)
+        return JsonResponse(data.to_dict(orient='records'), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
