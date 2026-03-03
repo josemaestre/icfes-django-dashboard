@@ -13,15 +13,19 @@ const ML_URLS = {
 };
 
 // ---------------------------------------------------------------------------
-// Boot
+// Boot — primero datos/gráficas, luego narrativa IA
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-    loadShap();
-    loadClusters();
-    loadRiesgo();
-    loadB1('OFICIAL');
-    loadPalancasNacional();
-    loadIaAnalisis();
+    Promise.all([
+        loadShap(),
+        loadClusters(),
+        loadRiesgo(),
+        loadB1('OFICIAL'),
+        loadPalancasNacional(),
+    ]).finally(() => {
+        // La narrativa IA solo aparece cuando los gráficos ya están visibles
+        loadIaAnalisis();
+    });
 });
 
 // ---------------------------------------------------------------------------
