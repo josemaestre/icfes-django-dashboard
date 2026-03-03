@@ -3758,7 +3758,8 @@ def api_social_estrato(request):
             'evolucion': evolucion.to_dict(orient='records'),
         })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        logger.warning("api_social_estrato: %s", e)
+        return JsonResponse({'snapshot': [], 'evolucion': []})
 
 
 @login_required
