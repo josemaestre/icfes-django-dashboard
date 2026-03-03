@@ -4,11 +4,12 @@
  */
 
 const ML_URLS = {
-    shap:       '/icfes/api/ml/shap/',
-    clusters:   '/icfes/api/ml/social-clusters/',
-    riesgo:     '/icfes/api/ml/riesgo/',
-    b1:         '/icfes/api/ml/b1/',
-    iaAnalisis: '/icfes/api/ml/ia-analisis/',
+    shap:             '/icfes/api/ml/shap/',
+    clusters:         '/icfes/api/ml/social-clusters/',
+    riesgo:           '/icfes/api/ml/riesgo/',
+    b1:               '/icfes/api/ml/b1/',
+    iaAnalisis:       '/icfes/api/ml/ia-analisis/',
+    palancasNacional: '/icfes/api/ml/palancas-nacional/',
 };
 
 // ---------------------------------------------------------------------------
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadClusters();
     loadRiesgo();
     loadB1('OFICIAL');
+    loadPalancasNacional();
     loadIaAnalisis();
 });
 
@@ -342,10 +344,10 @@ async function loadIaAnalisis() {
             showEl('oportunidad-ia-wrapper');
         }
 
-        // Palancas (recomendaciones prescriptivas)
+        // Palancas (narrativa IA dentro de la sección de datos)
         if (data.palancas_narrative) {
             document.getElementById('palancas-ia-text').textContent = data.palancas_narrative;
-            document.getElementById('palancas-ia-row').style.display = '';
+            showEl('palancas-ia-wrapper');
         }
 
         // Panel completo colapsable
@@ -364,7 +366,86 @@ async function loadIaAnalisis() {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Generar análisis IA bajo demanda (staff only)
+// 6. Palancas Educativas nacionales
+// ---------------------------------------------------------------------------
+async function loadPalancasNacional() {
+    try {
+        const res  = await fetch(ML_URLS.palancasNacional);
+        const data = await res.json();
+        if (data.error) return;
+
+        const { stats, distribucion, top_colegios } = data;
+
+        // KPIs
+        document.getElementById('palancas-kpi-colegios').textContent =
+            (stats.n_colegios || 0).toLocaleString();
+        document.getElementById('palancas-n-colegios').textContent =
+            (stats.n_colegios || 0).toLocaleString();
+        document.getElementById('palancas-kpi-delta-prom').textContent =
+            '+' + (stats.delta_promedio || 0).toFixed(1) + ' pts';
+        document.getElementById('palancas-kpi-delta-max').textContent =
+            '+' + (stats.delta_max_total || 0).toFixed(1) + ' pts';
+        if (distribucion && distribucion.length > 0) {
+            document.getElementById('palancas-kpi-top-palanca').textContent =
+                distribucion[0].feature_label;
+        }
+
+        // Gráfico de distribución (bar horizontal)
+        if (distribucion && distribucion.length > 0) {
+            const labels = distribucion.map(d => d.feature_label);
+            const values = distribucion.map(d => d.n_colegios);
+            const deltas = distribucion.map(d => d.delta_promedio);
+            new ApexCharts(document.getElementById('chart-palancas-dist'), {
+                series: [{ name: 'Colegios', data: values }],
+                chart: { type: 'bar', height: 260, toolbar: { show: false } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%' } },
+                colors: ['#2a9d8f'],
+                dataLabels: {
+                    enabled: true,
+                    formatter: (v, opts) => {
+                        const d = deltas[opts.dataPointIndex];
+                        return v.toLocaleString() + '  (+' + d.toFixed(1) + ' pts)';
+                    },
+                    style: { fontSize: '10px', colors: ['#fff'] },
+                },
+                xaxis: { categories: labels, labels: { style: { fontSize: '10px' } } },
+                yaxis: { labels: { style: { fontSize: '10px' } } },
+                tooltip: {
+                    y: { formatter: (v, opts) => {
+                        const d = deltas[opts.dataPointIndex];
+                        return v.toLocaleString() + ' colegios · delta prom +' + d.toFixed(1) + ' pts';
+                    }},
+                },
+                grid: { borderColor: '#f0f0f0' },
+            }).render();
+        }
+
+        // Tabla top colegios
+        if (top_colegios && top_colegios.length > 0) {
+            document.getElementById('palancas-top-tbody').innerHTML =
+                top_colegios.map((c, i) => {
+                    const sectorBadge = c.sector === 'OFICIAL'
+                        ? '<span class="badge bg-primary-subtle text-primary" style="font-size:9px;">Of.</span>'
+                        : '<span class="badge bg-warning-subtle text-warning" style="font-size:9px;">Priv.</span>';
+                    return `<tr>
+                        <td class="small text-muted">${i + 1}</td>
+                        <td class="small">${sectorBadge} ${c.nombre}</td>
+                        <td class="small text-muted">${c.departamento}</td>
+                        <td class="small text-end">${c.puntaje_actual.toFixed(0)}</td>
+                        <td class="small text-end fw-bold text-success">+${c.delta_total.toFixed(1)}</td>
+                    </tr>`;
+                }).join('');
+        }
+
+    } catch (e) {
+        console.warn('loadPalancasNacional error:', e);
+        const tbody = document.getElementById('palancas-top-tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-2">Sin datos</td></tr>';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 7. Generar análisis IA bajo demanda (staff only)
 // ---------------------------------------------------------------------------
 function generateIaAnalysis(forzar = false) {
     const btn = document.getElementById('btn-generate-ia');

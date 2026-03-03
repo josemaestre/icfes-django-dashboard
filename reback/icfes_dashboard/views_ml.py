@@ -267,7 +267,7 @@ def api_ml_ia_analisis(request):
             'clusters_narrative': obj.clusters_narrative,
             'riesgo_narrative': obj.riesgo_narrative,
             'oportunidad_narrative': obj.oportunidad_narrative,
-            'palancas_narrative': obj.palancas_narrative,
+            'palancas_narrative': getattr(obj, 'palancas_narrative', ''),
             'analisis_md': obj.analisis_md,
             'modelo_ia': obj.modelo_ia,
             'fecha_generacion': obj.fecha_generacion.isoformat(),
@@ -393,6 +393,95 @@ def api_ml_palancas_colegio(request):
 
     except Exception as e:
         logger.error("api_ml_palancas_colegio error: %s", e)
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ---------------------------------------------------------------------------
+# API — Resumen nacional de palancas educativas
+# ---------------------------------------------------------------------------
+
+@login_required
+@require_GET
+def api_ml_palancas_nacional(request):
+    """Resumen nacional de palancas: distribución por feature + top colegios por potencial."""
+    try:
+        q_dist = resolve_schema("""
+            SELECT
+                feature, feature_label, icono,
+                COUNT(DISTINCT colegio_bk)      AS n_colegios,
+                ROUND(AVG(delta_pts), 1)        AS delta_promedio,
+                ROUND(MAX(delta_pts), 1)        AS delta_max
+            FROM gold.fct_ml_palancas_colegio
+            WHERE palanca_rank = 1
+            GROUP BY feature, feature_label, icono
+            ORDER BY n_colegios DESC
+        """)
+        q_top = resolve_schema("""
+            SELECT
+                colegio_bk, nombre_colegio, departamento, sector,
+                ROUND(puntaje_actual, 1)        AS puntaje_actual,
+                ROUND(SUM(delta_pts), 1)        AS delta_total
+            FROM gold.fct_ml_palancas_colegio
+            GROUP BY colegio_bk, nombre_colegio, departamento, sector, puntaje_actual
+            ORDER BY delta_total DESC
+            LIMIT 20
+        """)
+        q_stats = resolve_schema("""
+            SELECT
+                COUNT(DISTINCT colegio_bk)      AS n_colegios,
+                ROUND(AVG(delta_pts), 1)        AS delta_promedio,
+                ROUND(MAX(SUM(delta_pts)) OVER(), 1) AS delta_max_total
+            FROM gold.fct_ml_palancas_colegio
+            GROUP BY colegio_bk
+            LIMIT 1
+        """)
+        with get_duckdb_connection() as con:
+            dist_rows  = con.execute(q_dist).fetchall()
+            top_rows   = con.execute(q_top).fetchall()
+            stats_row  = con.execute(
+                resolve_schema("""
+                    SELECT
+                        COUNT(DISTINCT colegio_bk)        AS n_colegios,
+                        ROUND(AVG(delta_pts), 1)          AS delta_promedio,
+                        ROUND(MAX(tot), 1)                AS delta_max_total
+                    FROM gold.fct_ml_palancas_colegio,
+                         (SELECT colegio_bk AS ck, SUM(delta_pts) AS tot
+                          FROM gold.fct_ml_palancas_colegio GROUP BY colegio_bk) sums
+                """)
+            ).fetchone()
+
+        return JsonResponse({
+            'distribucion': [
+                {
+                    'feature':       r[0],
+                    'feature_label': r[1],
+                    'icono':         r[2],
+                    'n_colegios':    int(r[3]),
+                    'delta_promedio': float(r[4]),
+                    'delta_max':     float(r[5]),
+                }
+                for r in dist_rows
+            ],
+            'top_colegios': [
+                {
+                    'colegio_bk':    r[0],
+                    'nombre':        r[1],
+                    'departamento':  r[2],
+                    'sector':        r[3],
+                    'puntaje_actual': float(r[4]),
+                    'delta_total':   float(r[5]),
+                }
+                for r in top_rows
+            ],
+            'stats': {
+                'n_colegios':     int(stats_row[0]) if stats_row else 0,
+                'delta_promedio': float(stats_row[1]) if stats_row else 0,
+                'delta_max_total': float(stats_row[2]) if stats_row else 0,
+            },
+        })
+
+    except Exception as e:
+        logger.error("api_ml_palancas_nacional error: %s", e)
         return JsonResponse({'error': str(e)}, status=500)
 
 

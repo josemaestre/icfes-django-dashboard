@@ -43,6 +43,7 @@ urlpatterns = [
     path('api/ml/generate-ia/', views_ml.api_ml_generate_ia, name='api_ml_generate_ia'),
     path('api/ml/partial-all/', views_ml.api_ml_partial_all, name='api_ml_partial_all'),
     path('api/ml/palancas/', views_ml.api_ml_palancas_colegio, name='api_ml_palancas_colegio'),
+    path('api/ml/palancas-nacional/', views_ml.api_ml_palancas_nacional, name='api_ml_palancas_nacional'),
 
     # API endpoints — Dashboard Social (NBI, conectividad, presidentes, generaciones)
     path('api/social/kpis/', views.api_social_kpis, name='api_social_kpis'),

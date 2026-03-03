@@ -301,9 +301,9 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
-         SECCIÓN 4 — Palancas de Mejora (Recomendaciones IA)
+         SECCIÓN 4 — Palancas Educativas (datos reales + narrativa IA)
     ══════════════════════════════════════════════════════════ -->
-    <div class="row mb-4" id="palancas-ia-row" style="display:none;">
+    <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm"
                  style="border-left:4px solid #2a9d8f !important;">
@@ -315,18 +315,91 @@
                                 ¿Qué palancas mover para mejorar los resultados?
                             </h5>
                             <p class="text-muted small mb-0">
-                                Recomendaciones de política pública cuantificadas por el modelo XGBoost.
-                                Cada intervención tiene un impacto esperado en puntos ICFES.
+                                Palancas cuantificadas por XGBoost sobre
+                                <strong id="palancas-n-colegios">--</strong> colegios.
+                                Cada intervención tiene un delta esperado en puntos ICFES.
                             </p>
                         </div>
                         <span class="badge bg-success-subtle text-success border border-success-subtle small px-2">
-                            <i class="bx bx-brain me-1"></i>Prescriptivo IA
+                            <i class="bx bx-chip me-1"></i>XGBoost Prescriptivo
                         </span>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div id="palancas-ia-text" class="text-secondary lh-lg"
-                         style="font-size:0.92rem; white-space:pre-line;"></div>
+
+                    <!-- KPIs -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3 text-center">
+                                <div class="fw-bold fs-5 text-success" id="palancas-kpi-colegios">--</div>
+                                <div class="text-muted small">Colegios analizados</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3 text-center">
+                                <div class="fw-bold fs-5 text-success" id="palancas-kpi-delta-prom">-- pts</div>
+                                <div class="text-muted small">Delta promedio palanca #1</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3 text-center">
+                                <div class="fw-bold fs-5 text-success" id="palancas-kpi-delta-max">-- pts</div>
+                                <div class="text-muted small">Potencial máximo (3 palancas)</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3 text-center">
+                                <div class="fw-bold fs-5 text-success" style="font-size:0.95rem !important;" id="palancas-kpi-top-palanca">--</div>
+                                <div class="text-muted small">Palanca más frecuente</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico + Tabla -->
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <h6 class="fw-bold small text-muted text-uppercase mb-2">
+                                Distribución de palancas prioritarias
+                            </h6>
+                            <div id="chart-palancas-dist"></div>
+                        </div>
+                        <div class="col-md-7">
+                            <h6 class="fw-bold small text-muted text-uppercase mb-2">
+                                Top 20 colegios con mayor potencial de mejora
+                            </h6>
+                            <div class="table-responsive" style="max-height:280px; overflow-y:auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th class="small">#</th>
+                                            <th class="small">Colegio</th>
+                                            <th class="small">Depto</th>
+                                            <th class="small text-end">Actual</th>
+                                            <th class="small text-end text-success">+Δ pts</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="palancas-top-tbody">
+                                        <tr><td colspan="5" class="text-center text-muted small py-3">
+                                            <span class="spinner-border spinner-border-sm me-1"></span>Cargando…
+                                        </td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Narrativa IA (aparece cuando existe análisis generado) -->
+                    <div id="palancas-ia-wrapper" class="d-none mt-4">
+                        <div class="border-top pt-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bx bx-brain text-success me-2 fs-5"></i>
+                                <span class="fw-bold small">Análisis interpretativo IA</span>
+                            </div>
+                            <div id="palancas-ia-text" class="text-secondary lh-lg"
+                                 style="font-size:0.92rem; white-space:pre-line;"></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
