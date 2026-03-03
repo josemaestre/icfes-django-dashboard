@@ -37,6 +37,9 @@ def resolve_schema(query):
 _views_lock = threading.Lock()
 _views_created = set()
 
+# Lock para evitar descargas concurrentes desde S3
+_download_lock = threading.Lock()
+
 def _ensure_gold_views_exist(db_path):
     """Asegura que las vistas gold existan (thread-safe)."""
     if db_path in _views_created:
@@ -146,8 +149,8 @@ def get_duckdb_connection(read_only=True):
         logger.info(f"Is S3: {is_s3}")
         
         if is_s3:
-            # Descargar desde S3 a Railway volume (persiste entre deployments)
-            local_path = '/app/data/prod.duckdb'
+            # Descargar desde S3 a /tmp (evita llenar el volumen persistente)
+            local_path = '/tmp/prod.duckdb'
             
             # Verificar si el archivo existe Y tiene tamaño adecuado (> 1GB)
             file_exists = os.path.exists(local_path)
@@ -182,40 +185,40 @@ def get_duckdb_connection(read_only=True):
                     needs_download = True
             
             if needs_download:
-                # Usar AWS CLI para descargar
-                aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
-                aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
-                aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
-                
-                # Configurar variables de entorno para AWS CLI
-                env = os.environ.copy()
-                env['AWS_ACCESS_KEY_ID'] = aws_key
-                env['AWS_SECRET_ACCESS_KEY'] = aws_secret
-                env['AWS_DEFAULT_REGION'] = aws_region
-                
-                # Descargar archivo desde S3
-                import logging
-                logger = logging.getLogger(__name__)
-                
-                logger.info(f"Downloading {db_path} to {local_path}...")
-                
-                result = subprocess.run(
-                    ['aws', 's3', 'cp', db_path, local_path],
-                    env=env,
-                    capture_output=True,
-                    text=True
-                )
-                
-                if result.returncode != 0:
-                    error_msg = f"Failed to download from S3. Return code: {result.returncode}\n"
-                    error_msg += f"STDOUT: {result.stdout}\n"
-                    error_msg += f"STDERR: {result.stderr}\n"
-                    error_msg += f"S3 Path: {db_path}\n"
-                    error_msg += f"Local Path: {local_path}"
-                    logger.error(error_msg)
-                    raise Exception(error_msg)
-                
-                logger.info(f"Successfully downloaded {db_path}")
+                with _download_lock:
+                    # Re-verificar dentro del lock (otro worker pudo haber descargado ya)
+                    if os.path.exists(local_path) and os.path.getsize(local_path) >= min_size:
+                        needs_download = False
+
+                    if needs_download:
+                        aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
+                        aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
+                        aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
+
+                        env = os.environ.copy()
+                        env['AWS_ACCESS_KEY_ID'] = aws_key
+                        env['AWS_SECRET_ACCESS_KEY'] = aws_secret
+                        env['AWS_DEFAULT_REGION'] = aws_region
+
+                        logger.info(f"Downloading {db_path} to {local_path}...")
+
+                        result = subprocess.run(
+                            ['aws', 's3', 'cp', db_path, local_path],
+                            env=env,
+                            capture_output=True,
+                            text=True
+                        )
+
+                        if result.returncode != 0:
+                            error_msg = f"Failed to download from S3. Return code: {result.returncode}\n"
+                            error_msg += f"STDOUT: {result.stdout}\n"
+                            error_msg += f"STDERR: {result.stderr}\n"
+                            error_msg += f"S3 Path: {db_path}\n"
+                            error_msg += f"Local Path: {local_path}"
+                            logger.error(error_msg)
+                            raise Exception(error_msg)
+
+                        logger.info(f"Successfully downloaded {db_path}")
             
             # Conectar al archivo local en modo read-only para queries
             con = duckdb.connect(local_path, read_only=read_only)
