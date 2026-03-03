@@ -422,15 +422,24 @@ def api_ml_palancas_nacional(request):
         """)
         q_top = resolve_schema("""
             SELECT
-                p.colegio_bk,
-                COALESCE(NULLIF(d.nombre_colegio, ''), NULLIF(p.nombre_colegio, ''), p.colegio_bk) AS nombre,
-                COALESCE(NULLIF(d.departamento, ''),   NULLIF(p.departamento, ''),   '')            AS departamento,
-                COALESCE(NULLIF(d.sector, ''),         NULLIF(p.sector, ''),         '')            AS sector,
-                ROUND(p.puntaje_actual, 1)              AS puntaje_actual,
-                ROUND(SUM(p.delta_pts), 1)              AS delta_total
-            FROM gold.fct_ml_palancas_colegio p
-            LEFT JOIN gold.dim_colegios d ON d.colegio_bk = p.colegio_bk
-            GROUP BY p.colegio_bk, nombre, departamento, sector, p.puntaje_actual
+                sub.colegio_bk,
+                sub.nombre,
+                sub.departamento,
+                sub.sector,
+                sub.puntaje_actual,
+                ROUND(SUM(sub.delta_pts), 1) AS delta_total
+            FROM (
+                SELECT
+                    p.colegio_bk,
+                    COALESCE(NULLIF(d.nombre_colegio, ''), NULLIF(p.nombre_colegio, ''), p.colegio_bk) AS nombre,
+                    COALESCE(NULLIF(d.departamento,   ''), NULLIF(p.departamento,   ''), '')            AS departamento,
+                    COALESCE(NULLIF(d.sector,         ''), NULLIF(p.sector,         ''), '')            AS sector,
+                    ROUND(p.puntaje_actual, 1) AS puntaje_actual,
+                    p.delta_pts
+                FROM gold.fct_ml_palancas_colegio p
+                LEFT JOIN gold.dim_colegios d ON d.colegio_bk = p.colegio_bk
+            ) sub
+            GROUP BY sub.colegio_bk, sub.nombre, sub.departamento, sub.sector, sub.puntaje_actual
             ORDER BY delta_total DESC
             LIMIT 20
         """)
