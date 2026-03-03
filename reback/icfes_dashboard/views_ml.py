@@ -349,14 +349,16 @@ def api_ml_palancas_colegio(request):
         q = resolve_schema(f"""
             SELECT
                 p.colegio_bk,
-                COALESCE(NULLIF(d.nombre_colegio, ''), NULLIF(p.nombre_colegio, ''), p.colegio_bk) AS nombre_colegio,
-                COALESCE(NULLIF(d.departamento, ''),   NULLIF(p.departamento, ''),   '')            AS departamento,
-                COALESCE(NULLIF(d.sector, ''),         NULLIF(p.sector, ''),         '')            AS sector,
+                COALESCE(NULLIF(f.nombre_colegio, ''), p.colegio_bk) AS nombre_colegio,
+                COALESCE(f.departamento, '')                          AS departamento,
+                COALESCE(f.sector, '')                                AS sector,
                 p.n_estudiantes, p.puntaje_actual,
                 p.palanca_rank, p.feature, p.feature_label, p.icono,
                 p.delta_pts, p.descripcion
             FROM gold.fct_ml_palancas_colegio p
-            LEFT JOIN gold.dim_colegios d ON d.colegio_bk = p.colegio_bk
+            LEFT JOIN gold.fct_agg_colegios_ano f
+                ON f.colegio_bk = SUBSTRING(p.colegio_bk, 2)
+                AND f.ano = '2024'
             WHERE p.colegio_bk = '{colegio_bk}'
             ORDER BY p.palanca_rank
         """)
@@ -431,13 +433,15 @@ def api_ml_palancas_nacional(request):
             FROM (
                 SELECT
                     p.colegio_bk,
-                    COALESCE(NULLIF(d.nombre_colegio, ''), NULLIF(p.nombre_colegio, ''), p.colegio_bk) AS nombre,
-                    COALESCE(NULLIF(d.departamento,   ''), NULLIF(p.departamento,   ''), '')            AS departamento,
-                    COALESCE(NULLIF(d.sector,         ''), NULLIF(p.sector,         ''), '')            AS sector,
-                    ROUND(p.puntaje_actual, 1) AS puntaje_actual,
+                    COALESCE(NULLIF(f.nombre_colegio, ''), p.colegio_bk) AS nombre,
+                    COALESCE(f.departamento, '')                          AS departamento,
+                    COALESCE(f.sector, '')                                AS sector,
+                    ROUND(p.puntaje_actual, 1)                           AS puntaje_actual,
                     p.delta_pts
                 FROM gold.fct_ml_palancas_colegio p
-                LEFT JOIN gold.dim_colegios d ON d.colegio_bk = p.colegio_bk
+                LEFT JOIN gold.fct_agg_colegios_ano f
+                    ON f.colegio_bk = SUBSTRING(p.colegio_bk, 2)
+                    AND f.ano = '2024'
             ) sub
             GROUP BY sub.colegio_bk, sub.nombre, sub.departamento, sub.sector, sub.puntaje_actual
             ORDER BY delta_total DESC
