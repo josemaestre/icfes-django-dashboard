@@ -269,3 +269,6 @@ def api_ml_ia_analisis(request):
         })
     except MlAnalisisIA.DoesNotExist:
         return JsonResponse({'disponible': False})
+    except Exception as e:
+        logger.warning("api_ml_ia_analisis: %s", e)
+        return JsonResponse({'disponible': False})
