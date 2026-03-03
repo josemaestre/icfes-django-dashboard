@@ -3710,7 +3710,7 @@ def api_social_brecha_sector(request):
 
 
 @login_required
-@cache_page(60 * 60)
+@cache_page(60 * 5)
 def api_social_estrato(request):
     """Puntaje por estrato socioeconómico (E1–E6 + Sin Estrato) — snapshot 2024 + evolución 2014-2024."""
     try:
