@@ -6,6 +6,7 @@ from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic.base import RedirectView
+from icfes_dashboard import email_graph_views
 from icfes_dashboard import sitemap_views
 from reback import seo_views
 
@@ -23,6 +24,7 @@ urlpatterns = [
 
     # Favicon — must be before the catch-all pages include to avoid dynamic_pages_view
     path("favicon.ico", seo_views.favicon_view),
+    path("email-graphs/<slug:slug>.png", email_graph_views.email_graph_png),
 
     path('icfes/', include('icfes_dashboard.urls')),
     path('payments/', include('reback.users.stripe_urls', namespace='payments')),

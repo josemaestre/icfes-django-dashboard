@@ -3,6 +3,10 @@ Management command: generate_campaign_email_graphs
 
 Genera un PNG por colegio (slug) para uso en emails, con evolucion de
 puntaje global en los ultimos N anos.
+
+DEPRECATED:
+Usar endpoint dinamico:
+  /email-graphs/<slug>.png?years=4
 """
 from __future__ import annotations
 
@@ -21,7 +25,10 @@ def _safe_slug(value: str) -> str:
 
 
 class Command(BaseCommand):
-    help = "Genera graficas PNG por colegio para emails (ultimos N anos)."
+    help = (
+        "[DEPRECATED] Genera graficas PNG por colegio para emails (ultimos N anos). "
+        "Preferir /email-graphs/<slug>.png?years=4"
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -55,6 +62,12 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        self.stdout.write(
+            self.style.WARNING(
+                "DEPRECATED: Este comando sera retirado. "
+                "Usa /email-graphs/<slug>.png?years=4."
+            )
+        )
         input_csv = Path(options["input_csv"]).expanduser().resolve()
         years = max(1, int(options["years"]))
         min_points = max(1, int(options["min_points"]))

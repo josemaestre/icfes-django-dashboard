@@ -4,6 +4,7 @@ URLs para el dashboard ICFES.
 from django.urls import path
 from . import (
     api_views,
+    email_graph_views,
     export_views,
     geo_landing_views,
     ingles_landing_views,
@@ -20,6 +21,9 @@ from . import (
 app_name = 'icfes_dashboard'
 
 urlpatterns = [
+    # Graficas para email (PNG on-the-fly)
+    path('email-graphs/<slug:slug>.png', email_graph_views.email_graph_png, name='email_graph_png'),
+
     # Vista principal
     path('', views.icfes_dashboard, name='dashboard'),
     path('charts/', views.dashboard_charts, name='dashboard_charts'),
