@@ -32,6 +32,7 @@ CSV_COLUMNS = [
     "sector_label",
     "id_colegio",
     "slug",
+    "ano_icfes",
     "avg_punt_global",
     "categoria_desempeno",
     "percentile_sector_estudiante",
@@ -112,10 +113,7 @@ def _mensaje_mejora(mejora):
 def _score_text(score):
     if score is None or (isinstance(score, float) and math.isnan(score)):
         return "N/A"
-    score_rounded = round(float(score), 1)
-    if abs(score_rounded - round(score_rounded)) < 0.01:
-        return str(int(round(score_rounded)))
-    return f"{score_rounded:.2f}".rstrip("0").rstrip(".")
+    return str(int(round(float(score), 0)))
 
 
 def _short_school_name(name):
@@ -175,7 +173,11 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--ano", type=int, default=2024,
-            help="Ano de referencia para puntajes (segmento=ciudad)"
+            help="Ano base de referencia para puntajes (segmento=ciudad y segmento=departamento)"
+        )
+        parser.add_argument(
+            "--min-ano-reciente", type=int, default=2020,
+            help="[DEPRECATED] Ya no se usa en segmento=departamento; se usa --ano como base."
         )
 
     def handle(self, *args, **options):
@@ -183,6 +185,7 @@ class Command(BaseCommand):
         segmento = options["segmento"]
         top_n = options["top"]
         ano = options["ano"]
+        min_ano_reciente = options["min_ano_reciente"]
         ciudades = [c.strip() for c in options["ciudades"].split(",") if c.strip()]
         departamentos = [d.strip() for d in options["departamentos"].split(",") if d.strip()]
 
@@ -193,6 +196,13 @@ class Command(BaseCommand):
         if segmento == "ciudad" and not ciudades:
             self.stderr.write(self.style.ERROR("Debe indicar al menos una ciudad para segmento=ciudad"))
             return
+        if segmento == "departamento" and min_ano_reciente != 2020:
+            self.stdout.write(
+                self.style.WARNING(
+                    "--min-ano-reciente esta deprecado para segmento=departamento; "
+                    "se usa --ano como base."
+                )
+            )
 
         if segmento == "ciudad":
             placeholders = ", ".join(["?" for _ in ciudades])
@@ -200,6 +210,7 @@ class Command(BaseCommand):
                 WITH target_scores AS (
                     SELECT
                         f.colegio_bk,
+                        CAST(f.ano AS INTEGER) AS ano_ref,
                         f.avg_punt_global,
                         f.avg_percentile_sector_estudiante,
                         f.ranking_departamental_general,
@@ -227,6 +238,7 @@ class Command(BaseCommand):
                 score_base AS (
                     SELECT
                         ts.colegio_bk,
+                        ts.ano_ref,
                         ts.avg_punt_global,
                         ts.avg_percentile_sector_estudiante,
                         ts.ranking_departamental_general,
@@ -244,18 +256,33 @@ class Command(BaseCommand):
                     FROM gold.dim_colegios_slugs
                     GROUP BY codigo
                 ),
+                contact_best AS (
+                    SELECT
+                        colegio_bk,
+                        email,
+                        rector,
+                        telefono,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY colegio_bk
+                            ORDER BY CAST(ano AS INTEGER) DESC
+                        ) AS rn
+                    FROM gold.dim_colegios_ano
+                    WHERE email IS NOT NULL
+                      AND TRIM(email) != ''
+                ),
                 ranked AS (
                     SELECT
                         d.colegio_bk AS id_colegio,
                         d.nombre_colegio,
-                        d.rector,
-                        d.email,
-                        d.telefono,
+                        COALESCE(NULLIF(TRIM(d.rector), ''), cb.rector) AS rector,
+                        COALESCE(NULLIF(TRIM(d.email), ''), cb.email) AS email,
+                        COALESCE(NULLIF(TRIM(d.telefono), ''), cb.telefono) AS telefono,
                         d.municipio,
                         d.departamento,
                         d.sector,
                         COALESCE(s.slug, '') AS slug,
                         sb.avg_punt_global,
+                        sb.ano_ref AS ano_ref,
                         sb.avg_percentile_sector_estudiante AS percentile_sector_estudiante,
                         CASE
                             WHEN sb.count_colegios_departamento > 1
@@ -285,10 +312,13 @@ class Command(BaseCommand):
                         ON d.colegio_bk = sb.colegio_bk
                     LEFT JOIN slug_one s
                         ON s.codigo = d.colegio_bk
+                    LEFT JOIN contact_best cb
+                        ON cb.colegio_bk = d.colegio_bk
+                       AND cb.rn = 1
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                       AND d.municipio IN ({placeholders})
-                      AND d.email IS NOT NULL
-                      AND TRIM(d.email) != ''
+                      AND COALESCE(NULLIF(TRIM(d.email), ''), cb.email) IS NOT NULL
+                      AND TRIM(COALESCE(NULLIF(TRIM(d.email), ''), cb.email)) != ''
                 )
                 SELECT *
                 FROM ranked
@@ -305,36 +335,47 @@ class Command(BaseCommand):
                 dep_params = departamentos
 
             query = f"""
-                WITH ult_puntaje AS (
+                WITH target_scores AS (
                     SELECT
-                        colegio_bk,
-                        avg_punt_global,
-                        avg_percentile_sector_estudiante,
-                        ranking_departamental_general,
-                        count_colegios_departamento,
-                        LEAD(avg_punt_global) OVER (
-                            PARTITION BY colegio_bk
-                            ORDER BY CAST(ano AS INTEGER) DESC
-                        ) AS avg_punt_global_prev,
+                        f.colegio_bk,
+                        CAST(f.ano AS INTEGER) AS ano_ref,
+                        f.avg_punt_global,
+                        f.avg_percentile_sector_estudiante,
+                        f.ranking_departamental_general,
+                        f.count_colegios_departamento
+                    FROM gold.fct_agg_colegios_ano f
+                    WHERE f.ano = CAST(? AS VARCHAR)
+                      AND f.sector IN ('NO OFICIAL', 'NO_OFICIAL')
+                      AND f.avg_punt_global IS NOT NULL
+                      AND f.avg_punt_global > 0
+                ),
+                prev_scores AS (
+                    SELECT
+                        f.colegio_bk,
+                        f.avg_punt_global,
                         ROW_NUMBER() OVER (
-                            PARTITION BY colegio_bk
-                            ORDER BY CAST(ano AS INTEGER) DESC
+                            PARTITION BY f.colegio_bk
+                            ORDER BY CAST(f.ano AS INTEGER) DESC
                         ) AS rn
-                    FROM gold.fct_agg_colegios_ano
-                    WHERE sector IN ('NO OFICIAL', 'NO_OFICIAL')
-                      AND avg_punt_global IS NOT NULL
-                      AND avg_punt_global > 0
+                    FROM gold.fct_agg_colegios_ano f
+                    WHERE CAST(f.ano AS INTEGER) < CAST(? AS INTEGER)
+                      AND f.sector IN ('NO OFICIAL', 'NO_OFICIAL')
+                      AND f.avg_punt_global IS NOT NULL
+                      AND f.avg_punt_global > 0
                 ),
                 score_base AS (
                     SELECT
-                        colegio_bk,
-                        avg_punt_global,
-                        avg_percentile_sector_estudiante,
-                        ranking_departamental_general,
-                        count_colegios_departamento,
-                        avg_punt_global_prev
-                    FROM ult_puntaje
-                    WHERE rn = 1
+                        ts.colegio_bk,
+                        ts.ano_ref,
+                        ts.avg_punt_global,
+                        ts.avg_percentile_sector_estudiante,
+                        ts.ranking_departamental_general,
+                        ts.count_colegios_departamento,
+                        ps.avg_punt_global AS avg_punt_global_prev
+                    FROM target_scores ts
+                    LEFT JOIN prev_scores ps
+                        ON ps.colegio_bk = ts.colegio_bk
+                       AND ps.rn = 1
                 ),
                 slug_one AS (
                     SELECT
@@ -343,18 +384,33 @@ class Command(BaseCommand):
                     FROM gold.dim_colegios_slugs
                     GROUP BY codigo
                 ),
+                contact_best AS (
+                    SELECT
+                        colegio_bk,
+                        email,
+                        rector,
+                        telefono,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY colegio_bk
+                            ORDER BY CAST(ano AS INTEGER) DESC
+                        ) AS rn
+                    FROM gold.dim_colegios_ano
+                    WHERE email IS NOT NULL
+                      AND TRIM(email) != ''
+                ),
                 ranked AS (
                     SELECT
                         d.colegio_bk AS id_colegio,
                         d.nombre_colegio,
-                        d.rector,
-                        d.email,
-                        d.telefono,
+                        COALESCE(NULLIF(TRIM(d.rector), ''), cb.rector) AS rector,
+                        COALESCE(NULLIF(TRIM(d.email), ''), cb.email) AS email,
+                        COALESCE(NULLIF(TRIM(d.telefono), ''), cb.telefono) AS telefono,
                         d.municipio,
                         d.departamento,
                         d.sector,
                         COALESCE(s.slug, '') AS slug,
                         sb.avg_punt_global,
+                        sb.ano_ref AS ano_ref,
                         sb.avg_percentile_sector_estudiante AS percentile_sector_estudiante,
                         CASE
                             WHEN sb.count_colegios_departamento > 1
@@ -384,9 +440,12 @@ class Command(BaseCommand):
                         ON d.colegio_bk = sb.colegio_bk
                     LEFT JOIN slug_one s
                         ON s.codigo = d.colegio_bk
+                    LEFT JOIN contact_best cb
+                        ON cb.colegio_bk = d.colegio_bk
+                       AND cb.rn = 1
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
-                      AND d.email IS NOT NULL
-                      AND TRIM(d.email) != ''
+                      AND COALESCE(NULLIF(TRIM(d.email), ''), cb.email) IS NOT NULL
+                      AND TRIM(COALESCE(NULLIF(TRIM(d.email), ''), cb.email)) != ''
                       {dep_filter}
                 )
                 SELECT *
@@ -394,7 +453,7 @@ class Command(BaseCommand):
                 WHERE rank_departamento <= ?
                 ORDER BY departamento, rank_departamento, municipio
             """
-            params = dep_params + [top_n]
+            params = [ano, ano] + dep_params + [top_n]
 
         self.stdout.write("Consultando DuckDB...", ending=" ")
         df = execute_query(query, params=params)
@@ -410,8 +469,9 @@ class Command(BaseCommand):
             self.stderr.write(self.style.WARNING("No quedaron filas con email valido tras limpieza."))
             return
         df["slug"] = df["slug"].fillna("")
+        df["ano_icfes"] = df["ano_ref"].fillna(0).astype(int)
         df["demo_url"] = df["slug"].apply(lambda slug: f"{BASE_URL}/colegio/{slug}/" if slug else BASE_URL)
-        df["avg_punt_global_num"] = df["avg_punt_global"].fillna(0).astype(float).round(1)
+        df["avg_punt_global_num"] = df["avg_punt_global"].fillna(0).astype(float).round(2)
         df["percentile_sector_estudiante"] = df["percentile_sector_estudiante"].astype(float)
         df.loc[
             df["percentile_sector_estudiante"].notna() & (df["percentile_sector_estudiante"] <= 1.0),
