@@ -20,6 +20,8 @@ El comando:
 3. Inserta CampaignProspect por cada colegio encontrado
 4. Muestra resumen con pipeline por segmento
 """
+import re
+
 from django.core.management.base import BaseCommand
 
 from icfes_dashboard.models import Campaign, CampaignProspect
@@ -34,6 +36,17 @@ CIUDADES_DEFAULT = [
 ]
 
 BASE_URL = 'https://www.icfes-analytics.com/icfes'
+EMAIL_RE = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
+
+
+def _normalize_email(raw_value):
+    txt = (raw_value or '').strip()
+    if not txt:
+        return ''
+    matches = EMAIL_RE.findall(txt)
+    if not matches:
+        return ''
+    return matches[0].lower()
 
 
 class Command(BaseCommand):
@@ -108,15 +121,29 @@ class Command(BaseCommand):
         self.stdout.write("")
 
         # ── 1. Query DuckDB ────────────────────────────────────────────
-        # NOTA: Usamos colegio_bk (código DANE normalizado) como join key en lugar
-        # de colegio_sk, ya que es el identificador de negocio estable. El JOIN
-        # con fct_agg_colegios_ano es LEFT JOIN opcional: la mayoría de colegios
-        # con email en dim_colegios son jardines/escuelas que no presentan ICFES.
-        # Si hay score disponible, se usa para ranking; si no, se ordena por nombre.
+        # NOTA: El ranking nace en la tabla de scores (fct_agg_colegios_ano) y luego
+        # se enriquece con dim_colegios. Esto evita priorizar colegios sin puntaje.
         if segmento == 'ciudad':
             placeholders = ', '.join(['?' for _ in ciudades])
             query = f"""
-                WITH ranked AS (
+                WITH score_base AS (
+                    SELECT
+                        f.colegio_bk,
+                        f.avg_punt_global
+                    FROM gold.fct_agg_colegios_ano f
+                    WHERE f.ano = CAST(? AS VARCHAR)
+                      AND f.sector IN ('NO OFICIAL', 'NO_OFICIAL')
+                      AND f.avg_punt_global IS NOT NULL
+                      AND f.avg_punt_global > 0
+                ),
+                slug_one AS (
+                    SELECT
+                        codigo,
+                        MIN(slug) AS slug
+                    FROM gold.dim_colegios_slugs
+                    GROUP BY codigo
+                ),
+                ranked AS (
                     SELECT
                         d.nombre_colegio,
                         d.rector,
@@ -125,20 +152,15 @@ class Command(BaseCommand):
                         d.municipio,
                         d.departamento,
                         COALESCE(s.slug, '') AS slug,
-                        f.avg_punt_global,
+                        sb.avg_punt_global,
                         ROW_NUMBER() OVER (
                             PARTITION BY d.municipio
-                            ORDER BY
-                                CASE WHEN f.avg_punt_global IS NULL THEN 1 ELSE 0 END,
-                                COALESCE(f.avg_punt_global, 0) DESC,
-                                d.nombre_colegio ASC
+                            ORDER BY sb.avg_punt_global DESC, d.nombre_colegio ASC
                         ) AS rank_municipio
-                    FROM gold.dim_colegios d
-                    LEFT JOIN gold.fct_agg_colegios_ano f
-                        ON f.colegio_bk = d.colegio_bk
-                        AND f.ano = CAST(? AS VARCHAR)
-                        AND f.sector IN ('NO OFICIAL', 'NO_OFICIAL')
-                    LEFT JOIN gold.dim_colegios_slugs s
+                    FROM score_base sb
+                    INNER JOIN gold.dim_colegios d
+                        ON d.colegio_bk = sb.colegio_bk
+                    LEFT JOIN slug_one s
                         ON s.codigo = d.colegio_bk
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                       AND d.municipio IN ({placeholders})
@@ -173,6 +195,18 @@ class Command(BaseCommand):
                       AND avg_punt_global IS NOT NULL
                       AND avg_punt_global > 0
                 ),
+                score_base AS (
+                    SELECT colegio_bk, avg_punt_global
+                    FROM ult_puntaje
+                    WHERE rn = 1
+                ),
+                slug_one AS (
+                    SELECT
+                        codigo,
+                        MIN(slug) AS slug
+                    FROM gold.dim_colegios_slugs
+                    GROUP BY codigo
+                ),
                 ranked AS (
                     SELECT
                         d.nombre_colegio,
@@ -182,19 +216,15 @@ class Command(BaseCommand):
                         d.municipio,
                         d.departamento,
                         COALESCE(s.slug, '') AS slug,
-                        u.avg_punt_global,
+                        sb.avg_punt_global,
                         ROW_NUMBER() OVER (
                             PARTITION BY d.departamento
-                            ORDER BY
-                                CASE WHEN u.avg_punt_global IS NULL THEN 1 ELSE 0 END,
-                                COALESCE(u.avg_punt_global, 0) DESC,
-                                d.nombre_colegio ASC
+                            ORDER BY sb.avg_punt_global DESC, d.nombre_colegio ASC
                         ) AS rank_municipio
-                    FROM gold.dim_colegios d
-                    LEFT JOIN ult_puntaje u
-                        ON u.colegio_bk = d.colegio_bk
-                       AND u.rn = 1
-                    LEFT JOIN gold.dim_colegios_slugs s
+                    FROM score_base sb
+                    INNER JOIN gold.dim_colegios d
+                        ON d.colegio_bk = sb.colegio_bk
+                    LEFT JOIN slug_one s
                         ON s.codigo = d.colegio_bk
                     WHERE d.sector IN ('NO OFICIAL', 'NO_OFICIAL')
                       AND d.email IS NOT NULL
@@ -317,6 +347,15 @@ class Command(BaseCommand):
             ))
         self.stdout.write(self.style.SUCCESS(f"OK — {total} prospectos encontrados"))
 
+        # Limpieza de emails y redondeo de score antes de crear campana/prospectos.
+        df['email'] = df['email'].apply(_normalize_email)
+        df = df[df['email'] != ''].copy()
+        if df.empty:
+            self.stderr.write(self.style.WARNING("No quedaron prospectos con email valido tras limpieza."))
+            return
+        df['avg_punt_global'] = df['avg_punt_global'].fillna(0).astype(float).round(2)
+        total = len(df)
+
         # ── 2. Resumen por segmento ─────────────────────────────────────
         if segmento == 'ciudad':
             self.stdout.write("\n  Resumen por ciudad:")
@@ -333,7 +372,7 @@ class Command(BaseCommand):
             self.stdout.write("\n  Primeros 5 prospectos:")
             for _, row in df.head(5).iterrows():
                 score = row.get('avg_punt_global')
-                score_txt = f"{float(score):.1f}" if score is not None else "N/A"
+                score_txt = f"{float(score):.2f}" if score is not None else "N/A"
                 self.stdout.write(
                     f"    [{row['rank_municipio']}] {row['nombre_colegio']} "
                     f"({row['municipio']}) — {row['email']} — puntaje {score_txt}"
@@ -381,7 +420,7 @@ class Command(BaseCommand):
                 municipio       = row.get('municipio', ''),
                 departamento    = row.get('departamento', ''),
                 slug            = slug,
-                avg_punt_global = float(row.get('avg_punt_global', 0) or 0),
+                avg_punt_global = round(float(row.get('avg_punt_global', 0) or 0), 2),
                 rank_municipio  = int(row.get('rank_municipio', 0)),
                 demo_url        = demo_url,
                 estado          = 'pendiente',
