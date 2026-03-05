@@ -1,36 +1,12 @@
 import json
-import re
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.dateparse import parse_datetime
 
 from icfes_dashboard.models import RailwayTrafficLog
-
-
-SCHOOL_PATH_RE = re.compile(r"^/icfes/colegio/([^/?#]+)/?")
-
-AI_BOT_TOKENS = ("gptbot", "oai-searchbot", "chatgpt-user", "perplexitybot", "claudebot")
-SEO_BOT_TOKENS = ("googlebot", "bingbot", "semrushbot", "ahrefsbot", "mj12bot", "yandexbot")
-SOCIAL_BOT_TOKENS = ("meta-externalagent", "facebookexternalhit", "linkedinbot", "twitterbot", "slackbot")
-
-
-def classify_bot(user_agent: str) -> str:
-    if not user_agent:
-        return "unknown"
-
-    ua = user_agent.lower()
-    if any(token in ua for token in AI_BOT_TOKENS):
-        return "ai_bot"
-    if any(token in ua for token in SEO_BOT_TOKENS):
-        return "seo_bot"
-    if any(token in ua for token in SOCIAL_BOT_TOKENS):
-        return "social_bot"
-    if "bot" in ua or "crawler" in ua or "spider" in ua:
-        return "other_bot"
-    return "human_or_other"
+from icfes_dashboard.traffic_utils import classify_bot, extract_path_fields
 
 
 class Command(BaseCommand):
@@ -88,14 +64,7 @@ class Command(BaseCommand):
                     skipped += 1
                     continue
 
-                parsed_url = urlsplit(path)
-                path_only = parsed_url.path or path
-                query = parse_qs(parsed_url.query)
-
-                school_slug = ""
-                match = SCHOOL_PATH_RE.match(path_only)
-                if match:
-                    school_slug = match.group(1)
+                fields = extract_path_fields(path)
 
                 user_agent = str(record.get("clientUa", "")).strip()
 
@@ -116,10 +85,10 @@ class Command(BaseCommand):
                         edge_region=str(record.get("edgeRegion", "")).strip(),
                         upstream_errors=str(record.get("upstreamErrors", "")).strip(),
                         bot_category=classify_bot(user_agent),
-                        school_slug=school_slug,
-                        utm_source=(query.get("utm_source", [""])[0] or "")[:128],
-                        utm_medium=(query.get("utm_medium", [""])[0] or "")[:128],
-                        utm_campaign=(query.get("utm_campaign", [""])[0] or "")[:128],
+                        school_slug=fields["school_slug"],
+                        utm_source=fields["utm_source"],
+                        utm_medium=fields["utm_medium"],
+                        utm_campaign=fields["utm_campaign"],
                     )
                 )
 

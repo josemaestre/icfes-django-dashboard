@@ -186,6 +186,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "reback.users.subscription_middleware.SubscriptionMiddleware",  # Fixed path
     "reback.middleware.perf_logging.PerfLoggingMiddleware",
+    "reback.middleware.traffic_ingest.TrafficIngestMiddleware",
     "reback.middleware.perf_logging.CacheDebugHeaderMiddleware",
 ]
 
