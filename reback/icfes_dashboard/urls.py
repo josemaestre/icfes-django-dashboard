@@ -22,7 +22,8 @@ app_name = 'icfes_dashboard'
 
 urlpatterns = [
     # Graficas para email (PNG on-the-fly)
-    path('email-graphs/<slug:slug>.png', email_graph_views.email_graph_png, name='email_graph_png'),
+    path('email-graphs/<path:slug>.png', email_graph_views.email_graph_png, name='email_graph_png'),
+    path('social-card/colegio/<path:slug>.png', email_graph_views.social_card_school_png, name='social_card_school_png'),
 
     # Vista principal
     path('', views.icfes_dashboard, name='dashboard'),

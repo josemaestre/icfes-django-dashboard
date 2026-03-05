@@ -24,7 +24,8 @@ urlpatterns = [
 
     # Favicon — must be before the catch-all pages include to avoid dynamic_pages_view
     path("favicon.ico", seo_views.favicon_view),
-    path("email-graphs/<slug:slug>.png", email_graph_views.email_graph_png),
+    path("email-graphs/<path:slug>.png", email_graph_views.email_graph_png),
+    path("social-card/colegio/<path:slug>.png", email_graph_views.social_card_school_png),
 
     path('icfes/', include('icfes_dashboard.urls')),
     path('payments/', include('reback.users.stripe_urls', namespace='payments')),

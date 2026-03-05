@@ -11,7 +11,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import Http404
 from django.shortcuts import render
-from django.templatetags.static import static
 from django.utils.text import slugify
 
 from .db_utils import get_duckdb_connection, resolve_schema
@@ -159,7 +158,7 @@ def school_landing_page(request, slug):
 
             base_url = _build_base_url(request)
             canonical_url = _absolute_url(base_url, request.path)
-            og_image = _absolute_url(base_url, static("images/screenshots/dashboard_main.png"))
+            og_image = _absolute_url(base_url, f"/social-card/colegio/{slug}.png")
             dept_slug = slugify(school["departamento"] or "")
             muni_slug = slugify(school["municipio"] or "")
 
