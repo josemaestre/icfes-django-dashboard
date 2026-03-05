@@ -116,6 +116,62 @@ class CampaignProspect(models.Model):
         return f"{self.nombre_colegio} ({self.municipio}) — {self.get_estado_display()}"
 
 
+class RailwayTrafficLog(models.Model):
+    """
+    Raw traffic logs imported from Railway JSONL.
+    Stored in Postgres to avoid writes/locks on DuckDB.
+    """
+    BOT_CATEGORY_CHOICES = [
+        ("human_or_other", "Human/Other"),
+        ("seo_bot", "SEO Bot"),
+        ("ai_bot", "AI Bot"),
+        ("social_bot", "Social Bot"),
+        ("other_bot", "Other Bot"),
+        ("unknown", "Unknown"),
+    ]
+
+    request_id = models.CharField(max_length=64, unique=True)
+    timestamp = models.DateTimeField(db_index=True)
+    method = models.CharField(max_length=12, blank=True, default="")
+    path = models.TextField(db_index=True)
+    host = models.CharField(max_length=255, blank=True, default="")
+    http_status = models.IntegerField(db_index=True)
+    total_duration_ms = models.IntegerField(null=True, blank=True)
+    upstream_rq_duration_ms = models.IntegerField(null=True, blank=True)
+    tx_bytes = models.BigIntegerField(null=True, blank=True)
+    rx_bytes = models.BigIntegerField(null=True, blank=True)
+    client_ua = models.TextField(blank=True, default="")
+    src_ip = models.GenericIPAddressField(null=True, blank=True)
+    edge_region = models.CharField(max_length=64, blank=True, default="")
+    upstream_errors = models.TextField(blank=True, default="")
+
+    bot_category = models.CharField(
+        max_length=24,
+        choices=BOT_CATEGORY_CHOICES,
+        default="unknown",
+        db_index=True,
+    )
+    school_slug = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    utm_source = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    utm_medium = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    utm_campaign = models.CharField(max_length=128, blank=True, default="", db_index=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["timestamp", "http_status"]),
+            models.Index(fields=["timestamp", "bot_category"]),
+            models.Index(fields=["timestamp", "school_slug"]),
+        ]
+        verbose_name = "Railway traffic log"
+        verbose_name_plural = "Railway traffic logs"
+
+    def __str__(self):
+        return f"{self.timestamp.isoformat()} {self.method} {self.path} ({self.http_status})"
+
+
 class FactIcfesAnalytics(models.Model):
     """
     Modelo analítico principal de desempeño ICFES por estudiante.

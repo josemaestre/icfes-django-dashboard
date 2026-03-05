@@ -11,6 +11,7 @@ from . import (
     invitacion_views,
     landing_views_simple as landing_views,
     longtail_landing_views,
+    traffic_views,
     views,
     views_ingles,
     views_mi_colegio,
@@ -38,6 +39,7 @@ urlpatterns = [
     path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
     path('social/', views.social_dashboard, name='social_dashboard'),
     path('ml/', views_ml.ml_dashboard, name='ml_dashboard'),
+    path('trafico/', traffic_views.traffic_dashboard, name='traffic_dashboard'),
 
     # API endpoints — Dashboard IA & Modelos ML
     path('api/ml/shap/', views_ml.api_ml_shap, name='api_ml_shap'),

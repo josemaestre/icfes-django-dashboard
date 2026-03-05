@@ -28,6 +28,13 @@ def _build_geo_where(departamento=None, municipio=None, alias=""):
     return " AND ".join(where), params
 
 
+# Aliases para departamentos cuyo nombre completo genera slugs muy largos o poco amigables.
+# Clave: slug alternativo → fragmento identificador del nombre real en la DB.
+_DEPARTAMENTO_SLUG_ALIASES = {
+    "san-andres": "San Andr",  # "Archipiélago de San Andrés, Providencia y Santa Catalina"
+}
+
+
 def _resolve_departamento(conn, departamento_slug):
     query = """
         SELECT DISTINCT departamento
@@ -36,9 +43,19 @@ def _resolve_departamento(conn, departamento_slug):
         ORDER BY departamento
     """
     rows = conn.execute(resolve_schema(query)).fetchall()
+
+    # Primero: match exacto por slug
     for (departamento,) in rows:
         if slugify(departamento) == departamento_slug:
             return departamento
+
+    # Segundo: match por alias conocido
+    alias_fragment = _DEPARTAMENTO_SLUG_ALIASES.get(departamento_slug)
+    if alias_fragment:
+        for (departamento,) in rows:
+            if alias_fragment.lower() in departamento.lower():
+                return departamento
+
     return None
 
 

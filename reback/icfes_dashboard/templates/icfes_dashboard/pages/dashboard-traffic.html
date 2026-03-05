@@ -1,0 +1,245 @@
+{% extends 'layout_vertical.html' %}
+{% load i18n %}
+
+{% block title %}Tráfico Web{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Tráfico Web' sub_title='Railway Logs · Humanos vs Bots · SEO/IA' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label for="days" class="form-label mb-1">Ventana</label>
+          <select class="form-select" id="days" name="days">
+            <option value="1" {% if days == 1 %}selected{% endif %}>Últimas 24h</option>
+            <option value="7" {% if days == 7 %}selected{% endif %}>Últimos 7 días</option>
+            <option value="30" {% if days == 30 %}selected{% endif %}>Últimos 30 días</option>
+            <option value="90" {% if days == 90 %}selected{% endif %}>Últimos 90 días</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" type="submit">Actualizar</button>
+        </div>
+      </form>
+      <small class="text-muted">Desde: {{ since|date:"Y-m-d H:i" }}</small>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">Requests</p><h4 class="mb-0">{{ total_requests }}</h4></div></div>
+    </div>
+    <div class="col-md-3">
+      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">Human/Other</p><h4 class="mb-0">{{ human_count }}</h4></div></div>
+    </div>
+    <div class="col-md-3">
+      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">Avg Latency (ms)</p><h4 class="mb-0">{{ avg_duration|default:"-" }}</h4></div></div>
+    </div>
+    <div class="col-md-3">
+      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">P95 Latency (ms)</p><h4 class="mb-0">{{ p95_duration|default:"-" }}</h4></div></div>
+    </div>
+  </div>
+
+  <div class="row mt-1">
+    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">2xx</p><h5 class="mb-0">{{ status_2xx }}</h5></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">3xx</p><h5 class="mb-0">{{ status_3xx }}</h5></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">4xx</p><h5 class="mb-0">{{ status_4xx }}</h5></div></div></div>
+    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">5xx</p><h5 class="mb-0">{{ status_5xx }}</h5></div></div></div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Top campañas UTM</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_utm_campaigns %}
+                <tr>
+                  <td>{{ row.utm_source }}</td>
+                  <td>{{ row.utm_medium }}</td>
+                  <td>{{ row.utm_campaign }}</td>
+                  <td class="text-end">{{ row.total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">Sin UTMs detectadas</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Distribución por tipo de tráfico</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Categoría</th><th class="text-end">Requests</th></tr></thead>
+              <tbody>
+                {% for row in bot_counts %}
+                <tr><td>{{ row.bot_category }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Top colegios visitados</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Slug</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_school_slugs %}
+                <tr><td><code>{{ row.school_slug }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Top rutas</h5>
+          <div class="table-responsive" style="max-height:340px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_paths %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Top 404</h5>
+          <div class="table-responsive" style="max-height:340px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_404 %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">AI bots (User-Agent)</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>UA</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_ai_bots %}
+                <tr><td>{{ row.client_ua|truncatechars:90 }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">SEO bots (User-Agent)</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>UA</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_seo_bots %}
+                <tr><td>{{ row.client_ua|truncatechars:90 }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title text-warning">Rutas malformadas</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in malformed_paths %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin casos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title text-warning">Placeholders sin reemplazar</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in unresolved_placeholders %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin casos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_content %}

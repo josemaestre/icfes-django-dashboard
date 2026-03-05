@@ -6,7 +6,7 @@ from django.utils.html import format_html
 from django.urls import path, reverse
 from django.shortcuts import get_object_or_404, redirect
 
-from .models import Campaign, CampaignProspect
+from .models import Campaign, CampaignProspect, RailwayTrafficLog
 
 
 # ============================================================================
@@ -304,3 +304,29 @@ class CampaignAdmin(admin.ModelAdmin):
 
     # Inyectar botones en el submit row via change_form_template
     change_form_template = 'admin/campaign_change_form.html'
+
+
+@admin.register(RailwayTrafficLog)
+class RailwayTrafficLogAdmin(admin.ModelAdmin):
+    list_display = [
+        "timestamp",
+        "http_status",
+        "method",
+        "bot_category",
+        "school_slug",
+        "path_short",
+        "src_ip",
+    ]
+    list_filter = ["bot_category", "http_status", "method", "edge_region"]
+    search_fields = ["request_id", "path", "school_slug", "client_ua", "src_ip"]
+    ordering = ["-timestamp"]
+    readonly_fields = [f.name for f in RailwayTrafficLog._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def path_short(self, obj):
+        if len(obj.path) <= 100:
+            return obj.path
+        return f"{obj.path[:97]}..."
+    path_short.short_description = "Path"
