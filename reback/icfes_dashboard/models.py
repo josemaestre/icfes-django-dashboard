@@ -161,9 +161,18 @@ class RailwayTrafficLog(models.Model):
     class Meta:
         ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=["timestamp", "http_status"]),
-            models.Index(fields=["timestamp", "bot_category"]),
-            models.Index(fields=["timestamp", "school_slug"]),
+            models.Index(
+                fields=["timestamp", "http_status"],
+                name="icfes_dashb_timesta_67563d_idx",
+            ),
+            models.Index(
+                fields=["timestamp", "bot_category"],
+                name="icfes_dashb_timesta_8b7d03_idx",
+            ),
+            models.Index(
+                fields=["timestamp", "school_slug"],
+                name="icfes_dashb_timesta_3886c3_idx",
+            ),
         ]
         verbose_name = "Railway traffic log"
         verbose_name_plural = "Railway traffic logs"
