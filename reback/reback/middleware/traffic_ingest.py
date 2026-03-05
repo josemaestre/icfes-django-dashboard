@@ -19,11 +19,20 @@ logger = logging.getLogger(__name__)
 
 class TrafficIngestMiddleware:
     captured_count = 0
+    _startup_logged = False
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        if not TrafficIngestMiddleware._startup_logged:
+            logger.warning(
+                "traffic_ingest startup enabled=%s debug=%s",
+                getattr(settings, "TRAFFIC_ANALYTICS_ENABLED", False),
+                getattr(settings, "TRAFFIC_ANALYTICS_DEBUG_LOGS", False),
+            )
+            TrafficIngestMiddleware._startup_logged = True
+
         start = time.perf_counter()
         response = self.get_response(request)
 
@@ -75,7 +84,7 @@ class TrafficIngestMiddleware:
 
             TrafficIngestMiddleware.captured_count += 1
             if getattr(settings, "TRAFFIC_ANALYTICS_DEBUG_LOGS", False):
-                logger.info(
+                logger.warning(
                     "traffic_ingest captured_count=%s status=%s path=%s bot=%s",
                     TrafficIngestMiddleware.captured_count,
                     payload["http_status"],
