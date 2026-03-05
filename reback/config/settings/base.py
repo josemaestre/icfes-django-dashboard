@@ -91,6 +91,7 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 # Public base URL used for canonical, OG tags, robots and sitemaps.
 PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="")
+INDEXNOW_KEY = env("INDEXNOW_KEY", default="")
 PERF_LOGGING_ENABLED = env.bool("PERF_LOGGING_ENABLED", default=False)
 CACHE_DEBUG_HEADER_ENABLED = env.bool("CACHE_DEBUG_HEADER_ENABLED", default=False)
 PAYMENTS_DEBUG_LOGS = env.bool("PAYMENTS_DEBUG_LOGS", default=False)

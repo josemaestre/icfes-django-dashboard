@@ -40,3 +40,16 @@ def bing_site_auth(request):
     if not file_path.exists():
         raise Http404("BingSiteAuth.xml no encontrado")
     return FileResponse(file_path.open("rb"), content_type="application/xml")
+
+
+def indexnow_key_txt(request):
+    """
+    Serve IndexNow key verification file content.
+    Expected public URL: /<INDEXNOW_KEY>.txt
+    """
+    key = getattr(settings, "INDEXNOW_KEY", "").strip()
+    if not key:
+        raise Http404("INDEXNOW_KEY no configurado")
+    response = HttpResponse(key, content_type="text/plain; charset=utf-8")
+    response["Cache-Control"] = "public, max-age=3600"
+    return response

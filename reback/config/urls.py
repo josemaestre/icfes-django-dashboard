@@ -35,6 +35,11 @@ urlpatterns = [
     path("robots.txt", seo_views.robots_txt),
     path("BingSiteAuth.xml", seo_views.bing_site_auth),
     path("bingsiteauth.xml", seo_views.bing_site_auth),
+    *(
+        [path(f"{settings.INDEXNOW_KEY}.txt", seo_views.indexnow_key_txt)]
+        if settings.INDEXNOW_KEY
+        else []
+    ),
     path("sitemap.xml", sitemap_views.sitemap_index),
     path("sitemap-static.xml", sitemap_views.sitemap_static),
     path("sitemap-icfes-<int:page>.xml", sitemap_views.sitemap_icfes),
