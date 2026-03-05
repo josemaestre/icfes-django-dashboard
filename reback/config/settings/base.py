@@ -96,6 +96,7 @@ PERF_LOGGING_ENABLED = env.bool("PERF_LOGGING_ENABLED", default=False)
 CACHE_DEBUG_HEADER_ENABLED = env.bool("CACHE_DEBUG_HEADER_ENABLED", default=False)
 PAYMENTS_DEBUG_LOGS = env.bool("PAYMENTS_DEBUG_LOGS", default=False)
 TRAFFIC_ANALYTICS_ENABLED = env.bool("TRAFFIC_ANALYTICS_ENABLED", default=False)
+TRAFFIC_ANALYTICS_DEBUG_LOGS = env.bool("TRAFFIC_ANALYTICS_DEBUG_LOGS", default=False)
 
 # APPS
 # ------------------------------------------------------------------------------

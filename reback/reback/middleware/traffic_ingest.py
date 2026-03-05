@@ -7,7 +7,7 @@ import time
 import uuid
 
 from django.conf import settings
-from django.db import DatabaseError
+from django.db import DatabaseError, IntegrityError
 from django.utils import timezone
 
 from icfes_dashboard.models import RailwayTrafficLog
@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class TrafficIngestMiddleware:
+    captured_count = 0
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -43,7 +45,7 @@ class TrafficIngestMiddleware:
             xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
             src_ip = (xff.split(",")[0].strip() if xff else request.META.get("REMOTE_ADDR", "")) or None
 
-            RailwayTrafficLog.objects.create(
+            payload = dict(
                 request_id=str(request_id)[:64],
                 timestamp=timezone.now(),
                 method=(request.method or "")[:12],
@@ -64,9 +66,25 @@ class TrafficIngestMiddleware:
                 utm_medium=fields["utm_medium"],
                 utm_campaign=fields["utm_campaign"],
             )
+            try:
+                RailwayTrafficLog.objects.create(**payload)
+            except IntegrityError:
+                # Retry with a generated id if upstream request id collides.
+                payload["request_id"] = str(uuid.uuid4())
+                RailwayTrafficLog.objects.create(**payload)
+
+            TrafficIngestMiddleware.captured_count += 1
+            if getattr(settings, "TRAFFIC_ANALYTICS_DEBUG_LOGS", False):
+                logger.info(
+                    "traffic_ingest captured_count=%s status=%s path=%s bot=%s",
+                    TrafficIngestMiddleware.captured_count,
+                    payload["http_status"],
+                    payload["path"],
+                    payload["bot_category"],
+                )
         except DatabaseError:
-            logger.exception("Traffic ingest DB error")
+            logger.exception("Traffic ingest DB error path=%s", request.get_full_path())
         except Exception:
-            logger.exception("Traffic ingest unexpected error")
+            logger.exception("Traffic ingest unexpected error path=%s", request.get_full_path())
 
         return response
