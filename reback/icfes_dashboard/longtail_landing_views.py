@@ -24,7 +24,7 @@ def _available_years(conn):
     return [int(row[0]) for row in rows if row[0] is not None]
 
 
-@cache_page(60 * 60 * 6)
+@cache_page(60 * 60 * 6, key_prefix='v2')
 def ranking_colegios_year_page(request, ano):
     try:
         year = int(ano)
