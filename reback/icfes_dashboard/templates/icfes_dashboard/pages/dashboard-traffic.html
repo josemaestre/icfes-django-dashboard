@@ -1,10 +1,10 @@
 {% extends 'layout_vertical.html' %}
 {% load i18n %}
 
-{% block title %}Tráfico Web{% endblock title %}
+{% block title %}Trafico Web{% endblock title %}
 
 {% block page_title %}
-{% include "partials/page-title.html" with page_title='Tráfico Web' sub_title='Railway Logs · Humanos vs Bots · SEO/IA' %}
+{% include "partials/page-title.html" with page_title='Trafico Web' sub_title='Railway Logs · Observabilidad Operativa + SEO' %}
 {% endblock page_title %}
 
 {% block page_content %}
@@ -15,10 +15,10 @@
         <div class="col-md-3">
           <label for="days" class="form-label mb-1">Ventana</label>
           <select class="form-select" id="days" name="days">
-            <option value="1" {% if days == 1 %}selected{% endif %}>Últimas 24h</option>
-            <option value="7" {% if days == 7 %}selected{% endif %}>Últimos 7 días</option>
-            <option value="30" {% if days == 30 %}selected{% endif %}>Últimos 30 días</option>
-            <option value="90" {% if days == 90 %}selected{% endif %}>Últimos 90 días</option>
+            <option value="1" {% if days == 1 %}selected{% endif %}>Ultimas 24h</option>
+            <option value="7" {% if days == 7 %}selected{% endif %}>Ultimos 7 dias</option>
+            <option value="30" {% if days == 30 %}selected{% endif %}>Ultimos 30 dias</option>
+            <option value="90" {% if days == 90 %}selected{% endif %}>Ultimos 90 dias</option>
           </select>
         </div>
         <div class="col-md-2">
@@ -29,33 +29,214 @@
     </div>
   </div>
 
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Executive</h5>
+
+      {% if alerts_red or alerts_yellow %}
+      <div class="row mb-3">
+        <div class="col-lg-6">
+          <div class="alert alert-danger mb-2">
+            <strong>Alertas rojas</strong>
+            <ul class="mb-0 mt-2">
+              {% for a in alerts_red %}
+              <li>{{ a }}</li>
+              {% empty %}
+              <li>Sin alertas rojas</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="alert alert-warning mb-2">
+            <strong>Alertas amarillas</strong>
+            <ul class="mb-0 mt-2">
+              {% for a in alerts_yellow %}
+              <li>{{ a }}</li>
+              {% empty %}
+              <li>Sin alertas amarillas</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Req 5m</small><div class="h5 mb-0">{{ requests_5m }}</div></div></div>
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Req 1h</small><div class="h5 mb-0">{{ requests_1h }}</div><small class="text-muted">{% if change_1h_pct != None %}{{ change_1h_pct }}% vs h anterior{% else %}-{% endif %}</small></div></div>
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Req 24h</small><div class="h5 mb-0">{{ requests_24h }}</div><small class="text-muted">{% if change_24h_pct != None %}{{ change_24h_pct }}% vs dia previo{% else %}-{% endif %}</small></div></div>
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Error 4xx</small><div class="h5 mb-0">{{ error_4xx_rate }}%</div></div></div>
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Error 5xx</small><div class="h5 mb-0">{{ error_5xx_rate }}%</div></div></div>
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Bots ratio</small><div class="h5 mb-0">{{ bot_ratio }}%</div><small class="text-muted">{{ bot_count }} bots / {{ human_count }} humanos</small></div></div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">P50 (ms)</small><div class="h5 mb-0">{{ p50_duration|default:"-" }}</div></div></div>
+        <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">P95 (ms)</small><div class="h5 mb-0">{{ p95_duration|default:"-" }}</div></div></div>
+        <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">P99 (ms)</small><div class="h5 mb-0">{{ p99_duration|default:"-" }}</div></div></div>
+        <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Promedio (ms)</small><div class="h5 mb-0">{{ avg_duration|default:"-" }}</div></div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="row">
-    <div class="col-md-3">
-      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">Requests</p><h4 class="mb-0">{{ total_requests }}</h4></div></div>
-    </div>
-    <div class="col-md-3">
-      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">Human/Other</p><h4 class="mb-0">{{ human_count }}</h4></div></div>
-    </div>
-    <div class="col-md-3">
-      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">Avg Latency (ms)</p><h4 class="mb-0">{{ avg_duration|default:"-" }}</h4></div></div>
-    </div>
-    <div class="col-md-3">
-      <div class="card mini-stats-wid"><div class="card-body"><p class="text-muted mb-2">P95 Latency (ms)</p><h4 class="mb-0">{{ p95_duration|default:"-" }}</h4></div></div>
-    </div>
-  </div>
-
-  <div class="row mt-1">
-    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">2xx</p><h5 class="mb-0">{{ status_2xx }}</h5></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">3xx</p><h5 class="mb-0">{{ status_3xx }}</h5></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">4xx</p><h5 class="mb-0">{{ status_4xx }}</h5></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><p class="text-muted mb-1">5xx</p><h5 class="mb-0">{{ status_5xx }}</h5></div></div></div>
-  </div>
-
-  <div class="row mt-2">
-    <div class="col-12">
+    <div class="col-lg-6">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Top campañas UTM</h5>
+          <h5 class="card-title">Top status codes</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Status</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in status_counts %}
+                <tr><td>{{ row.http_status }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Bots vs humanos (categoria actual)</h5>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Categoria</th><th class="text-end">Requests</th></tr></thead>
+              <tbody>
+                {% for row in bot_counts %}
+                <tr><td>{{ row.bot_category }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-body">
+      <h5 class="card-title">Performance</h5>
+      <div class="row">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top endpoints por trafico</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_paths %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top endpoints por lentitud (avg ms, min 5 hits)</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Path</th><th class="text-end">Hits</th><th class="text-end">Avg ms</th></tr></thead>
+              <tbody>
+                {% for row in top_slow_paths %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.hits }}</td><td class="text-end">{{ row.avg_ms|floatformat:1 }}</td></tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Rendimiento por categoria de path</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Grupo</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error %</th></tr></thead>
+              <tbody>
+                {% for row in perf_by_group %}
+                <tr><td>{{ row.path_group }}</td><td class="text-end">{{ row.total }}</td><td class="text-end">{{ row.p95_ms|default:"-" }}</td><td class="text-end">{{ row.error_rate }}</td></tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Requests por minuto (ultimos buckets)</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Minuto</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">4xx</th><th class="text-end">5xx</th></tr></thead>
+              <tbody>
+                {% for row in minute_series %}
+                <tr>
+                  <td>{{ row.minute|date:"Y-m-d H:i" }}</td>
+                  <td class="text-end">{{ row.requests }}</td>
+                  <td class="text-end">{{ row.p95_ms|default:"-" }}</td>
+                  <td class="text-end">{{ row.status_4xx }}</td>
+                  <td class="text-end">{{ row.status_5xx }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-body">
+      <h5 class="card-title">SEO / Crawlers</h5>
+      <div class="row">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Familias de bots</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Bot</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error %</th></tr></thead>
+              <tbody>
+                {% for row in bot_families %}
+                <tr><td>{{ row.bot_family }}</td><td class="text-end">{{ row.total }}</td><td class="text-end">{{ row.p95_ms|default:"-" }}</td><td class="text-end">{{ row.error_rate }}</td></tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top colegios rastreados</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Slug</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_school_slugs %}
+                <tr><td><code>{{ row.school_slug }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-12">
+          <h6 class="mb-2">Top campanas UTM</h6>
           <div class="table-responsive">
             <table class="table table-sm mb-0">
               <thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th class="text-end">Hits</th></tr></thead>
@@ -78,72 +259,13 @@
     </div>
   </div>
 
-  <div class="row mt-2">
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">Distribución por tipo de tráfico</h5>
-          <div class="table-responsive">
-            <table class="table table-sm mb-0">
-              <thead><tr><th>Categoría</th><th class="text-end">Requests</th></tr></thead>
-              <tbody>
-                {% for row in bot_counts %}
-                <tr><td>{{ row.bot_category }}</td><td class="text-end">{{ row.total }}</td></tr>
-                {% empty %}
-                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">Top colegios visitados</h5>
-          <div class="table-responsive">
-            <table class="table table-sm mb-0">
-              <thead><tr><th>Slug</th><th class="text-end">Hits</th></tr></thead>
-              <tbody>
-                {% for row in top_school_slugs %}
-                <tr><td><code>{{ row.school_slug }}</code></td><td class="text-end">{{ row.total }}</td></tr>
-                {% empty %}
-                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mt-2">
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">Top rutas</h5>
-          <div class="table-responsive" style="max-height:340px;">
-            <table class="table table-sm mb-0">
-              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
-              <tbody>
-                {% for row in top_paths %}
-                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
-                {% empty %}
-                <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">Top 404</h5>
-          <div class="table-responsive" style="max-height:340px;">
+  <div class="card mt-3 mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Errors / Investigation</h5>
+      <div class="row">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top 404</h6>
+          <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
               <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
               <tbody>
@@ -156,21 +278,14 @@
             </table>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mt-2">
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">AI bots (User-Agent)</h5>
-          <div class="table-responsive">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top 500</h6>
+          <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
-              <thead><tr><th>UA</th><th class="text-end">Hits</th></tr></thead>
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
               <tbody>
-                {% for row in top_ai_bots %}
-                <tr><td>{{ row.client_ua|truncatechars:90 }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% for row in top_500 %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
                 {% empty %}
                 <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
                 {% endfor %}
@@ -179,17 +294,49 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">SEO bots (User-Agent)</h5>
-          <div class="table-responsive">
+
+      <div class="row mt-3">
+        <div class="col-lg-6">
+          <h6 class="mb-2 text-warning">Paths sospechosos</h6>
+          <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
-              <thead><tr><th>UA</th><th class="text-end">Hits</th></tr></thead>
+              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
               <tbody>
-                {% for row in top_seo_bots %}
-                <tr><td>{{ row.client_ua|truncatechars:90 }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% for row in suspicious_paths %}
+                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin casos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Errores upstream</h6>
+          <div class="table-responsive" style="max-height:260px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Error</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in upstream_error_rows %}
+                <tr><td>{{ row.upstream_error|truncatechars:100 }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin casos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top IPs (ult. 1h)</h6>
+          <div class="table-responsive" style="max-height:260px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>IP</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in top_ips_1h %}
+                <tr><td><code>{{ row.src_ip }}</code></td><td class="text-end">{{ row.total }}</td></tr>
                 {% empty %}
                 <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
                 {% endfor %}
@@ -197,16 +344,9 @@
             </table>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mt-2">
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title text-warning">Rutas malformadas</h5>
-          <div class="table-responsive">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Paths malformados</h6>
+          <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
               <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
               <tbody>
@@ -220,19 +360,33 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title text-warning">Placeholders sin reemplazar</h5>
-          <div class="table-responsive">
+
+      <div class="row mt-3">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top paths nuevos de hoy</h6>
+          <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
               <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
               <tbody>
-                {% for row in unresolved_placeholders %}
+                {% for row in new_paths_today %}
                 <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
                 {% empty %}
-                <tr><td colspan="2" class="text-muted">Sin casos</td></tr>
+                <tr><td colspan="2" class="text-muted">Sin novedades</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top User-Agents nuevos de hoy</h6>
+          <div class="table-responsive" style="max-height:260px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>User-Agent</th><th class="text-end">Hits</th></tr></thead>
+              <tbody>
+                {% for row in new_uas_today %}
+                <tr><td>{{ row.client_ua|truncatechars:90 }}</td><td class="text-end">{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-muted">Sin novedades</td></tr>
                 {% endfor %}
               </tbody>
             </table>
