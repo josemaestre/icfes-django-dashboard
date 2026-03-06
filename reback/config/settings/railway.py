@@ -51,6 +51,7 @@ MIDDLEWARE = [
     "reback.middleware.error_logging.ErrorLoggingMiddleware",  # Log 4xx/5xx errors
     "reback.middleware.perf_logging.PerfLoggingMiddleware",
     "reback.middleware.perf_logging.CacheDebugHeaderMiddleware",
+    "reback.middleware.traffic_ingest.TrafficIngestMiddleware",
 ]
 
 # DATABASES

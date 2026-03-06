@@ -68,6 +68,16 @@ INSTALLED_APPS += ["django_extensions"]
 # Your stuff...
 # ------------------------------------------------------------------------------
 
+# Database — Postgres para RailwayTrafficLog (mismo que producción)
+# Agrega DATABASE_URL en .env para conectar a Postgres local o Railway.
+# Ejemplo: DATABASE_URL=postgresql://user:pass@localhost:5432/icfes
+# Si no está definido, usa SQLite (las migraciones se aplican igualmente).
+import dj_database_url as _dj_db_url
+
+_pg_url = env("DATABASE_URL", default="")
+if _pg_url:
+    DATABASES["default"] = _dj_db_url.config(default=_pg_url)
+
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "reback" / "static",  # para archivos globales (logo, vendors, etc.)
