@@ -40,6 +40,9 @@ MIDDLEWARE = [
     "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    # Before SessionMiddleware in list = runs AFTER it in response phase (reverse order).
+    # This ensures Cookie is stripped from Vary after SessionMiddleware adds it.
+    "reback.middleware.public_cache.PublicCacheMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -52,8 +55,6 @@ MIDDLEWARE = [
     "reback.middleware.perf_logging.PerfLoggingMiddleware",
     "reback.middleware.perf_logging.CacheDebugHeaderMiddleware",
     "reback.middleware.traffic_ingest.TrafficIngestMiddleware",
-    # Must be last: strips Cookie from Vary for public landing pages → CDN caching
-    "reback.middleware.public_cache.PublicCacheMiddleware",
 ]
 
 # DATABASES
