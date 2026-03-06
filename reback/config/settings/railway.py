@@ -21,6 +21,7 @@ ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS",
     default=[".railway.app", "localhost", "icfes-analytics.com", "www.icfes-analytics.com"],
 )
+CANONICAL_HOST = env("CANONICAL_HOST", default="www.icfes-analytics.com")
 # Django 4+ requires explicit trusted origins for CSRF on HTTPS POST requests.
 CSRF_TRUSTED_ORIGINS = env.list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
@@ -34,6 +35,8 @@ CSRF_TRUSTED_ORIGINS = env.list(
 # MIDDLEWARE - Add auto-create admin middleware
 # ------------------------------------------------------------------------------
 MIDDLEWARE = [
+    # Redirect non-canonical hosts (*.up.railway.app → www.icfes-analytics.com) — must be first
+    "reback.middleware.canonical_host.CanonicalHostMiddleware",
     # Normalize double slashes before anything else
     "reback.middleware.slash_normalize.SlashNormalizeMiddleware",
     # Compress responses (cost optimization)
