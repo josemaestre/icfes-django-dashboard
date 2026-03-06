@@ -52,6 +52,8 @@ MIDDLEWARE = [
     "reback.middleware.perf_logging.PerfLoggingMiddleware",
     "reback.middleware.perf_logging.CacheDebugHeaderMiddleware",
     "reback.middleware.traffic_ingest.TrafficIngestMiddleware",
+    # Must be last: strips Cookie from Vary for public landing pages → CDN caching
+    "reback.middleware.public_cache.PublicCacheMiddleware",
 ]
 
 # DATABASES
