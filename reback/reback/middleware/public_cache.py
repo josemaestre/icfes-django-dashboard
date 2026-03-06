@@ -5,21 +5,23 @@ Django's SessionMiddleware adds Vary: Cookie to every response as a safety measu
 For public pages (school/department/municipality landings) the content is identical
 for all visitors, so keeping Cookie in Vary kills CDN caching on Railway's edge.
 
-This middleware strips Cookie from Vary and marks the response public so that
-Railway's CDN can cache school and geographic landing pages at the edge.
+This middleware strips Cookie from Vary, marks the response public, and ensures
+max-age is set so Railway's CDN knows how long to cache each page type.
 """
 
 from django.utils.cache import patch_cache_control
 
 
-# URL prefixes whose content is identical for every visitor
+# (prefix, max_age_seconds)
+# Views using manual cache (cache.get/set) don't set Cache-Control headers,
+# so we provide the TTL here to match the intended caching strategy.
 _PUBLIC_PREFIXES = (
-    '/icfes/colegio/',
-    '/icfes/departamento/',
-    '/icfes/municipio/',
-    '/icfes/departamentos/',
-    '/icfes/ranking/',
-    '/icfes/historico/',
+    ('/icfes/colegio/',       86400),   # 24 h — school landings
+    ('/icfes/departamento/',  14400),   # 4 h  — department/municipality landings
+    ('/icfes/municipio/',     14400),
+    ('/icfes/departamentos/', 43200),   # 12 h — department index
+    ('/icfes/ranking/',       21600),   # 6 h  — ranking pages
+    ('/icfes/historico/',     43200),   # 12 h — historical pages
 )
 
 
@@ -30,11 +32,11 @@ class PublicCacheMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        if not any(request.path.startswith(p) for p in _PUBLIC_PREFIXES):
-            return response
-
-        # Only touch 200 OK responses
-        if response.status_code != 200:
+        max_age = next(
+            (ttl for prefix, ttl in _PUBLIC_PREFIXES if request.path.startswith(prefix)),
+            None,
+        )
+        if max_age is None or response.status_code != 200:
             return response
 
         # Strip Cookie from Vary so CDN can cache regardless of session cookie
@@ -46,7 +48,20 @@ class PublicCacheMiddleware:
             else:
                 del response['Vary']
 
-        # Mark as publicly cacheable so Railway edge actually stores it
-        patch_cache_control(response, public=True)
+        # Set max-age only if the view didn't already set a longer one
+        cc = response.get('Cache-Control', '')
+        existing_max_age = None
+        for part in cc.split(','):
+            part = part.strip()
+            if part.startswith('max-age='):
+                try:
+                    existing_max_age = int(part.split('=', 1)[1])
+                except ValueError:
+                    pass
+
+        if existing_max_age is None or existing_max_age < max_age:
+            patch_cache_control(response, public=True, max_age=max_age)
+        else:
+            patch_cache_control(response, public=True)
 
         return response
