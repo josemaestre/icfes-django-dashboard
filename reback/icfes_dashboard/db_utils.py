@@ -149,77 +149,105 @@ def get_duckdb_connection(read_only=True):
         logger.info(f"Is S3: {is_s3}")
         
         if is_s3:
-            # Descargar desde S3 a /tmp (evita llenar el volumen persistente)
-            local_path = '/tmp/prod.duckdb'
-            
-            # Verificar si el archivo existe Y tiene tamaño adecuado (> 1GB)
-            file_exists = os.path.exists(local_path)
-            file_size = os.path.getsize(local_path) if file_exists else 0
+            import json
+            # Volumen persistente: sobrevive redeploys (50 GB disponibles en /app/data)
+            local_path = '/app/data/prod.duckdb'
+            etag_path  = '/app/data/prod.duckdb.etag'
+            os.makedirs('/app/data', exist_ok=True)
+
             min_size = 1 * 1024 * 1024 * 1024  # 1 GB
-            
-            logger.info(f"File exists: {file_exists}, Size: {file_size / (1024**3):.2f} GB")
-            
-            # Si el archivo existe pero podría estar corrupto, verificar tablas
-            needs_download = not file_exists or file_size < min_size
-            
-            if file_exists and file_size >= min_size:
-                # Verificar si tiene tablas (archivo podría estar corrupto)
+
+            # Credenciales AWS reutilizadas en todas las llamadas
+            aws_env = os.environ.copy()
+            aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
+            aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+            aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
+
+            def _get_s3_etag():
+                """Obtiene el ETag del objeto S3 via head-object (sin descargar)."""
                 try:
-                    test_conn = duckdb.connect(local_path, read_only=True)
-                    # Check main or prod schemas
-                    table_count = test_conn.execute("""
-                        SELECT COUNT(*) FROM information_schema.tables 
-                        WHERE table_schema IN ('main', 'prod')
-                    """).fetchone()[0]
-                    test_conn.close()
-                    logger.info(f"File has {table_count} tables in main/prod schemas")
-                    
-                    if table_count == 0:
-                        logger.warning("File exists but has 0 tables - deleting corrupted file")
-                        os.remove(local_path)
-                        needs_download = True
+                    s3_suffix = db_path[5:]          # quita 's3://'
+                    bucket, key = s3_suffix.split('/', 1)
+                    result = subprocess.run(
+                        ['aws', 's3api', 'head-object', '--bucket', bucket, '--key', key],
+                        env=aws_env, capture_output=True, text=True, timeout=30
+                    )
+                    if result.returncode == 0:
+                        return json.loads(result.stdout).get('ETag', '').strip('"')
                 except Exception as e:
-                    logger.warning(f"Error checking file: {e} - will re-download")
-                    if os.path.exists(local_path):
-                        os.remove(local_path)
+                    logger.warning(f"Could not get S3 ETag: {e}")
+                return None
+
+            def _read_local_etag():
+                try:
+                    if os.path.exists(etag_path):
+                        with open(etag_path) as f:
+                            return f.read().strip()
+                except Exception:
+                    pass
+                return None
+
+            def _save_local_etag(etag):
+                try:
+                    with open(etag_path, 'w') as f:
+                        f.write(etag)
+                except Exception as e:
+                    logger.warning(f"Could not save ETag: {e}")
+
+            # --- Decidir si hay que descargar ---
+            file_exists = os.path.exists(local_path)
+            file_size   = os.path.getsize(local_path) if file_exists else 0
+            logger.info(f"DB local: exists={file_exists}, size={file_size / (1024**3):.2f} GB, path={local_path}")
+
+            needs_download = not file_exists or file_size < min_size
+
+            if not needs_download:
+                # Archivo presente y grande: comparar ETag con S3
+                s3_etag    = _get_s3_etag()
+                local_etag = _read_local_etag()
+                if s3_etag and local_etag and s3_etag == local_etag:
+                    logger.info(f"DB up-to-date (ETag {s3_etag[:12]}...) — skipping S3 download")
+                else:
+                    logger.info(f"ETag changed (S3={s3_etag}, local={local_etag}) — downloading new version")
                     needs_download = True
-            
+
             if needs_download:
                 with _download_lock:
-                    # Re-verificar dentro del lock (otro worker pudo haber descargado ya)
-                    if os.path.exists(local_path) and os.path.getsize(local_path) >= min_size:
-                        needs_download = False
+                    # Re-verificar dentro del lock: otro worker puede haber descargado ya
+                    file_exists = os.path.exists(local_path)
+                    file_size   = os.path.getsize(local_path) if file_exists else 0
+                    if file_exists and file_size >= min_size:
+                        s3_etag    = _get_s3_etag()
+                        local_etag = _read_local_etag()
+                        if s3_etag and local_etag and s3_etag == local_etag:
+                            needs_download = False
 
                     if needs_download:
-                        aws_key = os.environ.get('AWS_ACCESS_KEY_ID')
-                        aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
-                        aws_region = os.environ.get('AWS_S3_REGION', 'us-east-1')
-
-                        env = os.environ.copy()
-                        env['AWS_ACCESS_KEY_ID'] = aws_key
-                        env['AWS_SECRET_ACCESS_KEY'] = aws_secret
-                        env['AWS_DEFAULT_REGION'] = aws_region
-
-                        logger.info(f"Downloading {db_path} to {local_path}...")
-
+                        logger.info(f"Downloading {db_path} → {local_path} ...")
                         result = subprocess.run(
                             ['aws', 's3', 'cp', db_path, local_path],
-                            env=env,
+                            env=aws_env,
                             capture_output=True,
                             text=True
                         )
 
                         if result.returncode != 0:
-                            error_msg = f"Failed to download from S3. Return code: {result.returncode}\n"
-                            error_msg += f"STDOUT: {result.stdout}\n"
-                            error_msg += f"STDERR: {result.stderr}\n"
-                            error_msg += f"S3 Path: {db_path}\n"
-                            error_msg += f"Local Path: {local_path}"
+                            error_msg = (
+                                f"Failed to download from S3. Return code: {result.returncode}\n"
+                                f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}\n"
+                                f"S3 Path: {db_path}\nLocal Path: {local_path}"
+                            )
                             logger.error(error_msg)
                             raise Exception(error_msg)
 
-                        logger.info(f"Successfully downloaded {db_path}")
-            
+                        logger.info(f"Download complete: {local_path}")
+
+                        # Guardar ETag para omitir descargas en futuros redeploys
+                        s3_etag = _get_s3_etag()
+                        if s3_etag:
+                            _save_local_etag(s3_etag)
+                            logger.info(f"Saved ETag {s3_etag[:12]}... to {etag_path}")
+
             # Conectar al archivo local en modo read-only para queries
             con = duckdb.connect(local_path, read_only=read_only)
         else:
