@@ -22,6 +22,7 @@ _PUBLIC_PREFIXES = (
     ('/icfes/departamentos/', 43200),   # 12 h — department index
     ('/icfes/ranking/',       21600),   # 6 h  — ranking pages
     ('/icfes/historico/',     43200),   # 12 h — historical pages
+    ('/social-card/',         86400),   # 24 h — OG social card images (pure public, no user data)
 )
 
 
