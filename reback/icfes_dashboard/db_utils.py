@@ -40,6 +40,9 @@ _views_created = set()
 # Lock para evitar descargas concurrentes desde S3
 _download_lock = threading.Lock()
 
+# Una vez verificado/descargado el archivo, no volver a llamar a S3 en requests siguientes
+_db_initialized = False
+
 def _ensure_gold_views_exist(db_path):
     """Asegura que las vistas gold existan (thread-safe)."""
     if db_path in _views_created:
@@ -150,106 +153,94 @@ def get_duckdb_connection(read_only=True):
         
         if is_s3:
             import json
-            # Volumen persistente: sobrevive redeploys (50 GB disponibles en /app/data)
             local_path = '/app/data/prod.duckdb'
             etag_path  = '/app/data/prod.duckdb.etag'
-            os.makedirs('/app/data', exist_ok=True)
 
-            min_size = 1 * 1024 * 1024 * 1024  # 1 GB
+            # Ya verificado en este proceso: conectar directo sin tocar S3
+            global _db_initialized
+            if _db_initialized:
+                con = duckdb.connect(local_path, read_only=read_only)
+            else:
+                # Primera vez en este proceso: verificar/descargar si es necesario
+                os.makedirs('/app/data', exist_ok=True)
+                min_size = 1 * 1024 * 1024 * 1024  # 1 GB
 
-            # Credenciales AWS reutilizadas en todas las llamadas
-            aws_env = os.environ.copy()
-            aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
-            aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-            aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
+                aws_env = os.environ.copy()
+                aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
+                aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+                aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
 
-            def _get_s3_etag():
-                """Obtiene el ETag del objeto S3 via head-object (sin descargar)."""
-                try:
-                    s3_suffix = db_path[5:]          # quita 's3://'
-                    bucket, key = s3_suffix.split('/', 1)
-                    result = subprocess.run(
-                        ['aws', 's3api', 'head-object', '--bucket', bucket, '--key', key],
-                        env=aws_env, capture_output=True, text=True, timeout=30
-                    )
-                    if result.returncode == 0:
-                        return json.loads(result.stdout).get('ETag', '').strip('"')
-                except Exception as e:
-                    logger.warning(f"Could not get S3 ETag: {e}")
-                return None
-
-            def _read_local_etag():
-                try:
-                    if os.path.exists(etag_path):
-                        with open(etag_path) as f:
-                            return f.read().strip()
-                except Exception:
-                    pass
-                return None
-
-            def _save_local_etag(etag):
-                try:
-                    with open(etag_path, 'w') as f:
-                        f.write(etag)
-                except Exception as e:
-                    logger.warning(f"Could not save ETag: {e}")
-
-            # --- Decidir si hay que descargar ---
-            file_exists = os.path.exists(local_path)
-            file_size   = os.path.getsize(local_path) if file_exists else 0
-            logger.info(f"DB local: exists={file_exists}, size={file_size / (1024**3):.2f} GB, path={local_path}")
-
-            needs_download = not file_exists or file_size < min_size
-
-            if not needs_download:
-                # Archivo presente y grande: comparar ETag con S3
-                s3_etag    = _get_s3_etag()
-                local_etag = _read_local_etag()
-                if s3_etag and local_etag and s3_etag == local_etag:
-                    logger.info(f"DB up-to-date (ETag {s3_etag[:12]}...) — skipping S3 download")
-                else:
-                    logger.info(f"ETag changed (S3={s3_etag}, local={local_etag}) — downloading new version")
-                    needs_download = True
-
-            if needs_download:
-                with _download_lock:
-                    # Re-verificar dentro del lock: otro worker puede haber descargado ya
-                    file_exists = os.path.exists(local_path)
-                    file_size   = os.path.getsize(local_path) if file_exists else 0
-                    if file_exists and file_size >= min_size:
-                        s3_etag    = _get_s3_etag()
-                        local_etag = _read_local_etag()
-                        if s3_etag and local_etag and s3_etag == local_etag:
-                            needs_download = False
-
-                    if needs_download:
-                        logger.info(f"Downloading {db_path} → {local_path} ...")
+                def _get_s3_etag():
+                    try:
+                        s3_suffix = db_path[5:]
+                        bucket, key = s3_suffix.split('/', 1)
                         result = subprocess.run(
-                            ['aws', 's3', 'cp', db_path, local_path],
-                            env=aws_env,
-                            capture_output=True,
-                            text=True
+                            ['aws', 's3api', 'head-object', '--bucket', bucket, '--key', key],
+                            env=aws_env, capture_output=True, text=True, timeout=30
                         )
+                        if result.returncode == 0:
+                            return json.loads(result.stdout).get('ETag', '').strip('"')
+                    except Exception as e:
+                        logger.warning(f"Could not get S3 ETag: {e}")
+                    return None
 
-                        if result.returncode != 0:
-                            error_msg = (
-                                f"Failed to download from S3. Return code: {result.returncode}\n"
-                                f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}\n"
-                                f"S3 Path: {db_path}\nLocal Path: {local_path}"
+                def _read_local_etag():
+                    try:
+                        if os.path.exists(etag_path):
+                            with open(etag_path) as f:
+                                return f.read().strip()
+                    except Exception:
+                        pass
+                    return None
+
+                with _download_lock:
+                    # Re-verificar dentro del lock: otro worker puede haber inicializado ya
+                    if _db_initialized:
+                        pass  # ya listo
+                    else:
+                        file_exists = os.path.exists(local_path)
+                        file_size   = os.path.getsize(local_path) if file_exists else 0
+                        logger.info(f"DB check: exists={file_exists}, size={file_size / (1024**3):.2f} GB")
+
+                        needs_download = not file_exists or file_size < min_size
+
+                        if not needs_download:
+                            s3_etag    = _get_s3_etag()
+                            local_etag = _read_local_etag()
+                            if s3_etag and local_etag and s3_etag == local_etag:
+                                logger.info(f"DB up-to-date (ETag {s3_etag[:12]}...) — skipping download")
+                            else:
+                                logger.info(f"ETag changed (S3={s3_etag}, local={local_etag}) — downloading")
+                                needs_download = True
+
+                        if needs_download:
+                            logger.info(f"Downloading {db_path} → {local_path} ...")
+                            result = subprocess.run(
+                                ['aws', 's3', 'cp', db_path, local_path],
+                                env=aws_env, capture_output=True, text=True
                             )
-                            logger.error(error_msg)
-                            raise Exception(error_msg)
+                            if result.returncode != 0:
+                                error_msg = (
+                                    f"Failed to download from S3. rc={result.returncode}\n"
+                                    f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}\n"
+                                    f"S3: {db_path} → {local_path}"
+                                )
+                                logger.error(error_msg)
+                                raise Exception(error_msg)
 
-                        logger.info(f"Download complete: {local_path}")
+                            logger.info(f"Download complete: {local_path}")
+                            s3_etag = _get_s3_etag()
+                            if s3_etag:
+                                try:
+                                    with open(etag_path, 'w') as f:
+                                        f.write(s3_etag)
+                                    logger.info(f"Saved ETag {s3_etag[:12]}...")
+                                except Exception as e:
+                                    logger.warning(f"Could not save ETag: {e}")
 
-                        # Guardar ETag para omitir descargas en futuros redeploys
-                        s3_etag = _get_s3_etag()
-                        if s3_etag:
-                            _save_local_etag(s3_etag)
-                            logger.info(f"Saved ETag {s3_etag[:12]}... to {etag_path}")
+                        _db_initialized = True
 
-            # Conectar al archivo local en modo read-only para queries
-            con = duckdb.connect(local_path, read_only=read_only)
+                con = duckdb.connect(local_path, read_only=read_only)
         else:
             # Conexión local tradicional
             con = duckdb.connect(db_path, read_only=read_only)
