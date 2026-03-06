@@ -62,7 +62,7 @@
                     {% if y == year %}
                     <strong>{{ y }}</strong>
                     {% else %}
-                    {{ y }}
+                    <a href="{{ year_base_url }}{{ y }}/">{{ y }}</a>
                     {% endif %}
                     {% endfor %}
                 </div>

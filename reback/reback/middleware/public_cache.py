@@ -18,6 +18,8 @@ _PUBLIC_PREFIXES = (
     '/icfes/departamento/',
     '/icfes/municipio/',
     '/icfes/departamentos/',
+    '/icfes/ranking/',
+    '/icfes/historico/',
 )
 
 

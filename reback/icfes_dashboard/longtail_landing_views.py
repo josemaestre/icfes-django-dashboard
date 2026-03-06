@@ -50,6 +50,7 @@ def ranking_colegios_year_page(request, ano):
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
                 WHERE CAST(f.ano AS INTEGER) = ?
                   AND f.nombre_colegio IS NOT NULL
+                  AND f.sector != 'SINTETICO'
                 ORDER BY f.avg_punt_global DESC
                 LIMIT 50
             """
@@ -83,6 +84,7 @@ def ranking_colegios_year_page(request, ano):
                 "mode": "ranking_general",
                 "year": year,
                 "years": years[:10],
+                "year_base_url": "/icfes/ranking/colegios/",
                 "rows": [
                     {
                         "nombre": row[0],
@@ -141,6 +143,7 @@ def ranking_matematicas_year_page(request, ano):
                 WHERE CAST(f.ano AS INTEGER) = ?
                   AND f.nombre_colegio IS NOT NULL
                   AND f.avg_punt_matematicas IS NOT NULL
+                  AND f.sector != 'SINTETICO'
                 ORDER BY f.avg_punt_matematicas DESC
                 LIMIT 50
             """
@@ -174,6 +177,7 @@ def ranking_matematicas_year_page(request, ano):
                 "mode": "ranking_matematicas",
                 "year": year,
                 "years": years[:10],
+                "year_base_url": "/icfes/ranking/matematicas/",
                 "rows": [
                     {
                         "nombre": row[0],
