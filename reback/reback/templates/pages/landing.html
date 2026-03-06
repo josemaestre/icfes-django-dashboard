@@ -364,9 +364,7 @@
                         decisiones basadas en datos reales.
                     </p>
                     <div class="d-flex gap-3 flex-wrap">
-                        <a href="#pricing" class="btn btn-light btn-lg cta-button">
-                            Ver Planes
-                        </a>
+                        {# <a href="#pricing" class="btn btn-light btn-lg cta-button">Ver Planes</a> #}
                         <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg cta-button">
                             Comenzar Gratis
                         </a>
@@ -1046,7 +1044,7 @@
         </div>
     </section>
 
-    <!-- Pricing Section -->
+    {% if False %}<!-- Pricing Section — temporalmente desactivada -->
     <section class="pricing-section" id="pricing">
         <div class="container">
             <h2 class="section-title">Planes y Precios</h2>
@@ -1142,6 +1140,7 @@
             </div>
         </div>
     </section>
+    {% endif %}<!-- /Pricing Section -->
 
     <!-- CTA Section -->
     <section class="cta-section">
@@ -1163,8 +1162,7 @@
                 Todos los derechos reservados.</p>
             <p class="mb-0">
                 <a href="{% url 'account_login' %}" class="text-white-50 text-decoration-none me-3">Iniciar Sesión</a>
-                <a href="{% url 'pages:dynamic_pages' 'pages-pricing' %}"
-                    class="text-white-50 text-decoration-none me-3">Precios</a>
+                {# <a href="{% url 'pages:dynamic_pages' 'pages-pricing' %}" class="text-white-50 text-decoration-none me-3">Precios</a> #}
                 <a href="mailto:contact@icfes-analytics.com"
                     class="text-white-50 text-decoration-none me-3">Contacto</a>
                 <a href="https://wa.me/573127364948" class="text-white-50 text-decoration-none" target="_blank"
