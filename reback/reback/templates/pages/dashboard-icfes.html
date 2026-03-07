@@ -2162,6 +2162,39 @@
         </div>
       </div>
 
+      <!-- Evolución de Niveles de Desempeño -->
+      <div class="row mb-3" id="comp-niveles-row" style="display:none;">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <h5 class="mb-0">
+                <i class="bx bx-bar-chart-alt-2 me-1 text-primary"></i>
+                Evolución de Niveles de Desempeño
+              </h5>
+              <div class="btn-group btn-group-sm" id="comp-niveles-btns">
+                <button class="btn btn-primary"           data-mat="mat">Matemáticas</button>
+                <button class="btn btn-outline-secondary" data-mat="lc">Lectura</button>
+                <button class="btn btn-outline-secondary" data-mat="cn">Ciencias</button>
+                <button class="btn btn-outline-secondary" data-mat="sc">Sociales</button>
+                <button class="btn btn-outline-secondary" data-mat="ing">Inglés</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="text-center text-primary mb-2" id="comp-niveles-titulo-a">Colegio A</h6>
+                  <div id="comp-chart-niveles-a" style="min-height:280px;"></div>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-center text-info mb-2" id="comp-niveles-titulo-b">Colegio B</h6>
+                  <div id="comp-chart-niveles-b" style="min-height:280px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Export Button -->
       <div class="row mb-3">
         <div class="col-12 text-center">

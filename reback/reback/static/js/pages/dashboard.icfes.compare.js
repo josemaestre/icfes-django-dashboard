@@ -11,6 +11,13 @@ let comparisonCharts = {
     materias: null
 };
 
+// Niveles comparison state
+let _compNivelesDataA = null;
+let _compNivelesDataB = null;
+let _compNivelesMat = 'mat';
+let _compNivelesChartA = null;
+let _compNivelesChartB = null;
+
 /**
  * Initialize the comparison module
  * Waits for jQuery to be available before initializing Select2
@@ -174,6 +181,9 @@ function renderComparison(data) {
 
     // Render radar chart
     renderRadarChart(data);
+
+    // Load Evolución de Niveles side-by-side
+    loadCompNiveles(data.colegio_a.sk, data.colegio_a.nombre, data.colegio_b.sk, data.colegio_b.nombre);
 }
 
 /**
@@ -643,4 +653,113 @@ function renderRadarChart(data) {
     } catch (error) {
         console.error('Error rendering radar chart:', error);
     }
+}
+
+/**
+ * Load and render Evolución de Niveles side-by-side for both schools
+ */
+async function loadCompNiveles(skA, nombreA, skB, nombreB) {
+    const row = document.getElementById('comp-niveles-row');
+    if (row) row.style.display = 'none';
+
+    document.getElementById('comp-niveles-titulo-a').textContent = nombreA;
+    document.getElementById('comp-niveles-titulo-b').textContent = nombreB;
+
+    try {
+        const [dataA, dataB] = await Promise.all([
+            fetch(`/icfes/api/colegio/${skA}/niveles-historico/`).then(r => r.json()),
+            fetch(`/icfes/api/colegio/${skB}/niveles-historico/`).then(r => r.json()),
+        ]);
+
+        if (!Array.isArray(dataA) || !dataA.length || !Array.isArray(dataB) || !dataB.length) {
+            console.warn('[CompNiveles] Sin datos para uno o ambos colegios');
+            return;
+        }
+
+        _compNivelesDataA = dataA;
+        _compNivelesDataB = dataB;
+        _compNivelesMat = 'mat';
+
+        // Reset subject buttons
+        document.querySelectorAll('#comp-niveles-btns button').forEach(b => {
+            b.classList.toggle('btn-primary', b.dataset.mat === 'mat');
+            b.classList.toggle('btn-outline-secondary', b.dataset.mat !== 'mat');
+        });
+
+        if (row) row.style.display = '';
+
+        setTimeout(() => {
+            renderCompNivelesChart(_compNivelesDataA, 'comp-chart-niveles-a', _compNivelesMat, _compNivelesChartA);
+            renderCompNivelesChart(_compNivelesDataB, 'comp-chart-niveles-b', _compNivelesMat, _compNivelesChartB);
+        }, 50);
+
+        // Wire up subject buttons (clone to clear old listeners)
+        document.querySelectorAll('#comp-niveles-btns button').forEach(btn => {
+            const clone = btn.cloneNode(true);
+            btn.parentNode.replaceChild(clone, btn);
+        });
+        document.querySelectorAll('#comp-niveles-btns button').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('#comp-niveles-btns button').forEach(b => {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-outline-secondary');
+                });
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-primary');
+                _compNivelesMat = this.dataset.mat;
+                renderCompNivelesChart(_compNivelesDataA, 'comp-chart-niveles-a', _compNivelesMat, _compNivelesChartA);
+                renderCompNivelesChart(_compNivelesDataB, 'comp-chart-niveles-b', _compNivelesMat, _compNivelesChartB);
+            });
+        });
+
+        console.log('[CompNiveles] ✓ A:', dataA.length, 'años | B:', dataB.length, 'años');
+    } catch (err) {
+        console.error('[CompNiveles] ✗ Error:', err);
+    }
+}
+
+/**
+ * Render a single niveles stacked-bar chart into the given container
+ */
+function renderCompNivelesChart(data, containerId, mat, existingChart) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    const cfg = {
+        mat: { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['mat_pct1', 'mat_pct2', 'mat_pct3', 'mat_pct4'] },
+        lc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['lc_pct1',  'lc_pct2',  'lc_pct3',  'lc_pct4'] },
+        cn:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['cn_pct1',  'cn_pct2',  'cn_pct3',  'cn_pct4'] },
+        sc:  { labels: ['Insuficiente', 'Mínimo', 'Satisfactorio', 'Avanzado'], keys: ['sc_pct1',  'sc_pct2',  'sc_pct3',  'sc_pct4'] },
+        ing: { labels: ['Pre-A1', 'A1', 'A2', 'B1+'],                          keys: ['ing_pct_pre_a1', 'ing_pct_a1', 'ing_pct_a2', 'ing_pct_b1'] },
+    };
+    const { labels, keys } = cfg[mat] || cfg.mat;
+    const anos   = data.map(d => d.ano);
+    const colors = ['#f1416c', '#ffc700', '#17c1e8', '#50cd89'];
+    const series = labels.map((name, i) => ({
+        name,
+        data: data.map(d => d[keys[i]] || 0),
+    }));
+
+    if (existingChart) { try { existingChart.destroy(); } catch (_) {} }
+
+    const chart = new ApexCharts(el, {
+        chart: { type: 'bar', height: 280, stacked: true, stackType: '100%', toolbar: { show: false } },
+        series,
+        xaxis: { categories: anos },
+        colors,
+        dataLabels: {
+            enabled: true,
+            formatter: v => v > 6 ? v.toFixed(0) + '%' : '',
+            style: { fontSize: '10px', colors: ['#fff'] },
+        },
+        plotOptions: { bar: { horizontal: false, columnWidth: '60%' } },
+        legend: { position: 'top', horizontalAlign: 'left' },
+        yaxis: { labels: { formatter: v => v.toFixed(0) + '%' } },
+        tooltip: { y: { formatter: v => v.toFixed(1) + '%' } },
+    });
+    chart.render();
+
+    // Update the module-level reference so destroy() works on next render
+    if (containerId === 'comp-chart-niveles-a') _compNivelesChartA = chart;
+    else _compNivelesChartB = chart;
 }
