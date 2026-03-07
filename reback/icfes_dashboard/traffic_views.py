@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Case, Count, IntegerField, Q, Subquery, Sum, When
+from django.db.models import Avg, Case, Count, IntegerField, Min, Q, Subquery, Sum, When
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import render
 from django.utils import timezone
@@ -92,6 +92,14 @@ def _is_suspicious_path(path):
         "/xmlrpc.php",
     ]
     return any(token in p for token in suspicious_tokens)
+
+
+def _first_seen_label(dt_value, today_start):
+    if not dt_value:
+        return "-"
+    if dt_value >= today_start:
+        return "today"
+    return dt_value.strftime("%Y-%m-%d")
 
 
 @login_required
@@ -421,6 +429,130 @@ def traffic_dashboard(request):
         .order_by("-total")[:20]
     )
 
+    discovered_paths_today_qs = (
+        RailwayTrafficLog.objects.values("path")
+        .annotate(
+            first_seen=Min("timestamp"),
+            hits_today=Sum(
+                Case(
+                    When(timestamp__gte=today_start, timestamp__lt=now, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            human_hits_today=Sum(
+                Case(
+                    When(
+                        timestamp__gte=today_start,
+                        timestamp__lt=now,
+                        bot_category="human_or_other",
+                        then=1,
+                    ),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            bot_hits_today=Sum(
+                Case(
+                    When(
+                        condition=Q(timestamp__gte=today_start)
+                        & Q(timestamp__lt=now)
+                        & ~Q(bot_category="human_or_other"),
+                        then=1,
+                    ),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+        )
+        .filter(first_seen__gte=today_start, hits_today__gt=0)
+        .order_by("-hits_today")[:40]
+    )
+
+    discovered_paths_today = list(discovered_paths_today_qs)
+    discovered_path_keys = [row["path"] for row in discovered_paths_today]
+    source_by_path = {}
+    if discovered_path_keys:
+        source_rows = RailwayTrafficLog.objects.filter(
+            timestamp__gte=today_start,
+            timestamp__lt=now,
+            path__in=discovered_path_keys,
+        ).values("path", "client_ua", "bot_category")
+        tmp = defaultdict(Counter)
+        for row in source_rows:
+            source = _bot_family(row["client_ua"], row["bot_category"])
+            tmp[row["path"]][source] += 1
+        for path_key, counts in tmp.items():
+            source_by_path[path_key] = counts.most_common(1)[0][0] if counts else "-"
+
+    discovered_paths_enriched = []
+    for row in discovered_paths_today[:20]:
+        human_hits = row.get("human_hits_today") or 0
+        bot_hits = row.get("bot_hits_today") or 0
+        discovered_paths_enriched.append(
+            {
+                "path": row["path"],
+                "total": row.get("hits_today") or 0,
+                "first_seen_label": _first_seen_label(row.get("first_seen"), today_start),
+                "type_label": "Human" if human_hits >= bot_hits else "Bot",
+                "source_label": source_by_path.get(row["path"], "Human" if human_hits >= bot_hits else "Other bot"),
+            }
+        )
+
+    discovered_colleges_today = (
+        RailwayTrafficLog.objects.exclude(school_slug="")
+        .values("school_slug")
+        .annotate(
+            first_seen=Min("timestamp"),
+            hits_today=Sum(
+                Case(
+                    When(timestamp__gte=today_start, timestamp__lt=now, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+        )
+        .filter(first_seen__gte=today_start, hits_today__gt=0)
+        .order_by("-hits_today")[:20]
+    )
+
+    crawled_colleges_today_qs = (
+        RailwayTrafficLog.objects.filter(
+            timestamp__gte=today_start,
+            timestamp__lt=now,
+        )
+        .exclude(school_slug="")
+        .exclude(bot_category="human_or_other")
+        .values("school_slug")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:20]
+    )
+    crawled_colleges_today = list(crawled_colleges_today_qs)
+    crawled_slug_keys = [row["school_slug"] for row in crawled_colleges_today]
+    crawler_source_by_slug = {}
+    if crawled_slug_keys:
+        crawl_rows = RailwayTrafficLog.objects.filter(
+            timestamp__gte=today_start,
+            timestamp__lt=now,
+            school_slug__in=crawled_slug_keys,
+        ).exclude(bot_category="human_or_other").values("school_slug", "client_ua", "bot_category")
+        tmp = defaultdict(Counter)
+        for row in crawl_rows:
+            source = _bot_family(row["client_ua"], row["bot_category"])
+            tmp[row["school_slug"]][source] += 1
+        for slug_key, counts in tmp.items():
+            crawler_source_by_slug[slug_key] = counts.most_common(1)[0][0] if counts else "Other bot"
+
+    crawled_colleges_enriched = []
+    for row in crawled_colleges_today:
+        crawled_colleges_enriched.append(
+            {
+                "school_slug": row["school_slug"],
+                "total": row["total"],
+                "bot_type": crawler_source_by_slug.get(row["school_slug"], "Other bot"),
+            }
+        )
+
     alerts_red = []
     alerts_yellow = []
 
@@ -488,6 +620,9 @@ def traffic_dashboard(request):
         "upstream_error_rows": upstream_error_rows,
         "top_ips_1h": top_ips_1h,
         "new_paths_today": new_paths_today,
+        "discovered_paths_today": discovered_paths_enriched,
+        "discovered_colleges_today": discovered_colleges_today,
+        "crawled_colleges_today": crawled_colleges_enriched,
         "new_uas_today": new_uas_today,
         "alerts_red": alerts_red,
         "alerts_yellow": alerts_yellow,

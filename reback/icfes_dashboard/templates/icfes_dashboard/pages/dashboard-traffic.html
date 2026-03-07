@@ -306,6 +306,47 @@
       </div>
 
       <div class="row mt-3">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top colegios descubiertos hoy</h6>
+          <div class="table-responsive" style="max-height:260px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Colegio</th><th class="text-end">Hits</th><th>First seen</th></tr></thead>
+              <tbody>
+                {% for row in discovered_colleges_today %}
+                <tr>
+                  <td><code>{{ row.school_slug }}</code></td>
+                  <td class="text-end">{{ row.hits_today }}</td>
+                  <td>{{ row.first_seen|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-muted">Sin descubrimientos hoy</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Top colegios crawleados hoy</h6>
+          <div class="table-responsive" style="max-height:260px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Colegio</th><th class="text-end">Hits</th><th>Bot type</th></tr></thead>
+              <tbody>
+                {% for row in crawled_colleges_today %}
+                <tr>
+                  <td><code>{{ row.school_slug }}</code></td>
+                  <td class="text-end">{{ row.total }}</td>
+                  <td>{{ row.bot_type }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-muted">Sin crawl de bots hoy</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
         <div class="col-lg-12">
           <h6 class="mb-2">Top campanas UTM</h6>
           <div class="table-responsive">
@@ -434,15 +475,21 @@
 
       <div class="row mt-3">
         <div class="col-lg-12">
-          <h6 class="mb-2">Top paths nuevos de hoy</h6>
+          <h6 class="mb-2">Paths descubiertos hoy</h6>
           <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
-              <thead><tr><th>Path</th><th class="text-end">Hits</th></tr></thead>
+              <thead><tr><th>Path</th><th class="text-end">Hits</th><th>First seen</th><th>Type</th><th>Source</th></tr></thead>
               <tbody>
-                {% for row in new_paths_today %}
-                <tr><td><code>{{ row.path }}</code></td><td class="text-end">{{ row.total }}</td></tr>
+                {% for row in discovered_paths_today %}
+                <tr>
+                  <td><code>{{ row.path }}</code></td>
+                  <td class="text-end">{{ row.total }}</td>
+                  <td>{{ row.first_seen_label }}</td>
+                  <td>{{ row.type_label }}</td>
+                  <td>{{ row.source_label }}</td>
+                </tr>
                 {% empty %}
-                <tr><td colspan="2" class="text-muted">Sin novedades</td></tr>
+                <tr><td colspan="5" class="text-muted">Sin novedades</td></tr>
                 {% endfor %}
               </tbody>
             </table>
