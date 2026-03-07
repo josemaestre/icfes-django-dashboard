@@ -253,8 +253,18 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(r => r.json())
       .then(data => {
         if (data.error) { alert(data.error); return; }
+        console.group(`[Dashboard] Colegio: ${data.info_basica?.nombre_colegio || sk}`);
+        console.log('ultimo_ano keys:', Object.keys(data.ultimo_ano || {}));
+        console.log('potencial:', data.potencial);
+        console.log('calidad:', data.calidad);
+        console.log('prediccion_ingles:', data.prediccion_ingles);
+        console.log('prioridad_ingles:', data.prioridad_ingles);
+        console.log('riesgo:', data.riesgo);
+        console.log('cluster:', data.cluster);
+        console.groupEnd();
         renderSchoolCard(data);
-      });
+      })
+      .catch(err => console.error('[Dashboard] Error cargando resumen:', err));
   }
 
   // Helper: human-readable feature names
@@ -448,6 +458,7 @@ function renderML(potencial, prediccionIngles, prioridadIngles) {
   // --- Potencial Educativo (Global ML) ---
   if (potencial && potencial.clasificacion) {
     hasData = true;
+    console.log('[ML] potencial ✓', potencial.clasificacion, '| exceso:', potencial.exceso, '| pct:', potencial.percentil_exceso);
     const clsMap = {
       'Supera potencial':         { cls: 'border-success text-success', bg: 'bg-success-subtle' },
       'En línea con potencial':   { cls: 'border-primary text-primary', bg: 'bg-primary-subtle' },
@@ -471,11 +482,14 @@ function renderML(potencial, prediccionIngles, prioridadIngles) {
     if (pctEl && potencial.percentil_exceso != null) {
       pctEl.textContent = `Percentil ${potencial.percentil_exceso.toFixed(0)} nacional de exceso`;
     }
+  } else {
+    console.warn('[ML] potencial ✗ sin datos (tabla fct_potencial_educativo puede no estar en prod)', potencial);
   }
 
   // --- Predicción Inglés ---
   if (prediccionIngles && prediccionIngles.ano_prediccion) {
     hasData = true;
+    console.log('[ML] prediccion_ingles ✓', prediccionIngles.tendencia, '| cambio:', prediccionIngles.cambio_predicho);
     const anoEl = document.getElementById('res-ml-prediccion-ano');
     if (anoEl) anoEl.textContent = prediccionIngles.ano_prediccion;
 
@@ -503,18 +517,21 @@ function renderML(potencial, prediccionIngles, prioridadIngles) {
     if (card && cambio != null) {
       card.className = `p-3 rounded-3 border h-100 ${cambio >= 0 ? 'bg-success-subtle' : 'bg-danger-subtle'}`;
     }
+  } else {
+    console.warn('[ML] prediccion_ingles ✗ sin datos (tabla fct_prediccion_ingles puede no estar en prod)', prediccionIngles);
   }
 
   // --- Prioridad de Intervención en Inglés ---
   if (prioridadIngles && prioridadIngles.nivel_prioridad) {
     hasData = true;
+    console.log('[ML] prioridad_ingles ✓', prioridadIngles.nivel_prioridad, '| score:', prioridadIngles.score_prioridad);
     const nivelMap = {
-      'Crítico': { badge: 'bg-danger',   txt: 'text-danger',   bg: 'bg-danger-subtle'  },
-      'Urgente': { badge: 'bg-warning text-dark', txt: 'text-warning', bg: 'bg-warning-subtle' },
-      'Atención': { badge: 'bg-info',    txt: 'text-info',     bg: 'bg-info-subtle'    },
-      'Estable':  { badge: 'bg-success', txt: 'text-success',  bg: 'bg-success-subtle' },
+      'Crítico': { badge: 'bg-danger',            bg: 'bg-danger-subtle'  },
+      'Urgente': { badge: 'bg-warning text-dark', bg: 'bg-warning-subtle' },
+      'Atención': { badge: 'bg-info',             bg: 'bg-info-subtle'    },
+      'Estable':  { badge: 'bg-success',          bg: 'bg-success-subtle' },
     };
-    const cfg = nivelMap[prioridadIngles.nivel_prioridad] || { badge: 'bg-secondary', txt: 'text-secondary', bg: '' };
+    const cfg = nivelMap[prioridadIngles.nivel_prioridad] || { badge: 'bg-secondary', bg: '' };
 
     const card = document.getElementById('res-ml-prioridad-card');
     if (card) card.className = `p-3 rounded-3 border h-100 ${cfg.bg}`;
@@ -529,8 +546,11 @@ function renderML(potencial, prediccionIngles, prioridadIngles) {
       if (prioridadIngles.dim_declive_3y != null)       dims.push(`Declive 3 años: ${prioridadIngles.dim_declive_3y.toFixed(2)}`);
       dimsEl.innerHTML = dims.map(d => `<span class="text-muted">${d}</span>`).join('<br>');
     }
+  } else {
+    console.warn('[ML] prioridad_ingles ✗ sin datos (tabla fct_prioridad_ingles puede no estar en prod)', prioridadIngles);
   }
 
+  console.log('[ML] renderML → hasData:', hasData, '| row visible:', hasData);
   row.style.display = hasData ? '' : 'none';
 }
 
@@ -552,9 +572,13 @@ function renderMaterias(ultimo) {
 
   // Verificar si hay datos de materias
   const hasMaterias = materias.some(m => ultimo[m.key] != null);
-  if (!hasMaterias) { row.style.display = 'none'; return; }
+  if (!hasMaterias) {
+    console.warn('[Materias] ✗ sin puntajes por materia en ultimo_ano', Object.keys(ultimo));
+    row.style.display = 'none'; return;
+  }
 
   container.innerHTML = '';
+  console.log('[Materias] ✓ renderizando', materias.map(m => `${m.label}:${ultimo[m.key]?.toFixed(1)}`).join(' | '));
   materias.forEach(m => {
     const val = ultimo[m.key];
     if (val == null) return;
@@ -606,6 +630,7 @@ function renderCalidad(ultimo, calidad) {
   // --- Tendencia ---
   if (ultimo && ultimo.clasificacion_tendencia) {
     hasData = true;
+    console.log('[Calidad] tendencia ✓', ultimo.clasificacion_tendencia, '| cambio:', ultimo.cambio_absoluto_global);
     const tendencia = ultimo.clasificacion_tendencia;
     const cambio = ultimo.cambio_absoluto_global;
 
@@ -631,17 +656,23 @@ function renderCalidad(ultimo, calidad) {
     if (iconEl)  iconEl.innerHTML = `<i class="bx ${cfg.icon} text-white"></i>`;
   }
 
+  if (!ultimo?.clasificacion_tendencia) console.warn('[Calidad] tendencia ✗', ultimo?.clasificacion_tendencia);
+
   // --- % Avanzado Integral ---
   if (calidad && calidad.pct_avanzado_integral != null) {
     hasData = true;
+    console.log('[Calidad] avanzado ✓', calidad.pct_avanzado_integral + '%');
     const pct = parseFloat(calidad.pct_avanzado_integral);
     const el = document.getElementById('res-calidad-avanzado');
     if (el) el.textContent = `${pct.toFixed(1)}%`;
   }
 
+  if (calidad?.pct_avanzado_integral == null) console.warn('[Calidad] avanzado ✗', calidad);
+
   // --- Inglés B1+ ---
   if (calidad && calidad.ing_pct_b1 != null) {
     hasData = true;
+    console.log('[Calidad] inglés B1+ ✓', calidad.ing_pct_b1 + '%');
     const pct = parseFloat(calidad.ing_pct_b1);
     const el    = document.getElementById('res-calidad-ingles');
     const icon  = document.getElementById('res-calidad-ingles-icon');
@@ -656,6 +687,8 @@ function renderCalidad(ultimo, calidad) {
     }
   }
 
+  if (calidad?.ing_pct_b1 == null) console.warn('[Calidad] inglés B1+ ✗', calidad);
+  console.log('[Calidad] renderCalidad → hasData:', hasData);
   row.style.display = hasData ? '' : 'none';
 }
 
@@ -672,7 +705,11 @@ function loadDashboardNiveles(sk) {
   fetch(`/icfes/api/colegio/${sk}/niveles-historico/`)
     .then(r => r.json())
     .then(data => {
-      if (!Array.isArray(data) || !data.length) return;
+      if (!Array.isArray(data) || !data.length) {
+        console.warn('[Niveles] ✗ sin datos históricos de niveles para sk:', sk, data);
+        return;
+      }
+      console.log('[Niveles] ✓', data.length, 'años disponibles:', data.map(d => d.ano).join(', '));
       if (row) row.style.display = '';
 
       // Forzar materia activa al primer botón
@@ -703,7 +740,7 @@ function loadDashboardNiveles(sk) {
         });
       });
     })
-    .catch(err => console.error('Error loading niveles:', err));
+    .catch(err => console.error('[Niveles] ✗ Error cargando:', err));
 }
 
 function renderDashNivelesChart(data, mat) {
