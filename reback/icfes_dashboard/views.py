@@ -1760,6 +1760,41 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
+    # Predicción de inglés año siguiente (ML)
+    query_prediccion_ingles = """
+        SELECT ano_prediccion,
+               ROUND(avg_ingles_actual, 1)  AS avg_ingles_actual,
+               ROUND(avg_ingles_predicho, 1) AS avg_ingles_predicho,
+               ROUND(cambio_predicho, 1)     AS cambio_predicho,
+               tendencia
+        FROM gold.fct_prediccion_ingles
+        WHERE colegio_bk = (
+            SELECT DISTINCT codigo_dane
+            FROM gold.fct_colegio_historico
+            WHERE colegio_sk = ?
+            LIMIT 1
+        )
+        LIMIT 1
+    """
+
+    # Prioridad de intervención en inglés (ML)
+    query_prioridad_ingles = """
+        SELECT nivel_prioridad,
+               ROUND(score_prioridad, 2)       AS score_prioridad,
+               ROUND(dim_brecha_potencial, 2)  AS dim_brecha_potencial,
+               ROUND(dim_declive_3y, 2)        AS dim_declive_3y,
+               ROUND(dim_nivel_absoluto, 2)    AS dim_nivel_absoluto
+        FROM gold.fct_prioridad_ingles
+        WHERE colegio_bk = (
+            SELECT DISTINCT codigo_dane
+            FROM gold.fct_colegio_historico
+            WHERE colegio_sk = ?
+            LIMIT 1
+        )
+        ORDER BY ano DESC
+        LIMIT 1
+    """
+
     # Potencial Educativo Global (ML)
     query_potencial = """
         SELECT p.clasificacion, p.exceso,
@@ -1818,6 +1853,20 @@ def api_colegio_resumen(request, colegio_sk):
     except Exception:
         pass
 
+    # Predicción inglés - separate try/catch (ML table)
+    df_prediccion_ingles = pd.DataFrame()
+    try:
+        df_prediccion_ingles = execute_query(query_prediccion_ingles, params=[colegio_sk_str])
+    except Exception:
+        pass
+
+    # Prioridad inglés - separate try/catch (ML table)
+    df_prioridad_ingles = pd.DataFrame()
+    try:
+        df_prioridad_ingles = execute_query(query_prioridad_ingles, params=[colegio_sk_str])
+    except Exception:
+        pass
+
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
 
@@ -1859,6 +1908,27 @@ def api_colegio_resumen(request, colegio_sk):
             'ing_pct_b1':            float(row_c['ing_pct_b1'])            if row_c.get('ing_pct_b1')            is not None else None,
         }
 
+    prediccion_ingles_data = {}
+    if not df_prediccion_ingles.empty:
+        row_pi = df_prediccion_ingles.iloc[0]
+        prediccion_ingles_data = {
+            'ano_prediccion':    int(row_pi['ano_prediccion'])         if row_pi.get('ano_prediccion')    is not None else None,
+            'avg_ingles_actual': float(row_pi['avg_ingles_actual'])    if row_pi.get('avg_ingles_actual') is not None else None,
+            'avg_ingles_predicho': float(row_pi['avg_ingles_predicho']) if row_pi.get('avg_ingles_predicho') is not None else None,
+            'cambio_predicho':   float(row_pi['cambio_predicho'])      if row_pi.get('cambio_predicho')   is not None else None,
+            'tendencia':         row_pi.get('tendencia'),
+        }
+
+    prioridad_ingles_data = {}
+    if not df_prioridad_ingles.empty:
+        row_pr = df_prioridad_ingles.iloc[0]
+        prioridad_ingles_data = {
+            'nivel_prioridad':    row_pr.get('nivel_prioridad'),
+            'score_prioridad':    float(row_pr['score_prioridad'])   if row_pr.get('score_prioridad')   is not None else None,
+            'dim_brecha_potencial': float(row_pr['dim_brecha_potencial']) if row_pr.get('dim_brecha_potencial') is not None else None,
+            'dim_declive_3y':     float(row_pr['dim_declive_3y'])    if row_pr.get('dim_declive_3y')    is not None else None,
+        }
+
     resumen = {
         'info_basica': df_basico.to_dict(orient='records')[0],
         'ultimo_ano': df_ultimo.to_dict(orient='records')[0] if not df_ultimo.empty else {},
@@ -1869,6 +1939,8 @@ def api_colegio_resumen(request, colegio_sk):
         'riesgo': riesgo_data,
         'potencial': potencial_data,
         'calidad': calidad_data,
+        'prediccion_ingles': prediccion_ingles_data,
+        'prioridad_ingles': prioridad_ingles_data,
     }
 
     return JsonResponse(resumen, safe=False)

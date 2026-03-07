@@ -356,6 +356,9 @@ document.addEventListener('DOMContentLoaded', function () {
       riesgoRow.style.display = 'none';
     }
 
+    // ML Análisis (potencial, predicción inglés, prioridad)
+    renderML(data.potencial, data.prediccion_ingles, data.prioridad_ingles);
+
     // Puntajes por materia
     renderMaterias(ultimo);
 
@@ -432,6 +435,104 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// ──────────────────────────────────────────────────────────────
+// ML Análisis (Potencial Educativo, Predicción Inglés, Prioridad)
+// ──────────────────────────────────────────────────────────────
+function renderML(potencial, prediccionIngles, prioridadIngles) {
+  const row = document.getElementById('res-ml-row');
+  if (!row) return;
+
+  let hasData = false;
+
+  // --- Potencial Educativo (Global ML) ---
+  if (potencial && potencial.clasificacion) {
+    hasData = true;
+    const clsMap = {
+      'Supera potencial':         { cls: 'border-success text-success', bg: 'bg-success-subtle' },
+      'En línea con potencial':   { cls: 'border-primary text-primary', bg: 'bg-primary-subtle' },
+      'Por debajo del potencial': { cls: 'border-danger text-danger',   bg: 'bg-danger-subtle'  },
+    };
+    const cfg = clsMap[potencial.clasificacion] || { cls: 'border-secondary text-secondary', bg: '' };
+    const card = document.getElementById('res-ml-potencial-card');
+    if (card) card.className = `p-3 rounded-3 border h-100 ${cfg.bg}`;
+
+    const labelEl = document.getElementById('res-ml-potencial-label');
+    if (labelEl) { labelEl.textContent = potencial.clasificacion; labelEl.className = `mb-1 fw-bold ${cfg.cls.split(' ')[1]}`; }
+
+    const exceso = potencial.exceso;
+    const excesoEl = document.getElementById('res-ml-potencial-exceso');
+    if (excesoEl && exceso != null) {
+      const sign = exceso >= 0 ? '+' : '';
+      excesoEl.innerHTML = `<span class="${exceso >= 0 ? 'text-success' : 'text-danger'}">${sign}${exceso.toFixed(1)} pts</span> vs puntaje esperado`;
+    }
+
+    const pctEl = document.getElementById('res-ml-potencial-pct');
+    if (pctEl && potencial.percentil_exceso != null) {
+      pctEl.textContent = `Percentil ${potencial.percentil_exceso.toFixed(0)} nacional de exceso`;
+    }
+  }
+
+  // --- Predicción Inglés ---
+  if (prediccionIngles && prediccionIngles.ano_prediccion) {
+    hasData = true;
+    const anoEl = document.getElementById('res-ml-prediccion-ano');
+    if (anoEl) anoEl.textContent = prediccionIngles.ano_prediccion;
+
+    const cambio = prediccionIngles.cambio_predicho;
+    const cambioEl = document.getElementById('res-ml-prediccion-cambio');
+    if (cambioEl && cambio != null) {
+      const sign = cambio >= 0 ? '+' : '';
+      const cls  = cambio >= 0 ? 'text-success' : 'text-danger';
+      cambioEl.innerHTML = `<span class="${cls}">${sign}${cambio.toFixed(1)} pts</span>`;
+    }
+
+    const tendMap = { 'Mejora': 'text-success', 'Estable': 'text-secondary', 'Declive': 'text-danger' };
+    const tendEl = document.getElementById('res-ml-prediccion-tendencia');
+    if (tendEl && prediccionIngles.tendencia) {
+      const cls = tendMap[prediccionIngles.tendencia] || 'text-secondary';
+      tendEl.innerHTML = `Tendencia: <span class="${cls} fw-medium">${prediccionIngles.tendencia}</span>`;
+    }
+
+    const actualEl = document.getElementById('res-ml-prediccion-actual');
+    if (actualEl && prediccionIngles.avg_ingles_actual != null) {
+      actualEl.textContent = `Actual: ${prediccionIngles.avg_ingles_actual.toFixed(1)} pts → predicho: ${prediccionIngles.avg_ingles_predicho?.toFixed(1)} pts`;
+    }
+
+    const card = document.getElementById('res-ml-prediccion-card');
+    if (card && cambio != null) {
+      card.className = `p-3 rounded-3 border h-100 ${cambio >= 0 ? 'bg-success-subtle' : 'bg-danger-subtle'}`;
+    }
+  }
+
+  // --- Prioridad de Intervención en Inglés ---
+  if (prioridadIngles && prioridadIngles.nivel_prioridad) {
+    hasData = true;
+    const nivelMap = {
+      'Crítico': { badge: 'bg-danger',   txt: 'text-danger',   bg: 'bg-danger-subtle'  },
+      'Urgente': { badge: 'bg-warning text-dark', txt: 'text-warning', bg: 'bg-warning-subtle' },
+      'Atención': { badge: 'bg-info',    txt: 'text-info',     bg: 'bg-info-subtle'    },
+      'Estable':  { badge: 'bg-success', txt: 'text-success',  bg: 'bg-success-subtle' },
+    };
+    const cfg = nivelMap[prioridadIngles.nivel_prioridad] || { badge: 'bg-secondary', txt: 'text-secondary', bg: '' };
+
+    const card = document.getElementById('res-ml-prioridad-card');
+    if (card) card.className = `p-3 rounded-3 border h-100 ${cfg.bg}`;
+
+    const badgeEl = document.getElementById('res-ml-prioridad-badge');
+    if (badgeEl) badgeEl.innerHTML = `<span class="badge rounded-pill fs-6 px-3 ${cfg.badge}">${prioridadIngles.nivel_prioridad}</span>`;
+
+    const dimsEl = document.getElementById('res-ml-prioridad-dims');
+    if (dimsEl) {
+      const dims = [];
+      if (prioridadIngles.dim_brecha_potencial != null) dims.push(`Brecha potencial: ${prioridadIngles.dim_brecha_potencial.toFixed(2)}`);
+      if (prioridadIngles.dim_declive_3y != null)       dims.push(`Declive 3 años: ${prioridadIngles.dim_declive_3y.toFixed(2)}`);
+      dimsEl.innerHTML = dims.map(d => `<span class="text-muted">${d}</span>`).join('<br>');
+    }
+  }
+
+  row.style.display = hasData ? '' : 'none';
+}
 
 // ──────────────────────────────────────────────────────────────
 // Puntaje por Materia
