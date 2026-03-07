@@ -31,6 +31,32 @@
 
   <div class="card mb-3">
     <div class="card-body">
+      <h5 class="card-title mb-3">Resumen Ejecutivo de Totales</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="border rounded p-3 text-center">
+            <div class="text-muted mb-1">Total requests</div>
+            <div class="display-6 fw-semibold">{{ total_requests }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="border rounded p-3 text-center">
+            <div class="text-muted mb-1">Total humanos</div>
+            <div class="display-6 fw-semibold">{{ human_count }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="border rounded p-3 text-center">
+            <div class="text-muted mb-1">Total bots</div>
+            <div class="display-6 fw-semibold">{{ bot_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
       <h5 class="card-title mb-3">Executive</h5>
 
       {% if alerts_red or alerts_yellow %}
@@ -84,17 +110,7 @@
           <canvas id="chart-status-stacked" height="110"></canvas>
         </div>
         <div class="col-lg-4">
-          <h6 class="mb-2">Totales del periodo</h6>
-          <div class="table-responsive mb-2">
-            <table class="table table-sm mb-0">
-              <thead><tr><th>Metrica</th><th class="text-end">Valor</th></tr></thead>
-              <tbody>
-                <tr><td>Total requests</td><td class="text-end">{{ total_requests }}</td></tr>
-                <tr><td>Total humanos</td><td class="text-end">{{ human_count }}</td></tr>
-                <tr><td>Total bots</td><td class="text-end">{{ bot_count }}</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <h6 class="mb-2">Distribucion humanos vs bots</h6>
           <canvas id="chart-pie-totals" height="110"></canvas>
         </div>
       </div>
@@ -470,6 +486,7 @@
 {% endblock page_content %}
 
 {% block extra_javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
   (function() {
     if (typeof Chart === "undefined") return;
