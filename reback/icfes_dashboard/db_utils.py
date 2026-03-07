@@ -608,165 +608,125 @@ def get_comparacion_colegios(colegio_a_sk, colegio_b_sk, ano=2024):
     Returns:
         dict: Datos comparativos de ambos colegios con diferencias e insights
     """
+    # Use fct_colegio_historico (pre-aggregated, 335K rows) instead of fact_icfes_analytics
+    # (17.7M rows). Fallback to the most recent available year if `ano` has no data.
     query = """
     WITH colegio_a_data AS (
-        SELECT 
-            f.colegio_sk,
-            f.ano,
-            COUNT(DISTINCT f.estudiante_sk) as total_estudiantes,
-            AVG(f.punt_global) as puntaje_global,
-            AVG(f.punt_lectura_critica) as lectura,
-            AVG(f.punt_matematicas) as matematicas,
-            AVG(f.punt_c_naturales) as ciencias,
-            AVG(f.punt_sociales_ciudadanas) as sociales,
-            AVG(f.punt_ingles) as ingles,
-            AVG(f.global_zscore) as z_score
-        FROM gold.fact_icfes_analytics f
-        WHERE f.colegio_sk = ? AND f.ano = ?
-        GROUP BY f.colegio_sk, f.ano
+        SELECT
+            h.colegio_sk,
+            h.ano,
+            h.total_estudiantes,
+            h.avg_punt_global               AS puntaje_global,
+            h.avg_punt_lectura_critica      AS lectura,
+            h.avg_punt_matematicas          AS matematicas,
+            h.avg_punt_c_naturales          AS ciencias,
+            h.avg_punt_sociales_ciudadanas  AS sociales,
+            h.avg_punt_ingles               AS ingles,
+            ROUND(h.brecha_nacional_global / 7.5, 3) AS z_score,
+            h.promedio_nacional_global,
+            h.nombre_colegio,
+            h.municipio,
+            h.departamento,
+            h.sector,
+            h.codigo_dane
+        FROM gold.fct_colegio_historico h
+        WHERE h.colegio_sk = ?
+        ORDER BY CASE WHEN h.ano = ? THEN 1 ELSE 0 END DESC, h.ano DESC
+        LIMIT 1
     ),
     colegio_b_data AS (
-        SELECT 
-            f.colegio_sk,
-            f.ano,
-            COUNT(DISTINCT f.estudiante_sk) as total_estudiantes,
-            AVG(f.punt_global) as puntaje_global,
-            AVG(f.punt_lectura_critica) as lectura,
-            AVG(f.punt_matematicas) as matematicas,
-            AVG(f.punt_c_naturales) as ciencias,
-            AVG(f.punt_sociales_ciudadanas) as sociales,
-            AVG(f.punt_ingles) as ingles,
-            AVG(f.global_zscore) as z_score
-        FROM gold.fact_icfes_analytics f
-        WHERE f.colegio_sk = ? AND f.ano = ?
-        GROUP BY f.colegio_sk, f.ano
-    ),
-    promedios_nacionales AS (
-        SELECT 
-            ano,
-            AVG(punt_global) as promedio_nacional_global
-        FROM gold.fact_icfes_analytics
-        WHERE ano = ?
-        GROUP BY ano
-    ),
-    metadata_a AS (
-        SELECT DISTINCT
-            colegio_sk,
-            nombre_colegio,
-            municipio,
-            departamento,
-            sector,
-            codigo_dane
-        FROM gold.fct_colegio_historico
-        WHERE colegio_sk = ?
-        LIMIT 1
-    ),
-    metadata_b AS (
-        SELECT DISTINCT
-            colegio_sk,
-            nombre_colegio,
-            municipio,
-            departamento,
-            sector,
-            codigo_dane
-        FROM gold.fct_colegio_historico
-        WHERE colegio_sk = ?
+        SELECT
+            h.colegio_sk,
+            h.ano,
+            h.total_estudiantes,
+            h.avg_punt_global               AS puntaje_global,
+            h.avg_punt_lectura_critica      AS lectura,
+            h.avg_punt_matematicas          AS matematicas,
+            h.avg_punt_c_naturales          AS ciencias,
+            h.avg_punt_sociales_ciudadanas  AS sociales,
+            h.avg_punt_ingles               AS ingles,
+            ROUND(h.brecha_nacional_global / 7.5, 3) AS z_score,
+            h.promedio_nacional_global,
+            h.nombre_colegio,
+            h.municipio,
+            h.departamento,
+            h.sector,
+            h.codigo_dane
+        FROM gold.fct_colegio_historico h
+        WHERE h.colegio_sk = ?
+        ORDER BY CASE WHEN h.ano = ? THEN 1 ELSE 0 END DESC, h.ano DESC
         LIMIT 1
     )
-    SELECT 
-        a.*,
-        ma.nombre_colegio,
-        ma.municipio,
-        ma.departamento,
-        ma.sector,
-        ma.codigo_dane,
-        b.colegio_sk as b_colegio_sk,
-        b.total_estudiantes as b_total_estudiantes,
-        b.puntaje_global as b_puntaje_global,
-        b.lectura as b_lectura,
-        b.matematicas as b_matematicas,
-        b.ciencias as b_ciencias,
-        b.sociales as b_sociales,
-        b.ingles as b_ingles,
-        b.z_score as b_z_score,
-        mb.nombre_colegio as b_nombre_colegio,
-        mb.municipio as b_municipio,
-        mb.departamento as b_departamento,
-        mb.sector as b_sector,
-        mb.codigo_dane as b_codigo_dane,
-        pn.promedio_nacional_global,
-        -- Excellence indicators for colegio A (using scalar subqueries)
-        (SELECT i.pct_excelencia_integral 
+    SELECT
+        a.colegio_sk,
+        a.ano,
+        a.total_estudiantes,
+        a.puntaje_global,
+        a.lectura,
+        a.matematicas,
+        a.ciencias,
+        a.sociales,
+        a.ingles,
+        a.z_score,
+        a.nombre_colegio,
+        a.municipio,
+        a.departamento,
+        a.sector,
+        a.codigo_dane,
+        b.colegio_sk                        AS b_colegio_sk,
+        b.total_estudiantes                 AS b_total_estudiantes,
+        b.puntaje_global                    AS b_puntaje_global,
+        b.lectura                           AS b_lectura,
+        b.matematicas                       AS b_matematicas,
+        b.ciencias                          AS b_ciencias,
+        b.sociales                          AS b_sociales,
+        b.ingles                            AS b_ingles,
+        b.z_score                           AS b_z_score,
+        b.nombre_colegio                    AS b_nombre_colegio,
+        b.municipio                         AS b_municipio,
+        b.departamento                      AS b_departamento,
+        b.sector                            AS b_sector,
+        b.codigo_dane                       AS b_codigo_dane,
+        a.promedio_nacional_global,
+        -- Indicadores de excelencia colegio A
+        (SELECT i.pct_excelencia_integral
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = ma.codigo_dane AND i.ano = ?
-         LIMIT 1) as a_excelencia_integral,
-        (SELECT i.pct_competencia_satisfactoria_integral 
+         WHERE i.colegio_bk = a.codigo_dane AND i.ano = a.ano LIMIT 1) AS a_excelencia_integral,
+        (SELECT i.pct_competencia_satisfactoria_integral
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = ma.codigo_dane AND i.ano = ?
-         LIMIT 1) as a_competencia_satisfactoria,
-        (SELECT i.pct_perfil_stem_avanzado 
+         WHERE i.colegio_bk = a.codigo_dane AND i.ano = a.ano LIMIT 1) AS a_competencia_satisfactoria,
+        (SELECT i.pct_perfil_stem_avanzado
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = ma.codigo_dane AND i.ano = ?
-         LIMIT 1) as a_perfil_stem,
-        (SELECT i.pct_perfil_humanistico_avanzado 
+         WHERE i.colegio_bk = a.codigo_dane AND i.ano = a.ano LIMIT 1) AS a_perfil_stem,
+        (SELECT i.pct_perfil_humanistico_avanzado
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = ma.codigo_dane AND i.ano = ?
-         LIMIT 1) as a_perfil_humanistico,
-        (SELECT i.pct_riesgo_alto 
+         WHERE i.colegio_bk = a.codigo_dane AND i.ano = a.ano LIMIT 1) AS a_perfil_humanistico,
+        (SELECT i.pct_riesgo_alto
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = ma.codigo_dane AND i.ano = ?
-         LIMIT 1) as a_riesgo_alto,
-        -- Excellence indicators for colegio B (using scalar subqueries)
-        (SELECT i.pct_excelencia_integral 
+         WHERE i.colegio_bk = a.codigo_dane AND i.ano = a.ano LIMIT 1) AS a_riesgo_alto,
+        -- Indicadores de excelencia colegio B
+        (SELECT i.pct_excelencia_integral
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = mb.codigo_dane AND i.ano = ?
-         LIMIT 1) as b_excelencia_integral,
-        (SELECT i.pct_competencia_satisfactoria_integral 
+         WHERE i.colegio_bk = b.codigo_dane AND i.ano = b.ano LIMIT 1) AS b_excelencia_integral,
+        (SELECT i.pct_competencia_satisfactoria_integral
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = mb.codigo_dane AND i.ano = ?
-         LIMIT 1) as b_competencia_satisfactoria,
-        (SELECT i.pct_perfil_stem_avanzado 
+         WHERE i.colegio_bk = b.codigo_dane AND i.ano = b.ano LIMIT 1) AS b_competencia_satisfactoria,
+        (SELECT i.pct_perfil_stem_avanzado
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = mb.codigo_dane AND i.ano = ?
-         LIMIT 1) as b_perfil_stem,
-        (SELECT i.pct_perfil_humanistico_avanzado 
+         WHERE i.colegio_bk = b.codigo_dane AND i.ano = b.ano LIMIT 1) AS b_perfil_stem,
+        (SELECT i.pct_perfil_humanistico_avanzado
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = mb.codigo_dane AND i.ano = ?
-         LIMIT 1) as b_perfil_humanistico,
-        (SELECT i.pct_riesgo_alto 
+         WHERE i.colegio_bk = b.codigo_dane AND i.ano = b.ano LIMIT 1) AS b_perfil_humanistico,
+        (SELECT i.pct_riesgo_alto
          FROM gold.fct_indicadores_desempeno i
-         WHERE i.colegio_bk = mb.codigo_dane AND i.ano = ?
-         LIMIT 1) as b_riesgo_alto
+         WHERE i.colegio_bk = b.codigo_dane AND i.ano = b.ano LIMIT 1) AS b_riesgo_alto
     FROM colegio_a_data a
     CROSS JOIN colegio_b_data b
-    LEFT JOIN promedios_nacionales pn ON a.ano = pn.ano
-    LEFT JOIN metadata_a ma ON a.colegio_sk = ma.colegio_sk
-    LEFT JOIN metadata_b mb ON b.colegio_sk = mb.colegio_sk
     """
-    
-    # Parameters: colegio_a_sk, ano (for colegio_a_data), 
-    #             colegio_b_sk, ano (for colegio_b_data), 
-    #             ano (for promedios_nacionales),
-    #             colegio_a_sk (for metadata_a),
-    #             colegio_b_sk (for metadata_b),
-    #             ano (5 times for each indicator subquery for A),
-    #             ano (5 times for each indicator subquery for B)
+
     params = [
-        colegio_a_sk, ano,  # colegio_a_data
-        colegio_b_sk, ano,  # colegio_b_data
-        ano,                # promedios_nacionales
-        colegio_a_sk,       # metadata_a
-        colegio_b_sk,       # metadata_b
-        ano,  # a_excelencia_integral
-        ano,  # a_competencia_satisfactoria
-        ano,  # a_perfil_stem
-        ano,  # a_perfil_humanistico
-        ano,  # a_riesgo_alto
-        ano,  # b_excelencia_integral
-        ano,  # b_competencia_satisfactoria
-        ano,  # b_perfil_stem
-        ano,  # b_perfil_humanistico
-        ano   # b_riesgo_alto
+        colegio_a_sk, ano,  # colegio_a_data (con fallback)
+        colegio_b_sk, ano,  # colegio_b_data (con fallback)
     ]
     
     df = execute_query(query, params)
@@ -856,7 +816,7 @@ def get_comparacion_colegios(colegio_a_sk, colegio_b_sk, ano=2024):
     insights = _generar_insights_comparacion(colegio_a, colegio_b, diferencias)
     
     return {
-        'ano': int(ano),
+        'ano': int(row['ano']),  # año real usado (puede diferir del solicitado)
         'colegio_a': colegio_a,
         'colegio_b': colegio_b,
         'diferencias': diferencias,
