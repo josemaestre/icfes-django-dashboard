@@ -77,6 +77,38 @@
         <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">P99 (ms)</small><div class="h5 mb-0">{{ p99_duration|default:"-" }}</div></div></div>
         <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Promedio (ms)</small><div class="h5 mb-0">{{ avg_duration|default:"-" }}</div></div></div>
       </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-8">
+          <h6 class="mb-2">Estados HTTP por dia (apilado)</h6>
+          <canvas id="chart-status-stacked" height="110"></canvas>
+        </div>
+        <div class="col-lg-4">
+          <h6 class="mb-2">Totales del periodo</h6>
+          <div class="table-responsive mb-2">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Metrica</th><th class="text-end">Valor</th></tr></thead>
+              <tbody>
+                <tr><td>Total requests</td><td class="text-end">{{ total_requests }}</td></tr>
+                <tr><td>Total humanos</td><td class="text-end">{{ human_count }}</td></tr>
+                <tr><td>Total bots</td><td class="text-end">{{ bot_count }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <canvas id="chart-pie-totals" height="110"></canvas>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Totales apilados (humano + bots)</h6>
+          <canvas id="chart-total-stacked" height="120"></canvas>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Linea diaria (total vs humanos vs bots)</h6>
+          <canvas id="chart-line-traffic" height="120"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -236,6 +268,29 @@
 
       <div class="row mt-3">
         <div class="col-lg-12">
+          <h6 class="mb-2">Detalle completo de bots (literal User-Agent)</h6>
+          <div class="table-responsive" style="max-height:360px;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>User-Agent completo</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error %</th></tr></thead>
+              <tbody>
+                {% for row in all_bot_user_agents %}
+                <tr>
+                  <td style="word-break:break-all;">{{ row.client_ua }}</td>
+                  <td class="text-end">{{ row.total }}</td>
+                  <td class="text-end">{{ row.p95_ms|default:"-" }}</td>
+                  <td class="text-end">{{ row.error_rate }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">Sin bots detectados</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-12">
           <h6 class="mb-2">Top campanas UTM</h6>
           <div class="table-responsive">
             <table class="table table-sm mb-0">
@@ -362,7 +417,7 @@
       </div>
 
       <div class="row mt-3">
-        <div class="col-lg-6">
+        <div class="col-lg-12">
           <h6 class="mb-2">Top paths nuevos de hoy</h6>
           <div class="table-responsive" style="max-height:260px;">
             <table class="table table-sm mb-0">
@@ -377,23 +432,149 @@
             </table>
           </div>
         </div>
-        <div class="col-lg-6">
-          <h6 class="mb-2">Top User-Agents nuevos de hoy</h6>
-          <div class="table-responsive" style="max-height:260px;">
-            <table class="table table-sm mb-0">
-              <thead><tr><th>User-Agent</th><th class="text-end">Hits</th></tr></thead>
-              <tbody>
-                {% for row in new_uas_today %}
-                <tr><td>{{ row.client_ua|truncatechars:90 }}</td><td class="text-end">{{ row.total }}</td></tr>
-                {% empty %}
-                <tr><td colspan="2" class="text-muted">Sin novedades</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3 mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Top User-Agents nuevos de hoy (literal completo)</h5>
+      <div class="table-responsive" style="max-height:420px;">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>User-Agent completo</th><th class="text-end">Hits</th></tr></thead>
+          <tbody>
+            {% for row in new_uas_today %}
+            <tr>
+              <td style="word-break:break-all;">{{ row.client_ua }}</td>
+              <td class="text-end">{{ row.total }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-muted">Sin novedades</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
+
+{{ daily_status_labels|json_script:"daily-status-labels" }}
+{{ daily_status_2xx|json_script:"daily-status-2xx" }}
+{{ daily_status_3xx|json_script:"daily-status-3xx" }}
+{{ daily_status_4xx|json_script:"daily-status-4xx" }}
+{{ daily_status_5xx|json_script:"daily-status-5xx" }}
+{{ daily_split_labels|json_script:"daily-split-labels" }}
+{{ daily_split_total|json_script:"daily-split-total" }}
+{{ daily_split_humans|json_script:"daily-split-humans" }}
+{{ daily_split_bots|json_script:"daily-split-bots" }}
 {% endblock page_content %}
+
+{% block extra_javascript %}
+<script>
+  (function() {
+    if (typeof Chart === "undefined") return;
+
+    function readJson(id) {
+      const node = document.getElementById(id);
+      return node ? JSON.parse(node.textContent) : [];
+    }
+
+    const statusLabels = readJson("daily-status-labels");
+    const status2xx = readJson("daily-status-2xx");
+    const status3xx = readJson("daily-status-3xx");
+    const status4xx = readJson("daily-status-4xx");
+    const status5xx = readJson("daily-status-5xx");
+
+    const splitLabels = readJson("daily-split-labels");
+    const splitTotal = readJson("daily-split-total");
+    const splitHumans = readJson("daily-split-humans");
+    const splitBots = readJson("daily-split-bots");
+
+    const statusCtx = document.getElementById("chart-status-stacked");
+    if (statusCtx) {
+      new Chart(statusCtx, {
+        type: "bar",
+        data: {
+          labels: statusLabels,
+          datasets: [
+            { label: "2xx", data: status2xx, backgroundColor: "rgba(25, 135, 84, 0.8)" },
+            { label: "3xx", data: status3xx, backgroundColor: "rgba(13, 202, 240, 0.8)" },
+            { label: "4xx", data: status4xx, backgroundColor: "rgba(255, 193, 7, 0.8)" },
+            { label: "5xx", data: status5xx, backgroundColor: "rgba(220, 53, 69, 0.85)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    const totalStackedCtx = document.getElementById("chart-total-stacked");
+    if (totalStackedCtx) {
+      new Chart(totalStackedCtx, {
+        type: "bar",
+        data: {
+          labels: ["Totales del periodo"],
+          datasets: [
+            { label: "Humanos", data: [{{ human_count|default:0 }}], backgroundColor: "rgba(54, 162, 235, 0.85)" },
+            { label: "Bots", data: [{{ bot_count|default:0 }}], backgroundColor: "rgba(255, 99, 132, 0.85)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    const lineCtx = document.getElementById("chart-line-traffic");
+    if (lineCtx) {
+      new Chart(lineCtx, {
+        type: "line",
+        data: {
+          labels: splitLabels,
+          datasets: [
+            { label: "Total", data: splitTotal, borderColor: "rgba(13, 110, 253, 0.9)", backgroundColor: "rgba(13,110,253,0.2)", tension: 0.2 },
+            { label: "Humanos", data: splitHumans, borderColor: "rgba(25, 135, 84, 0.9)", backgroundColor: "rgba(25,135,84,0.2)", tension: 0.2 },
+            { label: "Bots", data: splitBots, borderColor: "rgba(220, 53, 69, 0.9)", backgroundColor: "rgba(220,53,69,0.2)", tension: 0.2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    const pieCtx = document.getElementById("chart-pie-totals");
+    if (pieCtx) {
+      new Chart(pieCtx, {
+        type: "pie",
+        data: {
+          labels: ["Humanos", "Bots"],
+          datasets: [{
+            data: [{{ human_count|default:0 }}, {{ bot_count|default:0 }}],
+            backgroundColor: ["rgba(54, 162, 235, 0.85)", "rgba(255, 99, 132, 0.85)"]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+  })();
+</script>
+{% endblock extra_javascript %}

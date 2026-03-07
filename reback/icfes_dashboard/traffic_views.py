@@ -3,10 +3,11 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Subquery
+from django.db.models import Avg, Case, Count, IntegerField, Q, Subquery, Sum, When
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import render
 from django.utils import timezone
+from django.db.models.functions import TruncDate
 
 from icfes_dashboard.models import RailwayTrafficLog
 
@@ -155,6 +156,65 @@ def traffic_dashboard(request):
         .order_by("-total")[:10]
     )
 
+    daily_status = (
+        base_qs.annotate(day=TruncDate("timestamp"))
+        .values("day")
+        .annotate(
+            s2xx=Sum(
+                Case(
+                    When(http_status__gte=200, http_status__lt=300, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            s3xx=Sum(
+                Case(
+                    When(http_status__gte=300, http_status__lt=400, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            s4xx=Sum(
+                Case(
+                    When(http_status__gte=400, http_status__lt=500, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            s5xx=Sum(
+                Case(
+                    When(http_status__gte=500, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+        )
+        .order_by("day")
+    )
+
+    daily_traffic_split = (
+        base_qs.annotate(day=TruncDate("timestamp"))
+        .values("day")
+        .annotate(
+            total=Count("id"),
+            humans=Sum(
+                Case(
+                    When(bot_category="human_or_other", then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            bots=Sum(
+                Case(
+                    When(~Q(bot_category="human_or_other"), then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+        )
+        .order_by("day")
+    )
+
     top_paths = (
         base_qs.values("path")
         .annotate(total=Count("id"))
@@ -219,6 +279,7 @@ def traffic_dashboard(request):
     minute_stats = defaultdict(lambda: {"requests": 0, "durations": [], "s4xx": 0, "s5xx": 0})
     group_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0})
     bot_family_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0, "paths": Counter()})
+    bot_ua_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0})
     suspicious_counter = Counter()
     upstream_error_counter = Counter()
 
@@ -254,6 +315,15 @@ def traffic_dashboard(request):
         if duration is not None:
             b["durations"].append(duration)
         b["paths"][path] += 1
+
+        if family != "Human":
+            ua_literal = (row["client_ua"] or "").strip() or "(empty ua)"
+            ua_stats = bot_ua_stats[ua_literal]
+            ua_stats["requests"] += 1
+            if status >= 400:
+                ua_stats["errors"] += 1
+            if duration is not None:
+                ua_stats["durations"].append(duration)
 
         if _is_suspicious_path(path):
             suspicious_counter[path] += 1
@@ -296,6 +366,17 @@ def traffic_dashboard(request):
                 "p95_ms": _percentile(data["durations"], 0.95),
                 "error_rate": _safe_pct(data["errors"], data["requests"]),
                 "top_path": top_path,
+            }
+        )
+
+    all_bot_user_agents = []
+    for ua_literal, data in sorted(bot_ua_stats.items(), key=lambda x: x[1]["requests"], reverse=True):
+        all_bot_user_agents.append(
+            {
+                "client_ua": ua_literal,
+                "total": data["requests"],
+                "p95_ms": _percentile(data["durations"], 0.95),
+                "error_rate": _safe_pct(data["errors"], data["requests"]),
             }
         )
 
@@ -357,6 +438,17 @@ def traffic_dashboard(request):
     if requests_1h and prev_1h and requests_1h > prev_1h * 2:
         alerts_yellow.append("spike de trafico >2x vs hora anterior")
 
+    daily_status_labels = [row["day"].strftime("%Y-%m-%d") for row in daily_status]
+    daily_status_2xx = [row["s2xx"] or 0 for row in daily_status]
+    daily_status_3xx = [row["s3xx"] or 0 for row in daily_status]
+    daily_status_4xx = [row["s4xx"] or 0 for row in daily_status]
+    daily_status_5xx = [row["s5xx"] or 0 for row in daily_status]
+
+    daily_split_labels = [row["day"].strftime("%Y-%m-%d") for row in daily_traffic_split]
+    daily_split_total = [row["total"] or 0 for row in daily_traffic_split]
+    daily_split_humans = [row["humans"] or 0 for row in daily_traffic_split]
+    daily_split_bots = [row["bots"] or 0 for row in daily_traffic_split]
+
     context = {
         "days": days_int,
         "since": since,
@@ -381,6 +473,7 @@ def traffic_dashboard(request):
         "p99_duration": p99_duration,
         "status_counts": status_counts,
         "bot_counts": bot_counts,
+        "all_bot_user_agents": all_bot_user_agents,
         "top_paths": top_paths,
         "top_slow_paths": top_slow_paths,
         "top_school_slugs": top_school_slugs,
@@ -398,6 +491,15 @@ def traffic_dashboard(request):
         "new_uas_today": new_uas_today,
         "alerts_red": alerts_red,
         "alerts_yellow": alerts_yellow,
+        "daily_status_labels": daily_status_labels,
+        "daily_status_2xx": daily_status_2xx,
+        "daily_status_3xx": daily_status_3xx,
+        "daily_status_4xx": daily_status_4xx,
+        "daily_status_5xx": daily_status_5xx,
+        "daily_split_labels": daily_split_labels,
+        "daily_split_total": daily_split_total,
+        "daily_split_humans": daily_split_humans,
+        "daily_split_bots": daily_split_bots,
     }
     return render(request, "icfes_dashboard/pages/dashboard-traffic.html", context)
 
