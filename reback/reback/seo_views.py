@@ -16,6 +16,22 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Allow: /",
+        "",
+        # Private/product areas that should not be crawled.
+        "Disallow: /admin/",
+        "Disallow: /accounts/",
+        "Disallow: /users/",
+        "Disallow: /payments/",
+        "Disallow: /dashboard/",
+        "Disallow: /app/",
+        "",
+        # Programmatic/data endpoints that don't add search value.
+        "Disallow: /icfes/api/",
+        "Disallow: /icfes/export/",
+        "Disallow: /email-graphs/",
+        "Disallow: /social-card/",
+        "Disallow: /*.map$",
+        "",
         f"Sitemap: {base}/sitemap.xml",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
