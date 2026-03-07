@@ -22,6 +22,21 @@ Portal web conectado a un data warehouse DuckDB que expone:
 
 ---
 
+## Logs & Traffic Analytics
+
+El proyecto incluye un módulo de analítica de tráfico en producción:
+
+- captura realtime de requests en Railway
+- almacenamiento en Postgres (`icfes_dashboard_railwaytrafficlog`)
+- dashboard operativo en `/icfes/trafico/`
+- clasificación de tráfico humano vs bots (SEO/IA/social)
+
+Documentación completa del proceso:
+
+- [`docs/TRAFFIC_LOG_ANALYTICS.md`](docs/TRAFFIC_LOG_ANALYTICS.md)
+
+---
+
 ## Arquitectura del sistema completo
 
 ```
