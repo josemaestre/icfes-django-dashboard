@@ -1671,6 +1671,8 @@ def api_colegio_resumen(request, colegio_sk):
             WHERE colegio_sk = ?
         )
         SELECT h.ano, h.total_estudiantes, h.avg_punt_global,
+               h.avg_punt_matematicas, h.avg_punt_lectura_critica,
+               h.avg_punt_c_naturales, h.avg_punt_sociales_ciudadanas, h.avg_punt_ingles,
                h.ranking_nacional, h.ranking_municipal,
                h.cambio_absoluto_global, h.cambio_porcentual_global,
                h.clasificacion_tendencia
@@ -1743,6 +1745,21 @@ def api_colegio_resumen(request, colegio_sk):
         LIMIT 1
     """
 
+    # Indicadores de calidad (último año disponible)
+    query_calidad = """
+        SELECT ROUND(pct_excelencia_integral, 1) AS pct_avanzado_integral,
+               ROUND(ing_pct_b1, 1)              AS ing_pct_b1
+        FROM gold.fct_indicadores_desempeno
+        WHERE colegio_bk = (
+            SELECT DISTINCT codigo_dane
+            FROM gold.fct_colegio_historico
+            WHERE colegio_sk = ?
+            LIMIT 1
+        )
+        ORDER BY ano DESC
+        LIMIT 1
+    """
+
     # Potencial Educativo Global (ML)
     query_potencial = """
         SELECT p.clasificacion, p.exceso,
@@ -1794,6 +1811,13 @@ def api_colegio_resumen(request, colegio_sk):
     except Exception:
         pass
 
+    # Indicadores de calidad - separate try/catch
+    df_calidad = pd.DataFrame()
+    try:
+        df_calidad = execute_query(query_calidad, params=[colegio_sk_str])
+    except Exception:
+        pass
+
     if df_basico.empty:
         return JsonResponse({'error': 'Colegio no encontrado'}, status=404)
 
@@ -1827,6 +1851,14 @@ def api_colegio_resumen(request, colegio_sk):
             'score_esperado':         round(float(row_p['score_esperado']), 2) if row_p.get('score_esperado') is not None else None,
         }
 
+    calidad_data = {}
+    if not df_calidad.empty:
+        row_c = df_calidad.iloc[0]
+        calidad_data = {
+            'pct_avanzado_integral': float(row_c['pct_avanzado_integral']) if row_c.get('pct_avanzado_integral') is not None else None,
+            'ing_pct_b1':            float(row_c['ing_pct_b1'])            if row_c.get('ing_pct_b1')            is not None else None,
+        }
+
     resumen = {
         'info_basica': df_basico.to_dict(orient='records')[0],
         'ultimo_ano': df_ultimo.to_dict(orient='records')[0] if not df_ultimo.empty else {},
@@ -1836,6 +1868,7 @@ def api_colegio_resumen(request, colegio_sk):
         'cluster': df_cluster.to_dict(orient='records')[0] if not df_cluster.empty else {},
         'riesgo': riesgo_data,
         'potencial': potencial_data,
+        'calidad': calidad_data,
     }
 
     return JsonResponse(resumen, safe=False)

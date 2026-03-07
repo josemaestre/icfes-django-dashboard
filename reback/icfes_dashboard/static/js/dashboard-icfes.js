@@ -356,6 +356,12 @@ document.addEventListener('DOMContentLoaded', function () {
       riesgoRow.style.display = 'none';
     }
 
+    // Puntajes por materia
+    renderMaterias(ultimo);
+
+    // Indicadores de calidad (tendencia, avanzado, inglés B1+)
+    renderCalidad(ultimo, data.calidad);
+
     // Link detalle completo
     const btnLink = document.getElementById('btn-ver-detalle-completo');
     btnLink.href = `/icfes/colegio/?sk=${info.colegio_sk}`;
@@ -426,6 +432,131 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// ──────────────────────────────────────────────────────────────
+// Puntaje por Materia
+// ──────────────────────────────────────────────────────────────
+function renderMaterias(ultimo) {
+  const row = document.getElementById('res-materias-row');
+  const container = document.getElementById('res-materias-cards');
+  if (!row || !container || !ultimo) return;
+
+  const materias = [
+    { key: 'avg_punt_matematicas',         label: 'Matemáticas',   icon: 'bx-math',          umbral_alto: 55, umbral_bajo: 43 },
+    { key: 'avg_punt_lectura_critica',     label: 'Lectura',       icon: 'bx-book-reader',   umbral_alto: 55, umbral_bajo: 43 },
+    { key: 'avg_punt_c_naturales',         label: 'C. Naturales',  icon: 'bx-leaf',          umbral_alto: 55, umbral_bajo: 43 },
+    { key: 'avg_punt_sociales_ciudadanas', label: 'Soc. Ciudadanas', icon: 'bx-world',       umbral_alto: 55, umbral_bajo: 43 },
+    { key: 'avg_punt_ingles',              label: 'Inglés',        icon: 'bx-globe',         umbral_alto: 55, umbral_bajo: 43 },
+  ];
+
+  // Verificar si hay datos de materias
+  const hasMaterias = materias.some(m => ultimo[m.key] != null);
+  if (!hasMaterias) { row.style.display = 'none'; return; }
+
+  container.innerHTML = '';
+  materias.forEach(m => {
+    const val = ultimo[m.key];
+    if (val == null) return;
+    const score = parseFloat(val).toFixed(1);
+    const numScore = parseFloat(score);
+
+    let colorClass = 'bg-primary';
+    let vsLabel = '';
+    if (numScore >= m.umbral_alto) { colorClass = 'bg-success'; vsLabel = '<span class="badge bg-success-subtle text-success ms-1" style="font-size:0.6rem;">▲ Alto</span>'; }
+    else if (numScore <= m.umbral_bajo) { colorClass = 'bg-danger'; vsLabel = '<span class="badge bg-danger-subtle text-danger ms-1" style="font-size:0.6rem;">▼ Bajo</span>'; }
+    else { vsLabel = '<span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size:0.6rem;">≈ Medio</span>'; }
+
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.style.minWidth = '140px';
+    col.innerHTML = `
+      <div class="card mini-stats-wid mb-0 h-100">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <p class="text-muted mb-1" style="font-size:0.72rem;">${m.label}</p>
+              <h5 class="mb-0">${score} ${vsLabel}</h5>
+            </div>
+            <div class="ms-2">
+              <div class="avatar-sm rounded-circle ${colorClass}" style="width:36px;height:36px;">
+                <span class="avatar-title rounded-circle ${colorClass}" style="width:36px;height:36px;font-size:1rem;">
+                  <i class="bx ${m.icon} text-white"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(col);
+  });
+
+  row.style.display = '';
+}
+
+// ──────────────────────────────────────────────────────────────
+// Indicadores de Calidad (Tendencia, % Avanzado, Inglés B1+)
+// ──────────────────────────────────────────────────────────────
+function renderCalidad(ultimo, calidad) {
+  const row = document.getElementById('res-calidad-row');
+  if (!row) return;
+
+  let hasData = false;
+
+  // --- Tendencia ---
+  if (ultimo && ultimo.clasificacion_tendencia) {
+    hasData = true;
+    const tendencia = ultimo.clasificacion_tendencia;
+    const cambio = ultimo.cambio_absoluto_global;
+
+    const tendMap = {
+      'Mejorando':  { cls: 'bg-success', icon: 'bx-trending-up',   label: 'Mejorando' },
+      'Estable':    { cls: 'bg-secondary', icon: 'bx-minus',        label: 'Estable' },
+      'Declinando': { cls: 'bg-danger',  icon: 'bx-trending-down',  label: 'Declinando' },
+    };
+    const cfg = tendMap[tendencia] || { cls: 'bg-secondary', icon: 'bx-minus', label: tendencia };
+
+    const labelEl = document.getElementById('res-calidad-tendencia-label');
+    const cambioEl = document.getElementById('res-calidad-tendencia-cambio');
+    const iconEl   = document.getElementById('res-calidad-tendencia-icon');
+    const wrapEl   = document.getElementById('res-calidad-tendencia-icon-wrap');
+
+    if (labelEl) labelEl.textContent = cfg.label;
+    if (cambioEl && cambio != null) {
+      const sign = cambio >= 0 ? '+' : '';
+      cambioEl.textContent = `${sign}${parseFloat(cambio).toFixed(1)} pts vs año anterior`;
+    }
+    if (iconEl)  iconEl.className = `avatar-title rounded-circle ${cfg.cls}`;
+    if (wrapEl)  wrapEl.className = `avatar-sm rounded-circle mini-stat-icon`;
+    if (iconEl)  iconEl.innerHTML = `<i class="bx ${cfg.icon} text-white"></i>`;
+  }
+
+  // --- % Avanzado Integral ---
+  if (calidad && calidad.pct_avanzado_integral != null) {
+    hasData = true;
+    const pct = parseFloat(calidad.pct_avanzado_integral);
+    const el = document.getElementById('res-calidad-avanzado');
+    if (el) el.textContent = `${pct.toFixed(1)}%`;
+  }
+
+  // --- Inglés B1+ ---
+  if (calidad && calidad.ing_pct_b1 != null) {
+    hasData = true;
+    const pct = parseFloat(calidad.ing_pct_b1);
+    const el    = document.getElementById('res-calidad-ingles');
+    const icon  = document.getElementById('res-calidad-ingles-icon');
+
+    if (el) el.textContent = `${pct.toFixed(1)}%`;
+    if (icon) {
+      let cls = 'bg-danger';
+      if (pct >= 15) cls = 'bg-success';
+      else if (pct >= 5) cls = 'bg-warning';
+      icon.className = `avatar-title rounded-circle ${cls}`;
+      icon.innerHTML = '<i class="bx bx-globe text-white"></i>';
+    }
+  }
+
+  row.style.display = hasData ? '' : 'none';
+}
 
 // ──────────────────────────────────────────────────────────────
 // Evolución de Niveles — Búsqueda de Colegio (dashboard principal)
