@@ -778,10 +778,6 @@ def get_comparacion_colegios(colegio_a_sk, colegio_b_sk, ano=2024):
                 'colegio_a_sk': colegio_a_sk,
                 'colegio_b_sk': colegio_b_sk,
                 'ano': ano,
-                'registros_a': int(test_df_a.iloc[0]['count']),
-                'registros_b': int(test_df_b.iloc[0]['count']),
-                'anos_disponibles_a': years_a['ano'].tolist() if not years_a.empty else [],
-                'anos_disponibles_b': years_b['ano'].tolist() if not years_b.empty else []
             }
         }
     
