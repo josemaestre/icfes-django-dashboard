@@ -512,6 +512,37 @@
         {% endif %}
 
         <div class="card-block">
+            <h3 class="section-title">Explora Rankings Relacionados</h3>
+            <ul class="mb-0">
+                <li>
+                    <a href="{{ internal_links.mejor_municipio_url }}">
+                        Mejores colegios de {{ school.municipio }}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ internal_links.ranking_municipal_url }}">
+                        Ranking municipal de {{ school.municipio }}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ internal_links.ranking_departamental_url }}">
+                        Ranking departamental de {{ school.departamento }}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ internal_links.ranking_nacional_url }}">
+                        Ranking nacional ICFES {{ seo.year }}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ internal_links.ranking_matematicas_url }}">
+                        Ranking de matemáticas ICFES {{ seo.year }}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-block">
             <h3 class="section-title">Preguntas frecuentes</h3>
             <div class="accordion" id="faqAccordion">
                 {% for faq in faq_items %}

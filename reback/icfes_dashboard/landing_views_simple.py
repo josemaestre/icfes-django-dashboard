@@ -871,6 +871,30 @@ def school_landing_page(request, slug):
                         base_url,
                         f"/icfes/departamento/{dept_slug}/",
                     ),
+                    "ranking_municipal_url": _absolute_url(
+                        base_url,
+                        f"/icfes/departamento/{dept_slug}/municipio/{muni_slug}/",
+                    ),
+                    "ranking_departamental_url": _absolute_url(
+                        base_url,
+                        f"/icfes/departamento/{dept_slug}/",
+                    ),
+                    "ranking_nacional_url": _absolute_url(
+                        base_url,
+                        f"/icfes/ranking/colegios/{latest_year}/",
+                    ),
+                    "ranking_matematicas_url": _absolute_url(
+                        base_url,
+                        f"/icfes/ranking/matematicas/{latest_year}/",
+                    ),
+                    "mejor_municipio_url": (
+                        best_muni["url"]
+                        if best_muni and best_muni.get("url")
+                        else _absolute_url(
+                            base_url,
+                            f"/icfes/departamento/{dept_slug}/municipio/{muni_slug}/",
+                        )
+                    ),
                 },
                 "seo": {
                     "year": latest_year,

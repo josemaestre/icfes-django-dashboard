@@ -2,15 +2,19 @@
 Vistas para el dashboard ICFES.
 Conecta con la base de datos DuckDB del proyecto dbt.
 """
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.cache import cache_page
-from django.contrib.auth.decorators import login_required
+from functools import wraps
 import logging
-import pandas as pd
 import json
 import unicodedata
+
+import pandas as pd
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_http_methods
+
 from .db_utils import (
     execute_query,
     get_table_data,
@@ -22,6 +26,74 @@ from .db_utils import (
 from .views_school_endpoints import *
 
 logger = logging.getLogger(__name__)
+
+
+_SEO_CRITICAL_PATH_PREFIXES = (
+    "/robots.txt",
+    "/sitemap",
+)
+
+_TRUSTED_CRAWLER_UA_TOKENS = (
+    "googlebot",
+    "google-inspectiontool",
+    "googleother",
+    "bingbot",
+    "adidxbot",
+    "duckduckbot",
+    "yandexbot",
+    "applebot",
+    "slurp",
+    "baiduspider",
+)
+
+
+def _is_trusted_crawler(request):
+    ua = (request.META.get("HTTP_USER_AGENT") or "").lower()
+    if not ua:
+        return False
+    return any(token in ua for token in _TRUSTED_CRAWLER_UA_TOKENS)
+
+
+def _public_api_rate_limit(max_requests=120, window_seconds=60):
+    """Simple IP-based rate limiting for public API endpoints."""
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            # Never block core SEO discovery paths.
+            if request.path.startswith(_SEO_CRITICAL_PATH_PREFIXES):
+                return view_func(request, *args, **kwargs)
+
+            # Allow major search crawlers to fetch public API payloads if needed.
+            if _is_trusted_crawler(request):
+                return view_func(request, *args, **kwargs)
+
+            xff = (request.META.get("HTTP_X_FORWARDED_FOR") or "").strip()
+            ip = (xff.split(",")[0].strip() if xff else "") or request.META.get("REMOTE_ADDR", "unknown")
+            key = f"rl:{view_func.__name__}:{request.path}:{ip}"
+
+            if not cache.add(key, 1, timeout=window_seconds):
+                try:
+                    hits = cache.incr(key)
+                except ValueError:
+                    cache.set(key, 1, timeout=window_seconds)
+                    hits = 1
+                if hits > max_requests:
+                    response = JsonResponse(
+                        {
+                            "error": "rate_limited",
+                            "detail": "Too many requests. Please retry later.",
+                        },
+                        status=429,
+                    )
+                    response["Retry-After"] = str(window_seconds)
+                    return response
+
+            return view_func(request, *args, **kwargs)
+
+        return wrapped
+
+    return decorator
 
 
 def _normalize_departamento_variants(name):
@@ -150,6 +222,7 @@ def ingles_dashboard(request):
 # ENDPOINTS API - DATOS GENERALES
 # ============================================================================
 
+@_public_api_rate_limit(max_requests=120, window_seconds=60)
 @cache_page(60 * 15)  # 15 minutos - estadísticas generales
 @require_http_methods(["GET"])
 def icfes_estadisticas_generales(request):
@@ -210,6 +283,7 @@ def tendencias_regionales(request):
 # ENDPOINTS API - COLEGIOS
 # ============================================================================
 
+@_public_api_rate_limit(max_requests=60, window_seconds=60)
 @require_http_methods(["GET"])
 def colegios_agregados(request):
     """
@@ -240,6 +314,7 @@ def colegios_agregados(request):
     return JsonResponse(data, safe=False)
 
 
+@_public_api_rate_limit(max_requests=60, window_seconds=60)
 @cache_page(60 * 30)  # 30 minutos - top colegios
 @require_http_methods(["GET"])
 def colegios_destacados(request):
