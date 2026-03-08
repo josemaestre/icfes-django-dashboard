@@ -133,9 +133,13 @@ def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=N
                 h.percentil_sector,
                 h.cambio_absoluto_global,
                 h.cambio_porcentual_global,
+                a.avg_global_zscore,
                 COALESCE(s.slug, '') AS slug
             FROM gold.fct_colegio_historico h
             LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+            LEFT JOIN gold.fct_agg_colegios_ano a
+              ON a.colegio_bk = h.codigo_dane
+             AND CAST(a.ano AS INTEGER) = CAST(h.ano AS INTEGER)
             WHERE CAST(h.ano AS INTEGER) IN (?, ?)
               AND {where_clause}
         ),
@@ -175,7 +179,8 @@ def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=N
             ROUND(c.cambio_absoluto_global, 2) AS cambio_abs,
             ROUND(c.cambio_porcentual_global, 2) AS cambio_pct,
             ROUND(c.percentil_sector * 100.0, 1) AS percentil_sector_pct,
-            c.total_estudiantes
+            c.total_estudiantes,
+            ROUND(c.avg_global_zscore, 2) AS z_score_global
         FROM current_year c
         LEFT JOIN previous_year p ON p.codigo_dane = c.codigo_dane
         ORDER BY c.ranking_scope
@@ -216,6 +221,7 @@ def _normalize_top_rows(rows):
                 "cambio_pct": float(row[13]) if row[13] is not None else None,
                 "percentil_sector_pct": float(row[14]) if row[14] is not None else None,
                 "estudiantes": int(row[15]) if row[15] is not None else 0,
+                "z_score_global": float(row[16]) if row[16] is not None else None,
             }
         )
     return normalized

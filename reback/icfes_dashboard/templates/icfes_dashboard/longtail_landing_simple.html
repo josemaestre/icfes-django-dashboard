@@ -42,6 +42,45 @@
             text-align: center;
             margin-top: 32px;
         }
+        .ranking-sector-table thead th {
+            white-space: nowrap;
+            font-size: .86rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            color: #334155;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .ranking-sector-table td {
+            white-space: nowrap;
+            font-size: .92rem;
+            vertical-align: middle;
+        }
+        .rank-badge {
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+            font-weight: 700;
+            border-radius: 999px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 4px 10px;
+        }
+        .trend-up { color: #16a34a; font-weight: 700; }
+        .trend-down { color: #dc2626; font-weight: 700; }
+        .trend-flat { color: #475569; font-weight: 700; }
+        .chip {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: .82rem;
+        }
+        .chip-z-pos { background: #dcfce7; color: #166534; }
+        .chip-z-mid { background: #fef3c7; color: #92400e; }
+        .chip-z-neg { background: #fee2e2; color: #991b1b; }
+        .entity-cell a { font-weight: 600; text-decoration: none; }
+        .entity-cell a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -132,49 +171,52 @@
 
         <div class="panel p-3 mb-4">
             <div class="table-responsive">
-                <table class="table table-striped align-middle">
+                <table class="table table-striped align-middle ranking-sector-table">
                     <thead>
                         <tr>
-                            <th>#</th>
                             <th>Colegio</th>
                             <th>Global</th>
+                            <th>Matemáticas</th>
                             <th>Lectura</th>
-                            <th>Mat</th>
-                            <th>Nat</th>
-                            <th>Soc</th>
-                            <th>Ing</th>
-                            <th>Ranking ant.</th>
+                            <th>C. Naturales</th>
+                            <th>Sociales</th>
+                            <th>Inglés</th>
+                            <th>Ranking</th>
                             <th>Variación</th>
                             <th>Δ pts</th>
                             <th>Δ %</th>
+                            <th>Z-Score</th>
                             <th>Percentil</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for row in rows %}
                         <tr>
-                            <td><strong>#{{ row.ranking_actual|default:forloop.counter }}</strong></td>
-                            <td>
+                            <td class="entity-cell">
                                 {% if row.slug %}<a href="/icfes/colegio/{{ row.slug }}/">{{ row.nombre }}</a>{% else %}{{ row.nombre }}{% endif %}
                                 <div class="small text-muted">{{ row.municipio }}, {{ row.departamento }}</div>
                             </td>
                             <td>{{ row.punt_global|default:"-" }}</td>
-                            <td>{{ row.punt_lectura|default:"-" }}</td>
                             <td>{{ row.punt_matematicas|default:"-" }}</td>
+                            <td>{{ row.punt_lectura|default:"-" }}</td>
                             <td>{{ row.punt_naturales|default:"-" }}</td>
                             <td>{{ row.punt_sociales|default:"-" }}</td>
                             <td>{{ row.punt_ingles|default:"-" }}</td>
                             <td>
+                                <span class="rank-badge">#{{ row.ranking_actual|default:forloop.counter }}</span>
                                 {% if row.ranking_anterior %}
-                                #{{ row.ranking_anterior }}
-                                {% else %}
-                                -
+                                <div class="small text-muted mt-1">ant. #{{ row.ranking_anterior }}</div>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if row.rank_delta is not None %}
-                                {{ row.rank_symbol }}
-                                {% if row.rank_delta > 0 %}+{% endif %}{{ row.rank_delta }}
+                                    {% if row.rank_delta > 0 %}
+                                    <span class="trend-up">{{ row.rank_symbol }} +{{ row.rank_delta }}</span>
+                                    {% elif row.rank_delta < 0 %}
+                                    <span class="trend-down">{{ row.rank_symbol }} {{ row.rank_delta }}</span>
+                                    {% else %}
+                                    <span class="trend-flat">→ 0</span>
+                                    {% endif %}
                                 {% else %}
                                 -
                                 {% endif %}
@@ -188,7 +230,26 @@
                             </td>
                             <td>
                                 {% if row.cambio_pct is not None %}
-                                {% if row.cambio_pct > 0 %}+{% endif %}{{ row.cambio_pct }}%
+                                    {% if row.cambio_pct > 0 %}
+                                    <span class="trend-up">+{{ row.cambio_pct }}%</span>
+                                    {% elif row.cambio_pct < 0 %}
+                                    <span class="trend-down">{{ row.cambio_pct }}%</span>
+                                    {% else %}
+                                    <span class="trend-flat">0%</span>
+                                    {% endif %}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.z_score_global is not None %}
+                                    {% if row.z_score_global >= 1 %}
+                                    <span class="chip chip-z-pos">{{ row.z_score_global }}</span>
+                                    {% elif row.z_score_global <= -0.5 %}
+                                    <span class="chip chip-z-neg">{{ row.z_score_global }}</span>
+                                    {% else %}
+                                    <span class="chip chip-z-mid">{{ row.z_score_global }}</span>
+                                    {% endif %}
                                 {% else %}
                                 -
                                 {% endif %}
@@ -204,6 +265,11 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            <div class="small text-muted mt-2">
+                <strong>¿Qué es Z-Score?</strong> Mide cuántas desviaciones estándar está el puntaje global de un
+                colegio por encima o por debajo del promedio del grupo comparado (mismo año y mismo sector).
+                Valores positivos indican desempeño por encima del promedio; negativos, por debajo.
             </div>
         </div>
 
