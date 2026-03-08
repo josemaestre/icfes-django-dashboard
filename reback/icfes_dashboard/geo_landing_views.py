@@ -37,6 +37,12 @@ _DEPARTAMENTO_SLUG_ALIASES = {
     "bogota": "Bogotá",             # slugify("Bogotá DC") = "bogota-dc"
 }
 
+_MUNICIPIO_SLUG_ALIASES = {
+    "bogota": "Bogotá",
+    "bogota-dc": "Bogotá",
+    "bogota-d-c": "Bogotá",
+}
+
 
 def _resolve_departamento(conn, departamento_slug):
     query = """
@@ -75,6 +81,12 @@ def _resolve_municipio(conn, departamento, municipio_slug):
     for (municipio,) in rows:
         if slugify(municipio) == municipio_slug:
             return municipio
+
+    alias_fragment = _MUNICIPIO_SLUG_ALIASES.get((municipio_slug or "").strip().lower())
+    if alias_fragment:
+        for (municipio,) in rows:
+            if alias_fragment.lower() in municipio.lower():
+                return municipio
     return None
 
 
