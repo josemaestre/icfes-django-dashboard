@@ -88,6 +88,21 @@ urlpatterns = [
          longtail_landing_views.ranking_matematicas_year_page, name='ranking_matematicas_year'),
     path('historico/puntaje-global/',
          longtail_landing_views.historico_nacional_page, name='historico_puntaje_global'),
+    path(
+        'ranking/sector/<slug:sector_slug>/colombia/',
+        longtail_landing_views.ranking_sector_nacional_page,
+        name='ranking_sector_nacional',
+    ),
+    path(
+        'ranking/sector/<slug:sector_slug>/departamento/<slug:departamento_slug>/',
+        longtail_landing_views.ranking_sector_departamento_page,
+        name='ranking_sector_departamento',
+    ),
+    path(
+        'ranking/sector/<slug:sector_slug>/departamento/<slug:departamento_slug>/municipio/<slug:municipio_slug>/',
+        longtail_landing_views.ranking_sector_municipio_page,
+        name='ranking_sector_municipio',
+    ),
 
     # Endpoints de datos generales
     path('api/estadisticas/', views.icfes_estadisticas_generales,

@@ -27,6 +27,19 @@ def _format_lastmod(value):
     return datetime.now(timezone.utc).date().isoformat()
 
 
+def _dataset_lastmod_iso(conn):
+    query = """
+        SELECT MAX(fecha_carga)
+        FROM gold.fct_agg_colegios_ano
+    """
+    value = conn.execute(resolve_schema(query)).fetchone()[0]
+    return _format_lastmod(value)
+
+
+def _sector_slug_rows():
+    return [("OFICIAL", "oficiales"), ("NO OFICIAL", "privados")]
+
+
 def sitemap_index(request):
     base = _base_url(request)
 
@@ -41,6 +54,7 @@ def sitemap_index(request):
     items.append(f"{base}/sitemap-departamentos.xml")
     items.append(f"{base}/sitemap-municipios.xml")
     items.append(f"{base}/sitemap-longtail.xml")
+    items.append(f"{base}/sitemap-ranking-sector.xml")
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
     xml.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
@@ -239,3 +253,126 @@ def sitemap_longtail(request):
 def sitemap_geo(request):
     # Backward-compatible endpoint; keep old URL alive.
     return sitemap_departamentos(request)
+
+
+def sitemap_ranking_sector_index(request):
+    base = _base_url(request)
+    items = [
+        f"{base}/sitemap-ranking-sector-nacional.xml",
+        f"{base}/sitemap-ranking-sector-departamentos.xml",
+        f"{base}/sitemap-ranking-sector-municipios.xml",
+    ]
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+    for loc in items:
+        xml.append("  <sitemap>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append("  </sitemap>")
+    xml.append("</sitemapindex>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_ranking_sector_nacional(request):
+    base = _base_url(request)
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+    for _, sector_slug in _sector_slug_rows():
+        loc = f"{base}/icfes/ranking/sector/{sector_slug}/colombia/"
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>weekly</changefreq>")
+        xml.append("    <priority>0.9</priority>")
+        xml.append("  </url>")
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_ranking_sector_departamentos(request):
+    base = _base_url(request)
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        latest_year_query = "SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_agg_colegios_ano"
+        latest_year = conn.execute(resolve_schema(latest_year_query)).fetchone()[0]
+        if latest_year is None:
+            return HttpResponse(status=404)
+
+        query = """
+            SELECT DISTINCT sector, departamento
+            FROM gold.fct_agg_colegios_ano
+            WHERE CAST(ano AS INTEGER) = ?
+              AND sector IN ('OFICIAL', 'NO OFICIAL')
+              AND departamento IS NOT NULL
+              AND departamento != ''
+            ORDER BY sector, departamento
+        """
+        rows = conn.execute(resolve_schema(query), [latest_year]).fetchall()
+
+    sector_to_slug = dict(_sector_slug_rows())
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+    for sector, departamento in rows:
+        sector_slug = sector_to_slug.get(sector)
+        if not sector_slug:
+            continue
+        dep_slug = slugify(departamento)
+        loc = f"{base}/icfes/ranking/sector/{sector_slug}/departamento/{dep_slug}/"
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>monthly</changefreq>")
+        xml.append("    <priority>0.85</priority>")
+        xml.append("  </url>")
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_ranking_sector_municipios(request):
+    base = _base_url(request)
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        latest_year_query = "SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_agg_colegios_ano"
+        latest_year = conn.execute(resolve_schema(latest_year_query)).fetchone()[0]
+        if latest_year is None:
+            return HttpResponse(status=404)
+
+        query = """
+            SELECT DISTINCT sector, departamento, municipio
+            FROM gold.fct_agg_colegios_ano
+            WHERE CAST(ano AS INTEGER) = ?
+              AND sector IN ('OFICIAL', 'NO OFICIAL')
+              AND departamento IS NOT NULL
+              AND departamento != ''
+              AND municipio IS NOT NULL
+              AND municipio != ''
+            ORDER BY sector, departamento, municipio
+        """
+        rows = conn.execute(resolve_schema(query), [latest_year]).fetchall()
+
+    sector_to_slug = dict(_sector_slug_rows())
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+    for sector, departamento, municipio in rows:
+        sector_slug = sector_to_slug.get(sector)
+        if not sector_slug:
+            continue
+        dep_slug = slugify(departamento)
+        muni_slug = slugify(municipio)
+        loc = (
+            f"{base}/icfes/ranking/sector/{sector_slug}/departamento/"
+            f"{dep_slug}/municipio/{muni_slug}/"
+        )
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>monthly</changefreq>")
+        xml.append("    <priority>0.8</priority>")
+        xml.append("  </url>")
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")

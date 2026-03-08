@@ -47,6 +47,10 @@ urlpatterns = [
     path("sitemap-municipios.xml", sitemap_views.sitemap_municipios),
     path("sitemap-geo.xml", sitemap_views.sitemap_geo),
     path("sitemap-longtail.xml", sitemap_views.sitemap_longtail),
+    path("sitemap-ranking-sector.xml", sitemap_views.sitemap_ranking_sector_index),
+    path("sitemap-ranking-sector-nacional.xml", sitemap_views.sitemap_ranking_sector_nacional),
+    path("sitemap-ranking-sector-departamentos.xml", sitemap_views.sitemap_ranking_sector_departamentos),
+    path("sitemap-ranking-sector-municipios.xml", sitemap_views.sitemap_ranking_sector_municipios),
     
     # Your stuff: custom urls includes go here
     # ...
