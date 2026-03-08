@@ -81,6 +81,14 @@
         .chip-z-neg { background: #fee2e2; color: #991b1b; }
         .entity-cell a { font-weight: 600; text-decoration: none; }
         .entity-cell a:hover { text-decoration: underline; }
+        .name-truncate {
+            display: inline-block;
+            max-width: 340px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
+        }
     </style>
 </head>
 <body>
@@ -138,7 +146,13 @@
                         {% for row in rows %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
-                            <td>{% if row.slug %}<a href="/icfes/colegio/{{ row.slug }}/">{{ row.nombre }}</a>{% else %}{{ row.nombre }}{% endif %}</td>
+                            <td>
+                                {% if row.slug %}
+                                <a href="/icfes/colegio/{{ row.slug }}/" class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</a>
+                                {% else %}
+                                <span class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</span>
+                                {% endif %}
+                            </td>
                             <td>{{ row.departamento|default:"-" }}</td>
                             <td>{{ row.municipio|default:"-" }}</td>
                             <td>{{ row.sector|default:"-" }}</td>
@@ -193,7 +207,11 @@
                         {% for row in rows %}
                         <tr>
                             <td class="entity-cell">
-                                {% if row.slug %}<a href="/icfes/colegio/{{ row.slug }}/">{{ row.nombre }}</a>{% else %}{{ row.nombre }}{% endif %}
+                                {% if row.slug %}
+                                <a href="/icfes/colegio/{{ row.slug }}/" class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</a>
+                                {% else %}
+                                <span class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</span>
+                                {% endif %}
                                 <div class="small text-muted">{{ row.municipio }}, {{ row.departamento }}</div>
                             </td>
                             <td>{{ row.punt_global|default:"-" }}</td>
