@@ -55,6 +55,9 @@ def sitemap_index(request):
     items.append(f"{base}/sitemap-municipios.xml")
     items.append(f"{base}/sitemap-longtail.xml")
     items.append(f"{base}/sitemap-ranking-sector.xml")
+    items.append(f"{base}/sitemap-materias.xml")
+    items.append(f"{base}/sitemap-mejoraron.xml")
+    items.append(f"{base}/sitemap-bilingues.xml")
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
     xml.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
@@ -374,5 +377,131 @@ def sitemap_ranking_sector_municipios(request):
         xml.append("    <changefreq>monthly</changefreq>")
         xml.append("    <priority>0.8</priority>")
         xml.append("  </url>")
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_materias(request):
+    """Sitemap for /icfes/materia/{materia}/{ano}/ pages."""
+    base = _base_url(request)
+
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        years_rows = conn.execute(
+            resolve_schema("""
+                SELECT DISTINCT CAST(ano AS INTEGER) AS ano
+                FROM gold.fct_agg_colegios_ano
+                WHERE ano IS NOT NULL
+                ORDER BY ano DESC
+            """)
+        ).fetchall()
+
+    years = [int(r[0]) for r in years_rows if r[0] is not None]
+    materias = ["matematicas", "ingles"]
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+    for materia in materias:
+        for year in years:
+            loc = f"{base}/icfes/materia/{materia}/{year}/"
+            xml.append("  <url>")
+            xml.append(f"    <loc>{escape(loc)}</loc>")
+            xml.append(f"    <lastmod>{lastmod}</lastmod>")
+            xml.append("    <changefreq>monthly</changefreq>")
+            xml.append("    <priority>0.7</priority>")
+            xml.append("  </url>")
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_mejoraron(request):
+    """Sitemap for /icfes/colegios-que-mas-mejoraron/{ano}/ pages."""
+    base = _base_url(request)
+
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        years_rows = conn.execute(
+            resolve_schema("""
+                SELECT DISTINCT CAST(ano AS INTEGER) AS ano
+                FROM gold.fct_colegio_historico
+                WHERE punt_global_ano_anterior IS NOT NULL
+                ORDER BY ano DESC
+            """)
+        ).fetchall()
+
+    years = [int(r[0]) for r in years_rows if r[0] is not None]
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+    for year in years:
+        loc = f"{base}/icfes/colegios-que-mas-mejoraron/{year}/"
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>monthly</changefreq>")
+        xml.append("    <priority>0.7</priority>")
+        xml.append("  </url>")
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_bilingues(request):
+    """Sitemap for /icfes/colegios-bilingues/ and geographic sub-pages."""
+    base = _base_url(request)
+
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        geo_rows = conn.execute(
+            resolve_schema("""
+                SELECT DISTINCT a.departamento, a.municipio
+                FROM gold.fct_agg_colegios_ano a
+                WHERE a.departamento IS NOT NULL AND a.departamento != ''
+                  AND a.municipio IS NOT NULL AND a.municipio != ''
+                  AND CAST(a.ano AS INTEGER) = (
+                      SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_agg_colegios_ano
+                  )
+                  AND EXISTS (
+                      SELECT 1 FROM icfes_silver.icfes i
+                      WHERE i.cole_bilingue IN ('S', '1')
+                        AND i.cole_cod_dane_establecimiento = a.colegio_bk
+                  )
+                ORDER BY a.departamento, a.municipio
+            """)
+        ).fetchall()
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+
+    # Nacional
+    xml.append("  <url>")
+    xml.append(f"    <loc>{escape(f'{base}/icfes/colegios-bilingues/')}</loc>")
+    xml.append(f"    <lastmod>{lastmod}</lastmod>")
+    xml.append("    <changefreq>monthly</changefreq>")
+    xml.append("    <priority>0.75</priority>")
+    xml.append("  </url>")
+
+    seen_depts = set()
+    for departamento, municipio in geo_rows:
+        dept_slug = slugify(departamento)
+        muni_slug = slugify(municipio)
+
+        if dept_slug not in seen_depts:
+            seen_depts.add(dept_slug)
+            loc = f"{base}/icfes/departamento/{dept_slug}/colegios-bilingues/"
+            xml.append("  <url>")
+            xml.append(f"    <loc>{escape(loc)}</loc>")
+            xml.append(f"    <lastmod>{lastmod}</lastmod>")
+            xml.append("    <changefreq>monthly</changefreq>")
+            xml.append("    <priority>0.65</priority>")
+            xml.append("  </url>")
+
+        loc = f"{base}/icfes/departamento/{dept_slug}/municipio/{muni_slug}/colegios-bilingues/"
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>monthly</changefreq>")
+        xml.append("    <priority>0.6</priority>")
+        xml.append("  </url>")
+
     xml.append("</urlset>")
     return HttpResponse("\n".join(xml), content_type="application/xml")

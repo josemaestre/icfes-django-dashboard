@@ -346,6 +346,130 @@
             </div>
         </div>
         {% endif %}
+
+        {% if mode == "ranking_materia" %}
+        <div class="panel p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="h5 mb-0">Top 100 — {{ materia_label }} ICFES {{ year }}</h2>
+                <div class="small text-muted">Años:
+                    {% for y in years %}
+                    {% if y == year %}<strong>{{ y }}</strong>
+                    {% else %}<a href="{{ year_base_url }}{{ y }}/">{{ y }}</a>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="panel p-3 mb-4">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle ranking-sector-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Colegio</th>
+                            <th>Departamento / Municipio</th>
+                            <th>Sector</th>
+                            <th>{{ materia_label }}</th>
+                            <th>Global</th>
+                            <th>Estudiantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td><span class="rank-badge">{{ forloop.counter }}</span></td>
+                            <td class="entity-cell">
+                                {% if row.slug %}
+                                <a href="/icfes/colegio/{{ row.slug }}/" class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</a>
+                                {% else %}
+                                <span class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.departamento_slug %}
+                                <a href="/icfes/departamento/{{ row.departamento_slug }}/">{{ row.departamento }}</a>
+                                {% else %}{{ row.departamento|default:"-" }}{% endif %}
+                                {% if row.municipio %}· {{ row.municipio }}{% endif %}
+                            </td>
+                            <td>{{ row.sector|default:"-" }}</td>
+                            <td><strong>{{ row.score_materia|default:"-" }}</strong></td>
+                            <td>{{ row.score_global|default:"-" }}</td>
+                            <td>{{ row.estudiantes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if mode == "colegios_mejoraron" %}
+        <div class="panel p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="h5 mb-0">Top 100 colegios con mayor mejora en ICFES {{ year }} vs {{ prev_year }}</h2>
+                <div class="small text-muted">Otros años:
+                    {% for y in years %}
+                    {% if y == year %}<strong>{{ y }}</strong>
+                    {% else %}<a href="{{ year_base_url }}{{ y }}/">{{ y }}</a>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="panel p-3 mb-4">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle ranking-sector-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Colegio</th>
+                            <th>Departamento / Municipio</th>
+                            <th>Sector</th>
+                            <th>Mejora (pts)</th>
+                            <th>{{ year }}</th>
+                            <th>{{ prev_year }}</th>
+                            <th>Estudiantes</th>
+                            <th>Ranking</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td><span class="rank-badge">{{ forloop.counter }}</span></td>
+                            <td class="entity-cell">
+                                {% if row.slug %}
+                                <a href="/icfes/colegio/{{ row.slug }}/" class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</a>
+                                {% else %}
+                                <span class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.departamento_slug %}
+                                <a href="/icfes/departamento/{{ row.departamento_slug }}/">{{ row.departamento }}</a>
+                                {% else %}{{ row.departamento|default:"-" }}{% endif %}
+                                {% if row.municipio %}· {{ row.municipio }}{% endif %}
+                            </td>
+                            <td>{{ row.sector|default:"-" }}</td>
+                            <td>
+                                {% if row.mejora is not None %}
+                                    {% if row.mejora > 0 %}
+                                    <span class="trend-up">+{{ row.mejora }}</span>
+                                    {% elif row.mejora < 0 %}
+                                    <span class="trend-down">{{ row.mejora }}</span>
+                                    {% else %}
+                                    <span class="trend-flat">0</span>
+                                    {% endif %}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td>{{ row.puntaje_actual|default:"-" }}</td>
+                            <td>{{ row.puntaje_anterior|default:"-" }}</td>
+                            <td>{{ row.estudiantes }}</td>
+                            <td>{% if row.ranking_nacional %}#{{ row.ranking_nacional }}{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </main>
 
     <section class="container mb-4">

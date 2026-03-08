@@ -4,6 +4,7 @@ URLs para el dashboard ICFES.
 from django.urls import path
 from . import (
     api_views,
+    bilingues_landing_views,
     email_graph_views,
     export_views,
     geo_landing_views,
@@ -103,6 +104,26 @@ urlpatterns = [
         longtail_landing_views.ranking_sector_municipio_page,
         name='ranking_sector_municipio',
     ),
+
+    # Ranking por materia (matemáticas, inglés, extensible)
+    path('materia/<slug:materia_slug>/',
+         longtail_landing_views.ranking_materia_hub_page, name='ranking_materia_hub'),
+    path('materia/<slug:materia_slug>/<int:ano>/',
+         longtail_landing_views.ranking_materia_page, name='ranking_materia'),
+
+    # Colegios que más mejoraron
+    path('colegios-que-mas-mejoraron/',
+         longtail_landing_views.colegios_mejoraron_hub_page, name='colegios_mejoraron_hub'),
+    path('colegios-que-mas-mejoraron/<int:ano>/',
+         longtail_landing_views.colegios_mejoraron_page, name='colegios_mejoraron'),
+
+    # Colegios bilingues (nacional, departamental, municipal)
+    path('colegios-bilingues/',
+         bilingues_landing_views.bilingues_nacional_page, name='colegios_bilingues_nacional'),
+    path('departamento/<slug:dept>/colegios-bilingues/',
+         bilingues_landing_views.bilingues_departamento_page, name='colegios_bilingues_depto'),
+    path('departamento/<slug:dept>/municipio/<slug:muni>/colegios-bilingues/',
+         bilingues_landing_views.bilingues_municipio_page, name='colegios_bilingues_muni'),
 
     # Endpoints de datos generales
     path('api/estadisticas/', views.icfes_estadisticas_generales,

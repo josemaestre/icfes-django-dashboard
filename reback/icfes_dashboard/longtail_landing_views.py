@@ -6,7 +6,7 @@ import logging
 
 from django.conf import settings
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
 
@@ -818,3 +818,280 @@ def ranking_sector_municipio_page(request, sector_slug, departamento_slug, munic
             exc,
         )
         raise Http404("Error al cargar ranking municipal por sector")
+
+
+# ---------------------------------------------------------------------------
+# Ranking por materia
+# ---------------------------------------------------------------------------
+
+_MATERIA_CONFIG = {
+    "matematicas": {
+        "column": "avg_punt_matematicas",
+        "label": "Matemáticas",
+    },
+    "ingles": {
+        "column": "avg_punt_ingles",
+        "label": "Inglés",
+    },
+    # Extensible — descomentar para activar:
+    # "lectura-critica": {"column": "avg_punt_lectura_critica", "label": "Lectura Crítica"},
+    # "ciencias-naturales": {"column": "avg_punt_c_naturales", "label": "Ciencias Naturales"},
+    # "sociales": {"column": "avg_punt_sociales_ciudadanas", "label": "Sociales"},
+}
+
+
+def ranking_materia_hub_page(request, materia_slug):
+    """Redirect to the latest available year for this materia."""
+    if materia_slug not in _MATERIA_CONFIG:
+        raise Http404("Materia no disponible")
+    try:
+        with get_duckdb_connection() as conn:
+            years = _available_years(conn)
+        if not years:
+            raise Http404("No hay datos disponibles")
+        return redirect(f"/icfes/materia/{materia_slug}/{years[0]}/", permanent=False)
+    except Http404:
+        raise
+    except Exception as e:
+        logger.error("Error in ranking_materia_hub_page (%s): %s", materia_slug, e)
+        raise Http404("Error al cargar la materia")
+
+
+@cache_page(60 * 60 * 6)
+def ranking_materia_page(request, materia_slug, ano):
+    if materia_slug not in _MATERIA_CONFIG:
+        raise Http404("Materia no disponible")
+    materia = _MATERIA_CONFIG[materia_slug]
+    materia_col = materia["column"]
+    materia_label = materia["label"]
+
+    try:
+        year = int(ano)
+    except (TypeError, ValueError):
+        raise Http404("Año inválido")
+
+    try:
+        with get_duckdb_connection() as conn:
+            years = _available_years(conn)
+            if year not in years:
+                raise Http404("Año no disponible")
+
+            query = f"""
+                SELECT
+                    f.nombre_colegio,
+                    f.departamento,
+                    f.municipio,
+                    f.sector,
+                    ROUND(f.{materia_col}, 1) AS puntaje_materia,
+                    ROUND(f.avg_punt_global, 1) AS puntaje_global,
+                    f.total_estudiantes,
+                    COALESCE(s.slug, '') AS slug
+                FROM gold.fct_agg_colegios_ano f
+                LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+                WHERE CAST(f.ano AS INTEGER) = ?
+                  AND f.nombre_colegio IS NOT NULL
+                  AND f.{materia_col} IS NOT NULL
+                  AND f.total_estudiantes >= 5
+                  AND f.sector != 'SINTETICO'
+                ORDER BY f.{materia_col} DESC
+                LIMIT 100
+            """
+            rows = conn.execute(resolve_schema(query), [year]).fetchall()
+
+        title = (
+            f"Colegios con mejor {materia_label} en ICFES {year} | Top 100 Colombia"
+        )
+        description = (
+            f"Ranking de los 100 colegios con mayor puntaje en {materia_label} ICFES {year} "
+            "en Colombia. Incluye comparación con puntaje global por colegio."
+        )
+        canonical_url = request.build_absolute_uri(request.path)
+        schema_data = json.dumps(
+            [
+                {
+                    "@context": "https://schema.org",
+                    "@type": "WebPage",
+                    "@id": f"{canonical_url}#webpage",
+                    "url": canonical_url,
+                    "name": title,
+                    "description": description,
+                    "inLanguage": "es-CO",
+                }
+            ],
+            ensure_ascii=False,
+        )
+
+        return render(
+            request,
+            "icfes_dashboard/longtail_landing_simple.html",
+            {
+                "mode": "ranking_materia",
+                "materia_slug": materia_slug,
+                "materia_label": materia_label,
+                "year": year,
+                "years": years[:10],
+                "year_base_url": f"/icfes/materia/{materia_slug}/",
+                "rows": [
+                    {
+                        "nombre": row[0],
+                        "departamento": row[1],
+                        "departamento_slug": slugify(row[1]) if row[1] else "",
+                        "municipio": row[2],
+                        "municipio_slug": slugify(row[2]) if row[2] else "",
+                        "sector": row[3],
+                        "score_materia": float(row[4]) if row[4] is not None else None,
+                        "score_global": float(row[5]) if row[5] is not None else None,
+                        "estudiantes": int(row[6]) if row[6] else 0,
+                        "slug": row[7],
+                    }
+                    for row in rows
+                ],
+                "seo": {
+                    "title": title,
+                    "description": description,
+                    "keywords": (
+                        f"colegios mejor {materia_label.lower()} icfes {year}, "
+                        f"ranking {materia_label.lower()} icfes colombia, "
+                        f"top colegios {materia_label.lower()} {year}"
+                    ),
+                },
+                "canonical_url": canonical_url,
+                "structured_data_json": schema_data,
+            },
+        )
+    except Http404:
+        raise
+    except Exception as e:
+        logger.error("Error in ranking_materia_page (%s, %s): %s", materia_slug, ano, e)
+        raise Http404("Error al cargar ranking de materia")
+
+
+# ---------------------------------------------------------------------------
+# Colegios que más mejoraron
+# ---------------------------------------------------------------------------
+
+
+def colegios_mejoraron_hub_page(request):
+    """Redirect to the most recent year that has improvement data."""
+    try:
+        with get_duckdb_connection() as conn:
+            row = conn.execute(
+                resolve_schema("""
+                    SELECT MAX(CAST(ano AS INTEGER))
+                    FROM gold.fct_colegio_historico
+                    WHERE punt_global_ano_anterior IS NOT NULL
+                """)
+            ).fetchone()
+        latest_with_prev = row[0] if row else None
+        if not latest_with_prev:
+            raise Http404("No hay datos de mejora disponibles")
+        return redirect(
+            f"/icfes/colegios-que-mas-mejoraron/{latest_with_prev}/", permanent=False
+        )
+    except Http404:
+        raise
+    except Exception as e:
+        logger.error("Error in colegios_mejoraron_hub_page: %s", e)
+        raise Http404("Error al cargar la página")
+
+
+@cache_page(60 * 60 * 6)
+def colegios_mejoraron_page(request, ano):
+    try:
+        year = int(ano)
+    except (TypeError, ValueError):
+        raise Http404("Año inválido")
+
+    try:
+        with get_duckdb_connection() as conn:
+            query = """
+                SELECT
+                    h.nombre_colegio,
+                    h.departamento,
+                    h.municipio,
+                    h.sector,
+                    ROUND(h.avg_punt_global - h.punt_global_ano_anterior, 1) AS mejora,
+                    ROUND(h.avg_punt_global, 1) AS puntaje_actual,
+                    ROUND(h.punt_global_ano_anterior, 1) AS puntaje_anterior,
+                    h.total_estudiantes,
+                    h.ranking_nacional,
+                    COALESCE(s.slug, '') AS slug
+                FROM gold.fct_colegio_historico h
+                LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
+                WHERE CAST(h.ano AS INTEGER) = ?
+                  AND h.punt_global_ano_anterior IS NOT NULL
+                  AND h.total_estudiantes >= 10
+                  AND h.nombre_colegio IS NOT NULL
+                ORDER BY mejora DESC
+                LIMIT 100
+            """
+            rows = conn.execute(resolve_schema(query), [year]).fetchall()
+            if not rows:
+                raise Http404("No hay datos de mejora para ese año")
+            years = _available_years(conn)
+
+        prev_year = year - 1
+        title = f"Colegios que más mejoraron en ICFES {year} | Ranking Colombia"
+        description = (
+            f"Los 100 colegios con mayor mejora en puntaje global ICFES {year} "
+            f"comparado con {prev_year}. Incluye puntaje actual, anterior y variación."
+        )
+        canonical_url = request.build_absolute_uri(request.path)
+        schema_data = json.dumps(
+            [
+                {
+                    "@context": "https://schema.org",
+                    "@type": "WebPage",
+                    "@id": f"{canonical_url}#webpage",
+                    "url": canonical_url,
+                    "name": title,
+                    "description": description,
+                    "inLanguage": "es-CO",
+                }
+            ],
+            ensure_ascii=False,
+        )
+
+        return render(
+            request,
+            "icfes_dashboard/longtail_landing_simple.html",
+            {
+                "mode": "colegios_mejoraron",
+                "year": year,
+                "prev_year": prev_year,
+                "years": [y for y in years if y <= year][:8],
+                "year_base_url": "/icfes/colegios-que-mas-mejoraron/",
+                "rows": [
+                    {
+                        "nombre": row[0],
+                        "departamento": row[1],
+                        "departamento_slug": slugify(row[1]) if row[1] else "",
+                        "municipio": row[2],
+                        "municipio_slug": slugify(row[2]) if row[2] else "",
+                        "sector": row[3],
+                        "mejora": float(row[4]) if row[4] is not None else None,
+                        "puntaje_actual": float(row[5]) if row[5] is not None else None,
+                        "puntaje_anterior": float(row[6]) if row[6] is not None else None,
+                        "estudiantes": int(row[7]) if row[7] else 0,
+                        "ranking_nacional": int(row[8]) if row[8] else None,
+                        "slug": row[9],
+                    }
+                    for row in rows
+                ],
+                "seo": {
+                    "title": title,
+                    "description": description,
+                    "keywords": (
+                        f"colegios que mas mejoraron icfes {year}, mejora icfes {year}, "
+                        f"colegios progreso icfes colombia {year}"
+                    ),
+                },
+                "canonical_url": canonical_url,
+                "structured_data_json": schema_data,
+            },
+        )
+    except Http404:
+        raise
+    except Exception as e:
+        logger.error("Error in colegios_mejoraron_page (%s): %s", ano, e)
+        raise Http404("Error al cargar colegios que mejoraron")
