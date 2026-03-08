@@ -205,7 +205,9 @@ def _normalize_top_rows(rows):
             {
                 "nombre": row[0],
                 "departamento": row[1],
+                "departamento_slug": slugify(row[1]) if row[1] else "",
                 "municipio": row[2],
+                "municipio_slug": slugify(row[2]) if row[2] else "",
                 "slug": row[3],
                 "punt_global": float(row[4]) if row[4] is not None else None,
                 "punt_lectura": float(row[5]) if row[5] is not None else None,
@@ -225,6 +227,53 @@ def _normalize_top_rows(rows):
             }
         )
     return normalized
+
+
+def _top_departamento_links(rows, sector_slug, limit=6):
+    sector_meta = _sector_from_slug(sector_slug)
+    sector_label = sector_meta[1] if sector_meta else sector_slug
+    links = []
+    seen = set()
+    for row in rows:
+        dept_slug = row.get("departamento_slug") or ""
+        dept_name = row.get("departamento") or ""
+        if not dept_slug or dept_slug in seen:
+            continue
+        seen.add(dept_slug)
+        links.append(
+            {
+                "label": f"Ranking {sector_label} en {dept_name}",
+                "url": f"/icfes/ranking/sector/{sector_slug}/departamento/{dept_slug}/",
+            }
+        )
+        if len(links) >= limit:
+            break
+    return links
+
+
+def _top_municipio_links(rows, sector_slug, limit=8):
+    sector_meta = _sector_from_slug(sector_slug)
+    sector_label = sector_meta[1] if sector_meta else sector_slug
+    links = []
+    seen = set()
+    for row in rows:
+        dept_slug = row.get("departamento_slug") or ""
+        mun_slug = row.get("municipio_slug") or ""
+        mun_name = row.get("municipio") or ""
+        dept_name = row.get("departamento") or ""
+        key = (dept_slug, mun_slug)
+        if not dept_slug or not mun_slug or key in seen:
+            continue
+        seen.add(key)
+        links.append(
+            {
+                "label": f"Top {sector_label} en {mun_name}, {dept_name}",
+                "url": f"/icfes/ranking/sector/{sector_slug}/departamento/{dept_slug}/municipio/{mun_slug}/",
+            }
+        )
+        if len(links) >= limit:
+            break
+    return links
 
 
 def _render_sector_ranking(
@@ -602,6 +651,7 @@ def ranking_sector_nacional_page(request, sector_slug):
                 ),
             },
         ]
+        links.extend(_top_departamento_links(rows, sector_slug, limit=8))
         return _render_sector_ranking(
             request,
             sector_slug=sector_slug,
@@ -663,6 +713,7 @@ def ranking_sector_departamento_page(request, sector_slug, departamento_slug):
                 ),
             },
         ]
+        links.extend(_top_municipio_links(rows, sector_slug, limit=10))
         return _render_sector_ranking(
             request,
             sector_slug=sector_slug,

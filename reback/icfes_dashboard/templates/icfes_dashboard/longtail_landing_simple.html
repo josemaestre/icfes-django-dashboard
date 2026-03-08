@@ -212,7 +212,18 @@
                                 {% else %}
                                 <span class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</span>
                                 {% endif %}
-                                <div class="small text-muted">{{ row.municipio }}, {{ row.departamento }}</div>
+                                <div class="small text-muted">
+                                    {% if row.departamento_slug %}
+                                    <a href="/icfes/ranking/sector/{{ sector_slug }}/departamento/{{ row.departamento_slug }}/">{{ row.departamento }}</a>
+                                    {% else %}
+                                    {{ row.departamento }}
+                                    {% endif %}
+                                    {% if row.municipio and row.municipio_slug and row.departamento_slug %}
+                                    · <a href="/icfes/ranking/sector/{{ sector_slug }}/departamento/{{ row.departamento_slug }}/municipio/{{ row.municipio_slug }}/">{{ row.municipio }}</a>
+                                    {% elif row.municipio %}
+                                    · {{ row.municipio }}
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>{{ row.punt_global|default:"-" }}</td>
                             <td>{{ row.punt_matematicas|default:"-" }}</td>
