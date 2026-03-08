@@ -6,7 +6,7 @@ import json
 import logging
 
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
 
@@ -31,7 +31,10 @@ def _build_geo_where(departamento=None, municipio=None, alias=""):
 # Aliases para departamentos cuyo nombre completo genera slugs muy largos o poco amigables.
 # Clave: slug alternativo → fragmento identificador del nombre real en la DB.
 _DEPARTAMENTO_SLUG_ALIASES = {
-    "san-andres": "San Andr",  # "Archipiélago de San Andrés, Providencia y Santa Catalina"
+    "san-andres": "San Andr",       # "Archipiélago de San Andrés, Providencia y Santa Catalina"
+    "norte-santander": "Norte de Santander",  # bots omiten "de"
+    "valle": "Valle del Cauca",     # bots usan solo "valle"
+    "bogota": "Bogotá",             # slugify("Bogotá DC") = "bogota-dc"
 }
 
 
@@ -345,6 +348,9 @@ def department_landing_page(request, departamento_slug):
             departamento = _resolve_departamento(conn, departamento_slug)
         if not departamento:
             raise Http404("Departamento no encontrado")
+        canonical_slug = slugify(departamento)
+        if canonical_slug != departamento_slug:
+            return redirect(f"/icfes/departamento/{canonical_slug}/", permanent=True)
         context = _geo_landing_context(request, departamento=departamento, municipio=None)
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
     except Http404:
@@ -365,6 +371,13 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
             if not municipio:
                 raise Http404("Municipio no encontrado")
 
+        canonical_dept = slugify(departamento)
+        canonical_muni = slugify(municipio)
+        if canonical_dept != departamento_slug or canonical_muni != municipio_slug:
+            return redirect(
+                f"/icfes/departamento/{canonical_dept}/municipio/{canonical_muni}/",
+                permanent=True,
+            )
         context = _geo_landing_context(
             request, departamento=departamento, municipio=municipio
         )
