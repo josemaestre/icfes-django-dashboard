@@ -63,6 +63,12 @@ def _bot_family(user_agent, bot_category):
         return "Googlebot"
     if "bingbot" in ua:
         return "Bingbot"
+    if "ahrefsbot" in ua:
+        return "AhrefsBot"
+    if "semrushbot" in ua:
+        return "SemrushBot"
+    if any(token in ua for token in ["gptbot", "chatgpt-user", "claudebot", "ccbot", "perplexitybot", "bytespider"]):
+        return "AI bot"
     if "amazonbot" in ua:
         return "Amazonbot"
     if "facebookexternalhit" in ua:
@@ -76,6 +82,49 @@ def _bot_family(user_agent, bot_category):
     if "bot" in ua or bot_category in {"seo_bot", "ai_bot", "social_bot", "other_bot"}:
         return "Other bot"
     return "Human"
+
+
+def _clean_path(path):
+    p = (path or "").strip()
+    if not p:
+        return ""
+    return p.split("?", 1)[0].split("#", 1)[0]
+
+
+def _is_indexable_path(path):
+    p = _clean_path(path).lower()
+    if not p:
+        return False
+    if p.endswith(".map"):
+        return False
+    blocked_prefixes = (
+        "/static/",
+        "/media/",
+        "/admin",
+        "/dashboard",
+        "/api/",
+        "/icfes/api/",
+        "/icfes/trafico",
+    )
+    blocked_exact = {
+        "/robots.txt",
+        "/favicon.ico",
+    }
+    if p in blocked_exact:
+        return False
+    if any(p.startswith(prefix) for prefix in blocked_prefixes):
+        return False
+    if "sitemap" in p:
+        return False
+    return p.startswith("/icfes/")
+
+
+def _url_depth(path):
+    p = _clean_path(path)
+    if p == "/":
+        return 0
+    segments = [seg for seg in p.strip("/").split("/") if seg]
+    return len(segments)
 
 
 def _is_suspicious_path(path):
@@ -288,6 +337,25 @@ def traffic_dashboard(request):
     group_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0})
     bot_family_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0, "paths": Counter()})
     bot_ua_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0})
+    daily_crawl_stats = defaultdict(
+        lambda: {
+            "bot_total": 0,
+            "googlebot": 0,
+            "paths_all": set(),
+            "paths_indexable": set(),
+            "depth_sum": 0,
+            "depth_count": 0,
+            "families": Counter(),
+        }
+    )
+    period_crawl_stats = {
+        "bot_total": 0,
+        "googlebot": 0,
+        "paths_all": set(),
+        "paths_indexable": set(),
+        "depth_sum": 0,
+        "depth_count": 0,
+    }
     suspicious_counter = Counter()
     upstream_error_counter = Counter()
 
@@ -295,6 +363,7 @@ def traffic_dashboard(request):
         ts = row["timestamp"]
         minute_key = ts.replace(second=0, microsecond=0)
         path = row["path"] or ""
+        clean_path = _clean_path(path)
         status = row["http_status"] or 0
         duration = row["total_duration_ms"]
 
@@ -332,6 +401,40 @@ def traffic_dashboard(request):
                 ua_stats["errors"] += 1
             if duration is not None:
                 ua_stats["durations"].append(duration)
+
+            day_key = ts.date()
+            day_stat = daily_crawl_stats[day_key]
+            day_stat["bot_total"] += 1
+            if family == "Googlebot":
+                day_stat["googlebot"] += 1
+            bucket_family = "Other bots"
+            if family == "Googlebot":
+                bucket_family = "Googlebot"
+            elif family == "Bingbot":
+                bucket_family = "Bingbot"
+            elif family == "AhrefsBot":
+                bucket_family = "AhrefsBot"
+            elif family == "SemrushBot":
+                bucket_family = "SemrushBot"
+            elif family == "AI bot":
+                bucket_family = "AI bots"
+            day_stat["families"][bucket_family] += 1
+            if clean_path:
+                day_stat["paths_all"].add(clean_path)
+            if _is_indexable_path(clean_path):
+                day_stat["paths_indexable"].add(clean_path)
+                day_stat["depth_sum"] += _url_depth(clean_path)
+                day_stat["depth_count"] += 1
+
+            period_crawl_stats["bot_total"] += 1
+            if family == "Googlebot":
+                period_crawl_stats["googlebot"] += 1
+            if clean_path:
+                period_crawl_stats["paths_all"].add(clean_path)
+            if _is_indexable_path(clean_path):
+                period_crawl_stats["paths_indexable"].add(clean_path)
+                period_crawl_stats["depth_sum"] += _url_depth(clean_path)
+                period_crawl_stats["depth_count"] += 1
 
         if _is_suspicious_path(path):
             suspicious_counter[path] += 1
@@ -581,6 +684,80 @@ def traffic_dashboard(request):
     daily_split_humans = [row["humans"] or 0 for row in daily_traffic_split]
     daily_split_bots = [row["bots"] or 0 for row in daily_traffic_split]
 
+    crawl_labels = []
+    crawl_ratio_google = []
+    crawl_efficiency = []
+    crawl_depth_avg = []
+    bot_dist_google = []
+    bot_dist_bing = []
+    bot_dist_ahrefs = []
+    bot_dist_semrush = []
+    bot_dist_ai = []
+    bot_dist_other = []
+    discovery_new_urls = []
+    discovery_velocity = []
+    seen_indexable_paths = set()
+    prev_new = None
+
+    for day_key in sorted(daily_crawl_stats.keys()):
+        data = daily_crawl_stats[day_key]
+        crawl_labels.append(day_key.strftime("%Y-%m-%d"))
+        crawl_ratio_google.append(_safe_pct(data["googlebot"], data["bot_total"]))
+        crawl_efficiency.append(_safe_pct(len(data["paths_indexable"]), len(data["paths_all"])))
+        depth_avg = (
+            round(data["depth_sum"] / data["depth_count"], 2)
+            if data["depth_count"]
+            else None
+        )
+        crawl_depth_avg.append(depth_avg)
+
+        families = data["families"]
+        bot_dist_google.append(families.get("Googlebot", 0))
+        bot_dist_bing.append(families.get("Bingbot", 0))
+        bot_dist_ahrefs.append(families.get("AhrefsBot", 0))
+        bot_dist_semrush.append(families.get("SemrushBot", 0))
+        bot_dist_ai.append(families.get("AI bots", 0))
+        other_count = max(
+            data["bot_total"]
+            - (
+                families.get("Googlebot", 0)
+                + families.get("Bingbot", 0)
+                + families.get("AhrefsBot", 0)
+                + families.get("SemrushBot", 0)
+                + families.get("AI bots", 0)
+            ),
+            0,
+        )
+        bot_dist_other.append(other_count)
+
+        new_today = len(data["paths_indexable"] - seen_indexable_paths)
+        seen_indexable_paths.update(data["paths_indexable"])
+        discovery_new_urls.append(new_today)
+        if prev_new is None:
+            discovery_velocity.append(0)
+        else:
+            discovery_velocity.append(new_today - prev_new)
+        prev_new = new_today
+
+    crawl_ratio_period = _safe_pct(period_crawl_stats["googlebot"], period_crawl_stats["bot_total"])
+    crawl_efficiency_period = _safe_pct(
+        len(period_crawl_stats["paths_indexable"]),
+        len(period_crawl_stats["paths_all"]),
+    )
+    indexable_depth_period = (
+        round(period_crawl_stats["depth_sum"] / period_crawl_stats["depth_count"], 2)
+        if period_crawl_stats["depth_count"]
+        else None
+    )
+    if indexable_depth_period is None:
+        depth_status = "Sin datos"
+    elif indexable_depth_period <= 3:
+        depth_status = "Ideal"
+    elif indexable_depth_period <= 5:
+        depth_status = "Aceptable"
+    else:
+        depth_status = "Riesgo (profundidad alta)"
+
     context = {
         "days": days_int,
         "since": since,
@@ -635,6 +812,24 @@ def traffic_dashboard(request):
         "daily_split_total": daily_split_total,
         "daily_split_humans": daily_split_humans,
         "daily_split_bots": daily_split_bots,
+        "crawl_ratio_period": crawl_ratio_period,
+        "crawl_efficiency_period": crawl_efficiency_period,
+        "indexable_depth_period": indexable_depth_period,
+        "depth_status": depth_status,
+        "discovery_new_today": discovery_new_urls[-1] if discovery_new_urls else 0,
+        "discovery_velocity_today": discovery_velocity[-1] if discovery_velocity else 0,
+        "crawl_labels": crawl_labels,
+        "crawl_ratio_google": crawl_ratio_google,
+        "crawl_efficiency": crawl_efficiency,
+        "crawl_depth_avg": crawl_depth_avg,
+        "bot_dist_google": bot_dist_google,
+        "bot_dist_bing": bot_dist_bing,
+        "bot_dist_ahrefs": bot_dist_ahrefs,
+        "bot_dist_semrush": bot_dist_semrush,
+        "bot_dist_ai": bot_dist_ai,
+        "bot_dist_other": bot_dist_other,
+        "discovery_new_urls": discovery_new_urls,
+        "discovery_velocity": discovery_velocity,
     }
     return render(request, "icfes_dashboard/pages/dashboard-traffic.html", context)
 

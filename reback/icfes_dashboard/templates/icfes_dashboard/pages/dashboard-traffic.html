@@ -249,6 +249,69 @@
   <div class="card mt-3">
     <div class="card-body">
       <h5 class="card-title">SEO / Crawlers</h5>
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Crawl Ratio (Googlebot)</small>
+            <div class="h5 mb-0">{{ crawl_ratio_period }}%</div>
+            <small class="text-muted">Googlebot / total bots</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Crawl Efficiency</small>
+            <div class="h5 mb-0">{{ crawl_efficiency_period }}%</div>
+            <small class="text-muted">URLs indexables / URLs crawleadas</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Indexable Crawl Depth</small>
+            <div class="h5 mb-0">{{ indexable_depth_period|default:"-" }}</div>
+            <small class="text-muted">{{ depth_status }}</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Discovery Velocity (hoy)</small>
+            <div class="h5 mb-0">{{ discovery_velocity_today }}</div>
+            <small class="text-muted">nuevas URLs indexables vs ayer</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-light border mb-3">
+        <strong>Guía de métricas SEO</strong>
+        <ul class="mb-0 mt-2">
+          <li><strong>Crawl Ratio:</strong> porcentaje de requests de Googlebot sobre el total de bots.</li>
+          <li><strong>Indexable Crawl Depth:</strong> profundidad promedio de URLs indexables rastreadas.</li>
+          <li><strong>Crawl Efficiency:</strong> proporción de URLs útiles (indexables) dentro del crawl total de bots.</li>
+          <li><strong>URL Discovery Velocity:</strong> cambio diario de nuevas URLs indexables descubiertas.</li>
+        </ul>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Crawl Ratio diario (Googlebot %)</h6>
+          <canvas id="chart-crawl-ratio" height="120"></canvas>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Distribución de bots por día (stacked)</h6>
+          <canvas id="chart-bot-distribution" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="row mt-3 mb-2">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Discovery Velocity (nuevas URLs indexables)</h6>
+          <canvas id="chart-discovery-velocity" height="120"></canvas>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Crawl Efficiency y Depth diario</h6>
+          <canvas id="chart-efficiency-depth" height="120"></canvas>
+        </div>
+      </div>
+
       <div class="row">
         <div class="col-lg-6">
           <h6 class="mb-2">Familias de bots</h6>
@@ -530,6 +593,18 @@
 {{ daily_split_total|json_script:"daily-split-total" }}
 {{ daily_split_humans|json_script:"daily-split-humans" }}
 {{ daily_split_bots|json_script:"daily-split-bots" }}
+{{ crawl_labels|json_script:"crawl-labels" }}
+{{ crawl_ratio_google|json_script:"crawl-ratio-google" }}
+{{ crawl_efficiency|json_script:"crawl-efficiency" }}
+{{ crawl_depth_avg|json_script:"crawl-depth-avg" }}
+{{ bot_dist_google|json_script:"bot-dist-google" }}
+{{ bot_dist_bing|json_script:"bot-dist-bing" }}
+{{ bot_dist_ahrefs|json_script:"bot-dist-ahrefs" }}
+{{ bot_dist_semrush|json_script:"bot-dist-semrush" }}
+{{ bot_dist_ai|json_script:"bot-dist-ai" }}
+{{ bot_dist_other|json_script:"bot-dist-other" }}
+{{ discovery_new_urls|json_script:"discovery-new-urls" }}
+{{ discovery_velocity|json_script:"discovery-velocity" }}
 {% endblock page_content %}
 
 {% block extra_javascript %}
@@ -553,6 +628,18 @@
     const splitTotal = readJson("daily-split-total");
     const splitHumans = readJson("daily-split-humans");
     const splitBots = readJson("daily-split-bots");
+    const crawlLabels = readJson("crawl-labels");
+    const crawlRatioGoogle = readJson("crawl-ratio-google");
+    const crawlEfficiency = readJson("crawl-efficiency");
+    const crawlDepthAvg = readJson("crawl-depth-avg");
+    const botDistGoogle = readJson("bot-dist-google");
+    const botDistBing = readJson("bot-dist-bing");
+    const botDistAhrefs = readJson("bot-dist-ahrefs");
+    const botDistSemrush = readJson("bot-dist-semrush");
+    const botDistAi = readJson("bot-dist-ai");
+    const botDistOther = readJson("bot-dist-other");
+    const discoveryNewUrls = readJson("discovery-new-urls");
+    const discoveryVelocity = readJson("discovery-velocity");
 
     const statusCtx = document.getElementById("chart-status-stacked");
     if (statusCtx) {
@@ -640,6 +727,119 @@
           responsive: true,
           maintainAspectRatio: true,
           aspectRatio: 1.4
+        }
+      });
+    }
+
+    const crawlRatioCtx = document.getElementById("chart-crawl-ratio");
+    if (crawlRatioCtx) {
+      new Chart(crawlRatioCtx, {
+        type: "line",
+        data: {
+          labels: crawlLabels,
+          datasets: [{
+            label: "Googlebot %",
+            data: crawlRatioGoogle,
+            borderColor: "rgba(13, 110, 253, 0.9)",
+            backgroundColor: "rgba(13,110,253,0.15)",
+            fill: true,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2.2,
+          scales: {
+            y: { beginAtZero: true, suggestedMax: 100 }
+          }
+        }
+      });
+    }
+
+    const botDistributionCtx = document.getElementById("chart-bot-distribution");
+    if (botDistributionCtx) {
+      new Chart(botDistributionCtx, {
+        type: "bar",
+        data: {
+          labels: crawlLabels,
+          datasets: [
+            { label: "Googlebot", data: botDistGoogle, backgroundColor: "rgba(13, 110, 253, 0.85)" },
+            { label: "Bingbot", data: botDistBing, backgroundColor: "rgba(25, 135, 84, 0.85)" },
+            { label: "AhrefsBot", data: botDistAhrefs, backgroundColor: "rgba(255, 193, 7, 0.85)" },
+            { label: "SemrushBot", data: botDistSemrush, backgroundColor: "rgba(255, 99, 132, 0.85)" },
+            { label: "AI bots", data: botDistAi, backgroundColor: "rgba(111, 66, 193, 0.85)" },
+            { label: "Other bots", data: botDistOther, backgroundColor: "rgba(108, 117, 125, 0.85)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2.2,
+          scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    const discoveryVelocityCtx = document.getElementById("chart-discovery-velocity");
+    if (discoveryVelocityCtx) {
+      new Chart(discoveryVelocityCtx, {
+        type: "bar",
+        data: {
+          labels: crawlLabels,
+          datasets: [
+            { label: "Nuevas URLs indexables", data: discoveryNewUrls, backgroundColor: "rgba(25, 135, 84, 0.75)" },
+            { label: "Velocity (vs día previo)", data: discoveryVelocity, backgroundColor: "rgba(13, 202, 240, 0.75)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2.2,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    const efficiencyDepthCtx = document.getElementById("chart-efficiency-depth");
+    if (efficiencyDepthCtx) {
+      new Chart(efficiencyDepthCtx, {
+        type: "line",
+        data: {
+          labels: crawlLabels,
+          datasets: [
+            {
+              label: "Crawl Efficiency (%)",
+              data: crawlEfficiency,
+              borderColor: "rgba(25, 135, 84, 0.9)",
+              backgroundColor: "rgba(25,135,84,0.15)",
+              fill: false,
+              yAxisID: "y"
+            },
+            {
+              label: "Indexable Depth (avg)",
+              data: crawlDepthAvg,
+              borderColor: "rgba(255, 193, 7, 0.95)",
+              backgroundColor: "rgba(255,193,7,0.2)",
+              fill: false,
+              yAxisID: "y1"
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2.2,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            y: { beginAtZero: true, suggestedMax: 100, position: "left" },
+            y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false } }
+          }
         }
       });
     }
