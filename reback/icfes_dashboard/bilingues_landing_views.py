@@ -68,10 +68,10 @@ def _resolve_municipio(conn, departamento, municipio_slug):
 def _fetch_bilingues(conn, latest_year, departamento=None, municipio=None):
     """
     Returns bilingual schools for the given year/location.
-    Joins fct_agg_colegios_ano with icfes_silver.icfes to filter cole_bilingue IN ('S','1').
+    Uses gold.dim_colegios_ano.es_bilingue — no silver join needed.
     """
     geo_filters = []
-    geo_params = [latest_year, latest_year]
+    geo_params = [latest_year]
     if departamento:
         geo_filters.append("a.departamento = ?")
         geo_params.append(departamento)
@@ -81,12 +81,6 @@ def _fetch_bilingues(conn, latest_year, departamento=None, municipio=None):
     extra_where = (" AND " + " AND ".join(geo_filters)) if geo_filters else ""
 
     query = f"""
-        WITH bilingues AS (
-            SELECT DISTINCT cole_cod_dane_establecimiento AS colegio_bk
-            FROM icfes_silver.icfes
-            WHERE cole_bilingue IN ('S', '1')
-              AND CAST(periodo_anio AS INTEGER) = ?
-        )
         SELECT
             a.nombre_colegio,
             a.departamento,
@@ -98,9 +92,11 @@ def _fetch_bilingues(conn, latest_year, departamento=None, municipio=None):
             a.ranking_nacional,
             COALESCE(s.slug, '') AS slug
         FROM gold.fct_agg_colegios_ano a
-        JOIN bilingues b ON a.colegio_bk = b.colegio_bk
+        JOIN gold.dim_colegios_ano d
+            ON a.colegio_bk = d.colegio_bk AND CAST(a.ano AS INTEGER) = CAST(d.ano AS INTEGER)
         LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = a.colegio_bk
         WHERE CAST(a.ano AS INTEGER) = ?
+          AND d.es_bilingue = TRUE
           AND a.total_estudiantes >= 5
           AND a.nombre_colegio IS NOT NULL
           AND a.sector != 'SINTETICO'

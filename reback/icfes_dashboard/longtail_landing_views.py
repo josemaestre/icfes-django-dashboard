@@ -1010,7 +1010,7 @@ def colegios_mejoraron_page(request, ano):
                     h.departamento,
                     h.municipio,
                     h.sector,
-                    ROUND(h.avg_punt_global - h.punt_global_ano_anterior, 1) AS mejora,
+                    ROUND(h.cambio_absoluto_global, 1) AS mejora,
                     ROUND(h.avg_punt_global, 1) AS puntaje_actual,
                     ROUND(h.punt_global_ano_anterior, 1) AS puntaje_anterior,
                     h.total_estudiantes,
@@ -1019,7 +1019,7 @@ def colegios_mejoraron_page(request, ano):
                 FROM gold.fct_colegio_historico h
                 LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
                 WHERE CAST(h.ano AS INTEGER) = ?
-                  AND h.punt_global_ano_anterior IS NOT NULL
+                  AND h.cambio_absoluto_global IS NOT NULL
                   AND h.total_estudiantes >= 10
                   AND h.nombre_colegio IS NOT NULL
                 ORDER BY mejora DESC
