@@ -117,7 +117,10 @@ def sitemap_static(request):
     urls = [
         f"{base}/",
         f"{base}/pricing/",
+        f"{base}/icfes/ranking/",
         f"{base}/icfes/departamentos/",
+        f"{base}/icfes/historia/",
+        f"{base}/icfes/ingles/",
         f"{base}/icfes/historico/puntaje-global/",
         f"{base}/icfes/colegios-bilingues/",
     ]
