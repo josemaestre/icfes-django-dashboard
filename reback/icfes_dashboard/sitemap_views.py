@@ -40,12 +40,40 @@ def _sector_slug_rows():
     return [("OFICIAL", "oficiales"), ("NO OFICIAL", "privados")]
 
 
+def _indexable_school_count(conn):
+    """
+    Keep school sitemap aligned with school_landing_page robots logic:
+    noindex when latest total_estudiantes < 5 (thin_content).
+    """
+    query = """
+        WITH latest_school AS (
+            SELECT
+                h.codigo_dane,
+                h.total_estudiantes,
+                ROW_NUMBER() OVER (
+                    PARTITION BY h.codigo_dane
+                    ORDER BY CAST(h.ano AS INTEGER) DESC
+                ) AS rn
+            FROM gold.fct_colegio_historico h
+            WHERE h.codigo_dane IS NOT NULL
+        )
+        SELECT COUNT(*)
+        FROM gold.dim_colegios_slugs s
+        JOIN latest_school ls
+          ON ls.codigo_dane = s.codigo
+         AND ls.rn = 1
+        WHERE s.slug IS NOT NULL
+          AND s.slug != ''
+          AND COALESCE(ls.total_estudiantes, 0) >= 5
+    """
+    return conn.execute(resolve_schema(query)).fetchone()[0]
+
+
 def sitemap_index(request):
     base = _base_url(request)
 
     with get_duckdb_connection() as conn:
-        count_query = "SELECT COUNT(*) FROM gold.dim_colegios_slugs"
-        total = conn.execute(resolve_schema(count_query)).fetchone()[0]
+        total = _indexable_school_count(conn)
 
     pages = max(1, math.ceil(total / SITEMAP_PAGE_SIZE))
 
@@ -76,10 +104,9 @@ def sitemap_static(request):
     urls = [
         f"{base}/",
         f"{base}/pricing/",
-        f"{base}/icfes/",
-        f"{base}/icfes/colegio/",
         f"{base}/icfes/departamentos/",
         f"{base}/icfes/historico/puntaje-global/",
+        f"{base}/icfes/colegios-bilingues/",
     ]
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
@@ -105,9 +132,26 @@ def sitemap_icfes(request, page):
     offset = (page - 1) * limit
 
     query = """
-        SELECT slug, created_at
-        FROM gold.dim_colegios_slugs
-        ORDER BY slug
+        WITH latest_school AS (
+            SELECT
+                h.codigo_dane,
+                h.total_estudiantes,
+                ROW_NUMBER() OVER (
+                    PARTITION BY h.codigo_dane
+                    ORDER BY CAST(h.ano AS INTEGER) DESC
+                ) AS rn
+            FROM gold.fct_colegio_historico h
+            WHERE h.codigo_dane IS NOT NULL
+        )
+        SELECT s.slug, s.created_at
+        FROM gold.dim_colegios_slugs s
+        JOIN latest_school ls
+          ON ls.codigo_dane = s.codigo
+         AND ls.rn = 1
+        WHERE s.slug IS NOT NULL
+          AND s.slug != ''
+          AND COALESCE(ls.total_estudiantes, 0) >= 5
+        ORDER BY s.slug
         LIMIT ? OFFSET ?
     """
     with get_duckdb_connection() as conn:
