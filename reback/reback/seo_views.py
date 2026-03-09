@@ -33,6 +33,23 @@ def robots_txt(request):
         "Disallow: /social-card/",
         "Disallow: /*.map$",
         "",
+        # SEO/audit bots — throttled (aportan auditorías pero no tráfico)
+        "User-agent: SemrushBot",
+        "Crawl-delay: 10",
+        "",
+        "User-agent: AhrefsBot",
+        "Crawl-delay: 10",
+        "",
+        # Bots que no aportan tráfico relevante — bloqueados
+        "User-agent: Amazonbot",
+        "Disallow: /",
+        "",
+        "User-agent: DotBot",
+        "Disallow: /",
+        "",
+        "User-agent: MJ12bot",
+        "Disallow: /",
+        "",
         # AI crawlers — explicitly allowed for public educational content
         "User-agent: GPTBot",
         "Allow: /",
