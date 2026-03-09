@@ -19,6 +19,7 @@ SCRIPTS = [
     ("01_generate_slugs.py", "Generating slugs"),
     ("02_sync_gold_to_prod.py", "Syncing gold tables to prod"),
     ("03_verify_deployment.py", "Verifying deployment"),
+    ("04_notify_indexnow.py", "Notifying IndexNow of updated URLs"),
 ]
 
 def run_script(script_name, description):
@@ -55,6 +56,7 @@ def main():
     print("  1. Generate slugs for all schools")
     print("  2. Sync all gold tables from dev to prod (with backup)")
     print("  3. Verify the deployment")
+    print("  4. Notify IndexNow of updated URLs (Bing, Yandex)")
     
     response = input("\nProceed with deployment? (yes/no): ").strip().lower()
     
