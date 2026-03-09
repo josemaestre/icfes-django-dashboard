@@ -85,11 +85,17 @@ def sitemap_index(request):
     pages = max(1, math.ceil(total / SITEMAP_PAGE_SIZE))
 
     items = [f"{base}/sitemap-static.xml"]
+    # National school pages (paginated)
     items.extend(f"{base}/sitemap-icfes-{i}.xml" for i in range(1, pages + 1))
+    # Geographic hierarchy: departamentos → municipios
     items.append(f"{base}/sitemap-departamentos.xml")
+    items.append(f"{base}/sitemap-ranking-sector-departamentos.xml")
     items.append(f"{base}/sitemap-municipios.xml")
+    items.append(f"{base}/sitemap-ranking-sector-municipios.xml")
+    # National ranking pages
+    items.append(f"{base}/sitemap-ranking-sector-nacional.xml")
+    # Long-tail and thematic pages
     items.append(f"{base}/sitemap-longtail.xml")
-    items.append(f"{base}/sitemap-ranking-sector.xml")
     items.append(f"{base}/sitemap-materias.xml")
     items.append(f"{base}/sitemap-mejoraron.xml")
     items.append(f"{base}/sitemap-bilingues.xml")
