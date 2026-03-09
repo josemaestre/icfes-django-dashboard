@@ -133,12 +133,12 @@
         </div>
 
         <div class="panel p-3 mb-4">
-            <h2 class="h5 mb-3">Tendencia histórica del puntaje global</h2>
+            <h2 class="h5 mb-3">Tendencia histórica del puntaje ICFES en {{ geo.name }}</h2>
             <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
         </div>
 
         <div class="panel p-3 mb-4">
-            <h2 class="h5 mb-3">Top 10 colegios ({{ latest_year }})</h2>
+            <h2 class="h5 mb-3">Top 10 colegios en {{ geo.name }} ({{ latest_year }})</h2>
             <div class="table-responsive">
                 <table class="table table-striped align-middle">
                     <thead>
@@ -262,7 +262,7 @@
         <h3 class="mb-2">¿Quieres un diagnóstico completo de tu colegio?</h3>
         <p class="lead mb-3">Obtén reportes personalizados con brechas por materia, tendencias históricas y acciones concretas de mejora.</p>
         <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-            <a href="/landing/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_planes" class="btn btn-primary btn-lg">Solicitar diagnóstico gratuito</a>
+            <a href="/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_planes" class="btn btn-primary btn-lg">Solicitar diagnóstico gratuito</a>
             <a href="/icfes/departamentos/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Explorar el portal ICFES</a>
         </div>
     </div>
