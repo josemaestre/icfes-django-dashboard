@@ -1687,6 +1687,7 @@ def get_historia_regiones(ano=None):
             WHERE ano = (
                 SELECT MAX(ano) FROM gold.tendencias_regionales
             )
+              AND region IS NOT NULL
             ORDER BY puntaje DESC
         """)
         with get_duckdb_connection() as con:
