@@ -12,6 +12,7 @@ import unicodedata
 
 from icfes_dashboard.db_utils import (
     get_duckdb_connection,
+    resolve_schema,
     get_brecha_kpis,
     get_brecha_por_materia,
     get_tendencia_historica_sector,
@@ -125,7 +126,7 @@ def search_schools(request):
     
     try:
         with get_duckdb_connection() as conn:
-            sql = """
+            sql = resolve_schema("""
                 SELECT DISTINCT
                     colegio_bk as code,
                     nombre_colegio as name,
@@ -136,7 +137,7 @@ def search_schools(request):
                    OR CAST(colegio_bk AS VARCHAR) LIKE ?
                 ORDER BY nombre_colegio
                 LIMIT 20
-            """
+            """)
             results = conn.execute(sql, [f'%{query}%', f'%{query}%']).fetchall()
             
             schools = [
@@ -170,12 +171,12 @@ def get_departments(request):
     """
     try:
         with get_duckdb_connection() as conn:
-            sql = """
+            sql = resolve_schema("""
                 SELECT DISTINCT departamento as department
                 FROM gold.dim_colegios
                 WHERE departamento IS NOT NULL
                 ORDER BY departamento
-            """
+            """)
             results = conn.execute(sql).fetchall()
             
             departments = [r[0] for r in results if r[0]]
@@ -208,13 +209,13 @@ def get_municipalities(request):
     
     try:
         with get_duckdb_connection() as conn:
-            sql = """
+            sql = resolve_schema("""
                 SELECT DISTINCT municipio as municipality
                 FROM gold.dim_colegios
                 WHERE departamento = ?
                   AND municipio IS NOT NULL
                 ORDER BY municipio
-            """
+            """)
             results = conn.execute(sql, [department]).fetchall()
             
             municipalities = [r[0] for r in results if r[0]]
