@@ -510,19 +510,15 @@ def sitemap_bilingues(request):
         lastmod = _dataset_lastmod_iso(conn)
         geo_rows = conn.execute(
             resolve_schema("""
-                SELECT DISTINCT a.departamento, a.municipio
-                FROM gold.fct_agg_colegios_ano a
-                WHERE a.departamento IS NOT NULL AND a.departamento != ''
-                  AND a.municipio IS NOT NULL AND a.municipio != ''
-                  AND CAST(a.ano AS INTEGER) = (
-                      SELECT MAX(CAST(ano AS INTEGER)) FROM gold.fct_agg_colegios_ano
+                SELECT DISTINCT d.departamento, d.municipio
+                FROM gold.dim_colegios_ano d
+                WHERE d.es_bilingue = TRUE
+                  AND d.departamento IS NOT NULL AND d.departamento != ''
+                  AND d.municipio IS NOT NULL AND d.municipio != ''
+                  AND CAST(d.ano AS INTEGER) = (
+                      SELECT MAX(CAST(ano AS INTEGER)) FROM gold.dim_colegios_ano
                   )
-                  AND EXISTS (
-                      SELECT 1 FROM icfes_silver.icfes i
-                      WHERE i.cole_bilingue IN ('S', '1')
-                        AND i.cole_cod_dane_establecimiento = a.colegio_bk
-                  )
-                ORDER BY a.departamento, a.municipio
+                ORDER BY d.departamento, d.municipio
             """)
         ).fetchall()
 
