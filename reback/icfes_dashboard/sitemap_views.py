@@ -114,25 +114,26 @@ def sitemap_index(request):
 def sitemap_static(request):
     base = _base_url(request)
     lastmod = datetime.now(timezone.utc).date().isoformat()
+    # (url, changefreq, priority)
     urls = [
-        f"{base}/",
-        f"{base}/pricing/",
-        f"{base}/icfes/ranking/",
-        f"{base}/icfes/departamentos/",
-        f"{base}/icfes/historia/",
-        f"{base}/icfes/ingles/",
-        f"{base}/icfes/historico/puntaje-global/",
-        f"{base}/icfes/colegios-bilingues/",
+        (f"{base}/",                                "monthly", "1.0"),
+        (f"{base}/pricing/",                        "monthly", "0.6"),
+        (f"{base}/icfes/ranking/",                  "monthly", "0.9"),
+        (f"{base}/icfes/departamentos/",            "monthly", "0.8"),
+        (f"{base}/icfes/historia/",                 "yearly",  "0.7"),
+        (f"{base}/icfes/ingles/",                   "yearly",  "0.7"),
+        (f"{base}/icfes/historico/puntaje-global/", "yearly",  "0.7"),
+        (f"{base}/icfes/colegios-bilingues/",       "yearly",  "0.7"),
     ]
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
     xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
-    for loc in urls:
+    for loc, changefreq, priority in urls:
         xml.append("  <url>")
         xml.append(f"    <loc>{escape(loc)}</loc>")
         xml.append(f"    <lastmod>{lastmod}</lastmod>")
-        xml.append("    <changefreq>weekly</changefreq>")
-        xml.append("    <priority>0.8</priority>")
+        xml.append(f"    <changefreq>{changefreq}</changefreq>")
+        xml.append(f"    <priority>{priority}</priority>")
         xml.append("  </url>")
     xml.append("</urlset>")
 
