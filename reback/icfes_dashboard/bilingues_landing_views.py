@@ -4,7 +4,7 @@ import logging
 
 from django.conf import settings
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
 
@@ -290,6 +290,11 @@ def bilingues_departamento_page(request, dept):
             if not departamento:
                 raise Http404("Departamento no encontrado")
             canonical_slug = slugify(departamento)
+            if canonical_slug != dept:
+                return redirect(
+                    f"/icfes/departamento/{canonical_slug}/colegios-bilingues/",
+                    permanent=True,
+                )
             rows = _fetch_bilingues(conn, latest_year, departamento=departamento)
 
         return _render_bilingues(
@@ -327,6 +332,12 @@ def bilingues_municipio_page(request, dept, muni):
                 raise Http404("Municipio no encontrado")
             canonical_dept_slug = slugify(departamento)
             canonical_muni_slug = slugify(municipio)
+            if canonical_dept_slug != dept or canonical_muni_slug != muni:
+                return redirect(
+                    f"/icfes/departamento/{canonical_dept_slug}"
+                    f"/municipio/{canonical_muni_slug}/colegios-bilingues/",
+                    permanent=True,
+                )
             rows = _fetch_bilingues(
                 conn, latest_year, departamento=departamento, municipio=municipio
             )

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from django.conf import settings
@@ -33,9 +34,9 @@ def robots_txt(request):
         "Disallow: /social-card/",
         "Disallow: /*.map$",
         "",
-        # SEO/audit bots — throttled (aportan auditorías pero no tráfico)
+        # SEO/audit bots — bloqueados (no usamos estas herramientas)
         "User-agent: SemrushBot",
-        "Crawl-delay: 10",
+        "Disallow: /",
         "",
         "User-agent: AhrefsBot",
         "Crawl-delay: 10",
@@ -164,6 +165,19 @@ Los análisis, visualizaciones y modelos predictivos son propiedad de ICFES Anal
     response = HttpResponse(content, content_type="text/plain; charset=utf-8")
     response["Cache-Control"] = "public, max-age=86400"  # 24h
     return response
+
+
+def traffic_advice(request):
+    """Serve /.well-known/traffic-advice — Chrome requests this on every page load."""
+    data = [{"user_agent": "prefetch-proxy", "fraction": 0}]
+    response = HttpResponse(json.dumps(data), content_type="application/trafficadvice+json")
+    response["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
+def apple_touch_icon(request):
+    """Return 204 for apple-touch-icon requests — no custom icon available."""
+    return HttpResponse(status=204)
 
 
 def favicon_view(request):

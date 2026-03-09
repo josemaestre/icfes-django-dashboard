@@ -22,8 +22,12 @@ urlpatterns = [
     path("landing/", home_redirect_view),  # Redirect /landing/ to /
     path("icfes-dashboard/", legacy_icfes_dashboard_redirect),
 
-    # Favicon — must be before the catch-all pages include to avoid dynamic_pages_view
+    # Favicon and iOS touch icons
     path("favicon.ico", seo_views.favicon_view),
+    path("apple-touch-icon.png", seo_views.apple_touch_icon),
+    path("apple-touch-icon-precomposed.png", seo_views.apple_touch_icon),
+    # Chrome requests this on every page load to check for prefetch proxy support
+    path(".well-known/traffic-advice", seo_views.traffic_advice),
     path("email-graphs/<path:slug>.png", email_graph_views.email_graph_png),
     path("social-card/colegio/<path:slug>.png", email_graph_views.social_card_school_png),
 
