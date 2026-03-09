@@ -566,7 +566,7 @@ function renderCap2(regs) {
         const rank = ['🥇','🥈','🥉','4°','5°','6°'][i] || '';
         bar.innerHTML = `
             <span>${rank}</span>
-            <span>${r.region.replace('Región ','')}</span>
+            <span>${(r.region || 'Sin región').replace('Región ','')}</span>
             <small class="text-muted ms-1">${r.clasificacion_aceleracion || ''}</small>
             <span class="region-score text-primary fw-bold">${fmt(r.puntaje, 0)}</span>
         `;
@@ -577,7 +577,7 @@ function renderCap2(regs) {
     new Chart(document.getElementById('chart-regiones'), {
         type: 'bar',
         data: {
-            labels: regs.map(r => r.region.replace('Región ', '')),
+            labels: regs.filter(r => r.region).map(r => r.region.replace('Región ', '')),
             datasets: [{
                 label: 'Puntaje Global Promedio',
                 data:  regs.map(r => r.puntaje),
@@ -962,7 +962,7 @@ function renderCap6(ing) {
     new Chart(document.getElementById('chart-ingles-regiones'), {
         type: 'bar',
         data: {
-            labels: regiones.map(r => r.region.replace('Región ', '')),
+            labels: regiones.filter(r => r.region).map(r => r.region.replace('Región ', '')),
             datasets: [{
                 label: 'Puntaje Inglés',
                 data:  regiones.map(r => r.ingles),

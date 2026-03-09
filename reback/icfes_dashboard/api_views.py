@@ -506,7 +506,7 @@ def historia_tendencia_nacional(request):
 def historia_regiones(request):
     """Scores y tendencias por región (año más reciente)."""
     try:
-        data = _cached('historia_regiones', _HISTORIA_CACHE_TTL,
+        data = _cached('historia_regiones_v2', _HISTORIA_CACHE_TTL,
                        get_historia_regiones)
         return JsonResponse({'data': data})
     except Exception as e:
