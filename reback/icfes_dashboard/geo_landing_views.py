@@ -43,6 +43,16 @@ def _trim_meta(text, max_len):
     return f"{cut}…"
 
 
+def _fit_meta_description(text, min_len=110, max_len=155):
+    value = _trim_meta(text, max_len)
+    if len(value) >= min_len:
+        return value
+    extra = (
+        " Revisa ranking de colegios, evolución anual y comparativos territoriales con datos actualizados."
+    )
+    return _trim_meta(f"{value}{extra}", max_len)
+
+
 def _default_og_image(base_url):
     return f"{base_url}/static/images/logo-dark-full.png"
 
@@ -238,15 +248,13 @@ def _geo_landing_context(request, departamento, municipio=None):
     base_url = _build_base_url(request)
     og_image = _default_og_image(base_url)
 
-    seo_title = (
-        f"Puntaje ICFES {latest_year} en {location_name} | Ranking de Colegios y Tendencias"
-    )
+    seo_title = f"ICFES {latest_year} en {location_name} | Ranking de colegios"
     seo_description = (
         f"Resultados ICFES en {location_name}. "
         f"Consulta promedio global, evolución histórica y top colegios del año {latest_year}."
     )
     seo_title = _trim_meta(seo_title, 65)
-    seo_description = _trim_meta(seo_description, 155)
+    seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
 
     breadcrumb_items = [
         {
@@ -373,7 +381,10 @@ def departments_index_page(request):
                 "departments": departments,
                 "seo": {
                     "title": "Departamentos con resultados ICFES | ICFES Analytics",
-                    "description": "Explora resultados ICFES por departamento en Colombia.",
+                    "description": (
+                        "Explora resultados ICFES por departamento en Colombia, con acceso a rankings, "
+                        "tendencias históricas y páginas municipales."
+                    ),
                     "keywords": "ICFES por departamento, ranking departamentos ICFES, pruebas saber 11",
                     "og_image": _default_og_image(_build_base_url(request)),
                 },

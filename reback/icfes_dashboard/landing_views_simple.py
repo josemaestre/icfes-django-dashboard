@@ -69,6 +69,16 @@ def _trim_meta(text, max_len):
     return f"{cut}…"
 
 
+def _fit_meta_description(text, min_len=110, max_len=155):
+    value = _trim_meta(text, max_len)
+    if len(value) >= min_len:
+        return value
+    extra = (
+        " Compara su desempeño por materia, tendencia anual y posición frente a su municipio y departamento."
+    )
+    return _trim_meta(f"{value}{extra}", max_len)
+
+
 def _build_base_url(request):
     configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
     if configured:
@@ -733,9 +743,7 @@ def school_landing_page(request, slug):
                 if comparison and comparison.get("percentil_municipal") is not None:
                     title_extras.append(f"P{comparison['percentil_municipal']}")
                 extras_str = " | ".join(title_extras)
-                seo_title = (
-                    f"{school['nombre']} ({school['municipio']}) — ICFES {latest_year}: {extras_str}"
-                )
+                seo_title = f"{school['nombre']} en {school['municipio']} | ICFES {latest_year}"
 
                 seo_description = (
                     f"Resultados ICFES {latest_year} de {school['nombre']} en {school['municipio']}, "
@@ -743,14 +751,14 @@ def school_landing_page(request, slug):
                     f"brechas por materia, evolución histórica y recomendaciones de mejora."
                 )
             else:
-                seo_title = f"{school['nombre']} ({school['municipio']}) — ICFES Analytics"
+                seo_title = f"{school['nombre']} en {school['municipio']} | ICFES Analytics"
                 seo_description = (
                     f"Consulta el perfil ICFES de {school['nombre']} en {school['municipio']}, "
                     f"{school['departamento']}, con comparativos territoriales y tendencias."
                 )
 
             seo_title = _trim_meta(seo_title, 65)
-            seo_description = _trim_meta(seo_description, 155)
+            seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
 
             faq_items = [
                 {

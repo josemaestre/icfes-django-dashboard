@@ -35,6 +35,16 @@ def _trim_meta(text, max_len):
     return f"{cut}…"
 
 
+def _fit_meta_description(text, min_len=110, max_len=155):
+    value = _trim_meta(text, max_len)
+    if len(value) >= min_len:
+        return value
+    extra = (
+        " Incluye puntajes de inglés, puntaje global y enlaces por departamento y municipio."
+    )
+    return _trim_meta(f"{value}{extra}", max_len)
+
+
 def _default_og_image(base_url):
     return f"{base_url}/static/images/logo-dark-full.png"
 
@@ -166,7 +176,7 @@ def _render_bilingues(request, *, rows, latest_year, location_name, canonical_pa
         )
 
     title = _trim_meta(title, 65)
-    description = _trim_meta(description, 155)
+    description = _fit_meta_description(description, min_len=110, max_len=155)
 
     schema_data = json.dumps(
         [

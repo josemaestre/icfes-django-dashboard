@@ -44,6 +44,16 @@ def _trim_meta(text, max_len):
     return f"{cut}…"
 
 
+def _fit_meta_description(text, min_len=110, max_len=155):
+    value = _trim_meta(text, max_len)
+    if len(value) >= min_len:
+        return value
+    extra = (
+        " Incluye comparativos por departamento, municipio y enlaces a rankings relacionados."
+    )
+    return _trim_meta(f"{value}{extra}", max_len)
+
+
 def _available_years(conn):
     query = """
         SELECT DISTINCT CAST(ano AS INTEGER) AS ano
@@ -318,7 +328,7 @@ def _render_sector_ranking(
         "Incluye puntajes por materia, posición actual, variación anual y percentil sectorial."
     )
     seo_title = _trim_meta(seo_title, 65)
-    seo_description = _trim_meta(seo_description, 155)
+    seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
 
     base_url = _build_base_url(request)
     canonical_url = _absolute_url(base_url, canonical_path)
@@ -406,7 +416,7 @@ def ranking_colegios_year_page(request, ano):
             "Consulta top colegios por puntaje global, departamento y municipio."
         )
         title = _trim_meta(title, 65)
-        description = _trim_meta(description, 155)
+        description = _fit_meta_description(description, min_len=110, max_len=155)
         canonical_url = request.build_absolute_uri(request.path)
         og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
@@ -512,7 +522,7 @@ def ranking_matematicas_year_page(request, ano):
             "Incluye comparación con puntaje global por colegio."
         )
         title = _trim_meta(title, 65)
-        description = _trim_meta(description, 155)
+        description = _fit_meta_description(description, min_len=110, max_len=155)
         canonical_url = request.build_absolute_uri(request.path)
         og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
@@ -605,7 +615,7 @@ def historico_nacional_page(request):
             "Consulta tendencia nacional, total de colegios y estudiantes por año."
         )
         title = _trim_meta(title, 65)
-        description = _trim_meta(description, 155)
+        description = _fit_meta_description(description, min_len=110, max_len=155)
         canonical_url = request.build_absolute_uri(request.path)
         og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
@@ -958,7 +968,7 @@ def ranking_materia_page(request, materia_slug, ano):
             "en Colombia. Incluye comparación con puntaje global por colegio."
         )
         title = _trim_meta(title, 65)
-        description = _trim_meta(description, 155)
+        description = _fit_meta_description(description, min_len=110, max_len=155)
         canonical_url = request.build_absolute_uri(request.path)
         og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
@@ -1100,7 +1110,7 @@ def colegios_mejoraron_page(request, ano):
             f"comparado con {prev_year}. Incluye puntaje actual, anterior y variación."
         )
         title = _trim_meta(title, 65)
-        description = _trim_meta(description, 155)
+        description = _fit_meta_description(description, min_len=110, max_len=155)
         canonical_url = request.build_absolute_uri(request.path)
         og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
