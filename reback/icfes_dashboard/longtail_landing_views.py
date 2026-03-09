@@ -411,13 +411,22 @@ def ranking_colegios_year_page(request, ano):
                     {
                         "nombre": row[0],
                         "departamento": row[1],
+                        "departamento_slug": slugify(row[1]) if row[1] else "",
                         "municipio": row[2],
+                        "municipio_slug": slugify(row[2]) if row[2] else "",
                         "sector": row[3],
                         "score": float(row[4]) if row[4] is not None else None,
                         "estudiantes": int(row[5]) if row[5] else 0,
                         "slug": row[6],
                     }
                     for row in rows
+                ],
+                "related_links": [
+                    {"label": "Resultados ICFES por departamento", "url": "/icfes/departamentos/"},
+                    {"label": f"Colegios con mejor matemáticas ({year})", "url": f"/icfes/ranking/matematicas/{year}/"},
+                    {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
+                    {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
+                    {"label": "Histórico nacional de puntaje global", "url": "/icfes/historico/puntaje-global/"},
                 ],
                 "seo": {
                     "title": title,
@@ -504,13 +513,22 @@ def ranking_matematicas_year_page(request, ano):
                     {
                         "nombre": row[0],
                         "departamento": row[1],
+                        "departamento_slug": slugify(row[1]) if row[1] else "",
                         "municipio": row[2],
+                        "municipio_slug": slugify(row[2]) if row[2] else "",
                         "sector": row[3],
                         "score_math": float(row[4]) if row[4] is not None else None,
                         "score_global": float(row[5]) if row[5] is not None else None,
                         "slug": row[6],
                     }
                     for row in rows
+                ],
+                "related_links": [
+                    {"label": "Resultados ICFES por departamento", "url": "/icfes/departamentos/"},
+                    {"label": f"Ranking general de colegios ({year})", "url": f"/icfes/ranking/colegios/{year}/"},
+                    {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
+                    {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
+                    {"label": "Histórico nacional de puntaje global", "url": "/icfes/historico/puntaje-global/"},
                 ],
                 "seo": {
                     "title": title,
@@ -946,6 +964,13 @@ def ranking_materia_page(request, materia_slug, ano):
                     }
                     for row in rows
                 ],
+                "related_links": [
+                    {"label": "Resultados ICFES por departamento", "url": "/icfes/departamentos/"},
+                    {"label": f"Ranking general de colegios ({year})", "url": f"/icfes/ranking/colegios/{year}/"},
+                    {"label": f"Ranking matemáticas ({year})", "url": f"/icfes/ranking/matematicas/{year}/"},
+                    {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
+                    {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
+                ],
                 "seo": {
                     "title": title,
                     "description": description,
@@ -1077,6 +1102,13 @@ def colegios_mejoraron_page(request, ano):
                         "slug": row[9],
                     }
                     for row in rows
+                ],
+                "related_links": [
+                    {"label": "Resultados ICFES por departamento", "url": "/icfes/departamentos/"},
+                    {"label": f"Ranking general de colegios ({year})", "url": f"/icfes/ranking/colegios/{year}/"},
+                    {"label": f"Ranking matemáticas ({year})", "url": f"/icfes/ranking/matematicas/{year}/"},
+                    {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
+                    {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
                 ],
                 "seo": {
                     "title": title,

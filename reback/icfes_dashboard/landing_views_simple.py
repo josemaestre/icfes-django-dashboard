@@ -200,6 +200,9 @@ def school_landing_page(request, slug):
             current_sector = latest_stats[16] if latest_stats else school["sector"]
             current_municipio = latest_stats[17] if latest_stats else school["municipio"]
             current_departamento = latest_stats[18] if latest_stats else school["departamento"]
+            sector_slug = (
+                "oficiales" if _normalize_text(current_sector) == "oficial" else "privados"
+            )
 
             comparison_data = None
             if colegio_sk:
@@ -882,6 +885,18 @@ def school_landing_page(request, slug):
                     "ranking_nacional_url": _absolute_url(
                         base_url,
                         f"/icfes/ranking/colegios/{latest_year}/",
+                    ),
+                    "ranking_sector_nacional_url": _absolute_url(
+                        base_url,
+                        f"/icfes/ranking/sector/{sector_slug}/colombia/",
+                    ),
+                    "ranking_sector_departamental_url": _absolute_url(
+                        base_url,
+                        f"/icfes/ranking/sector/{sector_slug}/departamento/{dept_slug}/",
+                    ),
+                    "ranking_sector_municipal_url": _absolute_url(
+                        base_url,
+                        f"/icfes/ranking/sector/{sector_slug}/departamento/{dept_slug}/municipio/{muni_slug}/",
                     ),
                     "ranking_matematicas_url": _absolute_url(
                         base_url,

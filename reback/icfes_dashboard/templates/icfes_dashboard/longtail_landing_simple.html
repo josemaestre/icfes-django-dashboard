@@ -153,8 +153,20 @@
                                 <span class="name-truncate" title="{{ row.nombre }}">{{ row.nombre }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ row.departamento|default:"-" }}</td>
-                            <td>{{ row.municipio|default:"-" }}</td>
+                            <td>
+                                {% if row.departamento_slug %}
+                                <a href="/icfes/departamento/{{ row.departamento_slug }}/">{{ row.departamento }}</a>
+                                {% else %}
+                                {{ row.departamento|default:"-" }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.departamento_slug and row.municipio_slug %}
+                                <a href="/icfes/departamento/{{ row.departamento_slug }}/municipio/{{ row.municipio_slug }}/">{{ row.municipio|default:"-" }}</a>
+                                {% else %}
+                                {{ row.municipio|default:"-" }}
+                                {% endif %}
+                            </td>
                             <td>{{ row.sector|default:"-" }}</td>
                             {% if mode == "ranking_general" %}
                             <td>{{ row.score|default:"-" }}</td>
@@ -314,6 +326,17 @@
         {% endif %}
         {% endif %}
 
+        {% if related_links and mode != "ranking_sector" %}
+        <div class="panel p-3 mb-4">
+            <h3 class="h6 mb-2">Explora más rankings</h3>
+            <ul class="mb-0">
+                {% for link in related_links %}
+                <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         {% if mode == "historico_nacional" %}
         <div class="panel p-3 mb-4">
             <h2 class="h5 mb-3">Tendencia histórica del puntaje global ICFES (nacional)</h2>
@@ -388,7 +411,11 @@
                                 {% if row.departamento_slug %}
                                 <a href="/icfes/departamento/{{ row.departamento_slug }}/">{{ row.departamento }}</a>
                                 {% else %}{{ row.departamento|default:"-" }}{% endif %}
-                                {% if row.municipio %}· {{ row.municipio }}{% endif %}
+                                {% if row.municipio and row.departamento_slug and row.municipio_slug %}
+                                · <a href="/icfes/departamento/{{ row.departamento_slug }}/municipio/{{ row.municipio_slug }}/">{{ row.municipio }}</a>
+                                {% elif row.municipio %}
+                                · {{ row.municipio }}
+                                {% endif %}
                             </td>
                             <td>{{ row.sector|default:"-" }}</td>
                             <td><strong>{{ row.score_materia|default:"-" }}</strong></td>
@@ -445,7 +472,11 @@
                                 {% if row.departamento_slug %}
                                 <a href="/icfes/departamento/{{ row.departamento_slug }}/">{{ row.departamento }}</a>
                                 {% else %}{{ row.departamento|default:"-" }}{% endif %}
-                                {% if row.municipio %}· {{ row.municipio }}{% endif %}
+                                {% if row.municipio and row.departamento_slug and row.municipio_slug %}
+                                · <a href="/icfes/departamento/{{ row.departamento_slug }}/municipio/{{ row.municipio_slug }}/">{{ row.municipio }}</a>
+                                {% elif row.municipio %}
+                                · {{ row.municipio }}
+                                {% endif %}
                             </td>
                             <td>{{ row.sector|default:"-" }}</td>
                             <td>

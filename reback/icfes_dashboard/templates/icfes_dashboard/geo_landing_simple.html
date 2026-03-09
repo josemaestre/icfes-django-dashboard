@@ -138,6 +138,27 @@
             </div>
         </div>
 
+        <div class="panel p-3 mb-4">
+            <h2 class="h5 mb-2">Explora más páginas relacionadas</h2>
+            <ul class="mb-0">
+                <li><a href="/icfes/departamentos/">Resultados ICFES por departamento</a></li>
+                {% if geo.type == "departamento" %}
+                <li><a href="/icfes/ranking/sector/oficiales/departamento/{{ geo.departamento_slug }}/">Ranking público en {{ geo.departamento }}</a></li>
+                <li><a href="/icfes/ranking/sector/privados/departamento/{{ geo.departamento_slug }}/">Ranking privado en {{ geo.departamento }}</a></li>
+                <li><a href="/icfes/departamento/{{ geo.departamento_slug }}/colegios-bilingues/">Colegios bilingues en {{ geo.departamento }}</a></li>
+                {% endif %}
+                {% if geo.type == "municipio" %}
+                <li><a href="/icfes/ranking/sector/oficiales/departamento/{{ geo.departamento_slug }}/municipio/{{ geo.municipio_slug }}/">Ranking público en {{ geo.municipio }}</a></li>
+                <li><a href="/icfes/ranking/sector/privados/departamento/{{ geo.departamento_slug }}/municipio/{{ geo.municipio_slug }}/">Ranking privado en {{ geo.municipio }}</a></li>
+                <li><a href="/icfes/departamento/{{ geo.departamento_slug }}/municipio/{{ geo.municipio_slug }}/colegios-bilingues/">Colegios bilingues en {{ geo.municipio }}</a></li>
+                <li><a href="/icfes/departamento/{{ geo.departamento_slug }}/">Volver al ranking departamental de {{ geo.departamento }}</a></li>
+                {% endif %}
+                <li><a href="/icfes/ranking/colegios/{{ latest_year }}/">Ranking nacional de colegios {{ latest_year }}</a></li>
+                <li><a href="/icfes/ranking/matematicas/{{ latest_year }}/">Ranking nacional de matemáticas {{ latest_year }}</a></li>
+                <li><a href="/icfes/historico/puntaje-global/">Histórico nacional del puntaje global</a></li>
+            </ul>
+        </div>
+
         {% if geo.type == "departamento" and municipios %}
         <div class="panel p-3">
             <h2 class="h5 mb-3">Municipios destacados en {{ geo.departamento }}</h2>
