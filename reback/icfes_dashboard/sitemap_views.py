@@ -1,5 +1,6 @@
 import math
 from datetime import datetime, timezone
+from urllib.parse import urlparse, urlunparse
 from xml.sax.saxutils import escape
 
 from django.conf import settings
@@ -14,9 +15,15 @@ SITEMAP_PAGE_SIZE = 40000
 
 def _base_url(request):
     configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
-    if configured:
-        return configured.rstrip("/")
-    return request.build_absolute_uri("/").rstrip("/")
+    raw = configured if configured else request.build_absolute_uri("/")
+    parsed = urlparse(raw)
+
+    scheme = "https"
+    netloc = parsed.netloc or request.get_host()
+    path = parsed.path or ""
+
+    canonical = urlunparse((scheme, netloc, path.rstrip("/"), "", "", ""))
+    return canonical.rstrip("/")
 
 
 def _format_lastmod(value):
