@@ -82,7 +82,31 @@
                 {% if geo.municipio %} / <a href="/icfes/departamento/{{ geo.departamento_slug }}/" class="link-light">{{ geo.departamento }}</a>{% endif %}
             </p>
             <h1 class="mb-2">ICFES en {{ geo.name }}</h1>
-            <p class="mb-0">Análisis agregado y evolución histórica. Año más reciente: {{ latest_year }}.</p>
+            <p class="mb-0">
+                {% if geo.municipio %}
+                    En <strong>{{ geo.municipio }}</strong> ({{ geo.departamento }}),
+                    <strong>{{ stats.total_colegios }} colegio{{ stats.total_colegios|pluralize:"s" }}</strong>
+                    presentaron el ICFES Saber 11 en <strong>{{ latest_year }}</strong>,
+                    con un promedio de <strong>{{ stats.promedio_global }} puntos</strong>
+                    y {{ stats.total_estudiantes|floatformat:"0" }} estudiantes evaluados.
+                    {% if top_schools %}
+                        El colegio con mayor puntaje fue
+                        {% if top_schools.0.slug %}<a href="/icfes/colegio/{{ top_schools.0.slug }}/" class="link-light fw-semibold">{{ top_schools.0.nombre }}</a>{% else %}<strong>{{ top_schools.0.nombre }}</strong>{% endif %}
+                        con {{ top_schools.0.promedio_global }} puntos.
+                    {% endif %}
+                {% else %}
+                    En <strong>{{ geo.departamento }}</strong>,
+                    <strong>{{ stats.total_colegios }} colegio{{ stats.total_colegios|pluralize:"s" }}</strong>
+                    presentaron el ICFES Saber 11 en <strong>{{ latest_year }}</strong>,
+                    con un promedio de <strong>{{ stats.promedio_global }} puntos</strong>
+                    y {{ stats.total_estudiantes|floatformat:"0" }} estudiantes evaluados.
+                    {% if top_schools %}
+                        El colegio con mayor puntaje fue
+                        {% if top_schools.0.slug %}<a href="/icfes/colegio/{{ top_schools.0.slug }}/" class="link-light fw-semibold">{{ top_schools.0.nombre }}</a>{% else %}<strong>{{ top_schools.0.nombre }}</strong>{% endif %}
+                        con {{ top_schools.0.promedio_global }} puntos.
+                    {% endif %}
+                {% endif %}
+            </p>
         </div>
     </section>
 
