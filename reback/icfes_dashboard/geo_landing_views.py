@@ -5,6 +5,7 @@ Uses lightweight aggregate queries from fct_agg_colegios_ano.
 import json
 import logging
 
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
@@ -40,6 +41,17 @@ def _trim_meta(text, max_len):
     if " " in cut:
         cut = cut.rsplit(" ", 1)[0]
     return f"{cut}…"
+
+
+def _default_og_image(base_url):
+    return f"{base_url}/static/images/logo-dark-full.png"
+
+
+def _build_base_url(request):
+    configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
+    if configured:
+        return configured.rstrip("/")
+    return request.build_absolute_uri("/").rstrip("/")
 
 
 # Aliases para departamentos cuyo nombre completo genera slugs muy largos o poco amigables.
@@ -223,6 +235,8 @@ def _geo_landing_context(request, departamento, municipio=None):
     location_name = f"{municipio}, {departamento}" if municipio else departamento
     location_type = "municipio" if municipio else "departamento"
     canonical_url = request.build_absolute_uri(request.path)
+    base_url = _build_base_url(request)
+    og_image = _default_og_image(base_url)
 
     seo_title = (
         f"Puntaje ICFES {latest_year} en {location_name} | Ranking de Colegios y Tendencias"
@@ -327,6 +341,7 @@ def _geo_landing_context(request, departamento, municipio=None):
         "seo": {
             "title": seo_title,
             "description": seo_description,
+            "og_image": og_image,
             "keywords": (
                 f"ICFES {latest_year}, {location_name}, ranking colegios {location_name}, "
                 f"puntaje ICFES {location_name}, pruebas saber 11 {location_name}"
@@ -360,6 +375,7 @@ def departments_index_page(request):
                     "title": "Departamentos con resultados ICFES | ICFES Analytics",
                     "description": "Explora resultados ICFES por departamento en Colombia.",
                     "keywords": "ICFES por departamento, ranking departamentos ICFES, pruebas saber 11",
+                    "og_image": _default_og_image(_build_base_url(request)),
                 },
                 "canonical_url": request.build_absolute_uri(request.path),
             },

@@ -35,6 +35,10 @@ def _trim_meta(text, max_len):
     return f"{cut}…"
 
 
+def _default_og_image(base_url):
+    return f"{base_url}/static/images/logo-dark-full.png"
+
+
 def _build_base_url(request):
     configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
     if configured:
@@ -126,6 +130,7 @@ def _render_bilingues(request, *, rows, latest_year, location_name, canonical_pa
                       municipio=None, municipio_slug=None):
     base_url = _build_base_url(request)
     canonical_url = f"{base_url}{canonical_path}"
+    og_image = _default_og_image(base_url)
 
     if municipio:
         title = f"Colegios bilingues en {municipio}, {departamento} | ICFES {latest_year}"
@@ -221,7 +226,12 @@ def _render_bilingues(request, *, rows, latest_year, location_name, canonical_pa
             "municipio": municipio,
             "municipio_slug": municipio_slug,
             "breadcrumbs": breadcrumbs,
-            "seo": {"title": title, "description": description, "keywords": keywords},
+            "seo": {
+                "title": title,
+                "description": description,
+                "keywords": keywords,
+                "og_image": og_image,
+            },
             "canonical_url": canonical_url,
             "structured_data_json": schema_data,
         },

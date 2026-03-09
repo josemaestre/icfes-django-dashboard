@@ -26,6 +26,10 @@ def _absolute_url(base_url, path):
     return f"{base_url}/{path.lstrip('/')}"
 
 
+def _default_og_image(base_url):
+    return _absolute_url(base_url, "/static/images/logo-dark-full.png")
+
+
 def _meta_compact(text):
     return " ".join((text or "").split()).strip()
 
@@ -318,6 +322,7 @@ def _render_sector_ranking(
 
     base_url = _build_base_url(request)
     canonical_url = _absolute_url(base_url, canonical_path)
+    og_image = _default_og_image(base_url)
     schema_data = json.dumps(
         [
             {
@@ -351,6 +356,7 @@ def _render_sector_ranking(
             "seo": {
                 "title": seo_title,
                 "description": seo_description,
+                "og_image": og_image,
                 "keywords": (
                     f"top 20 colegios {sector_label} {location_title.lower()}, ranking icfes {latest_year}, "
                     f"colegios {sector_label} colombia"
@@ -402,6 +408,7 @@ def ranking_colegios_year_page(request, ano):
         title = _trim_meta(title, 65)
         description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
+        og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
             [
                 {
@@ -449,6 +456,7 @@ def ranking_colegios_year_page(request, ano):
                 "seo": {
                     "title": title,
                     "description": description,
+                    "og_image": og_image,
                     "keywords": (
                         f"mejores colegios icfes {year} colombia, ranking icfes {year}, "
                         "promedio icfes por colegio"
@@ -506,6 +514,7 @@ def ranking_matematicas_year_page(request, ano):
         title = _trim_meta(title, 65)
         description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
+        og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
             [
                 {
@@ -553,6 +562,7 @@ def ranking_matematicas_year_page(request, ano):
                 "seo": {
                     "title": title,
                     "description": description,
+                    "og_image": og_image,
                     "keywords": (
                         f"colegios con mejor matematicas icfes {year}, ranking matematicas icfes, "
                         f"top colegios matematicas colombia {year}"
@@ -597,6 +607,7 @@ def historico_nacional_page(request):
         title = _trim_meta(title, 65)
         description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
+        og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
             [
                 {
@@ -637,6 +648,7 @@ def historico_nacional_page(request):
                 "seo": {
                     "title": title,
                     "description": description,
+                    "og_image": og_image,
                     "keywords": (
                         "puntaje global icfes historico, tendencia icfes colombia, "
                         "evolucion icfes por ano"
@@ -948,6 +960,7 @@ def ranking_materia_page(request, materia_slug, ano):
         title = _trim_meta(title, 65)
         description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
+        og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
             [
                 {
@@ -998,6 +1011,7 @@ def ranking_materia_page(request, materia_slug, ano):
                 "seo": {
                     "title": title,
                     "description": description,
+                    "og_image": og_image,
                     "keywords": (
                         f"colegios mejor {materia_label.lower()} icfes {year}, "
                         f"ranking {materia_label.lower()} icfes colombia, "
@@ -1088,6 +1102,7 @@ def colegios_mejoraron_page(request, ano):
         title = _trim_meta(title, 65)
         description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
+        og_image = _default_og_image(_build_base_url(request))
         schema_data = json.dumps(
             [
                 {
@@ -1139,6 +1154,7 @@ def colegios_mejoraron_page(request, ano):
                 "seo": {
                     "title": title,
                     "description": description,
+                    "og_image": og_image,
                     "keywords": (
                         f"colegios que mas mejoraron icfes {year}, mejora icfes {year}, "
                         f"colegios progreso icfes colombia {year}"
