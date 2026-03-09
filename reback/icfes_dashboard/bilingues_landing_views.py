@@ -21,6 +21,20 @@ _DEPARTAMENTO_SLUG_ALIASES = {
 }
 
 
+def _meta_compact(text):
+    return " ".join((text or "").split()).strip()
+
+
+def _trim_meta(text, max_len):
+    value = _meta_compact(text)
+    if len(value) <= max_len:
+        return value
+    cut = value[: max_len - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return f"{cut}…"
+
+
 def _build_base_url(request):
     configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
     if configured:
@@ -145,6 +159,9 @@ def _render_bilingues(request, *, rows, latest_year, location_name, canonical_pa
             f"mejores colegios bilingues colombia {latest_year}, "
             "ranking colegios bilingues, colegios bilingues icfes"
         )
+
+    title = _trim_meta(title, 65)
+    description = _trim_meta(description, 155)
 
     schema_data = json.dumps(
         [

@@ -55,6 +55,20 @@ def _format_signed(value, suffix=""):
     return f"{sign}{value}{suffix}"
 
 
+def _meta_compact(text):
+    return " ".join((text or "").split()).strip()
+
+
+def _trim_meta(text, max_len):
+    value = _meta_compact(text)
+    if len(value) <= max_len:
+        return value
+    cut = value[: max_len - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return f"{cut}…"
+
+
 def _build_base_url(request):
     configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
     if configured:
@@ -734,6 +748,9 @@ def school_landing_page(request, slug):
                     f"Consulta el perfil ICFES de {school['nombre']} en {school['municipio']}, "
                     f"{school['departamento']}, con comparativos territoriales y tendencias."
                 )
+
+            seo_title = _trim_meta(seo_title, 65)
+            seo_description = _trim_meta(seo_description, 155)
 
             faq_items = [
                 {

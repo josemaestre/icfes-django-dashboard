@@ -28,6 +28,20 @@ def _build_geo_where(departamento=None, municipio=None, alias=""):
     return " AND ".join(where), params
 
 
+def _meta_compact(text):
+    return " ".join((text or "").split()).strip()
+
+
+def _trim_meta(text, max_len):
+    value = _meta_compact(text)
+    if len(value) <= max_len:
+        return value
+    cut = value[: max_len - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return f"{cut}…"
+
+
 # Aliases para departamentos cuyo nombre completo genera slugs muy largos o poco amigables.
 # Clave: slug alternativo → fragmento identificador del nombre real en la DB.
 _DEPARTAMENTO_SLUG_ALIASES = {
@@ -217,6 +231,8 @@ def _geo_landing_context(request, departamento, municipio=None):
         f"Resultados ICFES en {location_name}. "
         f"Consulta promedio global, evolución histórica y top colegios del año {latest_year}."
     )
+    seo_title = _trim_meta(seo_title, 65)
+    seo_description = _trim_meta(seo_description, 155)
 
     breadcrumb_items = [
         {

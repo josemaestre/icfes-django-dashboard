@@ -26,6 +26,20 @@ def _absolute_url(base_url, path):
     return f"{base_url}/{path.lstrip('/')}"
 
 
+def _meta_compact(text):
+    return " ".join((text or "").split()).strip()
+
+
+def _trim_meta(text, max_len):
+    value = _meta_compact(text)
+    if len(value) <= max_len:
+        return value
+    cut = value[: max_len - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return f"{cut}…"
+
+
 def _available_years(conn):
     query = """
         SELECT DISTINCT CAST(ano AS INTEGER) AS ano
@@ -299,6 +313,8 @@ def _render_sector_ranking(
         f"Ranking top 20 de colegios {sector_label} {scope_label.lower()} con datos ICFES {latest_year}. "
         "Incluye puntajes por materia, posición actual, variación anual y percentil sectorial."
     )
+    seo_title = _trim_meta(seo_title, 65)
+    seo_description = _trim_meta(seo_description, 155)
 
     base_url = _build_base_url(request)
     canonical_url = _absolute_url(base_url, canonical_path)
@@ -383,6 +399,8 @@ def ranking_colegios_year_page(request, ano):
             f"Ranking ICFES {year} de colegios en Colombia. "
             "Consulta top colegios por puntaje global, departamento y municipio."
         )
+        title = _trim_meta(title, 65)
+        description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
         schema_data = json.dumps(
             [
@@ -485,6 +503,8 @@ def ranking_matematicas_year_page(request, ano):
             f"Ranking de colegios con mejor puntaje en matemáticas ICFES {year} en Colombia. "
             "Incluye comparación con puntaje global por colegio."
         )
+        title = _trim_meta(title, 65)
+        description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
         schema_data = json.dumps(
             [
@@ -574,6 +594,8 @@ def historico_nacional_page(request):
             "Evolución histórica del puntaje global ICFES en Colombia. "
             "Consulta tendencia nacional, total de colegios y estudiantes por año."
         )
+        title = _trim_meta(title, 65)
+        description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
         schema_data = json.dumps(
             [
@@ -923,6 +945,8 @@ def ranking_materia_page(request, materia_slug, ano):
             f"Ranking de los 100 colegios con mayor puntaje en {materia_label} ICFES {year} "
             "en Colombia. Incluye comparación con puntaje global por colegio."
         )
+        title = _trim_meta(title, 65)
+        description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
         schema_data = json.dumps(
             [
@@ -1061,6 +1085,8 @@ def colegios_mejoraron_page(request, ano):
             f"Los 100 colegios con mayor mejora en puntaje global ICFES {year} "
             f"comparado con {prev_year}. Incluye puntaje actual, anterior y variación."
         )
+        title = _trim_meta(title, 65)
+        description = _trim_meta(description, 155)
         canonical_url = request.build_absolute_uri(request.path)
         schema_data = json.dumps(
             [
