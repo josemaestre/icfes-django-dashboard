@@ -14,6 +14,7 @@ def _public_base_url(request):
 def robots_txt(request):
     base = _public_base_url(request)
     lines = [
+        # General crawlers
         "User-agent: *",
         "Allow: /",
         "",
@@ -32,9 +33,81 @@ def robots_txt(request):
         "Disallow: /social-card/",
         "Disallow: /*.map$",
         "",
+        # AI crawlers — explicitly allowed for public educational content
+        "User-agent: GPTBot",
+        "Allow: /",
+        "",
+        "User-agent: ChatGPT-User",
+        "Allow: /",
+        "",
+        "User-agent: OAI-SearchBot",
+        "Allow: /",
+        "",
+        "User-agent: Google-Extended",
+        "Allow: /",
+        "",
+        "User-agent: PerplexityBot",
+        "Allow: /",
+        "",
+        "User-agent: anthropic-ai",
+        "Allow: /",
+        "",
         f"Sitemap: {base}/sitemap.xml",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
+def llms_txt(request):
+    """
+    Serve llms.txt — machine-readable site description for AI crawlers.
+    Spec: https://llmstxt.org
+    """
+    base = _public_base_url(request)
+    content = f"""# ICFES Analytics
+
+> La plataforma de análisis educativo más completa de Colombia.
+> Rankings, tendencias y análisis de colegios basados en 17.7 millones de registros
+> del examen ICFES Saber 11 (1996–2024).
+
+## Qué es ICFES Analytics
+
+ICFES Analytics transforma los datos abiertos del examen de Estado colombiano (Saber 11)
+en inteligencia educativa accionable. Permite comparar colegios, explorar tendencias
+históricas, identificar brechas por región y estrato, y encontrar los mejores colegios
+por materia o municipio.
+
+## Cobertura de datos
+
+- 22,684 colegios indexados a nivel nacional
+- 17.7 millones de registros de estudiantes
+- 28 años de historia: 1996–2024
+- 32 departamentos y 1,100+ municipios de Colombia
+
+## Secciones principales
+
+- [Ranking nacional de colegios]({base}/icfes/ranking/)
+- [Ranking por departamento]({base}/icfes/departamentos/)
+- [Dashboard histórico 1996–2024]({base}/icfes/historia/)
+- [Dashboard de inglés MCER]({base}/icfes/ingles/)
+- [Colegios bilingues]({base}/icfes/colegios-bilingues/)
+- [Colegios que más mejoraron]({base}/icfes/colegios-que-mas-mejoraron/)
+- [Ranking de matemáticas]({base}/icfes/materia/matematicas/)
+- [Ranking de inglés]({base}/icfes/materia/ingles/)
+
+## Fuente de datos
+
+Los microdatos provienen del ICFES (Instituto Colombiano para la Evaluación de la Educación),
+entidad pública colombiana. Los datos son de acceso público bajo la política de datos abiertos
+del gobierno colombiano.
+
+## Uso permitido
+
+El contenido factual (puntajes, rankings, estadísticas) proviene de datos públicos del ICFES.
+Los análisis, visualizaciones y modelos predictivos son propiedad de ICFES Analytics.
+"""
+    response = HttpResponse(content, content_type="text/plain; charset=utf-8")
+    response["Cache-Control"] = "public, max-age=86400"  # 24h
+    return response
 
 
 def favicon_view(request):

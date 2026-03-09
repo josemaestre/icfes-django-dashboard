@@ -33,6 +33,7 @@ urlpatterns = [
 
     # SEO
     path("robots.txt", seo_views.robots_txt),
+    path("llms.txt", seo_views.llms_txt),
     path("BingSiteAuth.xml", seo_views.bing_site_auth),
     path("bingsiteauth.xml", seo_views.bing_site_auth),
     *(
