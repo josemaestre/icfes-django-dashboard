@@ -5,7 +5,7 @@ import json
 import logging
 
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
@@ -812,7 +812,8 @@ def ranking_sector_municipio_page(request, sector_slug, departamento_slug, munic
             latest_year, prev_year, updated_date = _latest_snapshot(conn)
             departamento = _resolve_departamento(conn, sector_value, latest_year, departamento_slug)
             if not departamento:
-                raise Http404("Departamento no disponible")
+                # 410 Gone: URL was in old sitemap but data no longer exists — removes from index faster
+                return HttpResponse(status=410)
 
             municipio = _resolve_municipio(
                 conn,
@@ -822,7 +823,8 @@ def ranking_sector_municipio_page(request, sector_slug, departamento_slug, munic
                 municipio_slug,
             )
             if not municipio:
-                raise Http404("Municipio no disponible")
+                # 410 Gone: municipality has insufficient sector data — tell Google to deindex
+                return HttpResponse(status=410)
 
             rows = _normalize_top_rows(
                 _fetch_top20_rows(
