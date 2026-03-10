@@ -234,7 +234,7 @@ def email_graph_png(request, slug):
 
 
 @cache_page(60 * 60 * 24)  # 24h
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "HEAD"])
 def social_card_school_png(request, slug):
     clean_slug = _safe_slug(slug)
     df = _query_social_card_data(clean_slug)
