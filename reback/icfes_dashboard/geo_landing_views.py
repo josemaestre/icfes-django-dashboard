@@ -242,16 +242,20 @@ def _geo_landing_context(request, departamento, municipio=None):
                 for row in municipios_rows
             ]
 
-    location_name = f"{municipio}, {departamento}" if municipio else departamento
+    # When municipio and departamento are the same (Bogotá DC), avoid "Bogotá, Bogotá D.C."
+    if municipio and slugify(municipio) == slugify(departamento):
+        location_name = municipio
+    else:
+        location_name = f"{municipio}, {departamento}" if municipio else departamento
     location_type = "municipio" if municipio else "departamento"
     canonical_url = request.build_absolute_uri(request.path)
     base_url = _build_base_url(request)
     og_image = _default_og_image(base_url)
 
-    seo_title = f"ICFES {latest_year} en {location_name} | Ranking de colegios"
+    seo_title = f"Mejores colegios de {location_name} ICFES {latest_year} | Ranking"
     seo_description = (
-        f"Resultados ICFES en {location_name}. "
-        f"Consulta promedio global, evolución histórica y top colegios del año {latest_year}."
+        f"Ranking de colegios en {location_name} según resultados ICFES {latest_year}. "
+        f"Puntaje global, evolución histórica y comparativa por sector."
     )
     seo_title = _trim_meta(seo_title, 65)
     seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
