@@ -405,15 +405,19 @@ def sitemap_ranking_sector_municipios(request):
         if latest_year is None:
             return HttpResponse(status=404)
 
+        # Use fct_colegio_historico (same source as the view) and enforce
+        # minimum thresholds to avoid thin-content pages: >= 2 schools and >= 20 students.
         query = """
-            SELECT DISTINCT sector, departamento, municipio
-            FROM gold.fct_agg_colegios_ano
+            SELECT sector, departamento, municipio
+            FROM gold.fct_colegio_historico
             WHERE CAST(ano AS INTEGER) = ?
               AND sector IN ('OFICIAL', 'NO OFICIAL')
-              AND departamento IS NOT NULL
-              AND departamento != ''
-              AND municipio IS NOT NULL
-              AND municipio != ''
+              AND departamento IS NOT NULL AND departamento != ''
+              AND municipio IS NOT NULL AND municipio != ''
+              AND total_estudiantes >= 10
+            GROUP BY sector, departamento, municipio
+            HAVING COUNT(DISTINCT codigo_dane) >= 2
+               AND SUM(total_estudiantes) >= 20
             ORDER BY sector, departamento, municipio
         """
         rows = conn.execute(resolve_schema(query), [latest_year]).fetchall()
