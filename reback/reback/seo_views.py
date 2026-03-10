@@ -47,7 +47,7 @@ def robots_txt(request):
         "Disallow: /",
         "",
         "User-agent: Amzn-SearchBot",
-        "Disallow: /",
+        "Crawl-delay: 10",
         "",
         "User-agent: DotBot",
         "Disallow: /",
