@@ -290,6 +290,70 @@
         </ul>
       </div>
 
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Usuarios totales</small>
+            <div class="h5 mb-0">{{ users_total }}</div>
+            <small class="text-muted">Registros acumulados</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Usuarios no admin</small>
+            <div class="h5 mb-0">{{ users_non_admin_total }}</div>
+            <small class="text-muted">Sin staff/superuser</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Altas en periodo</small>
+            <div class="h5 mb-0">{{ users_new_period }}</div>
+            <small class="text-muted">{{ users_non_admin_new_period }} no admin</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="border rounded p-2">
+            <small class="text-muted">Social referrals</small>
+            <div class="h5 mb-0">{{ social_total_twitter|add:social_total_facebook|add:social_total_linkedin|add:social_total_meta|add:social_total_instagram }}</div>
+            <small class="text-muted">Twitter/X, Facebook, LinkedIn, Meta, Instagram</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-2">
+        <div class="col-md-2">
+          <div class="border rounded p-2">
+            <small class="text-muted">Twitter/X</small>
+            <div class="h5 mb-0">{{ social_total_twitter }}</div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="border rounded p-2">
+            <small class="text-muted">Facebook</small>
+            <div class="h5 mb-0">{{ social_total_facebook }}</div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="border rounded p-2">
+            <small class="text-muted">LinkedIn</small>
+            <div class="h5 mb-0">{{ social_total_linkedin }}</div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="border rounded p-2">
+            <small class="text-muted">Meta</small>
+            <div class="h5 mb-0">{{ social_total_meta }}</div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="border rounded p-2">
+            <small class="text-muted">Instagram</small>
+            <div class="h5 mb-0">{{ social_total_instagram }}</div>
+          </div>
+        </div>
+      </div>
+
       <div class="row mt-2">
         <div class="col-lg-6">
           <h6 class="mb-2">Crawl Ratio diario (Googlebot %)</h6>
@@ -309,6 +373,17 @@
         <div class="col-lg-6">
           <h6 class="mb-2">Crawl Efficiency y Depth diario</h6>
           <canvas id="chart-efficiency-depth" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="row mt-3 mb-2">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Social referrals por día</h6>
+          <canvas id="chart-social-line" height="120"></canvas>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Consultas humanas por día</h6>
+          <canvas id="chart-human-queries-line" height="120"></canvas>
         </div>
       </div>
 
@@ -602,9 +677,22 @@
 {{ bot_dist_ahrefs|json_script:"bot-dist-ahrefs" }}
 {{ bot_dist_semrush|json_script:"bot-dist-semrush" }}
 {{ bot_dist_ai|json_script:"bot-dist-ai" }}
+{{ bot_dist_amazon|json_script:"bot-dist-amazon" }}
+{{ bot_dist_adsbot|json_script:"bot-dist-adsbot" }}
+{{ bot_dist_facebook|json_script:"bot-dist-facebook" }}
+{{ bot_dist_linkedin|json_script:"bot-dist-linkedin" }}
+{{ bot_dist_meta|json_script:"bot-dist-meta" }}
 {{ bot_dist_other|json_script:"bot-dist-other" }}
 {{ discovery_new_urls|json_script:"discovery-new-urls" }}
 {{ discovery_velocity|json_script:"discovery-velocity" }}
+{{ social_labels|json_script:"social-labels" }}
+{{ social_twitter|json_script:"social-twitter" }}
+{{ social_facebook|json_script:"social-facebook" }}
+{{ social_linkedin|json_script:"social-linkedin" }}
+{{ social_meta|json_script:"social-meta" }}
+{{ social_instagram|json_script:"social-instagram" }}
+{{ human_queries_labels|json_script:"human-queries-labels" }}
+{{ human_queries_values|json_script:"human-queries-values" }}
 {% endblock page_content %}
 
 {% block extra_javascript %}
@@ -637,9 +725,22 @@
     const botDistAhrefs = readJson("bot-dist-ahrefs");
     const botDistSemrush = readJson("bot-dist-semrush");
     const botDistAi = readJson("bot-dist-ai");
+    const botDistAmazon = readJson("bot-dist-amazon");
+    const botDistAdsbot = readJson("bot-dist-adsbot");
+    const botDistFacebook = readJson("bot-dist-facebook");
+    const botDistLinkedin = readJson("bot-dist-linkedin");
+    const botDistMeta = readJson("bot-dist-meta");
     const botDistOther = readJson("bot-dist-other");
     const discoveryNewUrls = readJson("discovery-new-urls");
     const discoveryVelocity = readJson("discovery-velocity");
+    const socialLabels = readJson("social-labels");
+    const socialTwitter = readJson("social-twitter");
+    const socialFacebook = readJson("social-facebook");
+    const socialLinkedin = readJson("social-linkedin");
+    const socialMeta = readJson("social-meta");
+    const socialInstagram = readJson("social-instagram");
+    const humanQueriesLabels = readJson("human-queries-labels");
+    const humanQueriesValues = readJson("human-queries-values");
 
     const statusCtx = document.getElementById("chart-status-stacked");
     if (statusCtx) {
@@ -769,6 +870,11 @@
             { label: "AhrefsBot", data: botDistAhrefs, backgroundColor: "rgba(255, 193, 7, 0.85)" },
             { label: "SemrushBot", data: botDistSemrush, backgroundColor: "rgba(255, 99, 132, 0.85)" },
             { label: "AI bots", data: botDistAi, backgroundColor: "rgba(111, 66, 193, 0.85)" },
+            { label: "Amazonbot", data: botDistAmazon, backgroundColor: "rgba(253, 126, 20, 0.85)" },
+            { label: "AdsBot-Google", data: botDistAdsbot, backgroundColor: "rgba(32, 201, 151, 0.85)" },
+            { label: "Facebook", data: botDistFacebook, backgroundColor: "rgba(13, 110, 253, 0.45)" },
+            { label: "LinkedIn", data: botDistLinkedin, backgroundColor: "rgba(10, 102, 194, 0.85)" },
+            { label: "Meta", data: botDistMeta, backgroundColor: "rgba(102, 16, 242, 0.75)" },
             { label: "Other bots", data: botDistOther, backgroundColor: "rgba(108, 117, 125, 0.85)" }
           ]
         },
@@ -839,6 +945,59 @@
           scales: {
             y: { beginAtZero: true, suggestedMax: 100, position: "left" },
             y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false } }
+          }
+        }
+      });
+    }
+
+    const socialLineCtx = document.getElementById("chart-social-line");
+    if (socialLineCtx) {
+      new Chart(socialLineCtx, {
+        type: "line",
+        data: {
+          labels: socialLabels,
+          datasets: [
+            { label: "Twitter/X", data: socialTwitter, borderColor: "rgba(13, 110, 253, 0.9)", backgroundColor: "rgba(13,110,253,0.15)", tension: 0.2 },
+            { label: "Facebook", data: socialFacebook, borderColor: "rgba(25, 135, 84, 0.9)", backgroundColor: "rgba(25,135,84,0.15)", tension: 0.2 },
+            { label: "LinkedIn", data: socialLinkedin, borderColor: "rgba(10, 102, 194, 0.9)", backgroundColor: "rgba(10,102,194,0.15)", tension: 0.2 },
+            { label: "Meta", data: socialMeta, borderColor: "rgba(102, 16, 242, 0.9)", backgroundColor: "rgba(102,16,242,0.15)", tension: 0.2 },
+            { label: "Instagram", data: socialInstagram, borderColor: "rgba(220, 53, 69, 0.9)", backgroundColor: "rgba(220,53,69,0.15)", tension: 0.2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2.2,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    const humanQueriesCtx = document.getElementById("chart-human-queries-line");
+    if (humanQueriesCtx) {
+      new Chart(humanQueriesCtx, {
+        type: "line",
+        data: {
+          labels: humanQueriesLabels,
+          datasets: [
+            {
+              label: "Consultas humanas",
+              data: humanQueriesValues,
+              borderColor: "rgba(25, 135, 84, 0.95)",
+              backgroundColor: "rgba(25,135,84,0.2)",
+              fill: true,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2.2,
+          scales: {
+            y: { beginAtZero: true }
           }
         }
       });

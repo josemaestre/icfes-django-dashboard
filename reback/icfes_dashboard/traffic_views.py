@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.db.models.functions import TruncDate
 
 from icfes_dashboard.models import RailwayTrafficLog
+from reback.users.models import User
 
 
 def _percentile(values, p):
@@ -71,6 +72,8 @@ def _bot_family(user_agent, bot_category):
         return "AI bot"
     if "amazonbot" in ua:
         return "Amazonbot"
+    if "twitterbot" in ua or "xbot" in ua:
+        return "Twitter/X"
     if "facebookexternalhit" in ua:
         return "Facebook"
     if "linkedinbot" in ua:
@@ -82,6 +85,24 @@ def _bot_family(user_agent, bot_category):
     if "bot" in ua or bot_category in {"seo_bot", "ai_bot", "social_bot", "other_bot"}:
         return "Other bot"
     return "Human"
+
+
+def _social_source(user_agent, utm_source, bot_family):
+    ua = (user_agent or "").lower()
+    src = (utm_source or "").lower()
+    if bot_family in {"Twitter/X", "Facebook", "LinkedIn", "Meta"}:
+        return bot_family
+    if "instagram" in src:
+        return "Instagram"
+    if "facebook" in src or "fb" == src:
+        return "Facebook"
+    if "twitter" in src or src in {"x", "x.com"}:
+        return "Twitter/X"
+    if "linkedin" in src:
+        return "LinkedIn"
+    if "meta" in src:
+        return "Meta"
+    return None
 
 
 def _clean_path(path):
@@ -167,6 +188,16 @@ def traffic_dashboard(request):
     now = timezone.now()
     since = now - timedelta(days=days_int)
     base_qs = RailwayTrafficLog.objects.filter(timestamp__gte=since)
+
+    # User signups counters
+    users_total = User.objects.count()
+    users_non_admin_total = User.objects.filter(is_staff=False, is_superuser=False).count()
+    users_new_period = User.objects.filter(date_joined__gte=since).count()
+    users_non_admin_new_period = User.objects.filter(
+        date_joined__gte=since,
+        is_staff=False,
+        is_superuser=False,
+    ).count()
 
     total_requests = base_qs.count()
     status_2xx = base_qs.filter(http_status__gte=200, http_status__lt=300).count()
@@ -328,6 +359,7 @@ def traffic_dashboard(request):
             "total_duration_ms",
             "client_ua",
             "bot_category",
+            "utm_source",
             "src_ip",
             "upstream_errors",
         )[:60000]
@@ -337,6 +369,8 @@ def traffic_dashboard(request):
     group_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0})
     bot_family_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0, "paths": Counter()})
     bot_ua_stats = defaultdict(lambda: {"requests": 0, "durations": [], "errors": 0})
+    social_daily = defaultdict(Counter)
+    social_totals = Counter()
     daily_crawl_stats = defaultdict(
         lambda: {
             "bot_total": 0,
@@ -418,6 +452,16 @@ def traffic_dashboard(request):
                 bucket_family = "SemrushBot"
             elif family == "AI bot":
                 bucket_family = "AI bots"
+            elif family == "Amazonbot":
+                bucket_family = "Amazonbot"
+            elif family == "AdsBot-Google":
+                bucket_family = "AdsBot-Google"
+            elif family == "Facebook":
+                bucket_family = "Facebook"
+            elif family == "LinkedIn":
+                bucket_family = "LinkedIn"
+            elif family == "Meta":
+                bucket_family = "Meta"
             day_stat["families"][bucket_family] += 1
             if clean_path:
                 day_stat["paths_all"].add(clean_path)
@@ -435,6 +479,12 @@ def traffic_dashboard(request):
                 period_crawl_stats["paths_indexable"].add(clean_path)
                 period_crawl_stats["depth_sum"] += _url_depth(clean_path)
                 period_crawl_stats["depth_count"] += 1
+
+        social_source = _social_source(row["client_ua"], row.get("utm_source"), family)
+        if social_source:
+            day_label = ts.date().isoformat()
+            social_daily[day_label][social_source] += 1
+            social_totals[social_source] += 1
 
         if _is_suspicious_path(path):
             suspicious_counter[path] += 1
@@ -693,6 +743,11 @@ def traffic_dashboard(request):
     bot_dist_ahrefs = []
     bot_dist_semrush = []
     bot_dist_ai = []
+    bot_dist_amazon = []
+    bot_dist_adsbot = []
+    bot_dist_facebook = []
+    bot_dist_linkedin = []
+    bot_dist_meta = []
     bot_dist_other = []
     discovery_new_urls = []
     discovery_velocity = []
@@ -717,6 +772,11 @@ def traffic_dashboard(request):
         bot_dist_ahrefs.append(families.get("AhrefsBot", 0))
         bot_dist_semrush.append(families.get("SemrushBot", 0))
         bot_dist_ai.append(families.get("AI bots", 0))
+        bot_dist_amazon.append(families.get("Amazonbot", 0))
+        bot_dist_adsbot.append(families.get("AdsBot-Google", 0))
+        bot_dist_facebook.append(families.get("Facebook", 0))
+        bot_dist_linkedin.append(families.get("LinkedIn", 0))
+        bot_dist_meta.append(families.get("Meta", 0))
         other_count = max(
             data["bot_total"]
             - (
@@ -725,6 +785,11 @@ def traffic_dashboard(request):
                 + families.get("AhrefsBot", 0)
                 + families.get("SemrushBot", 0)
                 + families.get("AI bots", 0)
+                + families.get("Amazonbot", 0)
+                + families.get("AdsBot-Google", 0)
+                + families.get("Facebook", 0)
+                + families.get("LinkedIn", 0)
+                + families.get("Meta", 0)
             ),
             0,
         )
@@ -757,6 +822,13 @@ def traffic_dashboard(request):
         depth_status = "Aceptable"
     else:
         depth_status = "Riesgo (profundidad alta)"
+
+    social_labels = daily_split_labels
+    social_twitter = [social_daily[label].get("Twitter/X", 0) for label in social_labels]
+    social_facebook = [social_daily[label].get("Facebook", 0) for label in social_labels]
+    social_linkedin = [social_daily[label].get("LinkedIn", 0) for label in social_labels]
+    social_meta = [social_daily[label].get("Meta", 0) for label in social_labels]
+    social_instagram = [social_daily[label].get("Instagram", 0) for label in social_labels]
 
     context = {
         "days": days_int,
@@ -827,9 +899,31 @@ def traffic_dashboard(request):
         "bot_dist_ahrefs": bot_dist_ahrefs,
         "bot_dist_semrush": bot_dist_semrush,
         "bot_dist_ai": bot_dist_ai,
+        "bot_dist_amazon": bot_dist_amazon,
+        "bot_dist_adsbot": bot_dist_adsbot,
+        "bot_dist_facebook": bot_dist_facebook,
+        "bot_dist_linkedin": bot_dist_linkedin,
+        "bot_dist_meta": bot_dist_meta,
         "bot_dist_other": bot_dist_other,
         "discovery_new_urls": discovery_new_urls,
         "discovery_velocity": discovery_velocity,
+        "users_total": users_total,
+        "users_non_admin_total": users_non_admin_total,
+        "users_new_period": users_new_period,
+        "users_non_admin_new_period": users_non_admin_new_period,
+        "social_total_twitter": social_totals.get("Twitter/X", 0),
+        "social_total_facebook": social_totals.get("Facebook", 0),
+        "social_total_linkedin": social_totals.get("LinkedIn", 0),
+        "social_total_meta": social_totals.get("Meta", 0),
+        "social_total_instagram": social_totals.get("Instagram", 0),
+        "social_labels": social_labels,
+        "social_twitter": social_twitter,
+        "social_facebook": social_facebook,
+        "social_linkedin": social_linkedin,
+        "social_meta": social_meta,
+        "social_instagram": social_instagram,
+        "human_queries_labels": daily_split_labels,
+        "human_queries_values": daily_split_humans,
     }
     return render(request, "icfes_dashboard/pages/dashboard-traffic.html", context)
 
