@@ -378,6 +378,21 @@ def _render_sector_ranking(
     )
 
 
+def ranking_colegios_hub_page(request):
+    """Redirect to the most recent year's ranking page."""
+    try:
+        with get_duckdb_connection() as conn:
+            years = _available_years(conn)
+        if not years:
+            raise Http404("No hay datos de ranking disponibles")
+        return redirect(f"/icfes/ranking/colegios/{years[0]}/", permanent=False)
+    except Http404:
+        raise
+    except Exception as e:
+        logger.error("Error in ranking_colegios_hub_page: %s", e)
+        raise Http404("Error al cargar la página")
+
+
 @cache_page(60 * 60 * 6, key_prefix='v2')
 def ranking_colegios_year_page(request, ano):
     try:
