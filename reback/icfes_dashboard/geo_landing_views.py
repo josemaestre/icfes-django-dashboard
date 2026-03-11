@@ -6,7 +6,7 @@ import json
 import logging
 
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
@@ -425,10 +425,10 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
         with get_duckdb_connection() as conn:
             departamento = _resolve_departamento(conn, departamento_slug)
             if not departamento:
-                raise Http404("Departamento no encontrado")
+                return HttpResponse(status=410)  # Gone — URL en sitemap viejo, sin datos
             municipio = _resolve_municipio(conn, departamento, municipio_slug)
             if not municipio:
-                raise Http404("Municipio no encontrado")
+                return HttpResponse(status=410)  # Gone — municipio sin datos suficientes
 
         canonical_dept = slugify(departamento)
         canonical_muni = slugify(municipio)
@@ -441,8 +441,6 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
             request, departamento=departamento, municipio=municipio
         )
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
-    except Http404:
-        raise
     except Exception as e:
         logger.error(
             "Error in municipality_landing_page for slugs %s/%s: %s",
