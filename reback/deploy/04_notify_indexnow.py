@@ -13,6 +13,7 @@ Run after deploy:
 """
 import json
 import os
+import platform
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -24,7 +25,13 @@ from dotenv import load_dotenv
 # Config
 # ---------------------------------------------------------------------------
 
-PROD_DB = Path(r"C:\proyectos\dbt\icfes_processing\prod_v2.duckdb")
+# DB path: env var > OS default
+def _default_prod_db():
+    if platform.system() == "Windows":
+        return Path(r"C:\proyectos\dbt\icfes_processing\prod_v2.duckdb")
+    return Path("/home/ubuntu/dbt/icfes_processing/prod_v2.duckdb")
+
+PROD_DB = Path(os.getenv("PROD_DB_PATH", str(_default_prod_db())))
 INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
 BATCH_SIZE = 10_000  # IndexNow max per request
 
