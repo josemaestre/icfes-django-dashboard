@@ -367,7 +367,7 @@ def sitemap_ranking_sector_departamentos(request):
 
         query = """
             SELECT DISTINCT sector, departamento
-            FROM gold.fct_agg_colegios_ano
+            FROM gold.fct_colegio_historico
             WHERE CAST(ano AS INTEGER) = ?
               AND sector IN ('OFICIAL', 'NO OFICIAL')
               AND departamento IS NOT NULL
