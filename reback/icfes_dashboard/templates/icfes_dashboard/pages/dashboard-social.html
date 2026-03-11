@@ -261,30 +261,10 @@
         </div>
     </div>
 
-    <div class="row mb-5">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-transparent border-0 pb-0">
-                    <h6 class="card-title mb-0">Brecha privado vs público por gobierno</h6>
-                    <small class="text-muted">Puntos de diferencia en favor del sector privado</small>
-                </div>
-                <div class="card-body">
-                    <div id="chart-brecha-gobierno" style="min-height:260px;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-transparent border-0 pb-0">
-                    <h6 class="card-title mb-0">Puntaje oficial vs privado por gobierno</h6>
-                    <small class="text-muted">Puntaje promedio por sector en cada período presidencial</small>
-                </div>
-                <div class="card-body">
-                    <div id="chart-sector-gobierno" style="min-height:260px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% comment %}
+    Gráficos de comparación por gobierno desactivados.
+    Datos disponibles en: /api/social/brecha-sector-gobierno/
+    {% endcomment %}
 
     <!-- ══════════════════════════════════════════════════════════
          SECCIÓN 5 — "De los Millennials a la Generación IA"
