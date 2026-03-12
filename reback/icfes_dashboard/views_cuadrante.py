@@ -79,16 +79,17 @@ LIMIT 3000
 """
 
 
-def _build_query(sector: str, departamento: str) -> tuple[str, list]:
-    """Return (query_with_placeholders, extra_params_for_base_cte)."""
+def _build_query(sector: str) -> tuple[str, list]:
+    """Return (query_with_placeholders, extra_params_for_base_cte).
+
+    Departamento filtering is intentionally done client-side in JS to avoid
+    mismatches between dim_colegios and fct_agg_colegios_ano department names.
+    """
     clauses = []
     extra_params: list = []
     if sector and sector in ("OFICIAL", "NO OFICIAL"):
         clauses.append("AND a.sector = ?")
         extra_params.append(sector)
-    if departamento:
-        clauses.append("AND a.departamento = ?")
-        extra_params.append(departamento.upper())
     extra_where = " ".join(clauses)
     query = resolve_schema(_QUERY.format(extra_where=extra_where))
     return query, extra_params
@@ -126,15 +127,14 @@ def api_cuadrante_data(request):
     ano = max(2015, min(ano, 2024))
 
     sector = request.GET.get("sector", "").strip()
-    departamento = request.GET.get("departamento", "").strip()
 
-    cache_key = f"cuadrante:v1:{ano}:{sector}:{departamento}"
+    cache_key = f"cuadrante:v2:{ano}:{sector}"
     cached = cache.get(cache_key)
     if cached is not None:
         return JsonResponse(cached, safe=False)
 
     try:
-        query, extra_params = _build_query(sector, departamento)
+        query, extra_params = _build_query(sector)
         # params order: ano (for base CTE WHERE), then extra_where params, then ano (for tendencia CTE WHERE)
         params = [ano, *extra_params, ano]
         df = execute_query(query, params=params)

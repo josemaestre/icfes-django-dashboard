@@ -30,7 +30,7 @@
                         <option value="NO OFICIAL">No Oficial (Privado)</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-medium mb-1">Departamento</label>
                     <select class="form-select" id="filter-depto">
                         <option value="">Todo Colombia</option>
@@ -40,6 +40,16 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">Colegios en tabla</label>
+                    <select class="form-select" id="filter-top-n">
+                        <option value="5">Top 5</option>
+                        <option value="10" selected>Top 10</option>
+                        <option value="20">Top 20</option>
+                        <option value="30">Top 30</option>
+                        <option value="0">Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
                     <button class="btn btn-primary w-100" id="btn-apply">
                         <i class="bx bx-filter-alt align-middle me-1"></i> Aplicar
                     </button>
@@ -218,72 +228,80 @@
     }
     function fmt(v, decimals) {
         if (v == null || isNaN(v)) return '--';
-        return parseFloat(v).toFixed(decimals || 1);
+        return parseFloat(v).toFixed(decimals !== undefined ? decimals : 1);
     }
     function sign(v) {
-        return v >= 0 ? '+' + fmt(v) : fmt(v);
+        if (v == null || isNaN(v)) return '--';
+        return (v >= 0 ? '+' : '') + fmt(v);
     }
 
     /* ── colors ───────────────────────────────────────────────────────── */
     var COLORS = {
-        estrella:   '#1a6b3a',
-        consolidada:'#1565c0',
-        emergente:  '#e65100',
-        alerta:     '#7b1fa2',
-        oficial:    'rgba(21, 101, 192, 0.65)',
-        privado:    'rgba(230, 81, 0, 0.65)',
+        estrella:    '#1a6b3a',
+        consolidada: '#1565c0',
+        emergente:   '#e65100',
+        alerta:      '#7b1fa2',
+        oficial:     'rgba(21, 101, 192, 0.65)',
+        privado:     'rgba(230, 81, 0, 0.65)',
     };
 
     /* ── state ────────────────────────────────────────────────────────── */
-    var allData = [];
-    var colorMode = 'cuadrante';  // 'cuadrante' | 'sector'
+    var allData = [];       // raw data from API (filtered by año+sector only)
+    var visibleData = [];   // after client-side departamento filter
+    var colorMode = 'cuadrante';
     var chart = null;
 
     /* ── chart init ───────────────────────────────────────────────────── */
     var chartDom = document.getElementById('chart-cuadrante');
     chart = echarts.init(chartDom, null, { renderer: 'canvas' });
-
     window.addEventListener('resize', function () { chart.resize(); });
+
+    /* ── apply departamento filter client-side ────────────────────────── */
+    function applyDeptoFilter() {
+        var depto = getFilter('filter-depto').trim().toUpperCase();
+        if (!depto) {
+            visibleData = allData;
+        } else {
+            visibleData = allData.filter(function (d) {
+                return (d.departamento || '').toUpperCase() === depto;
+            });
+        }
+    }
 
     /* ── build ECharts option ─────────────────────────────────────────── */
     function buildOption(data) {
+        var showLabels = data.length <= 50;  // show school names when few points
+
         var groups = {};
         if (colorMode === 'cuadrante') {
-            ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
-                groups[q] = [];
-            });
+            ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) { groups[q] = []; });
             data.forEach(function (d) {
-                if (groups[d.cuadrante] !== undefined) {
-                    groups[d.cuadrante].push(d);
-                }
+                if (groups[d.cuadrante] !== undefined) groups[d.cuadrante].push(d);
             });
         } else {
             groups['Oficial'] = [];
             groups['No Oficial'] = [];
             data.forEach(function (d) {
-                if ((d.sector || '').toUpperCase().includes('NO')) {
-                    groups['No Oficial'].push(d);
-                } else {
-                    groups['Oficial'].push(d);
-                }
+                if ((d.sector || '').toUpperCase().includes('NO')) groups['No Oficial'].push(d);
+                else groups['Oficial'].push(d);
             });
         }
 
         var serieNames = {
-            estrella:    '⭐ Estrella',
-            consolidada: '🏛️ Consolidada',
-            emergente:   '🚀 Emergente',
-            alerta:      '⚠️ En Alerta',
-            'Oficial':   '🏫 Oficial',
-            'No Oficial':'🏢 No Oficial',
+            estrella:     '⭐ Estrella',
+            consolidada:  '🏛️ Consolidada',
+            emergente:    '🚀 Emergente',
+            alerta:       '⚠️ En Alerta',
+            'Oficial':    '🏫 Oficial',
+            'No Oficial': '🏢 No Oficial',
         };
         var colorMap = {
-            estrella:    COLORS.estrella,
-            consolidada: COLORS.consolidada,
-            emergente:   COLORS.emergente,
-            alerta:      COLORS.alerta,
-            'Oficial':   COLORS.oficial,
-            'No Oficial':COLORS.privado,
+            estrella:     COLORS.estrella,
+            consolidada:  COLORS.consolidada,
+            emergente:    COLORS.emergente,
+            alerta:       COLORS.alerta,
+            'Oficial':    COLORS.oficial,
+            'No Oficial': COLORS.privado,
         };
 
         var series = Object.keys(groups).map(function (key) {
@@ -291,9 +309,18 @@
                 name: serieNames[key] || key,
                 type: 'scatter',
                 symbolSize: function (val) {
-                    // scale dot by number of students (min 4, max 18)
                     var n = val[2] || 100;
-                    return Math.max(4, Math.min(18, Math.sqrt(n / 20)));
+                    return Math.max(5, Math.min(20, Math.sqrt(n / 20)));
+                },
+                label: {
+                    show: showLabels,
+                    formatter: function (p) {
+                        var n = p.data.nombre || '';
+                        return n.length > 22 ? n.slice(0, 20) + '…' : n;
+                    },
+                    fontSize: 9,
+                    position: 'right',
+                    color: '#333',
                 },
                 data: groups[key].map(function (d) {
                     return {
@@ -306,68 +333,40 @@
                         cuadrante: d.cuadrante,
                     };
                 }),
-                itemStyle: {
-                    color: colorMap[key] || '#888',
-                    opacity: 0.72,
-                    borderWidth: 0,
-                },
-                emphasis: {
-                    itemStyle: { opacity: 1, borderWidth: 1.5, borderColor: '#fff' },
-                    scale: true,
-                },
+                itemStyle: { color: colorMap[key] || '#888', opacity: 0.72 },
+                emphasis: { itemStyle: { opacity: 1, borderWidth: 1.5, borderColor: '#fff' }, scale: true },
             };
         });
 
-        /* quadrant background shading */
-        var markAreas = [
-            { name: '⭐ Estrella',    xMin: 0, xMax: 'max', yMin: 0, yMax: 'max', color: 'rgba(26,107,58,0.06)' },
-            { name: '🏛️ Consolidada', xMin: 'min', xMax: 0, yMin: 0, yMax: 'max', color: 'rgba(21,101,192,0.06)' },
-            { name: '🚀 Emergente',   xMin: 0, xMax: 'max', yMin: 'min', yMax: 0, color: 'rgba(230,81,0,0.06)' },
-            { name: '⚠️ En Alerta',   xMin: 'min', xMax: 0, yMin: 'min', yMax: 0, color: 'rgba(123,31,162,0.06)' },
-        ];
-
-        // quadrant labels via markPoint on a dummy invisible series
-        var labelData = [
-            { name: '⭐ Estrella',    value: 'Estrella',    coord: 'top-right',    color: '#1a6b3a' },
-            { name: '🏛️ Consolidada', value: 'Consolidada', coord: 'top-left',     color: '#1565c0' },
-            { name: '🚀 Emergente',   value: 'Emergente',   coord: 'bottom-right', color: '#e65100' },
-            { name: '⚠️ En Alerta',   value: 'En Alerta',   coord: 'bottom-left',  color: '#7b1fa2' },
-        ];
-
-        var xVals = data.map(function(d) { return d.tendencia; });
-        var yVals = data.map(function(d) { return d.desempeno_relativo; });
+        var xVals = data.map(function (d) { return d.tendencia; });
+        var yVals = data.map(function (d) { return d.desempeno_relativo; });
         var xMax = Math.max.apply(null, xVals.concat([1]));
         var xMin = Math.min.apply(null, xVals.concat([-1]));
         var yMax = Math.max.apply(null, yVals.concat([1]));
         var yMin = Math.min.apply(null, yVals.concat([-1]));
+        var pad = 0.88;
 
-        var labelPad = { x: 0.9, y: 0.92 };
         var markPoints = [
-            { coord: [xMax * labelPad.x, yMax * labelPad.y], label: '⭐ Estrella',    color: '#1a6b3a' },
-            { coord: [xMin * labelPad.x, yMax * labelPad.y], label: '🏛️ Consolidada', color: '#1565c0' },
-            { coord: [xMax * labelPad.x, yMin * labelPad.y], label: '🚀 Emergente',   color: '#e65100' },
-            { coord: [xMin * labelPad.x, yMin * labelPad.y], label: '⚠️ En Alerta',   color: '#7b1fa2' },
+            { coord: [xMax * pad, yMax * pad], label: '⭐ Estrella',    color: '#1a6b3a' },
+            { coord: [xMin * pad, yMax * pad], label: '🏛️ Consolidada', color: '#1565c0' },
+            { coord: [xMax * pad, yMin * pad], label: '🚀 Emergente',   color: '#e65100' },
+            { coord: [xMin * pad, yMin * pad], label: '⚠️ En Alerta',   color: '#7b1fa2' },
         ];
 
-        /* add markArea to first series, markLine (quadrant lines) to all first series */
+        var markAreas = [
+            [{ x: 0, y: yMax, itemStyle: { color: 'rgba(26,107,58,0.06)' } }, { x: xMax, y: 0 }],
+            [{ x: xMin, y: yMax, itemStyle: { color: 'rgba(21,101,192,0.06)' } }, { x: 0, y: 0 }],
+            [{ x: 0, y: 0, itemStyle: { color: 'rgba(230,81,0,0.06)' } }, { x: xMax, y: yMin }],
+            [{ x: xMin, y: 0, itemStyle: { color: 'rgba(123,31,162,0.06)' } }, { x: 0, y: yMin }],
+        ];
+
         if (series.length > 0) {
-            series[0].markArea = {
-                silent: true,
-                data: markAreas.map(function (a) {
-                    return [
-                        { x: a.xMin, y: a.yMax, itemStyle: { color: a.color } },
-                        { x: a.xMax, y: a.yMin },
-                    ];
-                }),
-            };
+            series[0].markArea = { silent: true, data: markAreas };
             series[0].markLine = {
                 silent: true,
                 symbol: ['none', 'none'],
                 lineStyle: { color: '#aaa', width: 1, type: 'dashed' },
-                data: [
-                    { xAxis: 0 },
-                    { yAxis: 0 },
-                ],
+                data: [{ xAxis: 0 }, { yAxis: 0 }],
                 label: { show: false },
             };
             series[0].markPoint = {
@@ -382,7 +381,7 @@
                             color: p.color,
                             fontSize: 11,
                             fontWeight: 'bold',
-                            backgroundColor: 'rgba(255,255,255,0.75)',
+                            backgroundColor: 'rgba(255,255,255,0.8)',
                             padding: [3, 6],
                             borderRadius: 4,
                         },
@@ -415,10 +414,8 @@
                 splitLine: { show: false },
             },
             legend: {
-                top: 8,
-                right: 10,
-                itemWidth: 12,
-                itemHeight: 12,
+                top: 8, right: 10,
+                itemWidth: 12, itemHeight: 12,
                 textStyle: { fontSize: 11 },
             },
             tooltip: {
@@ -427,7 +424,7 @@
                     var d = params.data;
                     if (!d || !d.nombre) return '';
                     var href = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
-                    return '<div style="max-width:260px;line-height:1.5;">' +
+                    return '<div style="max-width:280px;line-height:1.6;">' +
                         '<strong>' + (d.nombre || '') + '</strong><br>' +
                         '<span style="color:#888;">' + (d.departamento || '') + ' · ' + (d.sector || '') + '</span><br>' +
                         'Puntaje: <strong>' + fmt(d.puntaje) + '</strong><br>' +
@@ -445,18 +442,19 @@
     function fillTable(tableId, data, sortKey, ascending) {
         var tbody = document.querySelector('#' + tableId + ' tbody');
         if (!tbody) return;
+        var nRaw = parseInt(getFilter('filter-top-n'), 10);
         var sorted = data.slice().sort(function (a, b) {
             return ascending ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
         });
-        var top = sorted.slice(0, 15);
+        var top = (nRaw > 0) ? sorted.slice(0, nRaw) : sorted;
         tbody.innerHTML = top.map(function (d) {
             var href = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
             var nombre = d.nombre_colegio || '';
-            if (nombre.length > 32) nombre = nombre.slice(0, 30) + '…';
-            var relColor = d.desempeno_relativo >= 0 ? 'text-success' : 'text-danger';
+            var truncated = nombre.length > 34 ? nombre.slice(0, 32) + '…' : nombre;
+            var relColor  = d.desempeno_relativo >= 0 ? 'text-success' : 'text-danger';
             var trendColor = d.tendencia >= 0 ? 'text-success' : 'text-danger';
             return '<tr>' +
-                '<td><a href="' + href + '" target="_blank" title="' + (d.nombre_colegio || '') + '">' + nombre + '</a></td>' +
+                '<td><a href="' + href + '" target="_blank" title="' + nombre + '">' + truncated + '</a></td>' +
                 '<td class="text-muted small">' + (d.departamento || '') + '</td>' +
                 '<td class="' + relColor + ' fw-medium">' + sign(d.desempeno_relativo) + '</td>' +
                 '<td class="' + trendColor + ' fw-medium">' + sign(d.tendencia) + '</td>' +
@@ -464,43 +462,45 @@
         }).join('');
     }
 
-    /* ── update KPIs ──────────────────────────────────────────────────── */
-    function updateKpis(counts) {
+    /* ── update KPIs from visible data ────────────────────────────────── */
+    function updateKpis(data) {
+        var counts = { estrella: 0, consolidada: 0, emergente: 0, alerta: 0 };
+        data.forEach(function (d) { if (counts[d.cuadrante] !== undefined) counts[d.cuadrante]++; });
         ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
             var el = document.getElementById('kpi-' + q);
-            if (el) el.textContent = (counts[q] || 0).toLocaleString('es-CO');
+            if (el) el.textContent = counts[q].toLocaleString('es-CO');
         });
     }
 
-    /* ── main load ────────────────────────────────────────────────────── */
+    /* ── render with current visibleData ─────────────────────────────── */
+    function renderAll() {
+        updateKpis(visibleData);
+        chart.setOption(buildOption(visibleData), true);
+
+        var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
+        var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
+        fillTable('table-estrella', estrellas, 'tendencia', false);
+        fillTable('table-emergente', emergentes, 'tendencia', false);
+    }
+
+    /* ── main load (calls API only for año+sector changes) ────────────── */
     function loadData() {
         var ano = getFilter('filter-ano') || '2024';
         var sector = getFilter('filter-sector');
-        var depto = getFilter('filter-depto');
 
         document.getElementById('loading-indicator').classList.remove('d-none');
         document.getElementById('chart-year-label').textContent = ano;
 
         var url = '/icfes/api/cuadrante/data/?ano=' + ano;
         if (sector) url += '&sector=' + encodeURIComponent(sector);
-        if (depto)  url += '&departamento=' + encodeURIComponent(depto);
 
         fetch(withBust(url))
             .then(function (r) { return r.json(); })
             .then(function (json) {
                 allData = json.data || [];
                 document.getElementById('loading-indicator').classList.add('d-none');
-
-                updateKpis(json.counts || {});
-                chart.setOption(buildOption(allData), true);
-
-                var estrellas  = allData.filter(function (d) { return d.cuadrante === 'estrella'; });
-                var emergentes = allData.filter(function (d) { return d.cuadrante === 'emergente'; });
-
-                // Estrellas: sort by tendencia desc (fastest improving among leaders)
-                fillTable('table-estrella', estrellas, 'tendencia', false);
-                // Emergentes: sort by tendencia desc (fastest improving among underperformers)
-                fillTable('table-emergente', emergentes, 'tendencia', false);
+                applyDeptoFilter();
+                renderAll();
             })
             .catch(function (e) {
                 console.error('cuadrante load error', e);
@@ -508,12 +508,10 @@
             });
     }
 
-    /* ── click on scatter point → open school profile ─────────────────── */
+    /* ── click on scatter point ───────────────────────────────────────── */
     chart.on('click', function (params) {
         var d = params.data;
-        if (d && d.slug) {
-            window.open('/icfes/colegio/' + d.slug + '/', '_blank');
-        }
+        if (d && d.slug) window.open('/icfes/colegio/' + d.slug + '/', '_blank');
     });
 
     /* ── color toggle buttons ─────────────────────────────────────────── */
@@ -521,19 +519,42 @@
         colorMode = 'cuadrante';
         this.classList.replace('btn-outline-secondary', 'btn-secondary');
         document.getElementById('btn-color-sector').classList.replace('btn-secondary', 'btn-outline-secondary');
-        chart.setOption(buildOption(allData), true);
+        chart.setOption(buildOption(visibleData), true);
     });
     document.getElementById('btn-color-sector').addEventListener('click', function () {
         colorMode = 'sector';
         this.classList.replace('btn-outline-secondary', 'btn-secondary');
         document.getElementById('btn-color-cuadrante').classList.replace('btn-secondary', 'btn-outline-secondary');
-        chart.setOption(buildOption(allData), true);
+        chart.setOption(buildOption(visibleData), true);
     });
 
-    /* ── apply filter button ──────────────────────────────────────────── */
-    document.getElementById('btn-apply').addEventListener('click', loadData);
+    /* ── apply button: reload API if año/sector changed, else filter only */
+    var lastAno = '', lastSector = '';
+    document.getElementById('btn-apply').addEventListener('click', function () {
+        var ano = getFilter('filter-ano');
+        var sector = getFilter('filter-sector');
+        if (ano !== lastAno || sector !== lastSector) {
+            lastAno = ano;
+            lastSector = sector;
+            loadData();
+        } else {
+            // only departamento or top-n changed → filter client-side, no API call
+            applyDeptoFilter();
+            renderAll();
+        }
+    });
+
+    /* ── top-n change → re-render tables immediately ─────────────────── */
+    document.getElementById('filter-top-n').addEventListener('change', function () {
+        var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
+        var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
+        fillTable('table-estrella', estrellas, 'tendencia', false);
+        fillTable('table-emergente', emergentes, 'tendencia', false);
+    });
 
     /* ── initial load ─────────────────────────────────────────────────── */
+    lastAno = getFilter('filter-ano');
+    lastSector = getFilter('filter-sector');
     document.addEventListener('DOMContentLoaded', loadData);
     loadData();
 
