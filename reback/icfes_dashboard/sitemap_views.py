@@ -99,6 +99,7 @@ def sitemap_index(request):
     items.append(f"{base}/sitemap-materias.xml")
     items.append(f"{base}/sitemap-mejoraron.xml")
     items.append(f"{base}/sitemap-bilingues.xml")
+    items.append(f"{base}/sitemap-cuadrante.xml")
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
     xml.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
@@ -563,6 +564,60 @@ def sitemap_bilingues(request):
         xml.append("    <changefreq>monthly</changefreq>")
         xml.append("    <priority>0.6</priority>")
         xml.append("  </url>")
+
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_cuadrante(request):
+    """Sitemap for /icfes/cuadrante/{cuadrante}/ and /icfes/cuadrante/{cuadrante}/{depto}/ pages."""
+    base = _base_url(request)
+    cuadrantes = ["estrella", "consolidada", "emergente", "alerta"]
+    priorities = {
+        "estrella":    "0.80",
+        "emergente":   "0.80",
+        "consolidada": "0.70",
+        "alerta":      "0.65",
+    }
+
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        depto_rows = conn.execute(
+            resolve_schema("""
+                SELECT DISTINCT departamento
+                FROM gold.fct_agg_colegios_ano
+                WHERE CAST(ano AS INTEGER) = 2024
+                  AND departamento IS NOT NULL
+                  AND departamento != ''
+                ORDER BY departamento
+            """)
+        ).fetchall()
+
+    deptos = [r[0] for r in depto_rows if r[0]]
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+
+    for cuadrante in cuadrantes:
+        prio = priorities[cuadrante]
+        # National page
+        loc = f"{base}/icfes/cuadrante/{cuadrante}/"
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>yearly</changefreq>")
+        xml.append(f"    <priority>{prio}</priority>")
+        xml.append("  </url>")
+        # Department pages
+        for depto in deptos:
+            depto_slug = slugify(depto)
+            loc = f"{base}/icfes/cuadrante/{cuadrante}/{depto_slug}/"
+            xml.append("  <url>")
+            xml.append(f"    <loc>{escape(loc)}</loc>")
+            xml.append(f"    <lastmod>{lastmod}</lastmod>")
+            xml.append("    <changefreq>yearly</changefreq>")
+            xml.append("    <priority>0.60</priority>")
+            xml.append("  </url>")
 
     xml.append("</urlset>")
     return HttpResponse("\n".join(xml), content_type="application/xml")

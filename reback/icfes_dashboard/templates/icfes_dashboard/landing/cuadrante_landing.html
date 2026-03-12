@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-5TWMTCNR');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_description }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ canonical }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_description }}">
+    <meta property="og:url" content="{{ canonical }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_description }}">
+    <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f3f6fb; font-family:"Segoe UI",Tahoma,sans-serif; }
+        .hero { background:linear-gradient(135deg,#1a3a5c 0%,{{ meta.color }} 100%); color:#fff; padding:52px 0 40px; }
+        .cardx { background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.08); padding:22px; margin-bottom:18px; }
+        .pill-cuadrante { display:inline-block; padding:7px 16px; border-radius:999px; font-size:.88rem; font-weight:600; text-decoration:none; margin:3px; border:2px solid transparent; }
+        .pill-cuadrante:hover { opacity:.85; }
+        .pill-active { color:#fff !important; }
+        .pill-outline { background:#fff; }
+        .kpi-badge { display:inline-block; background:{{ meta.color_light }}; color:{{ meta.color }}; padding:5px 12px; border-radius:8px; font-size:1.5rem; font-weight:700; }
+        .rank-num { font-size:.85rem; color:#888; font-weight:600; width:28px; }
+        .colegio-link { color:#1a3a5c; font-weight:600; text-decoration:none; }
+        .colegio-link:hover { text-decoration:underline; color:{{ meta.color }}; }
+        .td-sign-pos { color:#1a6b3a; font-weight:600; }
+        .td-sign-neg { color:#b71c1c; font-weight:600; }
+        .cta-btn { background:#1a3a5c; color:#fff; border-radius:999px; padding:10px 22px; text-decoration:none; font-weight:700; display:inline-block; }
+        .cta-btn:hover { color:#fff; background:#0f2a4a; }
+        .dept-grid a { font-size:.82rem; padding:4px 9px; border-radius:6px; background:#fff; border:1px solid #dee2e6; text-decoration:none; color:#1a3a5c; display:inline-block; margin:2px; }
+        .dept-grid a:hover, .dept-grid a.active { background:{{ meta.color }}; color:#fff; border-color:{{ meta.color }}; }
+        #chart-cuadrante { height:480px; width:100%; }
+    </style>
+</head>
+<body>
+    <!-- GTM noscript -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5TWMTCNR" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <!-- ══ HERO ═══════════════════════════════════════════════════════════ -->
+    <section class="hero">
+        <div class="container">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0" style="background:none;padding:0;">
+                    <li class="breadcrumb-item"><a href="/" style="color:rgba(255,255,255,.75);">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/icfes/" style="color:rgba(255,255,255,.75);">ICFES Analytics</a></li>
+                    {% if depto_nombre %}
+                    <li class="breadcrumb-item">
+                        <a href="/icfes/cuadrante/{{ cuadrante }}/" style="color:rgba(255,255,255,.75);">{{ meta.nombre }}</a>
+                    </li>
+                    <li class="breadcrumb-item active" style="color:#fff;">{{ depto_nombre }}</li>
+                    {% else %}
+                    <li class="breadcrumb-item active" style="color:#fff;">{{ meta.nombre }}</li>
+                    {% endif %}
+                </ol>
+            </nav>
+
+            <h1 class="display-6 fw-bold mb-2">
+                {{ meta.emoji }} {{ meta.nombre }}
+                {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
+                — ICFES {{ ano }}
+            </h1>
+            <p class="mb-3 opacity-75" style="max-width:680px;">{{ meta.descripcion }}</p>
+
+            <!-- Quadrant pill nav -->
+            <div class="mb-1">
+                {% for otro in otros_cuadrantes %}
+                <a href="/icfes/cuadrante/{{ otro.key }}/{% if depto_slug %}{{ depto_slug }}/{% endif %}"
+                   class="pill-cuadrante pill-outline"
+                   style="border-color:{{ otro.meta.color }};color:{{ otro.meta.color }};">
+                    {{ otro.meta.emoji }} {{ otro.meta.nombre }}
+                </a>
+                {% endfor %}
+                <span class="pill-cuadrante pill-active" style="background:{{ meta.color }};border-color:{{ meta.color }};">
+                    {{ meta.emoji }} {{ meta.nombre }}
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <main class="container my-4">
+
+        <!-- ══ KPI STRIP ══════════════════════════════════════════════════ -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="cardx text-center py-3">
+                    <div class="text-muted small mb-1">⭐ Estrellas</div>
+                    <div class="kpi-badge" style="background:#e6f4ec;color:#1a6b3a;">{{ counts.estrella }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="cardx text-center py-3">
+                    <div class="text-muted small mb-1">🏛️ Consolidadas</div>
+                    <div class="kpi-badge" style="background:#e3eefa;color:#1565c0;">{{ counts.consolidada }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="cardx text-center py-3">
+                    <div class="text-muted small mb-1">🚀 Emergentes</div>
+                    <div class="kpi-badge" style="background:#fff3e0;color:#e65100;">{{ counts.emergente }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="cardx text-center py-3">
+                    <div class="text-muted small mb-1">⚠️ En Alerta</div>
+                    <div class="kpi-badge" style="background:#f3e5f5;color:#7b1fa2;">{{ counts.alerta }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ CHART ══════════════════════════════════════════════════════ -->
+        <div class="cardx mb-4">
+            <h2 class="h5 mb-1">Cuadrante Educativo {{ ano }}
+                {% if depto_nombre %}— {{ depto_nombre }}{% endif %}
+            </h2>
+            <p class="text-muted small mb-3">
+                Eje X: cambio de puntaje vs año anterior &nbsp;·&nbsp;
+                Eje Y: diferencia vs promedio de pares (mismo sector y departamento).<br>
+                <strong>Los colegios {{ meta.nombre|lower }}</strong> están resaltados en
+                <span style="color:{{ meta.color }};font-weight:700;">{{ meta.color }}</span>.
+                Haz clic en cualquier punto para ver el perfil del colegio.
+            </p>
+            <div id="chart-cuadrante"></div>
+            <p class="text-muted" style="font-size:.75rem;margin-top:6px;">
+                Se muestran hasta 30 colegios por cuadrante (los de mayor impacto visual).
+                <a href="/icfes/cuadrante/">Ver dashboard interactivo completo →</a>
+            </p>
+        </div>
+
+        <!-- ══ TABLA TOP 20 (server-rendered, crawlable) ═══════════════════ -->
+        <div class="cardx mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">
+                    Top {{ tabla|length }} {{ meta.nombre }}
+                    {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
+                    — {{ ano }}
+                </h2>
+                <a href="/icfes/cuadrante/" class="btn btn-outline-secondary btn-sm">
+                    Ver dashboard completo
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>Colegio</th>
+                            <th>Municipio</th>
+                            <th>Sector</th>
+                            <th title="Diferencia vs promedio de pares">Vs pares</th>
+                            <th title="Cambio de puntaje vs año anterior">Tendencia</th>
+                            <th title="Puntaje global promedio">Puntaje</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in tabla %}
+                        <tr>
+                            <td class="text-center rank-num">{{ forloop.counter }}</td>
+                            <td>
+                                {% if school.slug %}
+                                <a href="/icfes/colegio/{{ school.slug }}/" class="colegio-link">
+                                    {{ school.nombre_colegio }}
+                                </a>
+                                {% else %}
+                                {{ school.nombre_colegio }}
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ school.municipio|default:"-" }}</td>
+                            <td class="text-muted small">
+                                {% if school.sector == "OFICIAL" %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.72rem;">Oficial</span>
+                                {% else %}
+                                    <span class="badge bg-warning bg-opacity-10 text-warning-emphasis" style="font-size:.72rem;">Privado</span>
+                                {% endif %}
+                            </td>
+                            <td class="{% if school.desempeno_relativo >= 0 %}td-sign-pos{% else %}td-sign-neg{% endif %}">
+                                {% if school.desempeno_relativo is not None %}
+                                    {% if school.desempeno_relativo >= 0 %}+{% endif %}{{ school.desempeno_relativo }}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td class="{% if school.tendencia >= 0 %}td-sign-pos{% else %}td-sign-neg{% endif %}">
+                                {% if school.tendencia is not None %}
+                                    {% if school.tendencia >= 0 %}+{% endif %}{{ school.tendencia }}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td><strong>{{ school.puntaje|default:"—" }}</strong></td>
+                            <td>
+                                {% if school.slug %}
+                                <a href="/icfes/colegio/{{ school.slug }}/" class="btn btn-sm btn-outline-primary">Ver</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center text-muted py-4">No hay datos disponibles para esta selección.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ══ OTROS CUADRANTES ════════════════════════════════════════════ -->
+        <div class="cardx mb-4">
+            <h3 class="h6 text-muted mb-3">Explorar otros cuadrantes{% if depto_nombre %} en {{ depto_nombre }}{% endif %}</h3>
+            <div class="d-flex flex-wrap gap-2">
+                {% for otro in otros_cuadrantes %}
+                <a href="/icfes/cuadrante/{{ otro.key }}/{% if depto_slug %}{{ depto_slug }}/{% endif %}"
+                   class="btn btn-sm"
+                   style="border-color:{{ otro.meta.color }};color:{{ otro.meta.color }};">
+                    {{ otro.meta.emoji }} {{ otro.meta.nombre }}
+                    <span class="badge ms-1" style="background:{{ otro.meta.color }};">{{ counts|get_item:otro.key }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ══ DEPT NAV ════════════════════════════════════════════════════ -->
+        {% if deptos_nav %}
+        <div class="cardx mb-4">
+            <h3 class="h6 text-muted mb-2">{{ meta.nombre }} por departamento</h3>
+            <div class="dept-grid">
+                <a href="/icfes/cuadrante/{{ cuadrante }}/"
+                   class="{% if not depto_nombre %}active{% endif %}">
+                    🇨🇴 Todo Colombia
+                </a>
+                {% for dep in deptos_nav %}
+                <a href="/icfes/cuadrante/{{ cuadrante }}/{{ dep.slug }}/"
+                   class="{% if dep.nombre == depto_nombre %}active{% endif %}">
+                    {{ dep.nombre }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ══ CTA ════════════════════════════════════════════════════════ -->
+        <div class="cardx text-center py-4 mb-4" style="background:linear-gradient(135deg,#f8fafc,{{ meta.color_light }});">
+            <h3 class="h5 mb-2">¿Tu colegio está en el cuadrante correcto?</h3>
+            <p class="text-muted mb-3">
+                Accede al diagnóstico completo: comparativos, tendencias históricas,
+                fortalezas y oportunidades de mejora para cualquier colegio de Colombia.
+            </p>
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                <a href="/pricing/?utm_source=seo&utm_medium=cuadrante_landing&utm_campaign=cta_planes"
+                   class="cta-btn">Ver planes</a>
+                <a href="/accounts/signup/?utm_source=seo&utm_medium=cuadrante_landing&utm_campaign=cta_signup"
+                   class="btn btn-outline-secondary">Crear cuenta gratis</a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+    (function () {
+        var CHART_DATA = {{ chart_data_json|safe }};
+        var PROTAGONIST = "{{ cuadrante }}";
+        var PROTO_COLOR = "{{ meta.color }}";
+
+        var COLORS = {
+            estrella:    '#1a6b3a',
+            consolidada: '#1565c0',
+            emergente:   '#e65100',
+            alerta:      '#7b1fa2',
+        };
+        var LABELS = {
+            estrella:    '⭐ Estrella',
+            consolidada: '🏛️ Consolidada',
+            emergente:   '🚀 Emergente',
+            alerta:      '⚠️ En Alerta',
+        };
+
+        function sign(v) {
+            if (v == null || isNaN(v)) return '--';
+            return (v >= 0 ? '+' : '') + parseFloat(v).toFixed(1);
+        }
+        function fmt(v) {
+            if (v == null || isNaN(v)) return '--';
+            return parseFloat(v).toFixed(1);
+        }
+
+        function buildHighlightOption(data, protagonist) {
+            var proto = data.filter(function(d) { return d.cuadrante === protagonist; });
+            var others = data.filter(function(d) { return d.cuadrante !== protagonist; });
+
+            var xVals = data.map(function(d) { return d.tendencia; }).filter(function(v) { return v != null; });
+            var yVals = data.map(function(d) { return d.desempeno_relativo; }).filter(function(v) { return v != null; });
+            var xMax = Math.max.apply(null, xVals.concat([1]));
+            var xMin = Math.min.apply(null, xVals.concat([-1]));
+            var yMax = Math.max.apply(null, yVals.concat([1]));
+            var yMin = Math.min.apply(null, yVals.concat([-1]));
+
+            var markAreas = [
+                [{ xAxis: 0, yAxis: 0, itemStyle: { color: 'rgba(26,107,58,0.06)' } },   { xAxis: xMax, yAxis: yMax }],
+                [{ xAxis: xMin, yAxis: 0, itemStyle: { color: 'rgba(21,101,192,0.06)' } }, { xAxis: 0, yAxis: yMax }],
+                [{ xAxis: 0, yAxis: yMin, itemStyle: { color: 'rgba(230,81,0,0.06)' } },  { xAxis: xMax, yAxis: 0 }],
+                [{ xAxis: xMin, yAxis: yMin, itemStyle: { color: 'rgba(123,31,162,0.06)' } }, { xAxis: 0, yAxis: 0 }],
+            ];
+
+            var pad = 0.85;
+            var markPoints = [
+                { coord: [xMax*pad, yMax*pad], label: '⭐ Estrella',    color: '#1a6b3a' },
+                { coord: [xMin*pad, yMax*pad], label: '🏛️ Consolidada', color: '#1565c0' },
+                { coord: [xMax*pad, yMin*pad], label: '🚀 Emergente',   color: '#e65100' },
+                { coord: [xMin*pad, yMin*pad], label: '⚠️ Alerta',      color: '#7b1fa2' },
+            ];
+
+            var series = [
+                // Gray background dots (all non-protagonist)
+                {
+                    name: 'Otros colegios',
+                    type: 'scatter',
+                    symbolSize: 4,
+                    data: others.map(function(d) {
+                        return { value: [d.tendencia, d.desempeno_relativo], nombre: d.nombre_colegio, slug: d.slug, cuadrante: d.cuadrante };
+                    }),
+                    itemStyle: { color: '#aaa', opacity: 0.22 },
+                    label: { show: false },
+                    emphasis: { scale: false },
+                    markArea: { silent: true, data: markAreas },
+                    markLine: {
+                        silent: true, symbol: ['none','none'],
+                        lineStyle: { color: '#aaa', width: 1, type: 'dashed' },
+                        data: [{ xAxis: 0 }, { yAxis: 0 }],
+                        label: { show: false },
+                    },
+                    markPoint: {
+                        silent: true, symbol: 'none',
+                        data: markPoints.map(function(p) {
+                            return {
+                                coord: p.coord,
+                                label: { show: true, formatter: p.label, color: p.color, fontSize: 10, fontWeight: 'bold',
+                                    backgroundColor: 'rgba(255,255,255,0.82)', padding: [3,6], borderRadius: 4 },
+                                itemStyle: { opacity: 0 }, symbolSize: 0,
+                            };
+                        }),
+                    },
+                },
+                // Protagonist: colored + labeled
+                {
+                    name: LABELS[protagonist] || protagonist,
+                    type: 'scatter',
+                    symbolSize: function(val) { return Math.max(7, Math.min(20, Math.sqrt((val[2]||100)/18))); },
+                    data: proto.map(function(d) {
+                        return { value: [d.tendencia, d.desempeno_relativo, d.total_estudiantes||100],
+                                 nombre: d.nombre_colegio, slug: d.slug, puntaje: d.puntaje };
+                    }),
+                    itemStyle: { color: PROTO_COLOR, opacity: 0.88 },
+                    label: {
+                        show: true,
+                        formatter: function(p) {
+                            var n = p.data.nombre || '';
+                            return n.length > 24 ? n.slice(0,22)+'…' : n;
+                        },
+                        fontSize: 9, position: 'right', color: '#333',
+                    },
+                    emphasis: { itemStyle: { opacity: 1, borderWidth: 2, borderColor: '#fff' }, scale: true },
+                },
+            ];
+
+            return {
+                animation: false,
+                grid: { top: 40, right: 30, bottom: 60, left: 70 },
+                xAxis: {
+                    type: 'value',
+                    name: 'Tendencia (cambio de puntaje vs año anterior)',
+                    nameLocation: 'middle', nameGap: 40,
+                    nameTextStyle: { fontSize: 11, color: '#555' },
+                    axisLine: { lineStyle: { color: '#ccc' } },
+                    splitLine: { show: false },
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Desempeño relativo (vs promedio de pares)',
+                    nameLocation: 'middle', nameGap: 55,
+                    nameTextStyle: { fontSize: 11, color: '#555' },
+                    axisLine: { lineStyle: { color: '#ccc' } },
+                    splitLine: { show: false },
+                },
+                legend: { top: 8, right: 10, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 11 } },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        var d = params.data;
+                        if (!d || !d.nombre) return '';
+                        var href = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
+                        return '<div style="max-width:260px;line-height:1.6;">' +
+                            '<strong>' + (d.nombre||'') + '</strong><br>' +
+                            'Puntaje: <strong>' + fmt(d.puntaje) + '</strong><br>' +
+                            'Vs pares: <strong>' + sign(d.value[1]) + ' pts</strong><br>' +
+                            'Tendencia: <strong>' + sign(d.value[0]) + ' pts</strong><br>' +
+                            '<a href="' + href + '" target="_blank" style="font-size:11px;color:#0d6efd;">Ver perfil →</a>' +
+                            '</div>';
+                    },
+                },
+                series: series,
+            };
+        }
+
+        var chartDom = document.getElementById('chart-cuadrante');
+        if (chartDom && CHART_DATA.length > 0) {
+            var chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+            chart.setOption(buildHighlightOption(CHART_DATA, PROTAGONIST));
+            window.addEventListener('resize', function() { chart.resize(); });
+            chart.on('click', function(params) {
+                var d = params.data;
+                if (d && d.slug) window.open('/icfes/colegio/' + d.slug + '/', '_blank');
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

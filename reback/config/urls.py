@@ -59,6 +59,7 @@ urlpatterns = [
     path("sitemap-materias.xml", sitemap_views.sitemap_materias),
     path("sitemap-mejoraron.xml", sitemap_views.sitemap_mejoraron),
     path("sitemap-bilingues.xml", sitemap_views.sitemap_bilingues),
+    path("sitemap-cuadrante.xml", sitemap_views.sitemap_cuadrante),
     
     # Your stuff: custom urls includes go here
     # ...
