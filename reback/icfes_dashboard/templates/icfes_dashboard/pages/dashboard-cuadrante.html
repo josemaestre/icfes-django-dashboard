@@ -82,7 +82,7 @@
                 <div class="card-body" style="border-left: 4px solid #1a6b3a;">
                     <p class="text-muted fw-medium mb-1 small">⭐ Estrellas</p>
                     <h3 class="mb-0 text-success fw-bold" id="kpi-estrella">--</h3>
-                    <small class="text-muted">colegios</small>
+                    <small class="text-muted" id="kpi-sub-estrella">colegios</small>
                 </div>
             </div>
         </div>
@@ -91,7 +91,7 @@
                 <div class="card-body" style="border-left: 4px solid #1565c0;">
                     <p class="text-muted fw-medium mb-1 small">🏛️ Consolidadas</p>
                     <h3 class="mb-0 fw-bold" style="color:#1565c0;" id="kpi-consolidada">--</h3>
-                    <small class="text-muted">colegios</small>
+                    <small class="text-muted" id="kpi-sub-consolidada">colegios</small>
                 </div>
             </div>
         </div>
@@ -100,7 +100,7 @@
                 <div class="card-body" style="border-left: 4px solid #e65100;">
                     <p class="text-muted fw-medium mb-1 small">🚀 Emergentes</p>
                     <h3 class="mb-0 fw-bold" style="color:#e65100;" id="kpi-emergente">--</h3>
-                    <small class="text-muted">colegios</small>
+                    <small class="text-muted" id="kpi-sub-emergente">colegios</small>
                 </div>
             </div>
         </div>
@@ -109,7 +109,7 @@
                 <div class="card-body" style="border-left: 4px solid #7b1fa2;">
                     <p class="text-muted fw-medium mb-1 small">⚠️ En Alerta</p>
                     <h3 class="mb-0 fw-bold" style="color:#7b1fa2;" id="kpi-alerta">--</h3>
-                    <small class="text-muted">colegios</small>
+                    <small class="text-muted" id="kpi-sub-alerta">colegios</small>
                 </div>
             </div>
         </div>
@@ -486,11 +486,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── update KPIs from visible data ────────────────────────────────── */
     function updateKpis(data) {
+        var nRaw = parseInt(getFilter('filter-top-n'), 10);
         var counts = { estrella: 0, consolidada: 0, emergente: 0, alerta: 0 };
         data.forEach(function (d) { if (counts[d.cuadrante] !== undefined) counts[d.cuadrante]++; });
         ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
             var el = document.getElementById('kpi-' + q);
-            if (el) el.textContent = counts[q].toLocaleString('es-CO');
+            var sub = document.getElementById('kpi-sub-' + q);
+            var total = counts[q];
+            var shown = (nRaw > 0) ? Math.min(nRaw, total) : total;
+            if (el) el.textContent = shown.toLocaleString('es-CO');
+            if (sub) sub.textContent = (nRaw > 0 && total > nRaw)
+                ? 'de ' + total.toLocaleString('es-CO') + ' colegios'
+                : 'colegios';
         });
     }
 
@@ -554,9 +561,10 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ── apply button: siempre recarga datos (cache hace que sea rápido) ─ */
     document.getElementById('btn-apply').addEventListener('click', loadData);
 
-    /* ── top-n change → re-render tablas de inmediato (sin API) ─────── */
+    /* ── top-n change → re-render KPIs + tablas de inmediato (sin API) ── */
     document.getElementById('filter-top-n').addEventListener('change', function () {
         if (visibleData.length === 0) return;
+        updateKpis(visibleData);
         var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
         var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
         fillTable('table-estrella', estrellas, 'tendencia', false);
