@@ -18,7 +18,7 @@
                     <label class="form-label fw-medium mb-1">Año</label>
                     <select class="form-select" id="filter-ano">
                         {% for ano in anos_disponibles %}
-                        <option value="{{ ano }}" {% if forloop.first %}selected{% endif %}>{{ ano }}</option>
+                        <option value="{{ ano }}" {% if forloop.last %}selected{% endif %}>{{ ano }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -213,7 +213,7 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
     /* ── helpers ──────────────────────────────────────────────────────── */
@@ -550,37 +550,22 @@
         chart.setOption(buildOption(visibleData), true);
     });
 
-    /* ── apply button ─────────────────────────────────────────────────── */
-    var lastAno = '', lastSector = '';
-    document.getElementById('btn-apply').addEventListener('click', function () {
-        var ano = getFilter('filter-ano');
-        var sector = getFilter('filter-sector');
-        if (ano !== lastAno || sector !== lastSector) {
-            // año o sector cambiaron → llamar API
-            lastAno = ano;
-            lastSector = sector;
-            loadData();
-        } else {
-            // solo departamento o top-n → filtrar client-side
-            applyDeptoFilter();
-            renderAll();
-        }
-    });
+    /* ── apply button: siempre recarga datos (cache hace que sea rápido) ─ */
+    document.getElementById('btn-apply').addEventListener('click', loadData);
 
-    /* ── top-n change → re-render tablas de inmediato ────────────────── */
+    /* ── top-n change → re-render tablas de inmediato (sin API) ─────── */
     document.getElementById('filter-top-n').addEventListener('change', function () {
+        if (visibleData.length === 0) return;
         var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
         var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
         fillTable('table-estrella', estrellas, 'tendencia', false);
         fillTable('table-emergente', emergentes, 'tendencia', false);
     });
 
-    /* ── initial load (una sola vez, sin DOMContentLoaded doble) ─────── */
-    lastAno = getFilter('filter-ano');
-    lastSector = getFilter('filter-sector');
+    /* ── carga inicial ────────────────────────────────────────────────── */
     loadData();
 
-})();
+});
 </script>
 
 {% endblock page_content %}
