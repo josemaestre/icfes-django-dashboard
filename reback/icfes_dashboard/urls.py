@@ -14,6 +14,7 @@ from . import (
     longtail_landing_views,
     traffic_views,
     views,
+    views_cuadrante,
     views_ingles,
     views_mi_colegio,
     views_ml,
@@ -40,8 +41,12 @@ urlpatterns = [
     path('historia/', views.historia_educacion_dashboard, name='historia_educacion'),
     path('inteligencia/', views.inteligencia_educativa_dashboard, name='inteligencia_educativa'),
     path('social/', views.social_dashboard, name='social_dashboard'),
+    path('cuadrante/', views_cuadrante.cuadrante_dashboard, name='cuadrante_educativo'),
     path('ml/', views_ml.ml_dashboard, name='ml_dashboard'),
     path('trafico/', traffic_views.traffic_dashboard, name='traffic_dashboard'),
+
+    # API endpoints — Cuadrante Educativo
+    path('api/cuadrante/data/', views_cuadrante.api_cuadrante_data, name='api_cuadrante_data'),
 
     # API endpoints — Dashboard IA & Modelos ML
     path('api/ml/shap/', views_ml.api_ml_shap, name='api_ml_shap'),

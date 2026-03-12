@@ -1,0 +1,543 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Cuadrante Educativo - ICFES Analytics{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Cuadrante Educativo' sub_title='Desempeño relativo vs Tendencia de mejora — Colegios Colombia' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- ══ FILTROS ═══════════════════════════════════════════════════════════ -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">Año</label>
+                    <select class="form-select" id="filter-ano">
+                        {% for ano in anos_disponibles %}
+                        <option value="{{ ano }}" {% if forloop.first %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">Sector</label>
+                    <select class="form-select" id="filter-sector">
+                        <option value="">Todos</option>
+                        <option value="OFICIAL">Oficial</option>
+                        <option value="NO OFICIAL">No Oficial (Privado)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium mb-1">Departamento</label>
+                    <select class="form-select" id="filter-depto">
+                        <option value="">Todo Colombia</option>
+                        {% for dept in departamentos %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="btn-apply">
+                        <i class="bx bx-filter-alt align-middle me-1"></i> Aplicar
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <div id="loading-indicator" class="d-none">
+                        <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
+                        <span class="text-muted small">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ LEYENDA DE CUADRANTES ══════════════════════════════════════════════ -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="text-muted small fw-medium me-1">Cuadrantes:</span>
+                <span class="badge rounded-pill px-3 py-2" style="background:#1a6b3a;font-size:12px;">⭐ Estrella — mejorando y por encima de sus pares</span>
+                <span class="badge rounded-pill px-3 py-2" style="background:#1565c0;font-size:12px;">🏛️ Consolidada — por encima de pares pero perdiendo puntaje</span>
+                <span class="badge rounded-pill px-3 py-2" style="background:#e65100;font-size:12px;">🚀 Emergente — por debajo de pares pero mejorando</span>
+                <span class="badge rounded-pill px-3 py-2" style="background:#7b1fa2;font-size:12px;">⚠️ En Alerta — por debajo de pares y empeorando</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ KPIs ══════════════════════════════════════════════════════════════ -->
+    <div class="row g-3 mb-4" id="sec-kpis">
+        <div class="col-6 col-md-3">
+            <div class="card mini-stats-wid border-0 shadow-sm">
+                <div class="card-body" style="border-left: 4px solid #1a6b3a;">
+                    <p class="text-muted fw-medium mb-1 small">⭐ Estrellas</p>
+                    <h3 class="mb-0 text-success fw-bold" id="kpi-estrella">--</h3>
+                    <small class="text-muted">colegios</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card mini-stats-wid border-0 shadow-sm">
+                <div class="card-body" style="border-left: 4px solid #1565c0;">
+                    <p class="text-muted fw-medium mb-1 small">🏛️ Consolidadas</p>
+                    <h3 class="mb-0 fw-bold" style="color:#1565c0;" id="kpi-consolidada">--</h3>
+                    <small class="text-muted">colegios</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card mini-stats-wid border-0 shadow-sm">
+                <div class="card-body" style="border-left: 4px solid #e65100;">
+                    <p class="text-muted fw-medium mb-1 small">🚀 Emergentes</p>
+                    <h3 class="mb-0 fw-bold" style="color:#e65100;" id="kpi-emergente">--</h3>
+                    <small class="text-muted">colegios</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card mini-stats-wid border-0 shadow-sm">
+                <div class="card-body" style="border-left: 4px solid #7b1fa2;">
+                    <p class="text-muted fw-medium mb-1 small">⚠️ En Alerta</p>
+                    <h3 class="mb-0 fw-bold" style="color:#7b1fa2;" id="kpi-alerta">--</h3>
+                    <small class="text-muted">colegios</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CUADRANTE SCATTER ═════════════════════════════════════════════════ -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="card-title mb-1">Cuadrante Educativo — <span id="chart-year-label">2024</span></h5>
+                            <p class="text-muted small mb-0">
+                                Eje X: cambio en puntaje global vs año anterior &nbsp;|&nbsp;
+                                Eje Y: diferencia vs promedio de colegios del mismo sector y departamento.<br>
+                                <strong>Haz clic en un punto</strong> para ver el perfil del colegio.
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-color-cuadrante" title="Colorear por cuadrante (activo)">
+                                <i class="bx bx-palette"></i> Por cuadrante
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-color-sector" title="Colorear por sector">
+                                <i class="bx bx-buildings"></i> Por sector
+                            </button>
+                        </div>
+                    </div>
+                    <div id="chart-cuadrante" style="height: 580px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ TABLA TOP COLEGIOS ════════════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <!-- Estrellas -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header" style="background:#1a6b3a;color:white;">
+                    <h6 class="mb-0">⭐ Top Estrellas — mejorando y por encima</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="table-estrella">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th>Depto.</th>
+                                    <th title="Diferencia vs promedio de pares">Vs pares</th>
+                                    <th title="Cambio vs año anterior">Tendencia</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Emergentes -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header" style="background:#e65100;color:white;">
+                    <h6 class="mb-0">🚀 Top Emergentes — por debajo de pares pero mejorando más</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="table-emergente">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Colegio</th>
+                                    <th>Depto.</th>
+                                    <th title="Diferencia vs promedio de pares">Vs pares</th>
+                                    <th title="Cambio vs año anterior">Tendencia</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nota metodológica -->
+    <div class="card bg-light border-0 mb-4">
+        <div class="card-body py-2 px-3">
+            <p class="text-muted small mb-0">
+                <strong>Nota metodológica:</strong>
+                El <em>desempeño relativo</em> (eje Y) es la diferencia entre el puntaje global promedio del colegio
+                y el promedio de todos los colegios del mismo sector (oficial/privado) en el mismo departamento en el año seleccionado.
+                La <em>tendencia</em> (eje X) es el cambio absoluto en puntaje global vs el año inmediatamente anterior.
+                Solo se incluyen colegios con datos en dos años consecutivos.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── helpers ──────────────────────────────────────────────────────── */
+    function withBust(url) {
+        return url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+    }
+    function getFilter(id) {
+        var el = document.getElementById(id);
+        return el ? el.value : '';
+    }
+    function fmt(v, decimals) {
+        if (v == null || isNaN(v)) return '--';
+        return parseFloat(v).toFixed(decimals || 1);
+    }
+    function sign(v) {
+        return v >= 0 ? '+' + fmt(v) : fmt(v);
+    }
+
+    /* ── colors ───────────────────────────────────────────────────────── */
+    var COLORS = {
+        estrella:   '#1a6b3a',
+        consolidada:'#1565c0',
+        emergente:  '#e65100',
+        alerta:     '#7b1fa2',
+        oficial:    'rgba(21, 101, 192, 0.65)',
+        privado:    'rgba(230, 81, 0, 0.65)',
+    };
+
+    /* ── state ────────────────────────────────────────────────────────── */
+    var allData = [];
+    var colorMode = 'cuadrante';  // 'cuadrante' | 'sector'
+    var chart = null;
+
+    /* ── chart init ───────────────────────────────────────────────────── */
+    var chartDom = document.getElementById('chart-cuadrante');
+    chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+
+    window.addEventListener('resize', function () { chart.resize(); });
+
+    /* ── build ECharts option ─────────────────────────────────────────── */
+    function buildOption(data) {
+        var groups = {};
+        if (colorMode === 'cuadrante') {
+            ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
+                groups[q] = [];
+            });
+            data.forEach(function (d) {
+                if (groups[d.cuadrante] !== undefined) {
+                    groups[d.cuadrante].push(d);
+                }
+            });
+        } else {
+            groups['Oficial'] = [];
+            groups['No Oficial'] = [];
+            data.forEach(function (d) {
+                if ((d.sector || '').toUpperCase().includes('NO')) {
+                    groups['No Oficial'].push(d);
+                } else {
+                    groups['Oficial'].push(d);
+                }
+            });
+        }
+
+        var serieNames = {
+            estrella:    '⭐ Estrella',
+            consolidada: '🏛️ Consolidada',
+            emergente:   '🚀 Emergente',
+            alerta:      '⚠️ En Alerta',
+            'Oficial':   '🏫 Oficial',
+            'No Oficial':'🏢 No Oficial',
+        };
+        var colorMap = {
+            estrella:    COLORS.estrella,
+            consolidada: COLORS.consolidada,
+            emergente:   COLORS.emergente,
+            alerta:      COLORS.alerta,
+            'Oficial':   COLORS.oficial,
+            'No Oficial':COLORS.privado,
+        };
+
+        var series = Object.keys(groups).map(function (key) {
+            return {
+                name: serieNames[key] || key,
+                type: 'scatter',
+                symbolSize: function (val) {
+                    // scale dot by number of students (min 4, max 18)
+                    var n = val[2] || 100;
+                    return Math.max(4, Math.min(18, Math.sqrt(n / 20)));
+                },
+                data: groups[key].map(function (d) {
+                    return {
+                        value: [d.tendencia, d.desempeno_relativo, d.total_estudiantes || 100],
+                        nombre: d.nombre_colegio,
+                        departamento: d.departamento,
+                        sector: d.sector,
+                        puntaje: d.puntaje,
+                        slug: d.slug,
+                        cuadrante: d.cuadrante,
+                    };
+                }),
+                itemStyle: {
+                    color: colorMap[key] || '#888',
+                    opacity: 0.72,
+                    borderWidth: 0,
+                },
+                emphasis: {
+                    itemStyle: { opacity: 1, borderWidth: 1.5, borderColor: '#fff' },
+                    scale: true,
+                },
+            };
+        });
+
+        /* quadrant background shading */
+        var markAreas = [
+            { name: '⭐ Estrella',    xMin: 0, xMax: 'max', yMin: 0, yMax: 'max', color: 'rgba(26,107,58,0.06)' },
+            { name: '🏛️ Consolidada', xMin: 'min', xMax: 0, yMin: 0, yMax: 'max', color: 'rgba(21,101,192,0.06)' },
+            { name: '🚀 Emergente',   xMin: 0, xMax: 'max', yMin: 'min', yMax: 0, color: 'rgba(230,81,0,0.06)' },
+            { name: '⚠️ En Alerta',   xMin: 'min', xMax: 0, yMin: 'min', yMax: 0, color: 'rgba(123,31,162,0.06)' },
+        ];
+
+        // quadrant labels via markPoint on a dummy invisible series
+        var labelData = [
+            { name: '⭐ Estrella',    value: 'Estrella',    coord: 'top-right',    color: '#1a6b3a' },
+            { name: '🏛️ Consolidada', value: 'Consolidada', coord: 'top-left',     color: '#1565c0' },
+            { name: '🚀 Emergente',   value: 'Emergente',   coord: 'bottom-right', color: '#e65100' },
+            { name: '⚠️ En Alerta',   value: 'En Alerta',   coord: 'bottom-left',  color: '#7b1fa2' },
+        ];
+
+        var xVals = data.map(function(d) { return d.tendencia; });
+        var yVals = data.map(function(d) { return d.desempeno_relativo; });
+        var xMax = Math.max.apply(null, xVals.concat([1]));
+        var xMin = Math.min.apply(null, xVals.concat([-1]));
+        var yMax = Math.max.apply(null, yVals.concat([1]));
+        var yMin = Math.min.apply(null, yVals.concat([-1]));
+
+        var labelPad = { x: 0.9, y: 0.92 };
+        var markPoints = [
+            { coord: [xMax * labelPad.x, yMax * labelPad.y], label: '⭐ Estrella',    color: '#1a6b3a' },
+            { coord: [xMin * labelPad.x, yMax * labelPad.y], label: '🏛️ Consolidada', color: '#1565c0' },
+            { coord: [xMax * labelPad.x, yMin * labelPad.y], label: '🚀 Emergente',   color: '#e65100' },
+            { coord: [xMin * labelPad.x, yMin * labelPad.y], label: '⚠️ En Alerta',   color: '#7b1fa2' },
+        ];
+
+        /* add markArea to first series, markLine (quadrant lines) to all first series */
+        if (series.length > 0) {
+            series[0].markArea = {
+                silent: true,
+                data: markAreas.map(function (a) {
+                    return [
+                        { x: a.xMin, y: a.yMax, itemStyle: { color: a.color } },
+                        { x: a.xMax, y: a.yMin },
+                    ];
+                }),
+            };
+            series[0].markLine = {
+                silent: true,
+                symbol: ['none', 'none'],
+                lineStyle: { color: '#aaa', width: 1, type: 'dashed' },
+                data: [
+                    { xAxis: 0 },
+                    { yAxis: 0 },
+                ],
+                label: { show: false },
+            };
+            series[0].markPoint = {
+                silent: true,
+                symbol: 'none',
+                data: markPoints.map(function (p) {
+                    return {
+                        coord: p.coord,
+                        label: {
+                            show: true,
+                            formatter: p.label,
+                            color: p.color,
+                            fontSize: 11,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(255,255,255,0.75)',
+                            padding: [3, 6],
+                            borderRadius: 4,
+                        },
+                        itemStyle: { opacity: 0 },
+                        symbolSize: 0,
+                    };
+                }),
+            };
+        }
+
+        return {
+            animation: false,
+            grid: { top: 40, right: 30, bottom: 60, left: 70 },
+            xAxis: {
+                type: 'value',
+                name: 'Tendencia (cambio de puntaje vs año anterior)',
+                nameLocation: 'middle',
+                nameGap: 40,
+                nameTextStyle: { fontSize: 11, color: '#555' },
+                axisLine: { lineStyle: { color: '#ccc' } },
+                splitLine: { show: false },
+            },
+            yAxis: {
+                type: 'value',
+                name: 'Desempeño relativo (vs promedio de pares)',
+                nameLocation: 'middle',
+                nameGap: 55,
+                nameTextStyle: { fontSize: 11, color: '#555' },
+                axisLine: { lineStyle: { color: '#ccc' } },
+                splitLine: { show: false },
+            },
+            legend: {
+                top: 8,
+                right: 10,
+                itemWidth: 12,
+                itemHeight: 12,
+                textStyle: { fontSize: 11 },
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: function (params) {
+                    var d = params.data;
+                    if (!d || !d.nombre) return '';
+                    var href = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
+                    return '<div style="max-width:260px;line-height:1.5;">' +
+                        '<strong>' + (d.nombre || '') + '</strong><br>' +
+                        '<span style="color:#888;">' + (d.departamento || '') + ' · ' + (d.sector || '') + '</span><br>' +
+                        'Puntaje: <strong>' + fmt(d.puntaje) + '</strong><br>' +
+                        'Vs pares: <strong>' + sign(d.value[1]) + ' pts</strong><br>' +
+                        'Tendencia: <strong>' + sign(d.value[0]) + ' pts</strong><br>' +
+                        '<a href="' + href + '" target="_blank" style="font-size:11px;color:#0d6efd;">Ver perfil →</a>' +
+                        '</div>';
+                },
+            },
+            series: series,
+        };
+    }
+
+    /* ── fill tables ──────────────────────────────────────────────────── */
+    function fillTable(tableId, data, sortKey, ascending) {
+        var tbody = document.querySelector('#' + tableId + ' tbody');
+        if (!tbody) return;
+        var sorted = data.slice().sort(function (a, b) {
+            return ascending ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
+        });
+        var top = sorted.slice(0, 15);
+        tbody.innerHTML = top.map(function (d) {
+            var href = d.slug ? '/icfes/colegio/' + d.slug + '/' : '#';
+            var nombre = d.nombre_colegio || '';
+            if (nombre.length > 32) nombre = nombre.slice(0, 30) + '…';
+            var relColor = d.desempeno_relativo >= 0 ? 'text-success' : 'text-danger';
+            var trendColor = d.tendencia >= 0 ? 'text-success' : 'text-danger';
+            return '<tr>' +
+                '<td><a href="' + href + '" target="_blank" title="' + (d.nombre_colegio || '') + '">' + nombre + '</a></td>' +
+                '<td class="text-muted small">' + (d.departamento || '') + '</td>' +
+                '<td class="' + relColor + ' fw-medium">' + sign(d.desempeno_relativo) + '</td>' +
+                '<td class="' + trendColor + ' fw-medium">' + sign(d.tendencia) + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    /* ── update KPIs ──────────────────────────────────────────────────── */
+    function updateKpis(counts) {
+        ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
+            var el = document.getElementById('kpi-' + q);
+            if (el) el.textContent = (counts[q] || 0).toLocaleString('es-CO');
+        });
+    }
+
+    /* ── main load ────────────────────────────────────────────────────── */
+    function loadData() {
+        var ano = getFilter('filter-ano') || '2024';
+        var sector = getFilter('filter-sector');
+        var depto = getFilter('filter-depto');
+
+        document.getElementById('loading-indicator').classList.remove('d-none');
+        document.getElementById('chart-year-label').textContent = ano;
+
+        var url = '/icfes/api/cuadrante/data/?ano=' + ano;
+        if (sector) url += '&sector=' + encodeURIComponent(sector);
+        if (depto)  url += '&departamento=' + encodeURIComponent(depto);
+
+        fetch(withBust(url))
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                allData = json.data || [];
+                document.getElementById('loading-indicator').classList.add('d-none');
+
+                updateKpis(json.counts || {});
+                chart.setOption(buildOption(allData), true);
+
+                var estrellas  = allData.filter(function (d) { return d.cuadrante === 'estrella'; });
+                var emergentes = allData.filter(function (d) { return d.cuadrante === 'emergente'; });
+
+                // Estrellas: sort by tendencia desc (fastest improving among leaders)
+                fillTable('table-estrella', estrellas, 'tendencia', false);
+                // Emergentes: sort by tendencia desc (fastest improving among underperformers)
+                fillTable('table-emergente', emergentes, 'tendencia', false);
+            })
+            .catch(function (e) {
+                console.error('cuadrante load error', e);
+                document.getElementById('loading-indicator').classList.add('d-none');
+            });
+    }
+
+    /* ── click on scatter point → open school profile ─────────────────── */
+    chart.on('click', function (params) {
+        var d = params.data;
+        if (d && d.slug) {
+            window.open('/icfes/colegio/' + d.slug + '/', '_blank');
+        }
+    });
+
+    /* ── color toggle buttons ─────────────────────────────────────────── */
+    document.getElementById('btn-color-cuadrante').addEventListener('click', function () {
+        colorMode = 'cuadrante';
+        this.classList.replace('btn-outline-secondary', 'btn-secondary');
+        document.getElementById('btn-color-sector').classList.replace('btn-secondary', 'btn-outline-secondary');
+        chart.setOption(buildOption(allData), true);
+    });
+    document.getElementById('btn-color-sector').addEventListener('click', function () {
+        colorMode = 'sector';
+        this.classList.replace('btn-outline-secondary', 'btn-secondary');
+        document.getElementById('btn-color-cuadrante').classList.replace('btn-secondary', 'btn-outline-secondary');
+        chart.setOption(buildOption(allData), true);
+    });
+
+    /* ── apply filter button ──────────────────────────────────────────── */
+    document.getElementById('btn-apply').addEventListener('click', loadData);
+
+    /* ── initial load ─────────────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', loadData);
+    loadData();
+
+})();
+</script>
+
+{% endblock page_content %}
