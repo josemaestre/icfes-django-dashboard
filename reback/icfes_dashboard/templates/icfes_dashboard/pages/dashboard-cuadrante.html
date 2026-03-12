@@ -501,10 +501,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    /* ── devuelve los datos para el chart según Top-N ────────────────── */
+    function getChartData() {
+        var nRaw = parseInt(getFilter('filter-top-n'), 10);
+        if (nRaw <= 0) return visibleData;
+        var result = [];
+        ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
+            var qData = visibleData.filter(function (d) { return d.cuadrante === q; });
+            var sorted = qData.slice().sort(function (a, b) { return b.tendencia - a.tendencia; });
+            result = result.concat(sorted.slice(0, nRaw));
+        });
+        return result;
+    }
+
     /* ── render with current visibleData ─────────────────────────────── */
     function renderAll() {
         updateKpis(visibleData);
-        chart.setOption(buildOption(visibleData), true);
+        chart.setOption(buildOption(getChartData()), true);
 
         var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
         var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
@@ -549,22 +562,23 @@ document.addEventListener('DOMContentLoaded', function () {
         colorMode = 'cuadrante';
         this.classList.replace('btn-outline-secondary', 'btn-secondary');
         document.getElementById('btn-color-sector').classList.replace('btn-secondary', 'btn-outline-secondary');
-        chart.setOption(buildOption(visibleData), true);
+        chart.setOption(buildOption(getChartData()), true);
     });
     document.getElementById('btn-color-sector').addEventListener('click', function () {
         colorMode = 'sector';
         this.classList.replace('btn-outline-secondary', 'btn-secondary');
         document.getElementById('btn-color-cuadrante').classList.replace('btn-secondary', 'btn-outline-secondary');
-        chart.setOption(buildOption(visibleData), true);
+        chart.setOption(buildOption(getChartData()), true);
     });
 
     /* ── apply button: siempre recarga datos (cache hace que sea rápido) ─ */
     document.getElementById('btn-apply').addEventListener('click', loadData);
 
-    /* ── top-n change → re-render KPIs + tablas de inmediato (sin API) ── */
+    /* ── top-n change → re-render chart + KPIs + tablas (sin API) ───── */
     document.getElementById('filter-top-n').addEventListener('change', function () {
         if (visibleData.length === 0) return;
         updateKpis(visibleData);
+        chart.setOption(buildOption(getChartData()), true);
         var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
         var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
         fillTable('table-estrella', estrellas, 'tendencia', false);
