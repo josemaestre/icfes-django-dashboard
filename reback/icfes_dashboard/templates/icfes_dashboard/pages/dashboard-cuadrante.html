@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── build ECharts option ─────────────────────────────────────────── */
     function buildOption(data) {
-        var showLabels = data.length <= 50;  // show school names when few points
+        var showLabels = data.length <= 120;  // show school names when few points (4 cuadrantes × top30 = 120)
 
         var groups = {};
         if (colorMode === 'cuadrante') {
@@ -506,9 +506,16 @@ document.addEventListener('DOMContentLoaded', function () {
         var nRaw = parseInt(getFilter('filter-top-n'), 10);
         if (nRaw <= 0) return visibleData;
         var result = [];
+        // Criterio por cuadrante: mostrar los más extremos (más impacto visual)
+        var sortFns = {
+            estrella:    function (a, b) { return b.tendencia - a.tendencia; },  // mayor mejora
+            consolidada: function (a, b) { return b.desempeno_relativo - a.desempeno_relativo; }, // más por encima de pares
+            emergente:   function (a, b) { return b.tendencia - a.tendencia; },  // mayor mejora
+            alerta:      function (a, b) { return a.tendencia - b.tendencia; },  // mayor caída (más negativa)
+        };
         ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
             var qData = visibleData.filter(function (d) { return d.cuadrante === q; });
-            var sorted = qData.slice().sort(function (a, b) { return b.tendencia - a.tendencia; });
+            var sorted = qData.slice().sort(sortFns[q]);
             result = result.concat(sorted.slice(0, nRaw));
         });
         return result;
