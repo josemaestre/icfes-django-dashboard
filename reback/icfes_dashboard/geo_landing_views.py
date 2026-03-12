@@ -54,7 +54,7 @@ def _fit_meta_description(text, min_len=110, max_len=155):
 
 
 def _default_og_image(base_url):
-    return f"{base_url}/static/images/logo-dark-full.png"
+    return f"{base_url}/icfes/og/default.png"
 
 
 def _build_base_url(request):

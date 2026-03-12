@@ -27,7 +27,7 @@ def _absolute_url(base_url, path):
 
 
 def _default_og_image(base_url):
-    return _absolute_url(base_url, "/static/images/logo-dark-full.png")
+    return _absolute_url(base_url, "/icfes/og/default.png")
 
 
 def _meta_compact(text):

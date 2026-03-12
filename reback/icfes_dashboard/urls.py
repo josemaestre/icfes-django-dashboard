@@ -26,6 +26,7 @@ urlpatterns = [
     # Graficas para email (PNG on-the-fly)
     path('email-graphs/<path:slug>.png', email_graph_views.email_graph_png, name='email_graph_png'),
     path('social-card/colegio/<path:slug>.png', email_graph_views.social_card_school_png, name='social_card_school_png'),
+    path('og/default.png', email_graph_views.og_default_image, name='og_default_image'),
 
     # Vista principal
     path('', views.icfes_dashboard, name='dashboard'),

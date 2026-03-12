@@ -238,3 +238,38 @@ def social_card_school_png(request, slug):
     response["Cache-Control"] = "public, max-age=86400"
     response["X-Social-Card"] = f"slug={clean_slug}"
     return response
+
+
+@cache_page(60 * 60 * 24 * 7)  # 7 days — generic, no school data
+@require_http_methods(["GET", "HEAD"])
+def og_default_image(request):
+    """Generic 1200x630 OG image for ranking/category pages (not school-specific)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(figsize=(12, 6.3), dpi=100)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis("off")
+
+    c1 = [30 / 255, 77 / 255, 146 / 255]
+    c2 = [15 / 255, 118 / 255, 110 / 255]
+    ax.imshow([[c1, c1], [c2, c2]], extent=[0, 1, 0, 1], aspect="auto", interpolation="bilinear")
+
+    ax.text(0.06, 0.82, "ICFES Analytics", color="white", fontsize=22, fontweight="bold",
+            ha="left", va="top", transform=ax.transAxes)
+    ax.text(0.06, 0.65, "Resultados SABER 11\nen Colombia", color="white", fontsize=46,
+            fontweight="bold", ha="left", va="top", linespacing=1.1, transform=ax.transAxes)
+    ax.text(0.06, 0.30, "Analítica de datos y modelos de aprendizaje automático\npara el análisis del desempeño académico.",
+            color="#e5e7eb", fontsize=20, ha="left", va="top", linespacing=1.4, transform=ax.transAxes)
+    ax.text(0.94, 0.08, "icfes-analytics.com", color="#d1d5db", fontsize=16,
+            ha="right", va="bottom", transform=ax.transAxes)
+
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png", dpi=100)
+    plt.close(fig)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer.getvalue(), content_type="image/png")
+    response["Cache-Control"] = "public, max-age=604800"
+    return response
