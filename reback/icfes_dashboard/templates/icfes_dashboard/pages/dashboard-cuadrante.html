@@ -34,9 +34,7 @@
                     <label class="form-label fw-medium mb-1">Departamento</label>
                     <select class="form-select" id="filter-depto">
                         <option value="">Todo Colombia</option>
-                        {% for dept in departamentos %}
-                        <option value="{{ dept }}">{{ dept }}</option>
-                        {% endfor %}
+                        <!-- opciones se llenan dinámicamente desde los datos cargados -->
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -256,14 +254,37 @@
     chart = echarts.init(chartDom, null, { renderer: 'canvas' });
     window.addEventListener('resize', function () { chart.resize(); });
 
+    /* ── populate departamento dropdown from loaded data ─────────────── */
+    function populateDeptoSelect(data) {
+        var sel = document.getElementById('filter-depto');
+        var current = sel.value;  // preserve current selection if any
+        // collect unique non-empty departamentos
+        var seen = {};
+        var deptos = [];
+        data.forEach(function (d) {
+            var dep = (d.departamento || '').trim();
+            if (dep && !seen[dep]) { seen[dep] = true; deptos.push(dep); }
+        });
+        deptos.sort();
+        // rebuild options
+        sel.innerHTML = '<option value="">Todo Colombia</option>';
+        deptos.forEach(function (dep) {
+            var opt = document.createElement('option');
+            opt.value = dep;
+            opt.textContent = dep;
+            if (dep === current) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+
     /* ── apply departamento filter client-side ────────────────────────── */
     function applyDeptoFilter() {
-        var depto = getFilter('filter-depto').trim().toUpperCase();
+        var depto = getFilter('filter-depto').trim();
         if (!depto) {
             visibleData = allData;
         } else {
             visibleData = allData.filter(function (d) {
-                return (d.departamento || '').toUpperCase() === depto;
+                return (d.departamento || '').trim() === depto;
             });
         }
     }
@@ -483,7 +504,7 @@
         fillTable('table-emergente', emergentes, 'tendencia', false);
     }
 
-    /* ── main load (calls API only for año+sector changes) ────────────── */
+    /* ── main load — hits API (used when año or sector changes) ──────── */
     function loadData() {
         var ano = getFilter('filter-ano') || '2024';
         var sector = getFilter('filter-sector');
@@ -499,6 +520,7 @@
             .then(function (json) {
                 allData = json.data || [];
                 document.getElementById('loading-indicator').classList.add('d-none');
+                populateDeptoSelect(allData);   // rebuild dropdown with exact names from data
                 applyDeptoFilter();
                 renderAll();
             })
@@ -528,23 +550,24 @@
         chart.setOption(buildOption(visibleData), true);
     });
 
-    /* ── apply button: reload API if año/sector changed, else filter only */
+    /* ── apply button ─────────────────────────────────────────────────── */
     var lastAno = '', lastSector = '';
     document.getElementById('btn-apply').addEventListener('click', function () {
         var ano = getFilter('filter-ano');
         var sector = getFilter('filter-sector');
         if (ano !== lastAno || sector !== lastSector) {
+            // año o sector cambiaron → llamar API
             lastAno = ano;
             lastSector = sector;
             loadData();
         } else {
-            // only departamento or top-n changed → filter client-side, no API call
+            // solo departamento o top-n → filtrar client-side
             applyDeptoFilter();
             renderAll();
         }
     });
 
-    /* ── top-n change → re-render tables immediately ─────────────────── */
+    /* ── top-n change → re-render tablas de inmediato ────────────────── */
     document.getElementById('filter-top-n').addEventListener('change', function () {
         var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
         var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });
@@ -552,10 +575,9 @@
         fillTable('table-emergente', emergentes, 'tendencia', false);
     });
 
-    /* ── initial load ─────────────────────────────────────────────────── */
+    /* ── initial load (una sola vez, sin DOMContentLoaded doble) ─────── */
     lastAno = getFilter('filter-ano');
     lastSector = getFilter('filter-sector');
-    document.addEventListener('DOMContentLoaded', loadData);
     loadData();
 
 })();
