@@ -58,6 +58,30 @@
   <div class="card mb-3">
     <div class="card-body">
       <h5 class="card-title mb-3">Executive</h5>
+      <h6 class="mb-2">Usuarios</h6>
+      <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+          <div class="border rounded p-3 text-center">
+            <small class="text-muted">Usuarios totales</small>
+            <div class="display-6 fw-semibold">{{ users_total }}</div>
+            <small class="text-muted">Registros acumulados</small>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="border rounded p-3 text-center">
+            <small class="text-muted">Usuarios no admin</small>
+            <div class="display-6 fw-semibold">{{ users_non_admin_total }}</div>
+            <small class="text-muted">Sin staff/superuser</small>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="border rounded p-3 text-center">
+            <small class="text-muted">Altas en periodo</small>
+            <div class="display-6 fw-semibold">{{ users_new_period }}</div>
+            <small class="text-muted">{{ users_non_admin_new_period }} no admin</small>
+          </div>
+        </div>
+      </div>
 
       {% if alerts_red or alerts_yellow %}
       <div class="row mb-3">
@@ -92,7 +116,7 @@
         <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Req 5m</small><div class="h5 mb-0">{{ requests_5m }}</div></div></div>
         <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Req 1h</small><div class="h5 mb-0">{{ requests_1h }}</div><small class="text-muted">{% if change_1h_pct != None %}{{ change_1h_pct }}% vs h anterior{% else %}-{% endif %}</small></div></div>
         <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Req 24h</small><div class="h5 mb-0">{{ requests_24h }}</div><small class="text-muted">{% if change_24h_pct != None %}{{ change_24h_pct }}% vs dia previo{% else %}-{% endif %}</small></div></div>
-        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Error 4xx</small><div class="h5 mb-0">{{ error_4xx_rate }}%</div></div></div>
+        <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Error 4xx op.</small><div class="h5 mb-0">{{ error_4xx_rate }}%</div><small class="text-muted">excluye 410</small></div></div>
         <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Error 5xx</small><div class="h5 mb-0">{{ error_5xx_rate }}%</div></div></div>
         <div class="col-md-2"><div class="border rounded p-2"><small class="text-muted">Bots ratio</small><div class="h5 mb-0">{{ bot_ratio }}%</div><small class="text-muted">{{ bot_count }} bots / {{ human_count }} humanos</small></div></div>
       </div>
@@ -102,6 +126,9 @@
         <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">P95 (ms)</small><div class="h5 mb-0">{{ p95_duration|default:"-" }}</div></div></div>
         <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">P99 (ms)</small><div class="h5 mb-0">{{ p99_duration|default:"-" }}</div></div></div>
         <div class="col-md-3"><div class="border rounded p-2"><small class="text-muted">Promedio (ms)</small><div class="h5 mb-0">{{ avg_duration|default:"-" }}</div></div></div>
+      </div>
+      <div class="mt-2">
+        <small class="text-muted">4xx controlados excluidos del % error operativo: {{ status_4xx_controlled }} (status 410).</small>
       </div>
 
       <div class="row mt-3">
@@ -210,7 +237,7 @@
           <h6 class="mb-2">Rendimiento por categoria de path</h6>
           <div class="table-responsive" style="max-height:320px;">
             <table class="table table-sm mb-0">
-              <thead><tr><th>Grupo</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error %</th></tr></thead>
+              <thead><tr><th>Grupo</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error op. %</th></tr></thead>
               <tbody>
                 {% for row in perf_by_group %}
                 <tr><td>{{ row.path_group }}</td><td class="text-end">{{ row.total }}</td><td class="text-end">{{ row.p95_ms|default:"-" }}</td><td class="text-end">{{ row.error_rate }}</td></tr>
@@ -291,28 +318,7 @@
       </div>
 
       <div class="row g-3 mb-3">
-        <div class="col-md-3">
-          <div class="border rounded p-2">
-            <small class="text-muted">Usuarios totales</small>
-            <div class="h5 mb-0">{{ users_total }}</div>
-            <small class="text-muted">Registros acumulados</small>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="border rounded p-2">
-            <small class="text-muted">Usuarios no admin</small>
-            <div class="h5 mb-0">{{ users_non_admin_total }}</div>
-            <small class="text-muted">Sin staff/superuser</small>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="border rounded p-2">
-            <small class="text-muted">Altas en periodo</small>
-            <div class="h5 mb-0">{{ users_new_period }}</div>
-            <small class="text-muted">{{ users_non_admin_new_period }} no admin</small>
-          </div>
-        </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="border rounded p-2">
             <small class="text-muted">Social referrals</small>
             <div class="h5 mb-0">{{ social_total_twitter|add:social_total_facebook|add:social_total_linkedin|add:social_total_meta|add:social_total_instagram }}</div>
@@ -392,7 +398,7 @@
           <h6 class="mb-2">Familias de bots</h6>
           <div class="table-responsive" style="max-height:320px;">
             <table class="table table-sm mb-0">
-              <thead><tr><th>Bot</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error %</th></tr></thead>
+              <thead><tr><th>Bot</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error op. %</th></tr></thead>
               <tbody>
                 {% for row in bot_families %}
                 <tr><td>{{ row.bot_family }}</td><td class="text-end">{{ row.total }}</td><td class="text-end">{{ row.p95_ms|default:"-" }}</td><td class="text-end">{{ row.error_rate }}</td></tr>
@@ -425,7 +431,7 @@
           <h6 class="mb-2">Detalle completo de bots (literal User-Agent)</h6>
           <div class="table-responsive" style="max-height:360px;">
             <table class="table table-sm mb-0">
-              <thead><tr><th>User-Agent completo</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error %</th></tr></thead>
+              <thead><tr><th>User-Agent completo</th><th class="text-end">Req</th><th class="text-end">P95 ms</th><th class="text-end">Error op. %</th></tr></thead>
               <tbody>
                 {% for row in all_bot_user_agents %}
                 <tr>
@@ -642,15 +648,72 @@
       <h5 class="card-title">Top User-Agents nuevos de hoy (literal completo)</h5>
       <div class="table-responsive" style="max-height:420px;">
         <table class="table table-sm mb-0">
-          <thead><tr><th>User-Agent completo</th><th class="text-end">Hits</th></tr></thead>
+          <thead><tr><th>User-Agent completo</th><th class="text-end">Hits</th><th class="text-end">Accion</th></tr></thead>
           <tbody>
             {% for row in new_uas_today %}
             <tr>
               <td style="word-break:break-all;">{{ row.client_ua }}</td>
               <td class="text-end">{{ row.total }}</td>
+              <td class="text-end">
+                <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&explorer_ua={{ row.client_ua|urlencode }}#request-explorer">Ver requests</a>
+              </td>
             </tr>
             {% empty %}
-            <tr><td colspan="2" class="text-muted">Sin novedades</td></tr>
+            <tr><td colspan="3" class="text-muted">Sin novedades</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3 mb-3" id="request-explorer">
+    <div class="card-body">
+      <h5 class="card-title">Request Explorer</h5>
+      <div class="d-flex flex-wrap gap-3 mb-2">
+        <small class="text-muted">Ventana: ultimos {{ days }} dias</small>
+        {% if request_explorer_ua %}
+        <small class="text-muted">UA: <code>{{ request_explorer_ua }}</code></small>
+        {% endif %}
+        {% if request_explorer_path %}
+        <small class="text-muted">Path: <code>{{ request_explorer_path }}</code></small>
+        {% endif %}
+        <small class="text-muted">Total filtrado: {{ request_explorer_total }}</small>
+      </div>
+      <div class="mb-2">
+        <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}">Limpiar filtros</a>
+      </div>
+      <div class="table-responsive" style="max-height:420px;">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Req ID</th>
+              <th>Metodo</th>
+              <th class="text-end">Status</th>
+              <th class="text-end">Dur ms</th>
+              <th>Path</th>
+              <th>IP</th>
+              <th>UA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in request_explorer_rows %}
+            <tr>
+              <td>{{ row.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td><code>{{ row.request_id }}</code></td>
+              <td>{{ row.method|default:"-" }}</td>
+              <td class="text-end">{{ row.http_status }}</td>
+              <td class="text-end">{{ row.total_duration_ms|default:"-" }}</td>
+              <td style="word-break:break-all;">
+                <code>{{ row.path }}</code>
+                <a class="ms-1" href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&explorer_path={{ row.path|urlencode }}#request-explorer">filtrar path</a>
+              </td>
+              <td><code>{{ row.src_ip|default:"-" }}</code></td>
+              <td style="word-break:break-all;">{{ row.client_ua|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-muted">Sin requests para ese filtro</td></tr>
             {% endfor %}
           </tbody>
         </table>

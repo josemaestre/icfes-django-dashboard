@@ -12,6 +12,8 @@ from django.db.models.functions import TruncDate
 from icfes_dashboard.models import RailwayTrafficLog
 from reback.users.models import User
 
+CONTROLLED_HTTP_STATUSES = {410}
+
 
 def _percentile(values, p):
     if not values:
@@ -25,6 +27,11 @@ def _safe_pct(part, total):
     if not total:
         return 0.0
     return round((part * 100.0) / total, 2)
+
+
+def _is_operational_error(status):
+    code = status or 0
+    return code >= 400 and code not in CONTROLLED_HTTP_STATUSES
 
 
 def _path_group(path):
@@ -184,6 +191,8 @@ def traffic_dashboard(request):
         days_int = max(1, min(int(days), 90))
     except ValueError:
         days_int = 7
+    explorer_ua = (request.GET.get("explorer_ua") or "").strip()
+    explorer_path = (request.GET.get("explorer_path") or "").strip()
 
     now = timezone.now()
     since = now - timedelta(days=days_int)
@@ -203,6 +212,8 @@ def traffic_dashboard(request):
     status_2xx = base_qs.filter(http_status__gte=200, http_status__lt=300).count()
     status_3xx = base_qs.filter(http_status__gte=300, http_status__lt=400).count()
     status_4xx = base_qs.filter(http_status__gte=400, http_status__lt=500).count()
+    status_4xx_controlled = base_qs.filter(http_status__in=CONTROLLED_HTTP_STATUSES).count()
+    status_4xx_operational = max(status_4xx - status_4xx_controlled, 0)
     status_5xx = base_qs.filter(http_status__gte=500).count()
 
     requests_5m = RailwayTrafficLog.objects.filter(timestamp__gte=now - timedelta(minutes=5)).count()
@@ -413,7 +424,7 @@ def traffic_dashboard(request):
         group = _path_group(path)
         g = group_stats[group]
         g["requests"] += 1
-        if status >= 400:
+        if _is_operational_error(status):
             g["errors"] += 1
         if duration is not None:
             g["durations"].append(duration)
@@ -421,7 +432,7 @@ def traffic_dashboard(request):
         family = _bot_family(row["client_ua"], row["bot_category"])
         b = bot_family_stats[family]
         b["requests"] += 1
-        if status >= 400:
+        if _is_operational_error(status):
             b["errors"] += 1
         if duration is not None:
             b["durations"].append(duration)
@@ -431,7 +442,7 @@ def traffic_dashboard(request):
             ua_literal = (row["client_ua"] or "").strip() or "(empty ua)"
             ua_stats = bot_ua_stats[ua_literal]
             ua_stats["requests"] += 1
-            if status >= 400:
+            if _is_operational_error(status):
                 ua_stats["errors"] += 1
             if duration is not None:
                 ua_stats["durations"].append(duration)
@@ -582,6 +593,25 @@ def traffic_dashboard(request):
         .order_by("-total")[:20]
     )
 
+    request_explorer_qs = base_qs
+    if explorer_ua:
+        request_explorer_qs = request_explorer_qs.filter(client_ua=explorer_ua)
+    if explorer_path:
+        request_explorer_qs = request_explorer_qs.filter(path=explorer_path)
+    request_explorer_total = request_explorer_qs.count()
+    request_explorer_rows = list(
+        request_explorer_qs.values(
+            "request_id",
+            "timestamp",
+            "method",
+            "path",
+            "http_status",
+            "total_duration_ms",
+            "src_ip",
+            "client_ua",
+        ).order_by("-timestamp")[:300]
+    )
+
     discovered_paths_today_qs = (
         RailwayTrafficLog.objects.values("path")
         .annotate(
@@ -710,7 +740,7 @@ def traffic_dashboard(request):
     alerts_yellow = []
 
     error_5xx_rate = _safe_pct(status_5xx, total_requests)
-    error_4xx_rate = _safe_pct(status_4xx, total_requests)
+    error_4xx_rate = _safe_pct(status_4xx_operational, total_requests)
 
     if error_5xx_rate > 1:
         alerts_red.append(f"5xx alto: {error_5xx_rate}%")
@@ -845,6 +875,8 @@ def traffic_dashboard(request):
         "status_2xx": status_2xx,
         "status_3xx": status_3xx,
         "status_4xx": status_4xx,
+        "status_4xx_controlled": status_4xx_controlled,
+        "status_4xx_operational": status_4xx_operational,
         "status_5xx": status_5xx,
         "error_4xx_rate": error_4xx_rate,
         "error_5xx_rate": error_5xx_rate,
@@ -911,6 +943,10 @@ def traffic_dashboard(request):
         "users_non_admin_total": users_non_admin_total,
         "users_new_period": users_new_period,
         "users_non_admin_new_period": users_non_admin_new_period,
+        "request_explorer_ua": explorer_ua,
+        "request_explorer_path": explorer_path,
+        "request_explorer_total": request_explorer_total,
+        "request_explorer_rows": request_explorer_rows,
         "social_total_twitter": social_totals.get("Twitter/X", 0),
         "social_total_facebook": social_totals.get("Facebook", 0),
         "social_total_linkedin": social_totals.get("LinkedIn", 0),
