@@ -160,6 +160,48 @@
         </div>
     </div>
 
+    <!-- ══ NARRATIVAS POR CUADRANTE ══════════════════════════════════════════ -->
+    <div class="row g-3 mb-4" id="sec-narrativas">
+        <div class="col-12">
+            <h6 class="text-muted fw-medium mb-0">
+                <i class="bx bx-analyse me-1"></i>Análisis por cuadrante
+                <span class="text-muted fw-normal" style="font-size:11px;"> — actualiza según los filtros aplicados</span>
+            </h6>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border-left: 4px solid #1a6b3a;">
+                <div class="card-body py-3">
+                    <h6 class="fw-bold mb-2" style="color:#1a6b3a;">⭐ Colegios Estrella</h6>
+                    <p class="mb-0 small lh-lg" id="narrative-estrella"><span class="text-muted">Cargando análisis…</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border-left: 4px solid #1565c0;">
+                <div class="card-body py-3">
+                    <h6 class="fw-bold mb-2" style="color:#1565c0;">🏛️ Colegios Consolidados</h6>
+                    <p class="mb-0 small lh-lg" id="narrative-consolidada"><span class="text-muted">Cargando análisis…</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border-left: 4px solid #e65100;">
+                <div class="card-body py-3">
+                    <h6 class="fw-bold mb-2" style="color:#e65100;">🚀 Colegios Emergentes</h6>
+                    <p class="mb-0 small lh-lg" id="narrative-emergente"><span class="text-muted">Cargando análisis…</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border-left: 4px solid #7b1fa2;">
+                <div class="card-body py-3">
+                    <h6 class="fw-bold mb-2" style="color:#7b1fa2;">⚠️ Colegios en Alerta</h6>
+                    <p class="mb-0 small lh-lg" id="narrative-alerta"><span class="text-muted">Cargando análisis…</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ TABLA TOP COLEGIOS ════════════════════════════════════════════════ -->
     <div class="row g-4 mb-4">
         <!-- Estrellas -->
@@ -556,10 +598,112 @@ document.addEventListener('DOMContentLoaded', function () {
         return result;
     }
 
+    /* ── narrative helpers ────────────────────────────────────────────── */
+    function _shortName(name) {
+        if (!name) return '?';
+        var parts = (name || '').trim().split(/\s+/);
+        var s = parts.slice(0, 4).join(' ');
+        return s.length > 36 ? s.slice(0, 34) + '…' : s;
+    }
+    function _abs1(v) {
+        var f = parseFloat(v);
+        return isNaN(f) ? '--' : Math.abs(f).toFixed(1);
+    }
+    function _pos1(v) {
+        // show with leading + if positive
+        var f = parseFloat(v);
+        if (isNaN(f)) return '--';
+        return (f >= 0 ? '+' : '') + f.toFixed(1);
+    }
+
+    function computeQuadrantStats(data, cuadrante) {
+        var qData = data.filter(function (d) { return d.cuadrante === cuadrante; });
+        if (!qData.length) return { n: 0 };
+        var n = qData.length;
+        var sumP = 0, sumT = 0, sumD = 0, cntD = 0;
+        var top = null, mostImp = null, worst = null;
+        qData.forEach(function (d) {
+            var p = parseFloat(d.puntaje), t = parseFloat(d.tendencia), dv = parseFloat(d.desempeno_relativo);
+            if (!isNaN(p)) sumP += p;
+            if (!isNaN(t)) { sumT += t; if (!mostImp || t > parseFloat(mostImp.tendencia)) mostImp = d; if (!worst || t < parseFloat(worst.tendencia)) worst = d; }
+            if (!isNaN(dv)) { sumD += dv; cntD++; }
+            if (!isNaN(p) && (!top || p > parseFloat(top.puntaje))) top = d;
+        });
+        return {
+            n:             n,
+            avg_puntaje:   (sumP / n).toFixed(1),
+            avg_tendencia: (sumT / n).toFixed(1),
+            avg_desempeno: (sumD / (cntD || 1)).toFixed(1),
+            top_colegio:   top      ? _shortName(top.nombre_colegio)     : '?',
+            top_puntaje:   top      ? parseFloat(top.puntaje).toFixed(1) : '--',
+            most_improved: mostImp  ? _shortName(mostImp.nombre_colegio) : '?',
+            max_tendencia: mostImp  ? parseFloat(mostImp.tendencia).toFixed(1) : '--',
+            worst_decline: worst    ? _shortName(worst.nombre_colegio)   : '?',
+            min_tendencia: worst    ? parseFloat(worst.tendencia).toFixed(1)   : '--',
+        };
+    }
+
+    function buildNarratives(data) {
+        var deptoLabel  = getFilter('filter-depto') || 'Colombia';
+        var ano         = getFilter('filter-ano') || '2024';
+        var anoAnt      = String(parseInt(ano, 10) - 1);
+        var matLabel    = materia === 'ingles' ? 'inglés' : 'puntaje global';
+        var escala      = materia === 'ingles' ? '(0–100)' : '(0–500)';
+
+        var TMPL = {
+            estrella: function (s) {
+                if (!s.n) return '<em class="text-muted">Sin colegios para el filtro actual.</em>';
+                return 'En <strong>' + deptoLabel + '</strong>, <strong>' + s.n.toLocaleString('es-CO') +
+                    ' colegios</strong> mejoran su ' + matLabel + ' y superan a sus pares en ' + ano +
+                    '. Puntaje promedio: <strong>' + s.avg_puntaje + '</strong> ' + escala +
+                    ', <strong>+' + _abs1(s.avg_desempeno) + ' pts</strong> sobre colegios similares.' +
+                    ' El mayor avance lo logró <strong>' + s.most_improved +
+                    '</strong> con <strong>+' + s.max_tendencia + ' pts</strong> vs ' + anoAnt + '.';
+            },
+            consolidada: function (s) {
+                if (!s.n) return '<em class="text-muted">Sin colegios para el filtro actual.</em>';
+                return '<strong>' + s.n.toLocaleString('es-CO') + ' colegios consolidados</strong>' +
+                    ' lideran ' + matLabel + ' en <strong>' + deptoLabel + '</strong> —' +
+                    ' <strong>+' + _abs1(s.avg_desempeno) + ' pts</strong> sobre sus pares.' +
+                    ' Sin embargo, registran una caída promedio de <strong>' + _abs1(s.avg_tendencia) +
+                    ' pts</strong> vs ' + anoAnt + ', señal de que su ventaja se reduce.' +
+                    ' El puntaje más alto lo tiene <strong>' + s.top_colegio +
+                    '</strong> con <strong>' + s.top_puntaje + ' pts</strong>.';
+            },
+            emergente: function (s) {
+                if (!s.n) return '<em class="text-muted">Sin colegios para el filtro actual.</em>';
+                return '<strong>' + s.n.toLocaleString('es-CO') + ' colegios emergentes</strong>' +
+                    ' registran la mayor mejora en <strong>' + deptoLabel + '</strong>:' +
+                    ' promedio de <strong>+' + s.avg_tendencia + ' pts</strong> vs ' + anoAnt + '.' +
+                    ' Aunque todavía están <strong>' + _abs1(s.avg_desempeno) + ' pts</strong>' +
+                    ' por debajo de sus pares, su trayectoria es la más prometedora.' +
+                    ' Destaca <strong>' + s.most_improved + '</strong> con el mayor salto:' +
+                    ' <strong>+' + s.max_tendencia + ' pts</strong>.';
+            },
+            alerta: function (s) {
+                if (!s.n) return '<em class="text-muted">Sin colegios para el filtro actual.</em>';
+                return '<strong>' + s.n.toLocaleString('es-CO') + ' colegios</strong>' +
+                    ' necesitan atención prioritaria en <strong>' + deptoLabel + '</strong>.' +
+                    ' Puntaje promedio ' + matLabel + ': <strong>' + s.avg_puntaje + ' pts</strong>,' +
+                    ' <strong>' + _abs1(s.avg_desempeno) + ' pts</strong> bajo la media de pares' +
+                    ' y con una caída de <strong>' + _abs1(s.avg_tendencia) + ' pts</strong> vs ' + anoAnt + '.' +
+                    ' El mayor descenso lo registra <strong>' + s.worst_decline +
+                    '</strong> con <strong>' + s.min_tendencia + ' pts</strong>.';
+            },
+        };
+
+        ['estrella', 'consolidada', 'emergente', 'alerta'].forEach(function (q) {
+            var el = document.getElementById('narrative-' + q);
+            if (!el) return;
+            el.innerHTML = TMPL[q](computeQuadrantStats(data, q));
+        });
+    }
+
     /* ── render with current visibleData ─────────────────────────────── */
     function renderAll() {
         updateKpis(visibleData);
         chart.setOption(buildOption(getChartData()), true);
+        buildNarratives(visibleData);
 
         var estrellas  = visibleData.filter(function (d) { return d.cuadrante === 'estrella'; });
         var emergentes = visibleData.filter(function (d) { return d.cuadrante === 'emergente'; });

@@ -135,6 +135,39 @@
             </p>
         </div>
 
+        <!-- ══ NARRATIVAS POR CUADRANTE ═══════════════════════════════════════ -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <h3 class="h6 text-muted mb-0">Análisis por cuadrante — ICFES {{ ano }}{% if depto_nombre %} · {{ depto_nombre }}{% endif %}</h3>
+            </div>
+            {% autoescape off %}
+            <div class="col-md-6">
+                <div class="cardx h-100" style="border-left: 4px solid #1a6b3a;{% if cuadrante == 'estrella' %}box-shadow:0 4px 16px rgba(26,107,58,.18);{% endif %}">
+                    <h4 class="h6 fw-bold mb-2" style="color:#1a6b3a;">⭐ Colegios Estrella</h4>
+                    <p class="mb-0 small lh-lg">{{ narratives.estrella }}</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="cardx h-100" style="border-left: 4px solid #1565c0;{% if cuadrante == 'consolidada' %}box-shadow:0 4px 16px rgba(21,101,192,.18);{% endif %}">
+                    <h4 class="h6 fw-bold mb-2" style="color:#1565c0;">🏛️ Colegios Consolidados</h4>
+                    <p class="mb-0 small lh-lg">{{ narratives.consolidada }}</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="cardx h-100" style="border-left: 4px solid #e65100;{% if cuadrante == 'emergente' %}box-shadow:0 4px 16px rgba(230,81,0,.18);{% endif %}">
+                    <h4 class="h6 fw-bold mb-2" style="color:#e65100;">🚀 Colegios Emergentes</h4>
+                    <p class="mb-0 small lh-lg">{{ narratives.emergente }}</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="cardx h-100" style="border-left: 4px solid #7b1fa2;{% if cuadrante == 'alerta' %}box-shadow:0 4px 16px rgba(123,31,162,.18);{% endif %}">
+                    <h4 class="h6 fw-bold mb-2" style="color:#7b1fa2;">⚠️ Colegios en Alerta</h4>
+                    <p class="mb-0 small lh-lg">{{ narratives.alerta }}</p>
+                </div>
+            </div>
+            {% endautoescape %}
+        </div>
+
         <!-- ══ TABLA TOP 20 (server-rendered, crawlable) ═══════════════════ -->
         <div class="cardx mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">

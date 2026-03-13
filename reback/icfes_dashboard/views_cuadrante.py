@@ -291,6 +291,98 @@ def _safe_float(v):
         return None
 
 
+def _build_narrative(records, cuadrante, depto_nombre=None, ano=_LANDING_ANO):
+    """Build a data-driven narrative string for a given quadrant.
+
+    Uses only the records already fetched (no extra DB query).
+    Returns an HTML-safe string (uses <strong> tags).
+    """
+    from statistics import mean
+
+    scope = depto_nombre or "Colombia"
+    ano_ant = ano - 1
+    q_records = [r for r in records if r.get("cuadrante") == cuadrante]
+    n = len(q_records)
+
+    if not n:
+        return f"No se encontraron colegios en el cuadrante {cuadrante} para el filtro actual."
+
+    def safe_float(v):
+        try:
+            f = float(v)
+            return None if math.isnan(f) else f
+        except (TypeError, ValueError):
+            return None
+
+    puntajes   = [f for r in q_records if (f := safe_float(r.get("puntaje")))    is not None]
+    tendencias = [f for r in q_records if (f := safe_float(r.get("tendencia")))  is not None]
+    desempenos = [f for r in q_records if (f := safe_float(r.get("desempeno_relativo"))) is not None]
+
+    avg_p = round(mean(puntajes),   1) if puntajes   else None
+    avg_t = round(mean(tendencias), 1) if tendencias else None
+    avg_d = round(mean(desempenos), 1) if desempenos else None
+
+    # Top school by puntaje
+    top = max(q_records, key=lambda r: safe_float(r.get("puntaje")) or 0, default=None)
+    # Most improved (highest tendencia)
+    most_imp = max(q_records, key=lambda r: safe_float(r.get("tendencia")) or 0, default=None)
+    # Worst decline (lowest tendencia)
+    worst = min(q_records, key=lambda r: safe_float(r.get("tendencia")) or 0, default=None)
+
+    def short_name(r):
+        if not r:
+            return "?"
+        name = (r.get("nombre_colegio") or "").strip()
+        words = name.split()[:4]
+        s = " ".join(words)
+        return s[:36] + "…" if len(s) > 36 else s
+
+    def fmt1(v):
+        return f"{v:.1f}" if v is not None else "--"
+
+    def abs1(v):
+        return f"{abs(v):.1f}" if v is not None else "--"
+
+    n_str = f"{n:,}".replace(",", ".")
+
+    if cuadrante == "estrella":
+        return (
+            f"En <strong>{scope}</strong>, <strong>{n_str} colegios</strong> mejoran su puntaje "
+            f"y superan a sus pares en {ano}. Puntaje promedio: <strong>{fmt1(avg_p)}</strong>, "
+            f"<strong>+{abs1(avg_d)} pts</strong> sobre colegios similares. "
+            f"El mayor avance lo logró <strong>{short_name(most_imp)}</strong> "
+            f"con <strong>+{fmt1(safe_float(most_imp.get('tendencia')) if most_imp else None)} pts</strong> "
+            f"vs {ano_ant}."
+        )
+    if cuadrante == "consolidada":
+        return (
+            f"<strong>{n_str} colegios consolidados</strong> lideran puntaje en "
+            f"<strong>{scope}</strong> — <strong>+{abs1(avg_d)} pts</strong> sobre sus pares. "
+            f"Sin embargo, registran una caída promedio de <strong>{abs1(avg_t)} pts</strong> "
+            f"vs {ano_ant}, señal de que su ventaja se reduce. "
+            f"El puntaje más alto lo tiene <strong>{short_name(top)}</strong> "
+            f"con <strong>{fmt1(safe_float(top.get('puntaje')) if top else None)} pts</strong>."
+        )
+    if cuadrante == "emergente":
+        return (
+            f"<strong>{n_str} colegios emergentes</strong> registran la mayor mejora en "
+            f"<strong>{scope}</strong>: promedio de <strong>+{fmt1(avg_t)} pts</strong> vs {ano_ant}. "
+            f"Aunque todavía están <strong>{abs1(avg_d)} pts</strong> por debajo de sus pares, "
+            f"su trayectoria es la más prometedora. Destaca <strong>{short_name(most_imp)}</strong> "
+            f"con el mayor salto: <strong>+{fmt1(safe_float(most_imp.get('tendencia')) if most_imp else None)} pts</strong>."
+        )
+    if cuadrante == "alerta":
+        return (
+            f"<strong>{n_str} colegios</strong> necesitan atención prioritaria en "
+            f"<strong>{scope}</strong>. Puntaje promedio: <strong>{fmt1(avg_p)} pts</strong>, "
+            f"<strong>{abs1(avg_d)} pts</strong> bajo la media de pares y con una caída de "
+            f"<strong>{abs1(avg_t)} pts</strong> vs {ano_ant}. "
+            f"El mayor descenso lo registra <strong>{short_name(worst)}</strong> "
+            f"con <strong>{fmt1(safe_float(worst.get('tendencia')) if worst else None)} pts</strong>."
+        )
+    return ""
+
+
 def _top_n_per_quadrant(records, n=30):
     """Return top-N records per quadrant sorted by the appropriate criterion."""
     result = []
@@ -425,6 +517,12 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
     # Quadrant counts (for the page)
     counts = {q: sum(1 for r in records if r.get("cuadrante") == q) for q in _CUADRANTE_META}
 
+    # Data-driven narratives for all 4 quadrants
+    narratives = {
+        q: _build_narrative(records, q, depto_nombre=depto_nombre, ano=_LANDING_ANO)
+        for q in _CUADRANTE_META
+    }
+
     # Department nav list
     try:
         all_deptos = get_departamentos()
@@ -474,6 +572,7 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
         "counts": counts,
         "chart_data_json": chart_data_json,
         "deptos_nav": deptos_nav,
+        "narratives": narratives,
         "otros_cuadrantes": [
             {"key": k, "meta": v, "count": counts.get(k, 0)} for k, v in _CUADRANTE_META.items() if k != cuadrante
         ],
