@@ -158,7 +158,65 @@ LIMIT 3000
 """
 
 
-def _build_query(sector: str) -> tuple[str, list]:
+# Variante Inglés: misma lógica pero con avg_punt_ingles (escala 0-100)
+# Tendencia calculada inline con self-JOIN de fct_agg_colegios_ano
+_QUERY_INGLES = """
+WITH base AS (
+    SELECT
+        a.colegio_bk,
+        a.nombre_colegio,
+        a.departamento,
+        a.municipio,
+        a.sector,
+        a.avg_punt_ingles,
+        a.total_estudiantes,
+        s.slug,
+        AVG(a.avg_punt_ingles) OVER (
+            PARTITION BY a.sector, a.departamento
+        ) AS peer_avg
+    FROM gold.fct_agg_colegios_ano a
+    LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = a.colegio_bk
+    WHERE CAST(a.ano AS INTEGER) = ?
+      AND a.avg_punt_ingles IS NOT NULL
+      AND a.sector IN ('OFICIAL', 'NO OFICIAL')
+      {extra_where}
+),
+tendencia AS (
+    SELECT
+        a.colegio_bk,
+        ROUND(a.avg_punt_ingles - p.avg_punt_ingles, 2) AS cambio_ingles
+    FROM gold.fct_agg_colegios_ano a
+    JOIN gold.fct_agg_colegios_ano p
+        ON p.colegio_bk = a.colegio_bk
+       AND CAST(p.ano AS INTEGER) = CAST(a.ano AS INTEGER) - 1
+    WHERE CAST(a.ano AS INTEGER) = ?
+      AND a.avg_punt_ingles IS NOT NULL
+      AND p.avg_punt_ingles IS NOT NULL
+)
+SELECT
+    b.nombre_colegio,
+    b.departamento,
+    b.municipio,
+    b.sector,
+    b.slug,
+    CAST(b.total_estudiantes AS INTEGER)             AS total_estudiantes,
+    ROUND(b.avg_punt_ingles, 1)                      AS puntaje,
+    ROUND(b.avg_punt_ingles - b.peer_avg, 2)         AS desempeno_relativo,
+    t.cambio_ingles                                  AS tendencia,
+    CASE
+        WHEN t.cambio_ingles > 0 AND (b.avg_punt_ingles - b.peer_avg) > 0 THEN 'estrella'
+        WHEN t.cambio_ingles <= 0 AND (b.avg_punt_ingles - b.peer_avg) > 0 THEN 'consolidada'
+        WHEN t.cambio_ingles > 0 AND (b.avg_punt_ingles - b.peer_avg) <= 0 THEN 'emergente'
+        ELSE 'alerta'
+    END AS cuadrante
+FROM base b
+JOIN tendencia t ON t.colegio_bk = b.colegio_bk
+ORDER BY b.avg_punt_ingles DESC
+LIMIT 3000
+"""
+
+
+def _build_query(sector: str, materia: str = "global") -> tuple[str, list]:
     """Return (query_with_placeholders, extra_params_for_base_cte).
 
     Departamento filtering is intentionally done client-side in JS to avoid
@@ -170,7 +228,8 @@ def _build_query(sector: str) -> tuple[str, list]:
         clauses.append("AND a.sector = ?")
         extra_params.append(sector)
     extra_where = " ".join(clauses)
-    query = resolve_schema(_QUERY.format(extra_where=extra_where))
+    template = _QUERY_INGLES if materia == "ingles" else _QUERY
+    query = resolve_schema(template.format(extra_where=extra_where))
     return query, extra_params
 
 
@@ -274,14 +333,17 @@ def api_cuadrante_data(request):
     ano = max(2015, min(ano, 2024))
 
     sector = request.GET.get("sector", "").strip()
+    materia = request.GET.get("materia", "global").strip()
+    if materia not in ("global", "ingles"):
+        materia = "global"
 
-    cache_key = f"cuadrante:v2:{ano}:{sector}"
+    cache_key = f"cuadrante:v2:{ano}:{sector}:{materia}"
     cached = cache.get(cache_key)
     if cached is not None:
         return JsonResponse(cached, safe=False)
 
     try:
-        query, extra_params = _build_query(sector)
+        query, extra_params = _build_query(sector, materia)
         # params order: ano (for base CTE WHERE), then extra_where params, then ano (for tendencia CTE WHERE)
         params = [ano, *extra_params, ano]
         df = execute_query(query, params=params)

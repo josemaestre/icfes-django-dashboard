@@ -59,6 +59,22 @@
                     </div>
                 </div>
             </div>
+            <!-- Fila 2: selector de materia -->
+            <div class="row g-2 mt-1 align-items-center">
+                <div class="col-auto">
+                    <span class="text-muted small fw-medium">Materia:</span>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-primary" id="btn-materia-global">
+                            🌐 Puntaje Global <span class="text-white-50" style="font-size:10px;">(0–500)</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="btn-materia-ingles">
+                            🇬🇧 Inglés <span class="opacity-75" style="font-size:10px;">(0–100)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -123,7 +139,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div>
                             <h5 class="card-title mb-1">Cuadrante Educativo — <span id="chart-year-label">2024</span></h5>
-                            <p class="text-muted small mb-0">
+                            <p class="text-muted small mb-0" id="chart-subtitle">
                                 Eje X: cambio en puntaje global vs año anterior &nbsp;|&nbsp;
                                 Eje Y: diferencia vs promedio de colegios del mismo sector y departamento.<br>
                                 <strong>Haz clic en un punto</strong> para ver el perfil del colegio.
@@ -197,7 +213,7 @@
     <!-- Nota metodológica -->
     <div class="card bg-light border-0 mb-4">
         <div class="card-body py-2 px-3">
-            <p class="text-muted small mb-0">
+            <p class="text-muted small mb-0" id="nota-metodologica">
                 <strong>Nota metodológica:</strong>
                 El <em>desempeño relativo</em> (eje Y) es la diferencia entre el puntaje global promedio del colegio
                 y el promedio de todos los colegios del mismo sector (oficial/privado) en el mismo departamento en el año seleccionado.
@@ -247,7 +263,26 @@ document.addEventListener('DOMContentLoaded', function () {
     var allData = [];       // raw data from API (filtered by año+sector only)
     var visibleData = [];   // after client-side departamento filter
     var colorMode = 'cuadrante';
+    var materia = 'global'; // 'global' | 'ingles'
     var chart = null;
+
+    /* ── materia config ────────────────────────────────────────────────── */
+    var MATERIA_CFG = {
+        global: {
+            xLabel:  'Tendencia (cambio en puntaje global vs año anterior)',
+            yLabel:  'Desempeño relativo vs pares (puntaje global)',
+            tooltip: 'Puntaje global',
+            subtitle: 'Eje X: cambio en puntaje global vs año anterior &nbsp;|&nbsp; Eje Y: diferencia vs promedio de colegios del mismo sector y departamento.<br><strong>Haz clic en un punto</strong> para ver el perfil del colegio.',
+            nota: '<strong>Nota metodológica:</strong> El <em>desempeño relativo</em> (eje Y) es la diferencia entre el puntaje global promedio del colegio y el promedio de todos los colegios del mismo sector (oficial/privado) en el mismo departamento en el año seleccionado. La <em>tendencia</em> (eje X) es el cambio absoluto en puntaje global vs el año inmediatamente anterior. Solo se incluyen colegios con datos en dos años consecutivos.',
+        },
+        ingles: {
+            xLabel:  'Tendencia Inglés (cambio vs año anterior, escala 0–100)',
+            yLabel:  'Desempeño relativo en Inglés vs pares',
+            tooltip: 'Puntaje Inglés',
+            subtitle: 'Eje X: cambio en puntaje de inglés vs año anterior &nbsp;|&nbsp; Eje Y: diferencia vs promedio de colegios del mismo sector y departamento.<br><strong>Haz clic en un punto</strong> para ver el perfil del colegio.',
+            nota: '<strong>Nota metodológica (Inglés):</strong> El <em>desempeño relativo</em> (eje Y) es la diferencia entre el promedio de inglés del colegio (escala 0–100) y el promedio de colegios del mismo sector y departamento. La <em>tendencia</em> (eje X) es el cambio absoluto en puntaje de inglés vs el año anterior. Solo se incluyen colegios con datos en dos años consecutivos.',
+        },
+    };
 
     /* ── chart init ───────────────────────────────────────────────────── */
     var chartDom = document.getElementById('chart-cuadrante');
@@ -419,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function () {
             grid: { top: 40, right: 30, bottom: 60, left: 70 },
             xAxis: {
                 type: 'value',
-                name: 'Tendencia (cambio de puntaje vs año anterior)',
+                name: MATERIA_CFG[materia].xLabel,
                 nameLocation: 'middle',
                 nameGap: 40,
                 nameTextStyle: { fontSize: 11, color: '#555' },
@@ -428,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             yAxis: {
                 type: 'value',
-                name: 'Desempeño relativo (vs promedio de pares)',
+                name: MATERIA_CFG[materia].yLabel,
                 nameLocation: 'middle',
                 nameGap: 55,
                 nameTextStyle: { fontSize: 11, color: '#555' },
@@ -449,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return '<div style="max-width:280px;line-height:1.6;">' +
                         '<strong>' + (d.nombre || '') + '</strong><br>' +
                         '<span style="color:#888;">' + (d.departamento || '') + ' · ' + (d.sector || '') + '</span><br>' +
-                        'Puntaje: <strong>' + fmt(d.puntaje) + '</strong><br>' +
+                        MATERIA_CFG[materia].tooltip + ': <strong>' + fmt(d.puntaje) + '</strong><br>' +
                         'Vs pares: <strong>' + sign(d.value[1]) + ' pts</strong><br>' +
                         'Tendencia: <strong>' + sign(d.value[0]) + ' pts</strong><br>' +
                         '<a href="' + href + '" target="_blank" style="font-size:11px;color:#0d6efd;">Ver perfil →</a>' +
@@ -532,6 +567,15 @@ document.addEventListener('DOMContentLoaded', function () {
         fillTable('table-emergente', emergentes, 'tendencia', false);
     }
 
+    /* ── update text labels when materia changes ─────────────────────── */
+    function updateMateriaLabels() {
+        var cfg = MATERIA_CFG[materia];
+        var sub = document.getElementById('chart-subtitle');
+        var nota = document.getElementById('nota-metodologica');
+        if (sub)  sub.innerHTML = cfg.subtitle;
+        if (nota) nota.innerHTML = cfg.nota;
+    }
+
     /* ── main load — hits API (used when año or sector changes) ──────── */
     function loadData() {
         var ano = getFilter('filter-ano') || '2024';
@@ -539,8 +583,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('loading-indicator').classList.remove('d-none');
         document.getElementById('chart-year-label').textContent = ano;
+        updateMateriaLabels();
 
-        var url = '/icfes/api/cuadrante/data/?ano=' + ano;
+        var url = '/icfes/api/cuadrante/data/?ano=' + ano + '&materia=' + materia;
         if (sector) url += '&sector=' + encodeURIComponent(sector);
 
         fetch(withBust(url))
@@ -576,6 +621,22 @@ document.addEventListener('DOMContentLoaded', function () {
         this.classList.replace('btn-outline-secondary', 'btn-secondary');
         document.getElementById('btn-color-cuadrante').classList.replace('btn-secondary', 'btn-outline-secondary');
         chart.setOption(buildOption(getChartData()), true);
+    });
+
+    /* ── materia toggle ───────────────────────────────────────────────── */
+    document.getElementById('btn-materia-global').addEventListener('click', function () {
+        if (materia === 'global') return;
+        materia = 'global';
+        this.classList.replace('btn-outline-primary', 'btn-primary');
+        document.getElementById('btn-materia-ingles').classList.replace('btn-primary', 'btn-outline-primary');
+        loadData();
+    });
+    document.getElementById('btn-materia-ingles').addEventListener('click', function () {
+        if (materia === 'ingles') return;
+        materia = 'ingles';
+        this.classList.replace('btn-outline-primary', 'btn-primary');
+        document.getElementById('btn-materia-global').classList.replace('btn-primary', 'btn-outline-primary');
+        loadData();
     });
 
     /* ── apply button: siempre recarga datos (cache hace que sea rápido) ─ */
