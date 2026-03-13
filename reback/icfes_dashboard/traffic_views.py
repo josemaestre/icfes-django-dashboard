@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from datetime import timedelta
+import hashlib
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -174,6 +175,45 @@ def _is_suspicious_path(path):
 def _is_public_api_path(path):
     p = _clean_path(path).lower()
     return p.startswith("/icfes/api/") or p.startswith("/api/")
+
+
+def _funnel_stage(path):
+    p = _clean_path(path).lower()
+    if not p:
+        return None
+    if p.startswith("/icfes/api/search/colegios/") or p.startswith("/icfes/api/schools/search/"):
+        return "Search"
+    if p.startswith("/icfes/api/colegio/buscar/"):
+        return "Search"
+    if p.startswith("/icfes/colegio/"):
+        return "School detail"
+    if p.startswith("/icfes/api/colegio/") and "/resumen/" in p:
+        return "School detail"
+    deep_tokens = (
+        "/historico/",
+        "/comparacion",
+        "/ingles/",
+        "/ai-recommendations/",
+        "/indicadores-",
+        "/riesgo/",
+        "/niveles-",
+        "/fortalezas-debilidades/",
+        "/similares/",
+    )
+    if p.startswith("/icfes/api/colegio/") and any(token in p for token in deep_tokens):
+        return "Deep analysis"
+    if p.startswith("/icfes/api/comparar-colegios/") or p.startswith("/icfes/api/story/"):
+        return "Deep analysis"
+    if p.startswith("/icfes/export/") or p.startswith("/accounts/") or p.startswith("/users/") or p.startswith("/payments/"):
+        return "Conversion"
+    if p == "/icfes/" or (p.startswith("/icfes/") and not p.startswith("/icfes/api/") and not p.startswith("/icfes/trafico")):
+        return "Landing"
+    return None
+
+
+def _session_actor_id(src_ip, user_agent):
+    raw = f"{src_ip or '-'}|{(user_agent or '').strip().lower()}"
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
 
 
 def _first_seen_label(dt_value, today_start):
@@ -410,6 +450,16 @@ def traffic_dashboard(request):
     }
     suspicious_counter = Counter()
     upstream_error_counter = Counter()
+    funnel_stage_order = ["Landing", "Search", "School detail", "Deep analysis", "Conversion"]
+    funnel_stage_stats = {
+        stage: {
+            "sessions": set(),
+            "requests": 0,
+            "session_hits": Counter(),
+        }
+        for stage in funnel_stage_order
+    }
+    funnel_session_meta = {}
     api_public_endpoint_stats = defaultdict(
         lambda: {
             "requests": 0,
@@ -454,6 +504,21 @@ def traffic_dashboard(request):
             g["durations"].append(duration)
 
         family = _bot_family(row["client_ua"], row["bot_category"])
+        src_ip = row.get("src_ip") or "-"
+        ua_literal = (row.get("client_ua") or "").strip() or "(empty ua)"
+        session_id = _session_actor_id(src_ip, ua_literal)
+        funnel_session_meta.setdefault(
+            session_id,
+            {"src_ip": src_ip, "agent_type": family, "client_ua": ua_literal},
+        )
+
+        stage = _funnel_stage(clean_path)
+        if stage:
+            stage_data = funnel_stage_stats[stage]
+            stage_data["sessions"].add(session_id)
+            stage_data["requests"] += 1
+            stage_data["session_hits"][session_id] += 1
+
         b = bot_family_stats[family]
         b["requests"] += 1
         if _is_operational_error(status):
@@ -529,8 +594,6 @@ def traffic_dashboard(request):
             upstream_error_counter[upstream_error[:120]] += 1
 
         if _is_public_api_path(clean_path):
-            src_ip = row.get("src_ip") or "-"
-            ua_literal = (row.get("client_ua") or "").strip() or "(empty ua)"
             actor_key = (src_ip, family, ua_literal)
 
             endpoint_data = api_public_endpoint_stats[clean_path]
@@ -636,6 +699,45 @@ def traffic_dashboard(request):
                 "top_path": top_path,
             }
         )
+
+    interaction_funnel_rows = []
+    for idx, stage in enumerate(funnel_stage_order):
+        stage_data = funnel_stage_stats[stage]
+        current_sessions = stage_data["sessions"]
+        current_count = len(current_sessions)
+        progressed = None
+        progression_rate = None
+        next_stage = "-"
+        if idx < len(funnel_stage_order) - 1:
+            next_stage = funnel_stage_order[idx + 1]
+            next_sessions = funnel_stage_stats[next_stage]["sessions"]
+            progressed = len(current_sessions & next_sessions)
+            progression_rate = _safe_pct(progressed, current_count) if current_count else 0
+        interaction_funnel_rows.append(
+            {
+                "stage": stage,
+                "unique_users": current_count,
+                "requests": stage_data["requests"],
+                "next_stage": next_stage,
+                "progressed": progressed,
+                "progression_rate": progression_rate,
+            }
+        )
+
+    interaction_funnel_top_actors = []
+    for stage in funnel_stage_order:
+        for session_id, hits in funnel_stage_stats[stage]["session_hits"].most_common(5):
+            meta = funnel_session_meta.get(session_id, {})
+            interaction_funnel_top_actors.append(
+                {
+                    "stage": stage,
+                    "session_id": session_id,
+                    "requests": hits,
+                    "src_ip": meta.get("src_ip", "-"),
+                    "agent_type": meta.get("agent_type", "-"),
+                    "client_ua": meta.get("client_ua", "-"),
+                }
+            )
 
     one_hour_ago = now - timedelta(hours=1)
     top_ips_1h = (
@@ -986,6 +1088,8 @@ def traffic_dashboard(request):
         "upstream_error_rows": upstream_error_rows,
         "api_public_bytes_by_endpoint": api_public_bytes_by_endpoint,
         "api_public_bytes_by_actor": api_public_bytes_by_actor,
+        "interaction_funnel_rows": interaction_funnel_rows,
+        "interaction_funnel_top_actors": interaction_funnel_top_actors,
         "top_ips_1h": top_ips_1h,
         "new_paths_today": new_paths_today,
         "discovered_paths_today": discovered_paths_enriched,

@@ -730,6 +730,80 @@
 
   <div class="card mt-3 mb-3">
     <div class="card-body">
+      <h5 class="card-title">Funnel de interaccion de usuarios</h5>
+      <div class="row">
+        <div class="col-lg-6">
+          <h6 class="mb-2">Etapas del funnel</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th class="text-end">Usuarios unicos</th>
+                  <th class="text-end">Req</th>
+                  <th class="text-end">Avance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in interaction_funnel_rows %}
+                <tr>
+                  <td>{{ row.stage }}</td>
+                  <td class="text-end">{{ row.unique_users }}</td>
+                  <td class="text-end">{{ row.requests }}</td>
+                  <td class="text-end">
+                    {% if row.progression_rate != None %}
+                      {{ row.progression_rate }}% ({{ row.progressed }} -> {{ row.next_stage }})
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <h6 class="mb-2">Usuarios mas activos por etapa</h6>
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th>Usuario</th>
+                  <th class="text-end">Req</th>
+                  <th class="text-end">Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in interaction_funnel_top_actors %}
+                <tr>
+                  <td>{{ row.stage }}</td>
+                  <td>
+                    <code>{{ row.session_id }}</code><br>
+                    <small class="text-muted">{{ row.src_ip }} · {{ row.agent_type }}</small><br>
+                    <small class="text-muted">{{ row.client_ua|truncatechars:70 }}</small>
+                  </td>
+                  <td class="text-end">{{ row.requests }}</td>
+                  <td class="text-end">
+                    <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&show_explorer=1&explorer_ua={{ row.client_ua|urlencode }}#request-explorer">ver requests</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3 mb-3">
+    <div class="card-body">
       <h5 class="card-title">Top User-Agents nuevos de hoy (literal completo)</h5>
       <div class="table-responsive" style="max-height:420px;">
         <table class="table table-sm mb-0">
