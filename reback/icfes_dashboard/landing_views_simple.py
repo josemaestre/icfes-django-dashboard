@@ -278,6 +278,15 @@ def school_landing_page(request, slug):
                 resolve_schema(indicators_query), [codigo, latest_year]
             ).fetchone()
 
+            potencial_query = resolve_schema("""
+                SELECT exceso, percentil_exceso, score_esperado, avg_global
+                FROM gold.fct_potencial_educativo
+                WHERE colegio_bk = ?
+                  AND clasificacion IN ('Excepcional', 'Notable')
+                LIMIT 1
+            """)
+            potencial_row = conn.execute(potencial_query, [codigo]).fetchone()
+
             similar_query = """
                 SELECT
                     h.codigo_dane,
@@ -591,6 +600,25 @@ def school_landing_page(request, slug):
                             }
                         )
 
+                    # Trofeo ML: aparece solo si el colegio supera su pronóstico contextual
+                    if potencial_row:
+                        exceso_val = _to_float(potencial_row[0])
+                        pct_val    = _to_float(potencial_row[1])
+                        esp_val    = _to_float(potencial_row[2])
+                        real_val   = _to_float(potencial_row[3])
+                        indicator_badges.append({
+                            "title":         "Rompió su Pronóstico ML",
+                            "subtitle":      "Supera lo esperado según su contexto",
+                            "value":         exceso_val,
+                            "value_suffix":  " pts",
+                            "delta":         None,
+                            "delta_display": f"Esperado: {esp_val} · Real: {real_val}",
+                            "delta_class":   "positive",
+                            "rank_label":    _rank_tag(pct_val) if pct_val is not None else "Top potencial",
+                            "icon":          "bi-graph-up-arrow",
+                            "color":         "#0891b2",
+                        })
+
                 global_history = [v for v in historical_chart["scores"] if v is not None]
                 if len(global_history) >= 2:
                     trend_3y = None
@@ -743,7 +771,7 @@ def school_landing_page(request, slug):
                 if comparison and comparison.get("percentil_municipal") is not None:
                     title_extras.append(f"P{comparison['percentil_municipal']}")
                 extras_str = " | ".join(title_extras)
-                seo_title = f"{school['nombre']} en {school['municipio']} | ICFES {latest_year}"
+                seo_title = f"Resultados ICFES {latest_year}: {school['nombre']} ({school['municipio']})"
 
                 seo_description = (
                     f"Resultados ICFES {latest_year} de {school['nombre']} en {school['municipio']}, "
@@ -751,13 +779,13 @@ def school_landing_page(request, slug):
                     f"brechas por materia, evolución histórica y recomendaciones de mejora."
                 )
             else:
-                seo_title = f"{school['nombre']} en {school['municipio']} | ICFES Analytics"
+                seo_title = f"Resultados ICFES: {school['nombre']} ({school['municipio']})"
                 seo_description = (
                     f"Consulta el perfil ICFES de {school['nombre']} en {school['municipio']}, "
                     f"{school['departamento']}, con comparativos territoriales y tendencias."
                 )
 
-            seo_title = _trim_meta(seo_title, 65)
+            seo_title = _trim_meta(seo_title, 60)
             seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
 
             faq_items = [

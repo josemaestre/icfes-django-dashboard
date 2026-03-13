@@ -100,6 +100,7 @@ def sitemap_index(request):
     items.append(f"{base}/sitemap-mejoraron.xml")
     items.append(f"{base}/sitemap-bilingues.xml")
     items.append(f"{base}/sitemap-cuadrante.xml")
+    items.append(f"{base}/sitemap-potencial.xml")
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
     xml.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
@@ -618,6 +619,53 @@ def sitemap_cuadrante(request):
             xml.append("    <changefreq>yearly</changefreq>")
             xml.append("    <priority>0.60</priority>")
             xml.append("  </url>")
+
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_potencial(request):
+    """Sitemap for /icfes/supero-prediccion/ — schools that exceeded ML prediction."""
+    base = _base_url(request)
+
+    with get_duckdb_connection() as conn:
+        lastmod = _dataset_lastmod_iso(conn)
+        depto_rows = conn.execute(
+            resolve_schema("""
+                SELECT DISTINCT departamento
+                FROM gold.fct_potencial_educativo
+                WHERE clasificacion IN ('Excepcional', 'Notable')
+                  AND departamento IS NOT NULL
+                  AND departamento != ''
+                ORDER BY departamento
+            """)
+        ).fetchall()
+
+    deptos = [r[0] for r in depto_rows if r[0]]
+    sectors = [("oficial", "0.65"), ("privado", "0.65")]
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+
+    def add_url(loc, priority, changefreq="yearly"):
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append(f"    <changefreq>{changefreq}</changefreq>")
+        xml.append(f"    <priority>{priority}</priority>")
+        xml.append("  </url>")
+
+    # Nacional — todos
+    add_url(f"{base}/icfes/supero-prediccion/", "0.80")
+    # Nacional por sector
+    for s_slug, prio in sectors:
+        add_url(f"{base}/icfes/supero-prediccion/{s_slug}/", prio)
+
+    for depto in deptos:
+        depto_slug = slugify(depto)
+        add_url(f"{base}/icfes/supero-prediccion/{depto_slug}/", "0.65")
+        for s_slug, _ in sectors:
+            add_url(f"{base}/icfes/supero-prediccion/{depto_slug}/{s_slug}/", "0.55")
 
     xml.append("</urlset>")
     return HttpResponse("\n".join(xml), content_type="application/xml")

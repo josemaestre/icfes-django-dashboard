@@ -494,9 +494,9 @@
                         <i class="bi {{ badge.icon }} trophy-icon"></i>
                         <div class="trophy-title">{{ badge.title }}</div>
                         <div class="trophy-subtitle">{{ badge.subtitle }}</div>
-                        <div class="trophy-value">{{ badge.value|default_if_none:"N/A" }}%</div>
+                        <div class="trophy-value">{{ badge.value|default_if_none:"N/A" }}{{ badge.value_suffix|default:"%" }}</div>
                         <span class="trophy-rank">{{ badge.rank_label }}</span>
-                        <div class="trophy-delta {{ badge.delta_class }}">{{ badge.delta_display }} vs año anterior</div>
+                        <div class="trophy-delta {{ badge.delta_class }}">{{ badge.delta_display }}{% if not badge.value_suffix %} vs año anterior{% endif %}</div>
                     </div>
                 </div>
                 {% endfor %}

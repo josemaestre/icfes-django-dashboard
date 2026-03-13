@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-5TWMTCNR');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_description }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ canonical }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_description }}">
+    <meta property="og:url" content="{{ canonical }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_description }}">
+    <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background:#f3f6fb; font-family:"Segoe UI",Tahoma,sans-serif; }
+        .hero { background:linear-gradient(135deg,#0e4d6b 0%,#0891b2 100%); color:#fff; padding:52px 0 40px; }
+        .cardx { background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.08); padding:22px; margin-bottom:18px; }
+        .kpi-num { font-size:2rem; font-weight:700; color:#0891b2; line-height:1.1; }
+        .kpi-label { color:#5b6472; text-transform:uppercase; font-size:.73rem; letter-spacing:.07em; }
+        .exceso-pos { color:#0f766e; font-weight:700; }
+        .sector-pill { display:inline-block; padding:7px 16px; border-radius:999px; font-size:.88rem;
+                       font-weight:600; text-decoration:none; margin:3px; border:2px solid #0891b2; }
+        .sector-pill:hover { opacity:.85; }
+        .pill-active { background:#0891b2; color:#fff !important; border-color:#0891b2; }
+        .pill-outline { background:#fff; color:#0891b2; }
+        .colegio-link { color:#0e4d6b; font-weight:600; text-decoration:none; }
+        .colegio-link:hover { text-decoration:underline; color:#0891b2; }
+        .badge-excep { background:#e0f2fe; color:#0369a1; font-size:.72rem; font-weight:700;
+                       padding:2px 8px; border-radius:999px; }
+        .badge-notable { background:#f0fdf4; color:#166534; font-size:.72rem; font-weight:700;
+                         padding:2px 8px; border-radius:999px; }
+        .cta-btn { background:#0e4d6b; color:#fff; border-radius:999px; padding:10px 22px;
+                   text-decoration:none; font-weight:700; display:inline-block; }
+        .cta-btn:hover { color:#fff; background:#0a3a52; }
+        .dept-grid a { font-size:.82rem; padding:4px 9px; border-radius:6px; background:#fff;
+                       border:1px solid #dee2e6; text-decoration:none; color:#0e4d6b;
+                       display:inline-block; margin:2px; }
+        .dept-grid a:hover, .dept-grid a.active { background:#0891b2; color:#fff; border-color:#0891b2; }
+        .editorial { border-left:4px solid #0891b2; padding-left:16px; color:#374151; font-size:.95rem; }
+    </style>
+</head>
+<body>
+    <!-- GTM noscript -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5TWMTCNR" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <!-- ══ HERO ════════════════════════════════════════════════════════════ -->
+    <section class="hero">
+        <div class="container">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0" style="background:none;padding:0;">
+                    <li class="breadcrumb-item"><a href="/" style="color:rgba(255,255,255,.75);">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="/icfes/" style="color:rgba(255,255,255,.75);">ICFES Analytics</a></li>
+                    {% if depto_nombre %}
+                    <li class="breadcrumb-item">
+                        <a href="/icfes/supero-prediccion/" style="color:rgba(255,255,255,.75);">Superó Predicción ML</a>
+                    </li>
+                    <li class="breadcrumb-item active" style="color:#fff;">{{ depto_nombre }}</li>
+                    {% else %}
+                    <li class="breadcrumb-item active" style="color:#fff;">Superó Predicción ML</li>
+                    {% endif %}
+                </ol>
+            </nav>
+
+            <h1 class="display-6 fw-bold mb-2">
+                🤖 Colegios que Superaron su Pronóstico ML
+                {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
+                — ICFES {{ ano }}
+            </h1>
+            <p class="mb-3 opacity-75" style="max-width:700px;">
+                Colegios con puntaje ICFES <strong>por encima de lo que predice el modelo de inteligencia artificial</strong>,
+                teniendo en cuenta su contexto: sector, región, calendario, tamaño e indicadores socioeconómicos.
+            </p>
+
+            <!-- Sector pills -->
+            <div class="mb-1">
+                <a href="/icfes/supero-prediccion/{% if depto_slug %}{{ depto_slug }}/{% endif %}"
+                   class="sector-pill {% if not sector_label %}pill-active{% else %}pill-outline{% endif %}">
+                    🇨🇴 Todos los sectores
+                </a>
+                <a href="/icfes/supero-prediccion/{% if depto_slug %}{{ depto_slug }}/{% endif %}oficial/"
+                   class="sector-pill {% if sector_label == 'Oficiales' %}pill-active{% else %}pill-outline{% endif %}">
+                    🏛️ Oficiales
+                </a>
+                <a href="/icfes/supero-prediccion/{% if depto_slug %}{{ depto_slug }}/{% endif %}privado/"
+                   class="sector-pill {% if sector_label == 'Privados' %}pill-active{% else %}pill-outline{% endif %}">
+                    🎓 Privados
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <main class="container my-4">
+
+        <!-- ══ KPI STRIP ══════════════════════════════════════════════════ -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+                <div class="cardx text-center py-3">
+                    <div class="kpi-label mb-1">⭐ Excepcionales</div>
+                    <div class="kpi-num">{{ n_excepcionales }}</div>
+                    <div class="text-muted" style="font-size:.78rem;">Percentil &ge; 90</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="cardx text-center py-3">
+                    <div class="kpi-label mb-1">✅ Notables</div>
+                    <div class="kpi-num" style="color:#166534;">{{ n_notables }}</div>
+                    <div class="text-muted" style="font-size:.78rem;">Percentil 75–90</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="cardx text-center py-3">
+                    <div class="kpi-label mb-1">📈 Exceso promedio</div>
+                    <div class="kpi-num">{% if avg_exceso %}+{{ avg_exceso }}{% else %}—{% endif %} <span style="font-size:1rem;">pts</span></div>
+                    <div class="text-muted" style="font-size:.78rem;">sobre lo esperado</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ TABLA TOP 20 (server-rendered, crawlable) ══════════════════ -->
+        <div class="cardx mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">
+                    Top {{ tabla|length }} colegios que superaron su pronóstico ML
+                    {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
+                    {% if sector_label %}— {{ sector_label }}{% endif %}
+                    — {{ ano }}
+                </h2>
+                <a href="/icfes/cuadrante/" class="btn btn-outline-secondary btn-sm">
+                    Ver Cuadrante Educativo
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>Colegio</th>
+                            <th>Departamento</th>
+                            <th>Sector</th>
+                            <th title="Puntaje esperado por el modelo ML">Esperado</th>
+                            <th title="Puntaje real obtenido">Real</th>
+                            <th title="Puntos por encima del pronóstico">+Exceso</th>
+                            <th>Clasificación</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for school in tabla %}
+                        <tr>
+                            <td class="text-center text-muted small fw-semibold">{{ forloop.counter }}</td>
+                            <td>
+                                {% if school.slug %}
+                                <a href="/icfes/colegio/{{ school.slug }}/" class="colegio-link">
+                                    {{ school.nombre_colegio }}
+                                </a>
+                                {% else %}
+                                {{ school.nombre_colegio }}
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ school.departamento|default:"-" }}</td>
+                            <td class="text-muted small">
+                                {% if school.sector == "OFICIAL" %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:.72rem;">Oficial</span>
+                                {% else %}
+                                    <span class="badge bg-warning bg-opacity-10 text-warning-emphasis" style="font-size:.72rem;">Privado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ school.puntaje_esperado|default:"—" }}</td>
+                            <td><strong>{{ school.puntaje_real|default:"—" }}</strong></td>
+                            <td class="exceso-pos">
+                                {% if school.exceso %}+{{ school.exceso }}{% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if school.clasificacion == "Excepcional" %}
+                                    <span class="badge-excep">Excepcional</span>
+                                {% else %}
+                                    <span class="badge-notable">Notable</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if school.slug %}
+                                <a href="/icfes/colegio/{{ school.slug }}/" class="btn btn-sm btn-outline-primary">Ver</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                No hay datos disponibles para esta selección.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ══ DESCRIPCIÓN EDITORIAL ═══════════════════════════════════════ -->
+        <div class="cardx mb-4">
+            <h3 class="h5 mb-3">¿Qué significa superar el pronóstico del modelo ML?</h3>
+            <div class="editorial">
+                <p class="mb-2">
+                    El <strong>modelo de potencial educativo</strong> de ICFES Analytics analiza más de 10.000 colegios
+                    colombianos y estima el puntaje global esperado según variables de contexto: sector (oficial / privado),
+                    región geográfica, calendario escolar, número de estudiantes y coordenadas del municipio.
+                    Estas variables capturan las condiciones estructurales que históricamente determinan el rendimiento académico.
+                </p>
+                <p class="mb-2">
+                    Un colegio <span class="badge-excep">Excepcional</span> o <span class="badge-notable">Notable</span>
+                    obtuvo un puntaje ICFES <strong>significativamente mayor</strong> al que predice el modelo para
+                    instituciones con características similares. Esto sugiere que factores pedagógicos, de liderazgo
+                    o de gestión interna explican el desempeño — más allá de las ventajas contextuales.
+                </p>
+                <p class="mb-0">
+                    La columna <strong>+Exceso</strong> muestra la diferencia en puntos entre el puntaje real y el esperado.
+                    Un exceso de +5 significa que el colegio obtuvo 5 puntos más de lo que el modelo predijo.
+                </p>
+            </div>
+        </div>
+
+        <!-- ══ DEPT NAV ════════════════════════════════════════════════════ -->
+        {% if deptos_nav %}
+        <div class="cardx mb-4">
+            <h3 class="h6 text-muted mb-2">Colegios que superaron su pronóstico ML por departamento</h3>
+            <div class="dept-grid">
+                <a href="/icfes/supero-prediccion/{% if sector_slug %}{{ sector_slug }}/{% endif %}"
+                   class="{% if not depto_nombre %}active{% endif %}">
+                    🇨🇴 Todo Colombia
+                </a>
+                {% for dep in deptos_nav %}
+                <a href="/icfes/supero-prediccion/{{ dep.slug }}/{% if sector_slug %}{{ sector_slug }}/{% endif %}"
+                   class="{% if dep.nombre == depto_nombre %}active{% endif %}">
+                    {{ dep.nombre }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ══ CTA ════════════════════════════════════════════════════════ -->
+        <div class="cardx text-center py-4 mb-4" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);">
+            <h3 class="h5 mb-2">¿Tu colegio supera su pronóstico?</h3>
+            <p class="text-muted mb-3">
+                Accede al diagnóstico completo con el modelo ML de potencial educativo,
+                comparativos históricos y recomendaciones personalizadas para cualquier
+                institución de Colombia.
+            </p>
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                <a href="/pricing/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=cta_planes"
+                   class="cta-btn">Ver planes</a>
+                <a href="/accounts/signup/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=cta_signup"
+                   class="btn btn-outline-secondary">Crear cuenta gratis</a>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>
