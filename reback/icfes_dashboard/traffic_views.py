@@ -171,6 +171,11 @@ def _is_suspicious_path(path):
     return any(token in p for token in suspicious_tokens)
 
 
+def _is_public_api_path(path):
+    p = _clean_path(path).lower()
+    return p.startswith("/icfes/api/") or p.startswith("/api/")
+
+
 def _first_seen_label(dt_value, today_start):
     if not dt_value:
         return "-"
@@ -193,6 +198,7 @@ def traffic_dashboard(request):
         days_int = 7
     explorer_ua = (request.GET.get("explorer_ua") or "").strip()
     explorer_path = (request.GET.get("explorer_path") or "").strip()
+    show_explorer = request.GET.get("show_explorer") == "1" or bool(explorer_ua or explorer_path)
 
     now = timezone.now()
     since = now - timedelta(days=days_int)
@@ -368,6 +374,7 @@ def traffic_dashboard(request):
             "path",
             "http_status",
             "total_duration_ms",
+            "tx_bytes",
             "client_ua",
             "bot_category",
             "utm_source",
@@ -403,6 +410,22 @@ def traffic_dashboard(request):
     }
     suspicious_counter = Counter()
     upstream_error_counter = Counter()
+    api_public_endpoint_stats = defaultdict(
+        lambda: {
+            "requests": 0,
+            "tx_total": 0,
+            "tx_values": [],
+            "ips": set(),
+            "actors": Counter(),
+        }
+    )
+    api_public_actor_stats = defaultdict(
+        lambda: {
+            "requests": 0,
+            "tx_total": 0,
+            "paths": Counter(),
+        }
+    )
 
     for row in detailed_rows:
         ts = row["timestamp"]
@@ -411,6 +434,7 @@ def traffic_dashboard(request):
         clean_path = _clean_path(path)
         status = row["http_status"] or 0
         duration = row["total_duration_ms"]
+        tx_bytes = max(row.get("tx_bytes") or 0, 0)
 
         m = minute_stats[minute_key]
         m["requests"] += 1
@@ -504,6 +528,23 @@ def traffic_dashboard(request):
         if upstream_error:
             upstream_error_counter[upstream_error[:120]] += 1
 
+        if _is_public_api_path(clean_path):
+            src_ip = row.get("src_ip") or "-"
+            ua_literal = (row.get("client_ua") or "").strip() or "(empty ua)"
+            actor_key = (src_ip, family, ua_literal)
+
+            endpoint_data = api_public_endpoint_stats[clean_path]
+            endpoint_data["requests"] += 1
+            endpoint_data["tx_total"] += tx_bytes
+            endpoint_data["tx_values"].append(tx_bytes)
+            endpoint_data["ips"].add(src_ip)
+            endpoint_data["actors"][actor_key] += tx_bytes
+
+            actor_data = api_public_actor_stats[actor_key]
+            actor_data["requests"] += 1
+            actor_data["tx_total"] += tx_bytes
+            actor_data["paths"][clean_path] += tx_bytes
+
     minute_series = []
     for minute_key, data in sorted(minute_stats.items(), key=lambda x: x[0], reverse=True)[:90]:
         minute_series.append(
@@ -554,6 +595,47 @@ def traffic_dashboard(request):
 
     suspicious_paths = [{"path": p, "total": c} for p, c in suspicious_counter.most_common(20)]
     upstream_error_rows = [{"upstream_error": e, "total": c} for e, c in upstream_error_counter.most_common(15)]
+    api_public_bytes_by_endpoint = []
+    for endpoint, data in sorted(
+        api_public_endpoint_stats.items(),
+        key=lambda x: (x[1]["tx_total"], x[1]["requests"]),
+        reverse=True,
+    )[:25]:
+        top_actor = data["actors"].most_common(1)[0] if data["actors"] else None
+        top_actor_key = top_actor[0] if top_actor else ("-", "-", "-")
+        api_public_bytes_by_endpoint.append(
+            {
+                "path": endpoint,
+                "requests": data["requests"],
+                "tx_total": data["tx_total"],
+                "avg_tx": round(data["tx_total"] / data["requests"], 1) if data["requests"] else 0,
+                "p95_tx": _percentile(data["tx_values"], 0.95),
+                "unique_ips": len(data["ips"]),
+                "top_src_ip": top_actor_key[0],
+                "top_agent_type": top_actor_key[1],
+                "top_ua": top_actor_key[2],
+            }
+        )
+
+    api_public_bytes_by_actor = []
+    for actor_key, data in sorted(
+        api_public_actor_stats.items(),
+        key=lambda x: (x[1]["tx_total"], x[1]["requests"]),
+        reverse=True,
+    )[:25]:
+        src_ip, agent_type, ua_literal = actor_key
+        top_path = data["paths"].most_common(1)[0][0] if data["paths"] else "-"
+        api_public_bytes_by_actor.append(
+            {
+                "src_ip": src_ip,
+                "agent_type": agent_type,
+                "client_ua": ua_literal,
+                "requests": data["requests"],
+                "tx_total": data["tx_total"],
+                "avg_tx": round(data["tx_total"] / data["requests"], 1) if data["requests"] else 0,
+                "top_path": top_path,
+            }
+        )
 
     one_hour_ago = now - timedelta(hours=1)
     top_ips_1h = (
@@ -593,24 +675,27 @@ def traffic_dashboard(request):
         .order_by("-total")[:20]
     )
 
-    request_explorer_qs = base_qs
-    if explorer_ua:
-        request_explorer_qs = request_explorer_qs.filter(client_ua=explorer_ua)
-    if explorer_path:
-        request_explorer_qs = request_explorer_qs.filter(path=explorer_path)
-    request_explorer_total = request_explorer_qs.count()
-    request_explorer_rows = list(
-        request_explorer_qs.values(
-            "request_id",
-            "timestamp",
-            "method",
-            "path",
-            "http_status",
-            "total_duration_ms",
-            "src_ip",
-            "client_ua",
-        ).order_by("-timestamp")[:300]
-    )
+    request_explorer_total = 0
+    request_explorer_rows = []
+    if show_explorer:
+        request_explorer_qs = base_qs
+        if explorer_ua:
+            request_explorer_qs = request_explorer_qs.filter(client_ua=explorer_ua)
+        if explorer_path:
+            request_explorer_qs = request_explorer_qs.filter(path=explorer_path)
+        request_explorer_total = request_explorer_qs.count()
+        request_explorer_rows = list(
+            request_explorer_qs.values(
+                "request_id",
+                "timestamp",
+                "method",
+                "path",
+                "http_status",
+                "total_duration_ms",
+                "src_ip",
+                "client_ua",
+            ).order_by("-timestamp")[:300]
+        )
 
     discovered_paths_today_qs = (
         RailwayTrafficLog.objects.values("path")
@@ -899,6 +984,8 @@ def traffic_dashboard(request):
         "bot_families": bot_families,
         "suspicious_paths": suspicious_paths,
         "upstream_error_rows": upstream_error_rows,
+        "api_public_bytes_by_endpoint": api_public_bytes_by_endpoint,
+        "api_public_bytes_by_actor": api_public_bytes_by_actor,
         "top_ips_1h": top_ips_1h,
         "new_paths_today": new_paths_today,
         "discovered_paths_today": discovered_paths_enriched,
@@ -945,6 +1032,7 @@ def traffic_dashboard(request):
         "users_non_admin_new_period": users_non_admin_new_period,
         "request_explorer_ua": explorer_ua,
         "request_explorer_path": explorer_path,
+        "show_request_explorer": show_explorer,
         "request_explorer_total": request_explorer_total,
         "request_explorer_rows": request_explorer_rows,
         "social_total_twitter": social_totals.get("Twitter/X", 0),

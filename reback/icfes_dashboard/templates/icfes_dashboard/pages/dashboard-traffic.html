@@ -16,6 +16,8 @@
           <label for="days" class="form-label mb-1">Ventana</label>
           <select class="form-select" id="days" name="days">
             <option value="1" {% if days == 1 %}selected{% endif %}>Ultimas 24h</option>
+            <option value="2" {% if days == 2 %}selected{% endif %}>Ultimas 48h</option>
+            <option value="3" {% if days == 3 %}selected{% endif %}>Ultimas 72h</option>
             <option value="7" {% if days == 7 %}selected{% endif %}>Ultimos 7 dias</option>
             <option value="30" {% if days == 30 %}selected{% endif %}>Ultimos 30 dias</option>
             <option value="90" {% if days == 90 %}selected{% endif %}>Ultimos 90 dias</option>
@@ -645,6 +647,89 @@
 
   <div class="card mt-3 mb-3">
     <div class="card-body">
+      <h5 class="card-title">APIs publicas: endpoints con bytes enviados altos</h5>
+      <div class="row">
+        <div class="col-lg-7">
+          <h6 class="mb-2">Top endpoints por bytes enviados (tx)</h6>
+          <div class="table-responsive" style="max-height:360px;">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th class="text-end">Req</th>
+                  <th class="text-end">TX total</th>
+                  <th class="text-end">Avg tx</th>
+                  <th class="text-end">P95 tx</th>
+                  <th class="text-end">IPs</th>
+                  <th>Top ejecutor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in api_public_bytes_by_endpoint %}
+                <tr>
+                  <td style="word-break:break-all;">
+                    <code>{{ row.path }}</code>
+                    <a class="ms-1" href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&show_explorer=1&explorer_path={{ row.path|urlencode }}#request-explorer">ver requests</a>
+                  </td>
+                  <td class="text-end">{{ row.requests }}</td>
+                  <td class="text-end">{{ row.tx_total }}</td>
+                  <td class="text-end">{{ row.avg_tx }}</td>
+                  <td class="text-end">{{ row.p95_tx|default:"-" }}</td>
+                  <td class="text-end">{{ row.unique_ips }}</td>
+                  <td>
+                    <code>{{ row.top_src_ip }}</code><br>
+                    <small class="text-muted">{{ row.top_agent_type }}</small><br>
+                    <small class="text-muted">{{ row.top_ua|truncatechars:80 }}</small>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-muted">Sin datos de APIs publicas en esta ventana</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <h6 class="mb-2">Top ejecutores por bytes (IP + tipo + UA)</h6>
+          <div class="table-responsive" style="max-height:360px;">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Ejecutor</th>
+                  <th class="text-end">Req</th>
+                  <th class="text-end">TX total</th>
+                  <th class="text-end">Avg tx</th>
+                  <th>Endpoint top</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in api_public_bytes_by_actor %}
+                <tr>
+                  <td>
+                    <code>{{ row.src_ip }}</code><br>
+                    <small class="text-muted">{{ row.agent_type }}</small><br>
+                    <small class="text-muted">{{ row.client_ua|truncatechars:75 }}</small>
+                  </td>
+                  <td class="text-end">{{ row.requests }}</td>
+                  <td class="text-end">{{ row.tx_total }}</td>
+                  <td class="text-end">{{ row.avg_tx }}</td>
+                  <td style="word-break:break-all;">
+                    <code>{{ row.top_path }}</code>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-muted">Sin datos</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3 mb-3">
+    <div class="card-body">
       <h5 class="card-title">Top User-Agents nuevos de hoy (literal completo)</h5>
       <div class="table-responsive" style="max-height:420px;">
         <table class="table table-sm mb-0">
@@ -655,7 +740,7 @@
               <td style="word-break:break-all;">{{ row.client_ua }}</td>
               <td class="text-end">{{ row.total }}</td>
               <td class="text-end">
-                <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&explorer_ua={{ row.client_ua|urlencode }}#request-explorer">Ver requests</a>
+                <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&show_explorer=1&explorer_ua={{ row.client_ua|urlencode }}#request-explorer">Ver requests</a>
               </td>
             </tr>
             {% empty %}
@@ -667,6 +752,7 @@
     </div>
   </div>
 
+  {% if show_request_explorer %}
   <div class="card mt-3 mb-3" id="request-explorer">
     <div class="card-body">
       <h5 class="card-title">Request Explorer</h5>
@@ -681,7 +767,7 @@
         <small class="text-muted">Total filtrado: {{ request_explorer_total }}</small>
       </div>
       <div class="mb-2">
-        <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}">Limpiar filtros</a>
+        <a href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}">Ocultar explorer y limpiar filtros</a>
       </div>
       <div class="table-responsive" style="max-height:420px;">
         <table class="table table-sm mb-0">
@@ -707,7 +793,7 @@
               <td class="text-end">{{ row.total_duration_ms|default:"-" }}</td>
               <td style="word-break:break-all;">
                 <code>{{ row.path }}</code>
-                <a class="ms-1" href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&explorer_path={{ row.path|urlencode }}#request-explorer">filtrar path</a>
+                <a class="ms-1" href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&show_explorer=1&explorer_path={{ row.path|urlencode }}#request-explorer">filtrar path</a>
               </td>
               <td><code>{{ row.src_ip|default:"-" }}</code></td>
               <td style="word-break:break-all;">{{ row.client_ua|default:"-" }}</td>
@@ -720,6 +806,15 @@
       </div>
     </div>
   </div>
+  {% else %}
+  <div class="card mt-3 mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Request Explorer</h5>
+      <p class="text-muted mb-2">No se carga por defecto para evitar enviar demasiada informacion.</p>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'icfes_dashboard:traffic_dashboard' %}?days={{ days }}&show_explorer=1#request-explorer">Abrir explorer bajo demanda</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {{ daily_status_labels|json_script:"daily-status-labels" }}
