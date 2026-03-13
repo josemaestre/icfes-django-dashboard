@@ -55,7 +55,7 @@ SELECT
     p.nombre_colegio,
     p.sector,
     p.departamento,
-    p.municipio,
+    COALESCE(s.municipio, '') AS municipio,
     ROUND(p.avg_global, 1)        AS puntaje_real,
     ROUND(p.score_esperado, 1)    AS puntaje_esperado,
     ROUND(p.exceso, 1)            AS exceso,
