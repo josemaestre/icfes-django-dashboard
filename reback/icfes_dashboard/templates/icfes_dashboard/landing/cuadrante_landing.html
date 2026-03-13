@@ -216,7 +216,7 @@
                    class="btn btn-sm"
                    style="border-color:{{ otro.meta.color }};color:{{ otro.meta.color }};">
                     {{ otro.meta.emoji }} {{ otro.meta.nombre }}
-                    <span class="badge ms-1" style="background:{{ otro.meta.color }};">{{ counts|get_item:otro.key }}</span>
+                    <span class="badge ms-1" style="background:{{ otro.meta.color }};">{{ otro.count }}</span>
                 </a>
                 {% endfor %}
             </div>

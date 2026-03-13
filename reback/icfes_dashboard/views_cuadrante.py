@@ -413,7 +413,7 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
         "chart_data_json": chart_data_json,
         "deptos_nav": deptos_nav,
         "otros_cuadrantes": [
-            {"key": k, "meta": v} for k, v in _CUADRANTE_META.items() if k != cuadrante
+            {"key": k, "meta": v, "count": counts.get(k, 0)} for k, v in _CUADRANTE_META.items() if k != cuadrante
         ],
         "ano": _LANDING_ANO,
         "seo_title": seo_title,
