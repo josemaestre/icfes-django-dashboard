@@ -632,12 +632,13 @@ def sitemap_potencial(request):
         lastmod = _dataset_lastmod_iso(conn)
         depto_rows = conn.execute(
             resolve_schema("""
-                SELECT DISTINCT departamento
-                FROM gold.fct_potencial_educativo
-                WHERE clasificacion IN ('Excepcional', 'Notable')
-                  AND departamento IS NOT NULL
-                  AND departamento != ''
-                ORDER BY departamento
+                SELECT DISTINCT COALESCE(s.departamento, p.departamento) AS dep
+                FROM gold.fct_potencial_educativo p
+                LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = p.colegio_bk
+                WHERE p.clasificacion IN ('Excepcional', 'Notable')
+                  AND COALESCE(s.departamento, p.departamento) IS NOT NULL
+                  AND COALESCE(s.departamento, p.departamento) != ''
+                ORDER BY 1
             """)
         ).fetchall()
 

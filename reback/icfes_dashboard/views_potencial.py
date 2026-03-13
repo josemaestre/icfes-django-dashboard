@@ -54,8 +54,8 @@ _QUERY = """
 SELECT
     p.nombre_colegio,
     p.sector,
-    p.departamento,
-    COALESCE(s.municipio, '') AS municipio,
+    COALESCE(s.departamento, p.departamento) AS departamento,
+    COALESCE(s.municipio, '')                AS municipio,
     ROUND(p.avg_global, 1)        AS puntaje_real,
     ROUND(p.score_esperado, 1)    AS puntaje_esperado,
     ROUND(p.exceso, 1)            AS exceso,
@@ -73,14 +73,16 @@ LIMIT 500
 
 
 def _resolve_depto_slug(slug: str):
-    """Slug → nombre exacto en DB o None si no existe."""
+    """Slug → nombre canónico (de fct_agg_colegios_ano) o None si no existe."""
     slug = (slug or "").strip().lower()
     if not slug:
         return None
     try:
+        # Use canonical names from fct_agg_colegios_ano (same as views_cuadrante)
         q = resolve_schema(
-            "SELECT DISTINCT departamento FROM gold.fct_potencial_educativo "
-            "WHERE departamento IS NOT NULL ORDER BY departamento"
+            "SELECT DISTINCT departamento FROM gold.fct_agg_colegios_ano "
+            "WHERE CAST(ano AS INTEGER) = 2024 AND departamento IS NOT NULL "
+            "ORDER BY departamento"
         )
         df = execute_query(q)
         deptos = df["departamento"].tolist() if not df.empty else []
@@ -113,7 +115,8 @@ def _build_query(depto_name=None, sector_db=None):
     clauses = []
     params = []
     if depto_name:
-        clauses.append("AND p.departamento = ?")
+        # Filter using canonical dept name from the JOIN (s.departamento)
+        clauses.append("AND COALESCE(s.departamento, p.departamento) = ?")
         params.append(depto_name)
     if sector_db:
         clauses.append("AND p.sector = ?")
@@ -189,10 +192,22 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
     # Top 20 for server-rendered table
     tabla = records[:20]
 
-    # Dept nav
+    # Dept nav — use canonical names from the join, only depts with potencial data
     try:
-        all_deptos = get_departamentos()
-        deptos_nav = [{"nombre": d, "slug": slugify(d)} for d in all_deptos]
+        nav_q = resolve_schema("""
+            SELECT DISTINCT COALESCE(s.departamento, p.departamento) AS dep
+            FROM gold.fct_potencial_educativo p
+            LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = p.colegio_bk
+            WHERE p.clasificacion IN ('Excepcional', 'Notable')
+              AND COALESCE(s.departamento, p.departamento) IS NOT NULL
+            ORDER BY 1
+        """)
+        nav_df = execute_query(nav_q)
+        deptos_nav = [
+            {"nombre": d, "slug": slugify(d)}
+            for d in nav_df["dep"].tolist()
+            if d and d.strip()
+        ] if not nav_df.empty else []
     except Exception:
         deptos_nav = []
 
