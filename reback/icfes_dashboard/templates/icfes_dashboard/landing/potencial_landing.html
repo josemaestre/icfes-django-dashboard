@@ -6,18 +6,22 @@
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo_title }}</title>
-    <meta name="description" content="{{ seo_description }}">
+    <title>{{ seo_title|default:'Colegios que superaron su pronóstico ML ICFES' }}</title>
+    <meta name="description" content="{{ seo_description|default:'Consulta colegios que superaron su pronóstico ICFES según modelo ML, por departamento y sector.' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ canonical }}">
-    <meta property="og:title" content="{{ seo_title }}">
-    <meta property="og:description" content="{{ seo_description }}">
+    <meta property="og:locale" content="es_CO">
+    <meta property="og:site_name" content="ICFES Analytics">
+    <meta property="og:title" content="{{ seo_title|default:'Colegios que superaron su pronóstico ML ICFES' }}">
+    <meta property="og:description" content="{{ seo_description|default:'Consulta colegios que superaron su pronóstico ICFES según modelo ML, por departamento y sector.' }}">
     <meta property="og:url" content="{{ canonical }}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{{ seo_title }}">
-    <meta name="twitter:description" content="{{ seo_description }}">
+    <meta name="twitter:title" content="{{ seo_title|default:'Colegios que superaron su pronóstico ML ICFES' }}">
+    <meta name="twitter:description" content="{{ seo_description|default:'Consulta colegios que superaron su pronóstico ICFES según modelo ML, por departamento y sector.' }}">
+    {% if structured_data_json %}
     <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+    {% endif %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -275,6 +279,16 @@
             </div>
         </div>
         {% endif %}
+
+        <div class="cardx mb-4">
+            <h3 class="h6 text-muted mb-2">Rutas relacionadas</h3>
+            <ul class="mb-0">
+                <li><a href="/icfes/cuadrante/estrella/{% if depto_slug %}{{ depto_slug }}/{% endif %}">Cuadrante de colegios estrella{% if depto_nombre %} en {{ depto_nombre }}{% endif %}</a></li>
+                <li><a href="/icfes/ranking/colegios/{{ ano }}/">Ranking nacional de colegios {{ ano }}</a></li>
+                <li><a href="/icfes/materia/ingles/">Ranking de colegios por inglés</a></li>
+                <li><a href="/icfes/historico/puntaje-global/">Histórico nacional del puntaje global ICFES</a></li>
+            </ul>
+        </div>
 
         <!-- ══ CTA ════════════════════════════════════════════════════════ -->
         <div class="cardx text-center py-4 mb-4" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);">
