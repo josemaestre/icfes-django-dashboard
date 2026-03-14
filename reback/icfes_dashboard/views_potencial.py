@@ -191,6 +191,7 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
 
     # Top 20 for server-rendered table
     tabla = records[:20]
+    hidden_count = max(0, len(records) - 20)
 
     # Dept nav — use canonical names from the join, only depts with potencial data
     try:
@@ -249,6 +250,7 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
         "n_excepcionales": n_excepcionales,
         "n_notables": n_notables,
         "avg_exceso": avg_exceso,
+        "hidden_count": hidden_count,
         "deptos_nav": deptos_nav,
         "ano": _LANDING_ANO,
         "seo_title": seo_title,

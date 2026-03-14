@@ -133,6 +133,18 @@
                 Se muestran hasta 30 colegios por cuadrante (los de mayor impacto visual).
                 <a href="/icfes/cuadrante/">Ver dashboard interactivo completo →</a>
             </p>
+            <!-- CTA inline — justo después del gráfico, máxima visibilidad -->
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;
+                        border-top:1px solid #e5e7eb;">
+                <p style="margin:0;font-size:.85rem;color:#4b5563;">
+                    ¿Te interesa el diagnóstico completo de un colegio?
+                </p>
+                <a href="/accounts/signup/?utm_source=seo&utm_medium=cuadrante_chart&utm_campaign=cta_inline"
+                   class="cta-btn" style="font-size:.85rem;padding:7px 18px;">
+                    Crear cuenta gratis
+                </a>
+            </div>
         </div>
 
         <!-- ══ NARRATIVAS POR CUADRANTE ═══════════════════════════════════════ -->
@@ -228,7 +240,11 @@
                             <td><strong>{{ school.puntaje|default:"—" }}</strong></td>
                             <td>
                                 {% if school.slug %}
-                                <a href="/icfes/colegio/{{ school.slug }}/" class="btn btn-sm btn-outline-primary" aria-label="Ver perfil de {{ school.nombre }}">Ver perfil</a>
+                                <a href="/icfes/colegio/{{ school.slug }}/"
+                                   class="btn btn-sm btn-outline-primary js-cro-link"
+                                   data-slug="{{ school.slug }}"
+                                   data-nombre="{{ school.nombre_colegio }}"
+                                   aria-label="Ver perfil de {{ school.nombre_colegio }}">Ver perfil</a>
                                 {% endif %}
                             </td>
                         </tr>
@@ -446,10 +462,95 @@
             window.addEventListener('resize', function() { chart.resize(); });
             chart.on('click', function(params) {
                 var d = params.data;
-                if (d && d.slug) window.open('/icfes/colegio/' + d.slug + '/', '_blank');
+                if (d && d.slug) {
+                    if (croShouldIntercept()) {
+                        croShowModal(d.slug, d.nombre);
+                    } else {
+                        window.open('/icfes/colegio/' + d.slug + '/', '_blank');
+                    }
+                }
             });
         }
     })();
+    </script>
+
+    <!-- ══ MODAL CRO ══════════════════════════════════════════════════════ -->
+    <div id="cro-modal" role="dialog" aria-modal="true" aria-labelledby="cro-modal-title"
+         style="display:none;position:fixed;inset:0;z-index:9999;
+                background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;max-width:440px;width:92%;
+                    padding:32px 28px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.22);
+                    position:relative;">
+            <button onclick="croDismiss();" aria-label="Cerrar"
+                    style="position:absolute;top:12px;right:14px;background:none;border:none;
+                           font-size:1.3rem;color:#9ca3af;cursor:pointer;line-height:1;">✕</button>
+            <div style="font-size:2.5rem;margin-bottom:8px;">📊</div>
+            <h2 id="cro-modal-title"
+                style="font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#1a3a5c;">
+                ¡Ya exploraste 3 perfiles!
+            </h2>
+            <p style="color:#4b5563;font-size:.93rem;margin-bottom:20px;line-height:1.6;">
+                Crea tu cuenta gratuita para ver perfiles ilimitados, comparativos
+                históricos y el diagnóstico completo de cualquier colegio de Colombia.
+            </p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <a href="/accounts/signup/?utm_source=seo&utm_medium=cuadrante_chart&utm_campaign=cro_modal"
+                   style="background:#1a3a5c;color:#fff;border-radius:999px;padding:12px 24px;
+                          text-decoration:none;font-weight:700;display:block;font-size:.95rem;">
+                    Crear cuenta gratis →
+                </a>
+                <a id="cro-school-link" href="#" target="_blank" onclick="croDismiss();"
+                   style="color:#0d6efd;font-size:.85rem;padding:4px;text-decoration:none;">
+                    Ver <span id="cro-school-name">este colegio</span> de todas formas →
+                </a>
+                <button onclick="croDismiss();"
+                        style="background:none;border:none;color:#9ca3af;cursor:pointer;
+                               font-size:.82rem;padding:4px;">
+                    Seguir explorando sin cuenta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ── CRO tracking ── sessionStorage, no cookies, no server calls
+    var _CRO_KEY   = 'ica_pclicks';  // profile click counter
+    var _CRO_DONE  = 'ica_cdone';    // modal already shown this session
+    var _CRO_LIMIT = 3;              // show modal on the 3rd click
+
+    function croShouldIntercept() {
+        if (sessionStorage.getItem(_CRO_DONE)) return false;
+        var n = parseInt(sessionStorage.getItem(_CRO_KEY) || '0', 10) + 1;
+        sessionStorage.setItem(_CRO_KEY, n);
+        return n >= _CRO_LIMIT;
+    }
+    function croShowModal(slug, nombre) {
+        var m = document.getElementById('cro-modal');
+        document.getElementById('cro-school-link').href = '/icfes/colegio/' + (slug || '') + '/';
+        document.getElementById('cro-school-name').textContent = nombre || 'este colegio';
+        m.style.display = 'flex';
+        m.focus();
+    }
+    function croDismiss() {
+        sessionStorage.setItem(_CRO_DONE, '1');
+        document.getElementById('cro-modal').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Intercept table "Ver perfil" links
+        document.querySelectorAll('.js-cro-link').forEach(function(el) {
+            el.addEventListener('click', function(e) {
+                if (croShouldIntercept()) {
+                    e.preventDefault();
+                    croShowModal(el.dataset.slug, el.dataset.nombre);
+                }
+            });
+        });
+        // Close on backdrop click
+        document.getElementById('cro-modal').addEventListener('click', function(e) {
+            if (e.target === this) croDismiss();
+        });
+    });
     </script>
 </body>
 </html>

@@ -203,6 +203,35 @@
                     </tbody>
                 </table>
             </div>
+
+            {% if hidden_count > 0 %}
+            <!-- PAYWALL — Google lee el texto; usuario ve el CTA de registro -->
+            <div style="background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);
+                        border-radius:0 0 12px 12px;padding:28px 24px;text-align:center;
+                        border-top:2px solid #bae6fd;margin-top:-1px;">
+                <div style="font-size:2rem;margin-bottom:6px;">🔓</div>
+                <p style="font-size:1.05rem;font-weight:700;margin-bottom:6px;color:#0e4d6b;">
+                    {{ hidden_count }} colegio{{ hidden_count|pluralize:",s" }} más superaron su pronóstico
+                    {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
+                </p>
+                <p style="color:#374151;font-size:.92rem;margin-bottom:18px;">
+                    Crea tu cuenta gratuita para ver los <strong>{{ hidden_count }} colegios restantes</strong>
+                    con su exceso de puntaje, clasificación ML y perfil completo.
+                </p>
+                <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;">
+                    <a href="/accounts/signup/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=paywall_tabla"
+                       style="background:#0e4d6b;color:#fff;border-radius:999px;padding:10px 24px;
+                              text-decoration:none;font-weight:700;display:inline-block;">
+                        Crear cuenta gratis →
+                    </a>
+                    <a href="/accounts/login/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=paywall_tabla"
+                       style="background:#fff;color:#0e4d6b;border-radius:999px;padding:10px 24px;
+                              text-decoration:none;font-weight:600;border:2px solid #0891b2;display:inline-block;">
+                        Ya tengo cuenta
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- ══ DESCRIPCIÓN EDITORIAL ═══════════════════════════════════════ -->
