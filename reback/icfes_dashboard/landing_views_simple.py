@@ -601,19 +601,20 @@ def school_landing_page(request, slug):
                             }
                         )
 
-                    # Trofeo ML: aparece solo si el colegio supera su pronóstico contextual
+                    # Este distintivo destaca colegios que rinden por encima de lo esperado
+                    # para instituciones con contexto comparable.
                     if potencial_row:
                         exceso_val = _to_float(potencial_row[0])
                         pct_val    = _to_float(potencial_row[1])
                         esp_val    = _to_float(potencial_row[2])
                         real_val   = _to_float(potencial_row[3])
                         indicator_badges.append({
-                            "title":         "Rompió su Pronóstico ML",
-                            "subtitle":      "Supera lo esperado según su contexto",
+                            "title":         "Superó su rendimiento esperado",
+                            "subtitle":      "Obtuvo más puntos de los esperados según su contexto",
                             "value":         exceso_val,
                             "value_suffix":  " pts",
                             "delta":         None,
-                            "delta_display": f"Esperado: {esp_val} · Real: {real_val}",
+                            "delta_display": f"Esperado: {esp_val} · Resultado real: {real_val}",
                             "delta_class":   "positive",
                             "rank_label":    _rank_tag(pct_val) if pct_val is not None else "Top potencial",
                             "icon":          "bi-graph-up-arrow",
@@ -733,8 +734,10 @@ def school_landing_page(request, slug):
                     f"{percentil_fragment}. {trend_text}"
                 ).strip()
 
+                sector_display = "oficial" if _normalize_text(current_sector) == "oficial" else "privado"
+
                 dynamic_description.append(
-                    f"{school['nombre']} es un colegio del sector {current_sector.lower()} ubicado en {current_municipio}, {current_departamento}. "
+                    f"{school['nombre']} es un colegio del sector {sector_display} ubicado en {current_municipio}, {current_departamento}. "
                     f"En {latest_year} obtuvo {stats_dict['global']} puntos globales."
                 )
                 if comparison and comparison.get("brecha_municipal") is not None:
@@ -805,6 +808,12 @@ def school_landing_page(request, slug):
                 )
             seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
 
+            if top_weaknesses:
+                weakest_subjects = ", ".join(subject for subject, _ in top_weaknesses[:2])
+                improvement_answer = f"Las materias con mayor oportunidad de mejora son {weakest_subjects}."
+            else:
+                improvement_answer = "Revisar brechas por materia y tendencia histórica."
+
             faq_items = [
                 {
                     "question": f"¿Cuál fue el puntaje global ICFES de {school['nombre']} en {latest_year}?",
@@ -824,7 +833,7 @@ def school_landing_page(request, slug):
                 },
                 {
                     "question": "¿Qué áreas tienen mayor oportunidad de mejora?",
-                    "answer": action_recommendations[0] if action_recommendations else "Revisar brechas por materia y tendencia histórica.",
+                    "answer": improvement_answer,
                 },
             ]
 
@@ -910,6 +919,7 @@ def school_landing_page(request, slug):
 
             context = {
                 "school": school,
+                "sector_display": "Oficial" if _normalize_text(current_sector) == "oficial" else "Privado",
                 "has_data": has_data,
                 "stats": stats_dict,
                 "top_strengths": top_strengths,
