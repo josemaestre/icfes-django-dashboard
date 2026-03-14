@@ -6,23 +6,23 @@
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title }}</title>
-    <meta name="description" content="{{ seo.description }}">
+    <title>{{ seo.title|default:'Resultados ICFES por región en Colombia' }}</title>
+    <meta name="description" content="{{ seo.description|default:'Consulta rankings y resultados ICFES por departamento y municipio en Colombia.' }}">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <link rel="canonical" href="{{ canonical_url }}">
 
     <meta property="og:locale" content="es_CO">
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="ICFES Analytics">
-    <meta property="og:title" content="{{ seo.title }}">
-    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:title" content="{{ seo.title|default:'Resultados ICFES por región en Colombia' }}">
+    <meta property="og:description" content="{{ seo.description|default:'Consulta rankings y resultados ICFES por departamento y municipio en Colombia.' }}">
     <meta property="og:url" content="{{ canonical_url }}">
     <meta property="og:image" content="{{ seo.og_image }}">
-    <meta property="og:image:alt" content="{{ seo.title }}">
+    <meta property="og:image:alt" content="{{ seo.title|default:'Resultados ICFES por región en Colombia' }}">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title }}">
-    <meta name="twitter:description" content="{{ seo.description }}">
+    <meta name="twitter:title" content="{{ seo.title|default:'Resultados ICFES por región en Colombia' }}">
+    <meta name="twitter:description" content="{{ seo.description|default:'Consulta rankings y resultados ICFES por departamento y municipio en Colombia.' }}">
     <meta name="twitter:image" content="{{ seo.og_image }}">
     {% if structured_data_json %}
     <script type="application/ld+json">{{ structured_data_json|safe }}</script>
@@ -179,12 +179,16 @@
                 <li><a href="/icfes/ranking/sector/oficiales/departamento/{{ geo.departamento_slug }}/">Ranking público en {{ geo.departamento }}</a></li>
                 <li><a href="/icfes/ranking/sector/privados/departamento/{{ geo.departamento_slug }}/">Ranking privado en {{ geo.departamento }}</a></li>
                 <li><a href="/icfes/departamento/{{ geo.departamento_slug }}/colegios-bilingues/">Colegios bilingues en {{ geo.departamento }}</a></li>
+                <li><a href="/icfes/cuadrante/estrella/{{ geo.departamento_slug }}/">Colegios estrella en {{ geo.departamento }}</a></li>
+                <li><a href="/icfes/supero-prediccion/{{ geo.departamento_slug }}/">Colegios que superaron su pronóstico en {{ geo.departamento }}</a></li>
                 {% endif %}
                 {% if geo.type == "municipio" %}
                 <li><a href="/icfes/ranking/sector/oficiales/departamento/{{ geo.departamento_slug }}/municipio/{{ geo.municipio_slug }}/">Ranking público en {{ geo.municipio }}</a></li>
                 <li><a href="/icfes/ranking/sector/privados/departamento/{{ geo.departamento_slug }}/municipio/{{ geo.municipio_slug }}/">Ranking privado en {{ geo.municipio }}</a></li>
                 <li><a href="/icfes/departamento/{{ geo.departamento_slug }}/municipio/{{ geo.municipio_slug }}/colegios-bilingues/">Colegios bilingues en {{ geo.municipio }}</a></li>
                 <li><a href="/icfes/departamento/{{ geo.departamento_slug }}/">Volver al ranking departamental de {{ geo.departamento }}</a></li>
+                <li><a href="/icfes/cuadrante/estrella/{{ geo.departamento_slug }}/">Colegios estrella en {{ geo.departamento }}</a></li>
+                <li><a href="/icfes/supero-prediccion/{{ geo.departamento_slug }}/">Colegios que superaron su pronóstico en {{ geo.departamento }}</a></li>
                 {% endif %}
                 <li><a href="/icfes/ranking/colegios/{{ latest_year }}/">Ranking nacional de colegios {{ latest_year }}</a></li>
                 <li><a href="/icfes/ranking/matematicas/{{ latest_year }}/">Ranking nacional de matemáticas {{ latest_year }}</a></li>
