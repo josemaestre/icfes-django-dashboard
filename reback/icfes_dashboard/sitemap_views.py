@@ -642,7 +642,16 @@ def sitemap_potencial(request):
             """)
         ).fetchall()
 
-    deptos = [r[0] for r in depto_rows if r[0]]
+    # Deduplicate by slug (same dept may appear as "ANTIOQUIA" and "Antioquia")
+    # Prefer title-case names (non-uppercase sorts first)
+    raw = sorted([r[0] for r in depto_rows if r[0]], key=lambda x: (x == x.upper(), x))
+    seen: set = set()
+    deptos = []
+    for d in raw:
+        s = slugify(d)
+        if s not in seen:
+            seen.add(s)
+            deptos.append(d)
     sectors = [("oficial", "0.65"), ("privado", "0.65")]
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
