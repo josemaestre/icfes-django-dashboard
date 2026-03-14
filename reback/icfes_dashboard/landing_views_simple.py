@@ -774,16 +774,15 @@ def school_landing_page(request, slug):
             )
 
             if has_data and stats_dict:
-                # Compact title: ~60 chars for better SERP CTR
-                title_extras = []
-                if stats_dict.get("global") is not None:
-                    title_extras.append(str(stats_dict["global"]))
-                if stats_dict.get("ranking_municipal"):
-                    title_extras.append(f"#{stats_dict['ranking_municipal']}")
-                if comparison and comparison.get("percentil_municipal") is not None:
-                    title_extras.append(f"P{comparison['percentil_municipal']}")
-                extras_str = " | ".join(title_extras)
-                seo_title = f"Resultados ICFES {latest_year}: {school['nombre']} ({school['municipio']})"
+                # Build title: prefer full form with municipio; drop it if needed to avoid truncation
+                _t_full = f"Resultados ICFES {latest_year}: {school['nombre']} ({school['municipio']})"
+                _t_short = f"Resultados ICFES {latest_year}: {school['nombre']}"
+                if len(_meta_compact(_t_full)) <= 60:
+                    seo_title = _meta_compact(_t_full)
+                elif len(_meta_compact(_t_short)) <= 60:
+                    seo_title = _meta_compact(_t_short)
+                else:
+                    seo_title = _trim_meta(_t_short, 60)
 
                 seo_description = (
                     f"Resultados ICFES {latest_year} de {school['nombre']} en {school['municipio']}, "
@@ -791,13 +790,19 @@ def school_landing_page(request, slug):
                     f"brechas por materia, evolución histórica y recomendaciones de mejora."
                 )
             else:
-                seo_title = f"Resultados ICFES: {school['nombre']} ({school['municipio']})"
+                _t_full = f"Resultados ICFES: {school['nombre']} ({school['municipio']})"
+                _t_short = f"Resultados ICFES: {school['nombre']}"
+                if len(_meta_compact(_t_full)) <= 60:
+                    seo_title = _meta_compact(_t_full)
+                elif len(_meta_compact(_t_short)) <= 60:
+                    seo_title = _meta_compact(_t_short)
+                else:
+                    seo_title = _trim_meta(_t_short, 60)
+
                 seo_description = (
                     f"Consulta el perfil ICFES de {school['nombre']} en {school['municipio']}, "
                     f"{school['departamento']}, con comparativos territoriales y tendencias."
                 )
-
-            seo_title = _trim_meta(seo_title, 60)
             seo_description = _fit_meta_description(seo_description, min_len=110, max_len=155)
 
             faq_items = [

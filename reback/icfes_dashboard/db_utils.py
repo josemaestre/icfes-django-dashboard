@@ -404,12 +404,13 @@ def get_departamentos():
         list: Lista de departamentos ordenados alfabéticamente
     """
     query = """
-        SELECT DISTINCT departamento 
-        FROM gold.dim_colegios 
+        SELECT DISTINCT departamento
+        FROM gold.dim_colegios
+        WHERE departamento IS NOT NULL
         ORDER BY departamento
     """
     df = execute_query(query)
-    return df['departamento'].tolist()
+    return [d for d in df['departamento'].tolist() if d and str(d).strip()]
 
 
 def get_municipios_por_departamento(departamento):
