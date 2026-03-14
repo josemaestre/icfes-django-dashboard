@@ -204,11 +204,18 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
             ORDER BY 1
         """)
         nav_df = execute_query(nav_q)
-        deptos_nav = [
-            {"nombre": d, "slug": slugify(d)}
-            for d in nav_df["dep"].tolist()
-            if d and d.strip()
-        ] if not nav_df.empty else []
+        # Deduplicate by slug preferring title-case names over ALL-CAPS ones
+        # (COALESCE returns dim_colegios_slugs name when join succeeds, uppercase
+        #  from fct_potencial_educativo when it doesn't — same dept, two formats)
+        deptos_raw = [d for d in nav_df["dep"].tolist() if d and d.strip()]
+        deptos_raw.sort(key=lambda x: (x == x.upper(), x))  # title-case first
+        seen_slugs: set = set()
+        deptos_nav = []
+        for d in deptos_raw:
+            s = slugify(d)
+            if s not in seen_slugs:
+                seen_slugs.add(s)
+                deptos_nav.append({"nombre": d, "slug": s})
     except Exception:
         deptos_nav = []
 
