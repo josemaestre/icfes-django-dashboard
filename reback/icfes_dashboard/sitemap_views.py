@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.utils.text import slugify
 
 from .db_utils import get_duckdb_connection, resolve_schema
+from .views_potencial import DEPT_NAME_CANONICAL
 
 
 SITEMAP_PAGE_SIZE = 40000
@@ -642,9 +643,12 @@ def sitemap_potencial(request):
             """)
         ).fetchall()
 
-    # Deduplicate by slug (same dept may appear as "ANTIOQUIA" and "Antioquia")
-    # Prefer title-case names (non-uppercase sorts first)
-    raw = sorted([r[0] for r in depto_rows if r[0]], key=lambda x: (x == x.upper(), x))
+    # Normalize known variant names (e.g. "BOGOTÁ" → "Bogotá DC") then
+    # deduplicate by slug, preferring title-case over ALL-CAPS
+    raw = sorted(
+        [DEPT_NAME_CANONICAL.get(r[0], r[0]) for r in depto_rows if r[0]],
+        key=lambda x: (x == x.upper(), x),
+    )
     seen: set = set()
     deptos = []
     for d in raw:

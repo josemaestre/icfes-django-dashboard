@@ -39,6 +39,15 @@ _SECTOR_LABEL = {
     "privado": "Privados",
 }
 
+# Maps known raw-name variants (ALL-CAPS or short forms from fct_potencial_educativo)
+# to the canonical display name used in dim_colegios_slugs.
+# Used by nav dedup in views and sitemap_views to avoid duplicate dept buttons/URLs.
+DEPT_NAME_CANONICAL = {
+    "BOGOTÁ":    "Bogotá DC",
+    "BOGOTA":    "Bogotá DC",
+    "BOGOTÁ DC": "Bogotá DC",
+}
+
 _DEPTO_SLUG_ALIASES = {
     "bogota": "Bogotá DC",
     "bogota-dc": "Bogotá DC",
@@ -207,7 +216,10 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
         # Deduplicate by slug preferring title-case names over ALL-CAPS ones
         # (COALESCE returns dim_colegios_slugs name when join succeeds, uppercase
         #  from fct_potencial_educativo when it doesn't — same dept, two formats)
-        deptos_raw = [d for d in nav_df["dep"].tolist() if d and d.strip()]
+        deptos_raw = [
+            DEPT_NAME_CANONICAL.get(d.strip(), d)
+            for d in nav_df["dep"].tolist() if d and d.strip()
+        ]
         deptos_raw.sort(key=lambda x: (x == x.upper(), x))  # title-case first
         seen_slugs: set = set()
         deptos_nav = []
