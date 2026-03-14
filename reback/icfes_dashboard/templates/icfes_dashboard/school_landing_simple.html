@@ -560,6 +560,20 @@
                         Ranking de matemáticas ICFES {{ seo.year }}
                     </a>
                 </li>
+                {% if discovery_links.cuadrante_slug %}
+                <li>
+                    <a href="{{ discovery_links.cuadrante_url }}">
+                        Colegios {{ discovery_links.cuadrante_label }} en {{ school.departamento }}
+                    </a>
+                </li>
+                {% endif %}
+                {% if discovery_links.has_potencial %}
+                <li>
+                    <a href="{{ discovery_links.potencial_url }}">
+                        Colegios que superaron su pronóstico en {{ school.departamento }}
+                    </a>
+                </li>
+                {% endif %}
             </ul>
         </div>
 

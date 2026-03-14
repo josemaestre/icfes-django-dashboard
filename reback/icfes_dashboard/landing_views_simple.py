@@ -410,6 +410,7 @@ def school_landing_page(request, slug):
             indicator_badges = []
             performance_signals = {}
             action_recommendations = []
+            cuadrante_slug = None
             narrative_summary = ""
             dynamic_description = []
             faq_items = []
@@ -618,6 +619,17 @@ def school_landing_page(request, slug):
                             "icon":          "bi-graph-up-arrow",
                             "color":         "#0891b2",
                         })
+
+                # Cuadrante slug (para links de descubrimiento)
+                if stats_dict and comparison:
+                    _puntaje = stats_dict.get("global") or 0
+                    _tendencia = stats_dict.get("cambio_absoluto_global") or 0
+                    _prom_nac = comparison.get("promedio_nacional") or 250
+                    cuadrante_slug = (
+                        ("estrella" if _tendencia >= 0 else "consolidada")
+                        if _puntaje >= _prom_nac
+                        else ("emergente" if _tendencia >= 0 else "alerta")
+                    )
 
                 global_history = [v for v in historical_chart["scores"] if v is not None]
                 if len(global_history) >= 2:
@@ -918,6 +930,21 @@ def school_landing_page(request, slug):
                 "similar_schools": similar_schools,
                 "best_muni": best_muni,
                 "best_dept": best_dept,
+                "discovery_links": {
+                    "cuadrante_url": (
+                        f"/icfes/cuadrante/{cuadrante_slug}/{dept_slug}/"
+                        if cuadrante_slug else "/icfes/cuadrante/"
+                    ),
+                    "cuadrante_label": {
+                        "estrella": "Estrella",
+                        "consolidada": "Consolidada",
+                        "emergente": "Emergente",
+                        "alerta": "En Alerta",
+                    }.get(cuadrante_slug, ""),
+                    "cuadrante_slug": cuadrante_slug or "",
+                    "potencial_url": f"/icfes/supero-prediccion/{dept_slug}/",
+                    "has_potencial": potencial_row is not None,
+                },
                 "internal_links": {
                     "municipio_url": _absolute_url(
                         base_url,
