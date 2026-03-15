@@ -8,6 +8,7 @@ import json
 import unicodedata
 
 import pandas as pd
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import JsonResponse
@@ -148,7 +149,7 @@ def _dept_key(value):
 # VISTAS PRINCIPALES
 # ============================================================================
 
-@login_required
+@staff_member_required
 def icfes_dashboard(request):
     """Vista principal del dashboard ICFES."""
     context = {
@@ -158,7 +159,7 @@ def icfes_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-icfes.html', context)
 
 
-@login_required
+@staff_member_required
 def dashboard_charts(request):
     """Vista del dashboard con gráficos interactivos."""
     context = {
@@ -168,7 +169,7 @@ def dashboard_charts(request):
     return render(request, 'icfes_dashboard/pages/dashboard-icfes-charts.html', context)
 
 
-@login_required
+@staff_member_required
 def brecha_educativa_dashboard(request):
     """Vista del dashboard de brechas educativas: Oficial vs No Oficial."""
     context = {
@@ -178,7 +179,7 @@ def brecha_educativa_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-brecha.html', context)
 
 
-@login_required
+@staff_member_required
 def resumen_ejecutivo_dashboard(request):
     """Vista de resumen ejecutivo de storytelling ICFES."""
     context = {
@@ -188,19 +189,19 @@ def resumen_ejecutivo_dashboard(request):
     return render(request, 'icfes_dashboard/pages/resumen-ejecutivo-icfes.html', context)
 
 
-@login_required
+@staff_member_required
 def historia_educacion_dashboard(request):
     """Vista de storytelling: Historia de la Educación Colombiana."""
     return render(request, 'icfes_dashboard/pages/dashboard-historia.html', {})
 
 
-@login_required
+@staff_member_required
 def inteligencia_educativa_dashboard(request):
     """Vista de Inteligencia Educativa: 4 narrativas ML-driven."""
     return render(request, 'icfes_dashboard/pages/dashboard-inteligencia.html', {})
 
 
-@login_required
+@staff_member_required
 def ingles_dashboard(request):
     """Vista del dashboard de Bilingüismo/Inglés."""
     try:
@@ -2276,7 +2277,7 @@ Responde ÚNICAMENTE con el JSON, sin texto adicional."""
         }, status=500)
 
 
-@login_required
+@staff_member_required
 def colegio_detalle_page(request):
     '''Vista de la página de detalle individual del colegio'''
     return render(request, 'icfes_dashboard/pages/colegio-detalle.html')
@@ -3548,7 +3549,7 @@ def api_panorama_riesgo(request):
 # DASHBOARD SOCIAL — Contexto Socioeconómico (NBI, Conectividad, Presidentes)
 # =============================================================================
 
-@login_required
+@staff_member_required
 def social_dashboard(request):
     """Dashboard de contexto social: NBI, conectividad, presidentes, generaciones."""
     return render(request, 'icfes_dashboard/pages/dashboard-social.html', {})

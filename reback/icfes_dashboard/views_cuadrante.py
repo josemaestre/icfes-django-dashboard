@@ -18,6 +18,7 @@ import json
 import logging
 import math
 
+from django.contrib.admin.views.decorators import staff_member_required
 from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
@@ -397,6 +398,7 @@ def _top_n_per_quadrant(records, n=30):
 # Page view
 # ---------------------------------------------------------------------------
 
+@staff_member_required
 def cuadrante_dashboard(request):
     try:
         departamentos = get_departamentos()

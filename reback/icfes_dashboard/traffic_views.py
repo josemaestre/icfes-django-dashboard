@@ -3,6 +3,7 @@ from datetime import timedelta
 import hashlib
 
 from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Case, Count, IntegerField, Min, Q, Subquery, Sum, When
 from django.http import Http404, HttpResponseForbidden
@@ -224,7 +225,7 @@ def _first_seen_label(dt_value, today_start):
     return dt_value.strftime("%Y-%m-%d")
 
 
-@login_required
+@staff_member_required
 def traffic_dashboard(request):
     if not request.user.is_superuser:
         return HttpResponseForbidden("Forbidden")
