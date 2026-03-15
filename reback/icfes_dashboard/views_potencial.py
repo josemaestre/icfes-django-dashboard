@@ -1,5 +1,5 @@
 """
-Potencial Educativo — Landing SEO para colegios que superaron su pronóstico ML.
+Potencial Educativo — Landing SEO para colegios que rindieron por encima de lo esperado.
 
 El modelo `fct_potencial_educativo` estima el puntaje esperado de cada colegio
 según su contexto (sector, región, calendario, tamaño, ubicación geográfica).
@@ -46,6 +46,13 @@ DEPT_NAME_CANONICAL = {
     "BOGOTÁ":    "Bogotá DC",
     "BOGOTA":    "Bogotá DC",
     "BOGOTÁ DC": "Bogotá DC",
+    "ANTIOQUIA": "Antioquia",
+    "CALDAS": "Caldas",
+    "CASANARE": "Casanare",
+    "CAUCA": "Cauca",
+    "CUNDINAMARCA": "Cundinamarca",
+    "LA GUAJIRA": "La Guajira",
+    "SANTANDER": "Santander",
 }
 
 _DEPTO_SLUG_ALIASES = {
@@ -120,6 +127,16 @@ def _safe_float(v):
         return None
 
 
+def _clean_text(value):
+    if value is None:
+        return ""
+    return " ".join(str(value).split()).strip()
+
+
+def _clean_school_name(value):
+    return _clean_text(value)
+
+
 def _build_query(depto_name=None, sector_db=None):
     clauses = []
     params = []
@@ -189,6 +206,9 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
 
     # Sanitize NaN
     for r in records:
+        r["nombre_colegio"] = _clean_school_name(r.get("nombre_colegio"))
+        r["departamento"] = DEPT_NAME_CANONICAL.get(_clean_text(r.get("departamento")), _clean_text(r.get("departamento")))
+        r["municipio"] = _clean_text(r.get("municipio"))
         for k in ("puntaje_real", "puntaje_esperado", "exceso", "percentil_exceso"):
             r[k] = _safe_float(r.get(k))
 
@@ -234,21 +254,22 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
     # SEO
     geo_label = f"en {depto_nombre}" if depto_nombre else "en Colombia"
     sector_str = f" — {sector_label}" if sector_label else ""
-    seo_title = f"Colegios que Superaron su Pronóstico ML {geo_label}{sector_str} — ICFES {_LANDING_ANO}"
+    seo_title = f"Colegios que rindieron por encima de lo esperado {geo_label}{sector_str} — ICFES {_LANDING_ANO}"
     seo_description = (
-        f"{n_excepcionales + n_notables} colegios {geo_label} superaron las expectativas del modelo ML "
-        f"en el ICFES {_LANDING_ANO}: obtuvieron más puntaje del esperado según su contexto socioeconómico "
-        f"y geográfico. Ver ranking, exceso de puntaje y perfil de cada institución."
+        f"{n_excepcionales + n_notables} colegios {geo_label} obtuvieron en el ICFES {_LANDING_ANO} "
+        f"un resultado superior al esperado para su contexto. Consulta el ranking, la diferencia frente "
+        f"al puntaje esperado y el perfil de cada institución."
     )
     canonical = request.build_absolute_uri(request.path)
+    public_base = request.build_absolute_uri("/").rstrip("/")
 
     # Schema.org ItemList
     schema_items = [
         {
             "@type": "ListItem",
             "position": i,
-            "name": s.get("nombre_colegio", ""),
-            "url": f"https://icfes-analytics.com/icfes/colegio/{s['slug']}/",
+            "name": _clean_school_name(s.get("nombre_colegio", "")),
+            "url": f"{public_base}/icfes/colegio/{s['slug']}/",
         }
         for i, s in enumerate(tabla, 1) if s.get("slug")
     ]
@@ -272,6 +293,8 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
         "hidden_count": hidden_count,
         "deptos_nav": deptos_nav,
         "ano": _LANDING_ANO,
+        "page_label": "Colegios que rindieron por encima de lo esperado",
+        "method_label": "modelo de rendimiento esperado",
         "seo_title": seo_title,
         "seo_description": seo_description,
         "canonical": canonical,

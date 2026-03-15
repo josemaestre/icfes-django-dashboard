@@ -6,19 +6,19 @@
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo_title|default:'Colegios que superaron su pronóstico ML ICFES' }}</title>
-    <meta name="description" content="{{ seo_description|default:'Consulta colegios que superaron su pronóstico ICFES según modelo ML, por departamento y sector.' }}">
+    <title>{{ seo_title|default:'Colegios que rindieron por encima de lo esperado en el ICFES' }}</title>
+    <meta name="description" content="{{ seo_description|default:'Consulta colegios que rindieron por encima de lo esperado en el ICFES, por departamento y sector.' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ canonical }}">
     <meta property="og:locale" content="es_CO">
     <meta property="og:site_name" content="ICFES Analytics">
-    <meta property="og:title" content="{{ seo_title|default:'Colegios que superaron su pronóstico ML ICFES' }}">
-    <meta property="og:description" content="{{ seo_description|default:'Consulta colegios que superaron su pronóstico ICFES según modelo ML, por departamento y sector.' }}">
+    <meta property="og:title" content="{{ seo_title|default:'Colegios que rindieron por encima de lo esperado en el ICFES' }}">
+    <meta property="og:description" content="{{ seo_description|default:'Consulta colegios que rindieron por encima de lo esperado en el ICFES, por departamento y sector.' }}">
     <meta property="og:url" content="{{ canonical }}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{{ seo_title|default:'Colegios que superaron su pronóstico ML ICFES' }}">
-    <meta name="twitter:description" content="{{ seo_description|default:'Consulta colegios que superaron su pronóstico ICFES según modelo ML, por departamento y sector.' }}">
+    <meta name="twitter:title" content="{{ seo_title|default:'Colegios que rindieron por encima de lo esperado en el ICFES' }}">
+    <meta name="twitter:description" content="{{ seo_description|default:'Consulta colegios que rindieron por encima de lo esperado en el ICFES, por departamento y sector.' }}">
     {% if structured_data_json %}
     <script type="application/ld+json">{{ structured_data_json|safe }}</script>
     {% endif %}
@@ -66,23 +66,23 @@
                     <li class="breadcrumb-item"><a href="/icfes/" style="color:rgba(255,255,255,.75);">ICFES Analytics</a></li>
                     {% if depto_nombre %}
                     <li class="breadcrumb-item">
-                        <a href="/icfes/supero-prediccion/" style="color:rgba(255,255,255,.75);">Superó Predicción ML</a>
+                        <a href="/icfes/supero-prediccion/" style="color:rgba(255,255,255,.75);">Rindieron por encima de lo esperado</a>
                     </li>
                     <li class="breadcrumb-item active" style="color:#fff;">{{ depto_nombre }}</li>
                     {% else %}
-                    <li class="breadcrumb-item active" style="color:#fff;">Superó Predicción ML</li>
+                    <li class="breadcrumb-item active" style="color:#fff;">Rindieron por encima de lo esperado</li>
                     {% endif %}
                 </ol>
             </nav>
 
             <h1 class="display-6 fw-bold mb-2">
-                🤖 Colegios que Superaron su Pronóstico ML
+                {{ page_label }}
                 {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
                 — ICFES {{ ano }}
             </h1>
             <p class="mb-3 opacity-75" style="max-width:700px;">
-                Colegios con puntaje ICFES <strong>por encima de lo que predice el modelo de inteligencia artificial</strong>,
-                teniendo en cuenta su contexto: sector, región, calendario, tamaño e indicadores socioeconómicos.
+                Colegios con puntaje ICFES <strong>superior al esperado para instituciones de contexto similar</strong>,
+                teniendo en cuenta variables como sector, región, calendario, tamaño e indicadores socioeconómicos.
             </p>
 
             <!-- Sector pills -->
@@ -134,7 +134,7 @@
         <div class="cardx mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="h5 mb-0">
-                    Top {{ tabla|length }} colegios que superaron su pronóstico ML
+                    Top {{ tabla|length }} colegios que rindieron por encima de lo esperado
                     {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
                     {% if sector_label %}— {{ sector_label }}{% endif %}
                     — {{ ano }}
@@ -151,9 +151,9 @@
                             <th>Colegio</th>
                             <th>Departamento</th>
                             <th>Sector</th>
-                            <th title="Puntaje esperado por el modelo ML">Esperado</th>
-                            <th title="Puntaje real obtenido">Real</th>
-                            <th title="Puntos por encima del pronóstico">+Exceso</th>
+                            <th title="Puntaje esperado para un contexto similar">Esperado</th>
+                            <th title="Puntaje real obtenido por el colegio">Resultado real</th>
+                            <th title="Puntos por encima del resultado esperado">+Diferencia</th>
                             <th>Clasificación</th>
                             <th></th>
                         </tr>
@@ -193,7 +193,7 @@
                             </td>
                             <td>
                                 {% if school.slug %}
-                                <a href="/icfes/colegio/{{ school.slug }}/" class="btn btn-sm btn-outline-primary" aria-label="Ver perfil de {{ school.nombre }}">Ver perfil</a>
+                                <a href="/icfes/colegio/{{ school.slug }}/" class="btn btn-sm btn-outline-primary" aria-label="Ver perfil de {{ school.nombre_colegio }}">Ver perfil</a>
                                 {% endif %}
                             </td>
                         </tr>
@@ -215,12 +215,12 @@
                         border-top:2px solid #bae6fd;margin-top:-1px;">
                 <div style="font-size:2rem;margin-bottom:6px;">🔓</div>
                 <p style="font-size:1.05rem;font-weight:700;margin-bottom:6px;color:#0e4d6b;">
-                    {{ hidden_count }} colegio{{ hidden_count|pluralize:",s" }} más superaron su pronóstico
+                    {{ hidden_count }} colegio{{ hidden_count|pluralize:",s" }} más rindieron por encima de lo esperado
                     {% if depto_nombre %}en {{ depto_nombre }}{% else %}en Colombia{% endif %}
                 </p>
                 <p style="color:#374151;font-size:.92rem;margin-bottom:18px;">
                     Crea tu cuenta gratuita para ver los <strong>{{ hidden_count }} colegios restantes</strong>
-                    con su exceso de puntaje, clasificación ML y perfil completo.
+                    con su diferencia frente al resultado esperado, clasificación y perfil completo.
                 </p>
                 <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;">
                     <a href="/accounts/signup/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=paywall_tabla"
@@ -240,23 +240,22 @@
 
         <!-- ══ DESCRIPCIÓN EDITORIAL ═══════════════════════════════════════ -->
         <div class="cardx mb-4">
-            <h3 class="h5 mb-3">¿Qué significa superar el pronóstico del modelo ML?</h3>
+            <h3 class="h5 mb-3">¿Qué significa rendir por encima de lo esperado?</h3>
             <div class="editorial">
                 <p class="mb-2">
-                    El <strong>modelo de potencial educativo</strong> de ICFES Analytics analiza más de 10.000 colegios
-                    colombianos y estima el puntaje global esperado según variables de contexto: sector (oficial / privado),
-                    región geográfica, calendario escolar, número de estudiantes y coordenadas del municipio.
-                    Estas variables capturan las condiciones estructurales que históricamente determinan el rendimiento académico.
+                    En ICFES Analytics estimamos el <strong>resultado esperado</strong> de cada colegio según variables de contexto:
+                    sector, región geográfica, calendario escolar, número de estudiantes y condiciones del entorno.
+                    La idea es comparar a cada institución con otras de perfil similar.
                 </p>
                 <p class="mb-2">
                     Un colegio <span class="badge-excep">Excepcional</span> o <span class="badge-notable">Notable</span>
-                    obtuvo un puntaje ICFES <strong>significativamente mayor</strong> al que predice el modelo para
+                    obtuvo un puntaje ICFES <strong>significativamente mayor</strong> al esperado para
                     instituciones con características similares. Esto sugiere que factores pedagógicos, de liderazgo
-                    o de gestión interna explican el desempeño — más allá de las ventajas contextuales.
+                    o de gestión interna pueden estar impulsando el desempeño más allá de las ventajas del contexto.
                 </p>
                 <p class="mb-0">
-                    La columna <strong>+Exceso</strong> muestra la diferencia en puntos entre el puntaje real y el esperado.
-                    Un exceso de +5 significa que el colegio obtuvo 5 puntos más de lo que el modelo predijo.
+                    La columna <strong>+Diferencia</strong> muestra los puntos que separan el resultado real del esperado.
+                    Si un colegio tiene +5, significa que obtuvo 5 puntos más de lo proyectado para su contexto.
                 </p>
             </div>
         </div>
@@ -264,7 +263,7 @@
         <!-- ══ DEPT NAV ════════════════════════════════════════════════════ -->
         {% if deptos_nav %}
         <div class="cardx mb-4">
-            <h3 class="h6 text-muted mb-2">Colegios que superaron su pronóstico ML por departamento</h3>
+            <h3 class="h6 text-muted mb-2">Colegios que rindieron por encima de lo esperado por departamento</h3>
             <div class="dept-grid">
                 <a href="/icfes/supero-prediccion/{% if sector_slug %}{{ sector_slug }}/{% endif %}"
                    class="{% if not depto_nombre %}active{% endif %}">
@@ -294,7 +293,7 @@
         <div class="cardx text-center py-4 mb-4" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);">
             <h3 class="h5 mb-2">¿Tu colegio supera su pronóstico?</h3>
             <p class="text-muted mb-3">
-                Accede al diagnóstico completo con el modelo ML de potencial educativo,
+                Accede al diagnóstico completo con el modelo de rendimiento esperado,
                 comparativos históricos y recomendaciones personalizadas para cualquier
                 institución de Colombia.
             </p>
