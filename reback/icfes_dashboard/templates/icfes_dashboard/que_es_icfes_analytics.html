@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-5TWMTCNR');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo.title }}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="{{ canonical_url }}">
+    <meta property="og:locale" content="es_CO">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="ICFES Analytics">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:image" content="{{ seo.og_image }}">
+    <meta property="og:image:alt" content="{{ seo.title }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    <meta name="twitter:image" content="{{ seo.og_image }}">
+    {% if structured_data_json %}
+    <script type="application/ld+json">{{ structured_data_json|safe }}</script>
+    {% endif %}
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background: #f8fafc; color: #1f2937; }
+        .hero {
+            background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+            color: #fff;
+            padding: 56px 0 48px;
+        }
+        .panel {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+        }
+        .accordion-button:not(.collapsed) {
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+        .accordion-button { font-weight: 600; }
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,.07);
+            padding: 20px 24px;
+            text-align: center;
+        }
+        .stat-number { font-size: 2rem; font-weight: 800; color: #1d4ed8; }
+        .cta-section {
+            background: #fff;
+            padding: 36px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+        }
+        .footer {
+            background: #24324a;
+            color: #fff;
+            padding: 18px 0;
+            text-align: center;
+            margin-top: 32px;
+        }
+        .breadcrumb-nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .88rem; }
+        .breadcrumb-nav a:hover { color: #fff; }
+        .breadcrumb-nav span { color: rgba(255,255,255,.5); margin: 0 4px; }
+    </style>
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5TWMTCNR" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <section class="hero">
+        <div class="container">
+            <nav class="breadcrumb-nav mb-3">
+                <a href="/icfes/">Inicio</a>
+                <span>/</span>
+                <span style="color:rgba(255,255,255,.9);">¿Qué es ICFES Analytics?</span>
+            </nav>
+            <h1 class="mb-2 fw-bold">¿Qué es ICFES Analytics?</h1>
+            <p class="lead mb-0" style="max-width:600px;">
+                La plataforma de análisis de Pruebas Saber 11 en Colombia:
+                12.000+ colegios con datos históricos 2014-2024.
+            </p>
+        </div>
+    </section>
+
+    <main class="container py-4">
+
+        <!-- KPI strip -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">12K+</div>
+                    <div class="small text-muted">Colegios analizados</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">11</div>
+                    <div class="small text-muted">Años de histórico</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">17.7M</div>
+                    <div class="small text-muted">Resultados de estudiantes</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">Gratis</div>
+                    <div class="small text-muted">Sin registro necesario</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ accordion -->
+        <div class="panel p-4 mb-4">
+            <h2 class="h4 mb-4">Preguntas frecuentes</h2>
+            <div class="accordion" id="faqAccordion">
+                {% for faq in faqs %}
+                <div class="accordion-item border-0 border-bottom">
+                    <h3 class="accordion-header" id="faqHead{{ forloop.counter }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} bg-transparent"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#faqBody{{ forloop.counter }}"
+                                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                                aria-controls="faqBody{{ forloop.counter }}">
+                            {{ faq.q }}
+                        </button>
+                    </h3>
+                    <div id="faqBody{{ forloop.counter }}"
+                         class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                         aria-labelledby="faqHead{{ forloop.counter }}"
+                         data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            {{ faq.a }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- What you can do -->
+        <div class="panel p-4 mb-4">
+            <h2 class="h4 mb-3">¿Qué puedes hacer en ICFES Analytics?</h2>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-search fs-4 text-primary mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h3 class="h6 mb-1">Buscar el perfil de tu colegio</h3>
+                            <p class="small text-muted mb-0">
+                                Consulta el puntaje histórico, tendencia y comparativo nacional de cualquier
+                                colegio de Colombia.
+                                <a href="/icfes/departamentos/">Explorar por departamento →</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-bar-chart-line fs-4 text-primary mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h3 class="h6 mb-1">Consultar rankings ICFES</h3>
+                            <p class="small text-muted mb-0">
+                                Rankings por año, materia, sector y municipio.
+                                <a href="/icfes/ranking/colegios/2024/">Ver ranking 2024 →</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-clock-history fs-4 text-primary mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h3 class="h6 mb-1">Ver la evolución histórica</h3>
+                            <p class="small text-muted mb-0">
+                                Serie de puntajes nacionales de 2014 a 2024 por departamento, zona y sector.
+                                <a href="/icfes/historico/puntaje-global/">Ver histórico nacional →</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-3">
+                        <i class="bi bi-graph-up-arrow fs-4 text-primary mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h3 class="h6 mb-1">Descubrir colegios que superaron su pronóstico</h3>
+                            <p class="small text-muted mb-0">
+                                Colegios que obtuvieron más puntos de los esperados según su contexto socioeconómico.
+                                <a href="/icfes/supero-prediccion/">Ver colegios →</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <section class="cta-section mb-4">
+            <h2 class="h4 mb-2">Consulta el perfil ICFES de tu colegio</h2>
+            <p class="text-muted mb-3">Sin registro, sin costo. Datos del ICFES 2014-2024.</p>
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                <a href="/icfes/departamentos/?utm_source=seo&utm_medium=landing&utm_campaign=que_es&utm_content=cta_deptos"
+                   class="btn btn-primary btn-lg">Explorar por departamento</a>
+                <a href="/icfes/historico/puntaje-global/?utm_source=seo&utm_medium=landing&utm_campaign=que_es&utm_content=cta_historico"
+                   class="btn btn-outline-primary btn-lg">Ver histórico nacional</a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 ICFES Analytics. Un producto de <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration: underline;">www.sabededatos.com</a></p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

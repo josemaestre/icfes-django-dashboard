@@ -125,8 +125,9 @@ def sitemap_static(request):
         (f"{base}/icfes/departamentos/",            "monthly", "0.8"),
         (f"{base}/icfes/historia/",                 "yearly",  "0.7"),
         (f"{base}/icfes/ingles/",                   "yearly",  "0.7"),
-        (f"{base}/icfes/historico/puntaje-global/", "yearly",  "0.7"),
-        (f"{base}/icfes/colegios-bilingues/",       "yearly",  "0.7"),
+        (f"{base}/icfes/historico/puntaje-global/",   "yearly",  "0.7"),
+        (f"{base}/icfes/colegios-bilingues/",         "yearly",  "0.7"),
+        (f"{base}/icfes/que-es-icfes-analytics/",     "yearly",  "0.8"),
     ]
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]

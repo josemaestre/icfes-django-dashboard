@@ -624,10 +624,10 @@ def historico_nacional_page(request):
             """
             rows = conn.execute(resolve_schema(query)).fetchall()
 
-        title = "Puntaje global ICFES histórico en Colombia | Evolución por año"
+        title = "Histórico ICFES y Pruebas Saber Colombia | Por zona y año"
         description = (
-            "Evolución histórica del puntaje global ICFES en Colombia. "
-            "Consulta tendencia nacional, total de colegios y estudiantes por año."
+            "Evolución histórica del puntaje ICFES (Pruebas Saber) en Colombia por año, "
+            "departamento y zona geográfica. Tendencias nacionales desde 2014 hasta 2024."
         )
         title = _trim_meta(title, 65)
         description = _fit_meta_description(description, min_len=110, max_len=155)
@@ -675,8 +675,8 @@ def historico_nacional_page(request):
                     "description": description,
                     "og_image": og_image,
                     "keywords": (
-                        "puntaje global icfes historico, tendencia icfes colombia, "
-                        "evolucion icfes por ano"
+                        "historico icfes colombia, pruebas saber historico, "
+                        "icfes por zona, icfes por departamento, evolucion icfes por ano"
                     ),
                 },
                 "canonical_url": canonical_url,
@@ -1196,3 +1196,122 @@ def colegios_mejoraron_page(request, ano):
     except Exception as e:
         logger.error("Error in colegios_mejoraron_page (%s): %s", ano, e)
         raise Http404("Error al cargar colegios que mejoraron")
+
+
+@cache_page(60 * 60 * 24 * 7)
+def que_es_icfes_analytics_page(request):
+    base_url = _build_base_url(request)
+    canonical_url = request.build_absolute_uri(request.path)
+    og_image = _default_og_image(base_url)
+
+    title = "¿Qué es ICFES Analytics? | Análisis de Pruebas Saber Colombia"
+    description = (
+        "ICFES Analytics es la plataforma libre de análisis de Pruebas Saber 11 en Colombia: "
+        "12.000+ colegios con histórico 2014-2024 por departamento y sector."
+    )
+    title = _trim_meta(title, 65)
+    description = _fit_meta_description(description, min_len=110, max_len=155)
+
+    faqs = [
+        {
+            "q": "¿Qué es ICFES Analytics?",
+            "a": (
+                "ICFES Analytics es una plataforma gratuita de análisis de datos educativos que "
+                "procesa los resultados históricos de las Pruebas Saber 11 en Colombia desde 2014 "
+                "hasta 2024. Permite comparar más de 12.000 colegios por puntaje global, área académica, "
+                "sector (oficial/privado), departamento, municipio y zona geográfica."
+            ),
+        },
+        {
+            "q": "¿Qué son las Pruebas Saber 11?",
+            "a": (
+                "Las Pruebas Saber 11 (antes llamadas ICFES) son los exámenes de Estado que aplica el "
+                "Instituto Colombiano para la Evaluación de la Educación a los estudiantes de grado 11 "
+                "en Colombia. El puntaje global va de 0 a 500 puntos y es requisito de admisión para "
+                "universidades públicas del país."
+            ),
+        },
+        {
+            "q": "¿Es gratis usar ICFES Analytics?",
+            "a": (
+                "Sí. La consulta de perfiles de colegios, rankings, series históricas y comparativos "
+                "por departamento es completamente gratuita y no requiere registro. El registro opcional "
+                "desbloquea reportes personalizados, diagnóstico con modelos de Machine Learning y "
+                "alertas de mejora para docentes y directivos."
+            ),
+        },
+        {
+            "q": "¿Qué datos tiene ICFES Analytics?",
+            "a": (
+                "La plataforma contiene los microdatos oficiales del ICFES: 17,7 millones de resultados "
+                "individuales de estudiantes de 2014 a 2024, consolidados en más de 335.000 registros "
+                "colegio-año. Incluye puntajes globales y por materia (Matemáticas, Lectura Crítica, "
+                "Ciencias Naturales, Sociales e Inglés), más variables socioeconómicas del formulario."
+            ),
+        },
+        {
+            "q": "¿Cómo busco el perfil de mi colegio en ICFES Analytics?",
+            "a": (
+                "Desde la página principal puedes buscar tu colegio por nombre o código DANE. "
+                "También puedes navegar desde el índice de departamentos hacia tu región y municipio. "
+                "Cada perfil muestra el histórico de puntajes, comparativo con el promedio nacional, "
+                "fortalezas por materia y proyecciones para el año siguiente."
+            ),
+        },
+        {
+            "q": "¿Qué es el puntaje global ICFES?",
+            "a": (
+                "El puntaje global ICFES es el promedio ponderado de las cinco pruebas: "
+                "Lectura Crítica, Matemáticas, Ciencias Naturales, Sociales y Ciudadanas, e Inglés. "
+                "Va de 0 a 500 puntos. El promedio nacional en 2024 fue de 254 puntos, con diferencias "
+                "entre colegios privados (promedio 275) y oficiales (promedio 247)."
+            ),
+        },
+    ]
+
+    schema_data = json.dumps(
+        [
+            {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": faq["q"],
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": faq["a"],
+                        },
+                    }
+                    for faq in faqs
+                ],
+            },
+            {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "@id": f"{base_url}/#organization",
+                "name": "ICFES Analytics",
+                "url": base_url,
+                "description": (
+                    "Plataforma de análisis de las Pruebas Saber ICFES en Colombia. "
+                    "Datos históricos 2014-2024 de más de 12.000 colegios."
+                ),
+            },
+        ],
+        ensure_ascii=False,
+    )
+
+    return render(
+        request,
+        "icfes_dashboard/que_es_icfes_analytics.html",
+        {
+            "faqs": faqs,
+            "seo": {
+                "title": title,
+                "description": description,
+                "og_image": og_image,
+            },
+            "canonical_url": canonical_url,
+            "structured_data_json": schema_data,
+        },
+    )

@@ -103,6 +103,8 @@ urlpatterns = [
          longtail_landing_views.ranking_matematicas_year_page, name='ranking_matematicas_year'),
     path('historico/puntaje-global/',
          longtail_landing_views.historico_nacional_page, name='historico_puntaje_global'),
+    path('que-es-icfes-analytics/',
+         longtail_landing_views.que_es_icfes_analytics_page, name='que_es_icfes_analytics'),
     path(
         'ranking/sector/<slug:sector_slug>/colombia/',
         longtail_landing_views.ranking_sector_nacional_page,
