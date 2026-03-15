@@ -1206,8 +1206,8 @@ def que_es_icfes_analytics_page(request):
 
     title = "¿Qué es ICFES Analytics? | Análisis de Pruebas Saber Colombia"
     description = (
-        "ICFES Analytics es la plataforma libre de análisis de Pruebas Saber 11 en Colombia: "
-        "12.000+ colegios con histórico 2014-2024 por departamento y sector."
+        "ICFES Analytics analiza Pruebas Saber en Colombia desde 1996: 12.000+ colegios, "
+        "datos por departamento y sector para impulsar decisiones educativas efectivas."
     )
     title = _trim_meta(title, 65)
     description = _fit_meta_description(description, min_len=110, max_len=155)
@@ -1217,9 +1217,12 @@ def que_es_icfes_analytics_page(request):
             "q": "¿Qué es ICFES Analytics?",
             "a": (
                 "ICFES Analytics es una plataforma gratuita de análisis de datos educativos que "
-                "procesa los resultados históricos de las Pruebas Saber 11 en Colombia desde 2014 "
-                "hasta 2024. Permite comparar más de 12.000 colegios por puntaje global, área académica, "
-                "sector (oficial/privado), departamento, municipio y zona geográfica."
+                "procesa los resultados históricos de las Pruebas Saber 11 en Colombia desde 1996 "
+                "hasta el presente. Su misión es que la educación colombiana cuente con los insights "
+                "necesarios para mover las palancas correctas y tomar decisiones efectivas y a tiempo, "
+                "de modo que millones de estudiantes alcancen la excelencia y Colombia tenga cada año "
+                "mejores bachilleres. Permite comparar más de 12.000 colegios por puntaje global, "
+                "área académica, sector (oficial/privado), departamento, municipio y zona geográfica."
             ),
         },
         {
@@ -1244,9 +1247,10 @@ def que_es_icfes_analytics_page(request):
             "q": "¿Qué datos tiene ICFES Analytics?",
             "a": (
                 "La plataforma contiene los microdatos oficiales del ICFES: 17,7 millones de resultados "
-                "individuales de estudiantes de 2014 a 2024, consolidados en más de 335.000 registros "
-                "colegio-año. Incluye puntajes globales y por materia (Matemáticas, Lectura Crítica, "
-                "Ciencias Naturales, Sociales e Inglés), más variables socioeconómicas del formulario."
+                "individuales de estudiantes desde 1996 hasta el año más reciente disponible, "
+                "consolidados en más de 335.000 registros colegio-año. Incluye puntajes globales y "
+                "por materia (Matemáticas, Lectura Crítica, Ciencias Naturales, Sociales e Inglés), "
+                "más variables socioeconómicas del formulario de inscripción."
             ),
         },
         {
@@ -1293,8 +1297,8 @@ def que_es_icfes_analytics_page(request):
                 "name": "ICFES Analytics",
                 "url": base_url,
                 "description": (
-                    "Plataforma de análisis de las Pruebas Saber ICFES en Colombia. "
-                    "Datos históricos 2014-2024 de más de 12.000 colegios."
+                    "Plataforma de análisis de las Pruebas Saber ICFES en Colombia desde 1996. "
+                    "Datos de más de 12.000 colegios para impulsar decisiones educativas efectivas."
                 ),
             },
         ],
