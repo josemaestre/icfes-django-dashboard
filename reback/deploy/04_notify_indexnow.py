@@ -28,8 +28,8 @@ from dotenv import load_dotenv
 # DB path: env var > OS default
 def _default_prod_db():
     if platform.system() == "Windows":
-        return Path(r"C:\proyectos\dbt\icfes_processing\prod_v2.duckdb")
-    return Path("/home/ubuntu/dbt/icfes_processing/prod_v2.duckdb")
+        return Path(r"C:\proyectos\dbt\icfes_processing\prod.duckdb")
+    return Path("/home/ubuntu/dbt/icfes_processing/prod.duckdb")
 
 PROD_DB = Path(os.getenv("PROD_DB_PATH", str(_default_prod_db())))
 INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
@@ -65,6 +65,7 @@ def _static_urls(base):
         f"{base}/icfes/ingles/",
         f"{base}/icfes/historico/puntaje-global/",
         f"{base}/icfes/colegios-bilingues/",
+        f"{base}/icfes/que-es-icfes-analytics/",
         f"{base}/icfes/materia/matematicas/",
         f"{base}/icfes/materia/ingles/",
         f"{base}/icfes/colegios-que-mas-mejoraron/",
