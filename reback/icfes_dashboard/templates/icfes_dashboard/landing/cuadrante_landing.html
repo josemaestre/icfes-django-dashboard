@@ -7,18 +7,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ seo_title|default:'Cuadrante educativo ICFES en Colombia' }}</title>
-    <meta name="description" content="{{ seo_description|default:'Consulta el cuadrante educativo ICFES por departamento y compara colegios por desempeño y tendencia.' }}">
+    <meta name="description" content="{{ seo_description|default:'Consulta el cuadrante educativo ICFES por departamento y compara colegios por desempeño y trayectoria reciente.' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ canonical }}">
     <meta property="og:locale" content="es_CO">
     <meta property="og:site_name" content="ICFES Analytics">
     <meta property="og:title" content="{{ seo_title|default:'Cuadrante educativo ICFES en Colombia' }}">
-    <meta property="og:description" content="{{ seo_description|default:'Consulta el cuadrante educativo ICFES por departamento y compara colegios por desempeño y tendencia.' }}">
+    <meta property="og:description" content="{{ seo_description|default:'Consulta el cuadrante educativo ICFES por departamento y compara colegios por desempeño y trayectoria reciente.' }}">
     <meta property="og:url" content="{{ canonical }}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{{ seo_title|default:'Cuadrante educativo ICFES en Colombia' }}">
-    <meta name="twitter:description" content="{{ seo_description|default:'Consulta el cuadrante educativo ICFES por departamento y compara colegios por desempeño y tendencia.' }}">
+    <meta name="twitter:description" content="{{ seo_description|default:'Consulta el cuadrante educativo ICFES por departamento y compara colegios por desempeño y trayectoria reciente.' }}">
     {% if structured_data_json %}
     <script type="application/ld+json">{{ structured_data_json|safe }}</script>
     {% endif %}
@@ -126,8 +126,8 @@
                 {% if depto_nombre %}— {{ depto_nombre }}{% endif %}
             </h2>
             <p class="text-muted small mb-3">
-                Eje X: cambio de puntaje vs año anterior &nbsp;·&nbsp;
-                Eje Y: diferencia vs promedio de pares (mismo sector y departamento).<br>
+                Eje X: cambio de puntaje frente al año anterior &nbsp;·&nbsp;
+                Eje Y: diferencia frente al promedio de colegios similares del mismo sector y departamento.<br>
                 <strong>Los colegios {{ meta.nombre|lower }}</strong> están resaltados en
                 <span style="color:{{ meta.color }};font-weight:700;">{{ meta.color }}</span>.
                 Haz clic en cualquier punto para ver el perfil del colegio.
@@ -204,8 +204,8 @@
                             <th>Colegio</th>
                             <th>Municipio</th>
                             <th>Sector</th>
-                            <th title="Diferencia vs promedio de pares">Vs pares</th>
-                            <th title="Cambio de puntaje vs año anterior">Tendencia</th>
+                            <th title="Diferencia frente al promedio de colegios similares">Vs pares</th>
+                            <th title="Cambio de puntaje frente al año anterior">Tendencia</th>
                             <th title="Puntaje global promedio">Puntaje</th>
                             <th></th>
                         </tr>
@@ -297,7 +297,7 @@
         <div class="cardx mb-4">
             <h3 class="h6 text-muted mb-2">Rutas relacionadas</h3>
             <ul class="mb-0">
-                <li><a href="/icfes/supero-prediccion/{% if depto_slug %}{{ depto_slug }}/{% endif %}">Colegios que superaron su pronóstico ML{% if depto_nombre %} en {{ depto_nombre }}{% endif %}</a></li>
+                <li><a href="/icfes/supero-prediccion/{% if depto_slug %}{{ depto_slug }}/{% endif %}">Colegios que rindieron por encima de lo esperado{% if depto_nombre %} en {{ depto_nombre }}{% endif %}</a></li>
                 <li><a href="/icfes/ranking/colegios/{{ ano }}/">Ranking nacional de colegios {{ ano }}</a></li>
                 <li><a href="/icfes/ranking/matematicas/{{ ano }}/">Ranking nacional de matemáticas {{ ano }}</a></li>
                 <li><a href="/icfes/historico/puntaje-global/">Histórico nacional del puntaje global ICFES</a></li>

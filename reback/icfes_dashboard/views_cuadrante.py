@@ -34,6 +34,19 @@ _CACHE_TTL = 60 * 60 * 2       # 2 hours  (API endpoint)
 _LANDING_CACHE_TTL = 60 * 60 * 24  # 24 hours (landing pages)
 _LANDING_ANO = 2024
 
+DEPT_NAME_CANONICAL = {
+    "BOGOTÁ": "Bogotá DC",
+    "BOGOTA": "Bogotá DC",
+    "BOGOTÁ DC": "Bogotá DC",
+    "ANTIOQUIA": "Antioquia",
+    "CALDAS": "Caldas",
+    "CASANARE": "Casanare",
+    "CAUCA": "Cauca",
+    "CUNDINAMARCA": "Cundinamarca",
+    "LA GUAJIRA": "La Guajira",
+    "SANTANDER": "Santander",
+}
+
 # ---------------------------------------------------------------------------
 # Metadata for landing pages
 # ---------------------------------------------------------------------------
@@ -232,6 +245,16 @@ def _build_query(sector: str, materia: str = "global") -> tuple[str, list]:
     template = _QUERY_INGLES if materia == "ingles" else _QUERY
     query = resolve_schema(template.format(extra_where=extra_where))
     return query, extra_params
+
+
+def _clean_text(value):
+    if value is None:
+        return ""
+    return " ".join(str(value).split()).strip()
+
+
+def _clean_school_name(value):
+    return _clean_text(value)
 
 
 # ---------------------------------------------------------------------------
@@ -500,6 +523,9 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
 
     # Sanitize NaN floats → None (safe for JSON)
     for r in records:
+        r["nombre_colegio"] = _clean_school_name(r.get("nombre_colegio"))
+        r["departamento"] = DEPT_NAME_CANONICAL.get(_clean_text(r.get("departamento")), _clean_text(r.get("departamento")))
+        r["municipio"] = _clean_text(r.get("municipio"))
         for k in ("tendencia", "desempeno_relativo", "puntaje"):
             r[k] = _safe_float(r.get(k))
 
@@ -528,7 +554,15 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
     # Department nav list
     try:
         all_deptos = get_departamentos()
-        deptos_nav = [{"nombre": d, "slug": slugify(d)} for d in all_deptos]
+        deptos_raw = [DEPT_NAME_CANONICAL.get(_clean_text(d), _clean_text(d)) for d in all_deptos if _clean_text(d)]
+        deptos_raw.sort(key=lambda x: (x == x.upper(), x))
+        seen_slugs = set()
+        deptos_nav = []
+        for d in deptos_raw:
+            s = slugify(d)
+            if s not in seen_slugs:
+                seen_slugs.add(s)
+                deptos_nav.append({"nombre": d, "slug": s})
     except Exception:
         deptos_nav = []
 
@@ -541,6 +575,7 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
         f"Ver ranking completo, puntajes y tendencias de mejora colegio por colegio."
     )
     canonical = request.build_absolute_uri(request.path)
+    public_base = request.build_absolute_uri("/").rstrip("/")
 
     # Breadcrumb
     breadcrumb = [{"nombre": "Colombia", "url": f"/icfes/cuadrante/{cuadrante}/"}]
@@ -553,8 +588,8 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
 
     # Schema.org ItemList
     schema_items = [
-        {"@type": "ListItem", "position": i, "name": s.get("nombre_colegio", ""),
-         "url": f"https://icfes-analytics.com/icfes/colegio/{s['slug']}/"}
+        {"@type": "ListItem", "position": i, "name": _clean_school_name(s.get("nombre_colegio", "")),
+         "url": f"{public_base}/icfes/colegio/{s['slug']}/"}
         for i, s in enumerate(tabla, 1) if s.get("slug")
     ]
     structured_data = {
