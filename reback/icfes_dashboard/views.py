@@ -1537,7 +1537,8 @@ def api_search_colegios(request):
         limit = 20
 
     # Sanitizar el texto de búsqueda para LIKE (usar parámetros)
-    search_pattern = f'%{query_text}%'
+    search_pattern      = f'%{query_text}%'
+    starts_with_pattern = f'{query_text}%'
 
     query = '''
         WITH latest AS (
@@ -1555,10 +1556,12 @@ def api_search_colegios(request):
                departamento, municipio, sector
         FROM latest
         WHERE rn = 1
-        ORDER BY nombre_colegio
+        ORDER BY
+            CASE WHEN LOWER(nombre_colegio) LIKE LOWER(?) THEN 0 ELSE 1 END,
+            nombre_colegio
         LIMIT ?
     '''
-    df = execute_query(query, params=[search_pattern, search_pattern, limit])
+    df = execute_query(query, params=[search_pattern, search_pattern, starts_with_pattern, limit])
     return JsonResponse(df.to_dict(orient='records'), safe=False)
 
 
