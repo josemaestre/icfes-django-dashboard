@@ -631,6 +631,25 @@ def school_landing_page(request, slug):
                         if _puntaje >= _prom_nac
                         else ("emergente" if _tendencia >= 0 else "alerta")
                     )
+                    _CUADRANTE_META = {
+                        "estrella":    ("Cuadrante Estrella",    "Mejorando y sobre sus pares",        "bi-star-fill",                 "#f59e0b"),
+                        "consolidada": ("Cuadrante Consolidada", "Sobre sus pares, tendencia baja",    "bi-shield-check",              "#22c55e"),
+                        "emergente":   ("Cuadrante Emergente",   "Por debajo de pares pero mejorando", "bi-arrow-up-circle-fill",      "#3b82f6"),
+                        "alerta":      ("Cuadrante Alerta",      "Por debajo de pares y bajando",      "bi-exclamation-triangle-fill", "#ef4444"),
+                    }
+                    _ct, _cs, _ci, _cc = _CUADRANTE_META[cuadrante_slug]
+                    indicator_badges.append({
+                        "title":         _ct,
+                        "subtitle":      _cs,
+                        "value":         cuadrante_slug.capitalize(),
+                        "value_suffix":  " ",
+                        "delta":         None,
+                        "delta_display": "Clasificación de posicionamiento",
+                        "delta_class":   "",
+                        "rank_label":    f"Año {latest_year}",
+                        "icon":          _ci,
+                        "color":         _cc,
+                    })
 
                 global_history = [v for v in historical_chart["scores"] if v is not None]
                 if len(global_history) >= 2:
