@@ -1540,12 +1540,23 @@ def api_search_colegios(request):
     search_pattern = f'%{query_text}%'
 
     query = '''
-        SELECT DISTINCT colegio_sk, codigo_dane, nombre_colegio,
-                departamento, municipio, sector
-        FROM gold.fct_colegio_historico
-        WHERE LOWER(nombre_colegio) LIKE LOWER(?)
-           OR codigo_dane LIKE ?
-        ORDER BY nombre_colegio LIMIT ?
+        WITH latest AS (
+            SELECT colegio_sk, codigo_dane, nombre_colegio,
+                   departamento, municipio, sector,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY codigo_dane
+                       ORDER BY CAST(ano AS INTEGER) DESC
+                   ) AS rn
+            FROM gold.fct_colegio_historico
+            WHERE LOWER(nombre_colegio) LIKE LOWER(?)
+               OR codigo_dane LIKE ?
+        )
+        SELECT colegio_sk, codigo_dane, nombre_colegio,
+               departamento, municipio, sector
+        FROM latest
+        WHERE rn = 1
+        ORDER BY nombre_colegio
+        LIMIT ?
     '''
     df = execute_query(query, params=[search_pattern, search_pattern, limit])
     return JsonResponse(df.to_dict(orient='records'), safe=False)
