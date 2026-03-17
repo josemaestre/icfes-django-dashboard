@@ -141,6 +141,16 @@
         <div class="panel p-3 mb-4">
             <h2 class="h5 mb-3">Tendencia histórica del puntaje ICFES en {{ geo.name }}</h2>
             <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            {% if not user.is_authenticated %}
+            <div class="text-center mt-3 pt-3 border-top">
+                <p class="text-muted small mb-2">
+                    Mostrando los últimos 6 años · Datos históricos desde 1996 disponibles con cuenta gratuita
+                </p>
+                <a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm px-4">
+                    Ver historial completo — es gratis
+                </a>
+            </div>
+            {% endif %}
         </div>
 
         <div class="panel p-3 mb-4">

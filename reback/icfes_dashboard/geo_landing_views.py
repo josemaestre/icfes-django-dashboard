@@ -155,16 +155,18 @@ def _geo_landing_context(request, departamento, municipio=None):
         """
         stats_row = conn.execute(resolve_schema(stats_query), latest_params).fetchone()
 
+        min_year = latest_year - 5  # 6 años públicos (ej. 2019-2024)
         trend_query = f"""
             SELECT
                 CAST(ano AS INTEGER) AS ano,
                 ROUND(AVG(avg_punt_global), 1) AS promedio_global
             FROM gold.fct_agg_colegios_ano
             WHERE {where_clause}
+            AND CAST(ano AS INTEGER) >= ?
             GROUP BY CAST(ano AS INTEGER)
             ORDER BY CAST(ano AS INTEGER)
         """
-        trend_rows = conn.execute(resolve_schema(trend_query), where_params).fetchall()
+        trend_rows = conn.execute(resolve_schema(trend_query), where_params + [min_year]).fetchall()
 
         f_where, f_params = _build_geo_where(departamento, municipio, alias="f")
         f_latest_where = f"{f_where} AND CAST(f.ano AS INTEGER) = ?"
@@ -334,6 +336,7 @@ def _geo_landing_context(request, departamento, municipio=None):
             "total_colegios": int(stats_row[2]) if stats_row and stats_row[2] else 0,
         },
         "latest_year": int(latest_year),
+        "trend_min_year": int(min_year),
         "trend_chart": {
             "years": [int(row[0]) for row in trend_rows],
             "scores": [float(row[1]) if row[1] is not None else None for row in trend_rows],

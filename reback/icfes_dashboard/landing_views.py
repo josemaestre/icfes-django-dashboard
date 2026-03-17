@@ -108,9 +108,10 @@ def school_landing_page(request, slug):
             
             stats_2024 = conn.execute(resolve_schema(stats_2024_query), [codigo, report_year]).fetchone()
             
-            # Get historical data (last 10 years)
+            # Get historical data (last 6 years public)
+            historico_min_year = report_year - 5
             historico_query = """
-                SELECT 
+                SELECT
                     ano,
                     avg_punt_global,
                     avg_punt_matematicas,
@@ -120,11 +121,11 @@ def school_landing_page(request, slug):
                     avg_punt_ingles
                 FROM gold.fct_colegio_historico
                 WHERE codigo_dane = ?
-                AND CAST(ano AS INTEGER) >= 2015
+                AND CAST(ano AS INTEGER) >= ?
                 ORDER BY ano ASC
             """
-            
-            historico = conn.execute(resolve_schema(historico_query), [codigo]).fetchdf()
+
+            historico = conn.execute(resolve_schema(historico_query), [codigo, historico_min_year]).fetchdf()
             
             # Get comparison data
             comparacion = None
