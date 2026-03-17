@@ -18,7 +18,7 @@ import json
 import logging
 import math
 
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
