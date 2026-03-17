@@ -225,10 +225,11 @@ def _first_seen_label(dt_value, today_start):
     return dt_value.strftime("%Y-%m-%d")
 
 
-@staff_member_required
+@login_required
 def traffic_dashboard(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("Forbidden")
+    if not request.user.is_staff:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Esta sección es exclusiva para el equipo de administración.")
     if not settings.TRAFFIC_ANALYTICS_ENABLED:
         raise Http404("Traffic analytics disabled")
 

@@ -421,7 +421,7 @@ def _top_n_per_quadrant(records, n=30):
 # Page view
 # ---------------------------------------------------------------------------
 
-@staff_member_required
+@login_required
 def cuadrante_dashboard(request):
     try:
         departamentos = get_departamentos()

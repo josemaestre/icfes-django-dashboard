@@ -5,7 +5,7 @@ import logging
 import hashlib
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.cache import cache_page
-from django.http import Http404
+from django.http import Http404, HttpResponse
 
 from icfes_dashboard.db_utils import get_duckdb_connection, resolve_schema
 from icfes_dashboard.landing_utils import (
@@ -43,7 +43,8 @@ def school_landing_page(request, slug):
             school_result = conn.execute(resolve_schema(school_query), [slug]).fetchone()
             
             if not school_result:
-                raise Http404("Colegio no encontrado")
+                # 410 Gone: slug was in sitemap but school no longer has data — deindex faster
+                return HttpResponse(status=410)
             
             # Convert to dict
             school_found = {

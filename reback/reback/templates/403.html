@@ -1,13 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Forbidden (403){% endblock title %}
+{% block title %}Acceso restringido{% endblock title %}
+
 {% block content %}
-  <h1>Forbidden (403)</h1>
-  <p>
+<div style="max-width: 520px; margin: 80px auto; text-align: center; padding: 0 24px;">
+  <div style="font-size: 64px; margin-bottom: 16px;">🔒</div>
+  <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 12px; color: #1a1a2e;">
+    No tienes acceso a esta sección
+  </h1>
+  <p style="color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 8px;">
     {% if exception %}
       {{ exception }}
     {% else %}
-      You're not allowed to access this page.
+      Esta área está disponible únicamente para el equipo de administración.
     {% endif %}
   </p>
+  <p style="color: #888; font-size: 14px; margin-bottom: 32px;">
+    Si crees que deberías tener acceso, comunícate con quien te compartió el acceso.
+  </p>
+  <a href="/" style="
+    display: inline-block;
+    background: #2563eb;
+    color: white;
+    padding: 12px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+  ">Volver al inicio</a>
+</div>
 {% endblock content %}

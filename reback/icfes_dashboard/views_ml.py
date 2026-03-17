@@ -31,7 +31,7 @@ _CACHE_TTL = 60 * 60  # 1 hora
 # Página principal
 # ---------------------------------------------------------------------------
 
-@staff_member_required
+@login_required
 def ml_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-ml.html', {})
 
