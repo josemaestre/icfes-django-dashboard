@@ -648,9 +648,12 @@ def historico_nacional_page(request):
             ensure_ascii=False,
         )
 
+        latest_year_nacional = max(int(row[0]) for row in rows) if rows else 2024
+        min_year_chart = latest_year_nacional - 5  # 6 años públicos en el chart
         chart = {
-            "years": [int(row[0]) for row in rows],
-            "scores": [float(row[1]) if row[1] is not None else None for row in rows],
+            "years": [int(row[0]) for row in rows if int(row[0]) >= min_year_chart],
+            "scores": [float(row[1]) if row[1] is not None else None for row in rows if int(row[0]) >= min_year_chart],
+            "min_year": min_year_chart,
         }
 
         table_rows = [

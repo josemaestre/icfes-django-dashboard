@@ -215,8 +215,9 @@ def school_landing_page(request, slug):
             all_rows = conn.execute(resolve_schema(historico_query), [codigo]).fetchall()
 
             latest_stats = all_rows[0] if all_rows else None
-            # Historical: filter >= 2015 and reverse to ASC order
-            historical_data = [r for r in reversed(all_rows) if int(r[0]) >= 2015]
+            # Historical: last 6 years public, reverse to ASC order
+            min_year_public = int(latest_stats[0]) - 5 if latest_stats else 2019
+            historical_data = [r for r in reversed(all_rows) if int(r[0]) >= min_year_public]
 
             latest_year = str(latest_stats[0]) if latest_stats else "2024"
             colegio_sk = latest_stats[8] if latest_stats else None

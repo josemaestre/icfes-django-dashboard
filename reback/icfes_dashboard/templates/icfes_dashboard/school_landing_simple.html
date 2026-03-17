@@ -508,6 +508,12 @@
                     {% if performance_signals.stability_std is not None %}
                     <p class="mb-0">Variabilidad histórica (desv. estándar): {{ performance_signals.stability_std }}.</p>
                     {% endif %}
+                    {% if not user.is_authenticated %}
+                    <div class="text-center mt-3 pt-3 border-top">
+                        <p class="text-muted small mb-2">Mostrando los últimos 6 años · Historial completo desde 1996 disponible con cuenta gratuita</p>
+                        <a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm px-4">Ver historial completo — es gratis</a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
