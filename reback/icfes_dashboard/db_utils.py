@@ -1426,6 +1426,9 @@ def get_convergencia_regional(ano=None):
                 detalle = json.loads(detalle)
             except Exception:
                 detalle = []
+        # Filtrar regiones con nombre null (datos sucios hasta próximo dbt run)
+        if isinstance(detalle, list):
+            detalle = [r for r in detalle if r.get('region') is not None]
 
         return {
             'ano':                  row.get('ano'),
