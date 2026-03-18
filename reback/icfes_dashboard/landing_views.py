@@ -711,5 +711,6 @@ def school_landing_page(request, slug):
             return render(request, 'landing/school.html', context)
         
     except Exception as e:
-        logger.error(f"Error in school_landing_page for slug {slug}: {str(e)}")
+        import traceback
+        logger.error(f"Error in school_landing_page for slug {slug}: {str(e)}\n{traceback.format_exc()}")
         raise Http404("Error al cargar la página del colegio")
