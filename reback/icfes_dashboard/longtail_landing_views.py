@@ -3,6 +3,7 @@ Long-tail SEO landing pages for high-intent ICFES searches.
 """
 import json
 import logging
+from functools import lru_cache
 
 from django.conf import settings
 from django.http import Http404, HttpResponse
@@ -65,8 +66,17 @@ def _available_years(conn):
     return [int(row[0]) for row in rows if row[0] is not None]
 
 
+# Module-level cache: years list changes at most once a year; no need to hit DB every request.
+@lru_cache(maxsize=1)
+def _get_cached_years_snapshot():
+    """Returns (latest_year, prev_year) from a single DB round-trip, cached in-process."""
+    with get_duckdb_connection() as conn:
+        return _available_years(conn)
+
+
 def _latest_snapshot(conn):
-    years = _available_years(conn)
+    # Use in-process LRU cache for years list — changes at most once a year
+    years = _get_cached_years_snapshot()
     if not years:
         raise Http404("No hay datos históricos disponibles")
     latest_year = years[0]
@@ -89,39 +99,37 @@ def _sector_from_slug(sector_slug):
     return mapping.get((sector_slug or "").strip().lower())
 
 
+def _resolve_location(conn, sector_value, year, departamento_slug, municipio_slug=None):
+    """
+    Resolve slug(s) → real names in a single DB query instead of two separate scans.
+    Returns (departamento, municipio) — municipio is None when municipio_slug is not given.
+    """
+    query = """
+        SELECT DISTINCT departamento, municipio
+        FROM gold.fct_colegio_historico
+        WHERE ano = ?
+          AND sector = ?
+          AND departamento IS NOT NULL AND departamento != ''
+          AND municipio IS NOT NULL AND municipio != ''
+    """
+    rows = conn.execute(resolve_schema(query), [str(year), sector_value]).fetchall()
+    dept_found = None
+    muni_found = None
+    for (dept, muni) in rows:
+        if slugify(dept) != departamento_slug:
+            continue
+        dept_found = dept
+        if municipio_slug is None:
+            break
+        if slugify(muni) == municipio_slug:
+            muni_found = muni
+            break
+    return dept_found, muni_found
+
+
 def _resolve_departamento(conn, sector_value, year, departamento_slug):
-    query = """
-        SELECT DISTINCT departamento
-        FROM gold.fct_colegio_historico
-        WHERE CAST(ano AS INTEGER) = ?
-          AND sector = ?
-          AND departamento IS NOT NULL
-          AND departamento != ''
-        ORDER BY departamento
-    """
-    rows = conn.execute(resolve_schema(query), [year, sector_value]).fetchall()
-    for (departamento,) in rows:
-        if slugify(departamento) == departamento_slug:
-            return departamento
-    return None
-
-
-def _resolve_municipio(conn, sector_value, year, departamento, municipio_slug):
-    query = """
-        SELECT DISTINCT municipio
-        FROM gold.fct_colegio_historico
-        WHERE CAST(ano AS INTEGER) = ?
-          AND sector = ?
-          AND departamento = ?
-          AND municipio IS NOT NULL
-          AND municipio != ''
-        ORDER BY municipio
-    """
-    rows = conn.execute(resolve_schema(query), [year, sector_value, departamento]).fetchall()
-    for (municipio,) in rows:
-        if slugify(municipio) == municipio_slug:
-            return municipio
-    return None
+    dept, _ = _resolve_location(conn, sector_value, year, departamento_slug)
+    return dept
 
 
 def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=None, municipio=None):
@@ -167,7 +175,7 @@ def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=N
             LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
             LEFT JOIN gold.fct_agg_colegios_ano a
               ON a.colegio_bk = h.codigo_dane
-             AND CAST(a.ano AS INTEGER) = CAST(h.ano AS INTEGER)
+             AND a.ano = h.ano
             WHERE CAST(h.ano AS INTEGER) IN (?, ?)
               AND {where_clause}
         ),
@@ -828,18 +836,13 @@ def ranking_sector_municipio_page(request, sector_slug, departamento_slug, munic
     try:
         with get_duckdb_connection() as conn:
             latest_year, prev_year, updated_date = _latest_snapshot(conn)
-            departamento = _resolve_departamento(conn, sector_value, latest_year, departamento_slug)
+            # Single query resolves both departamento and municipio slugs
+            departamento, municipio = _resolve_location(
+                conn, sector_value, latest_year, departamento_slug, municipio_slug
+            )
             if not departamento:
                 # 410 Gone: URL was in old sitemap but data no longer exists — removes from index faster
                 return HttpResponse(status=410)
-
-            municipio = _resolve_municipio(
-                conn,
-                sector_value,
-                latest_year,
-                departamento,
-                municipio_slug,
-            )
             if not municipio:
                 # 410 Gone: municipality has insufficient sector data — tell Google to deindex
                 return HttpResponse(status=410)
