@@ -3,7 +3,7 @@ Views for dynamic school landing pages.
 """
 import logging
 import hashlib
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.cache import cache_page
 from django.http import Http404, HttpResponse
 
@@ -43,6 +43,16 @@ def school_landing_page(request, slug):
             school_result = conn.execute(resolve_schema(school_query), [slug]).fetchone()
             
             if not school_result:
+                # Fuzzy lookup: try prefix match (slug missing municipality suffix)
+                fuzzy_query = """
+                    SELECT slug FROM gold.dim_colegios_slugs
+                    WHERE slug LIKE ? || '-%'
+                    ORDER BY LENGTH(slug) ASC
+                    LIMIT 1
+                """
+                fuzzy_result = conn.execute(resolve_schema(fuzzy_query), [slug]).fetchone()
+                if fuzzy_result:
+                    return redirect(f'/icfes/colegio/{fuzzy_result[0]}/', permanent=True)
                 # 410 Gone: slug was in sitemap but school no longer has data — deindex faster
                 return HttpResponse(status=410)
             
