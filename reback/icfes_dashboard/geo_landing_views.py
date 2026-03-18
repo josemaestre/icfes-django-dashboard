@@ -11,7 +11,15 @@ from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
 
+from contextlib import contextmanager
+
 from .db_utils import get_duckdb_connection, resolve_schema
+
+
+@contextmanager
+def _noop_ctx(conn):
+    """Yield an existing connection without closing it."""
+    yield conn
 
 logger = logging.getLogger(__name__)
 
@@ -126,51 +134,55 @@ def _resolve_municipio(conn, departamento, municipio_slug):
     return None
 
 
-def _geo_landing_context(request, departamento, municipio=None):
-    with get_duckdb_connection() as conn:
+def _geo_landing_context(request, departamento, municipio=None, conn=None):
+    own_conn = conn is None
+    cm = get_duckdb_connection() if own_conn else _noop_ctx(conn)
+    with cm as c:
         where_clause, where_params = _build_geo_where(departamento, municipio)
 
-        latest_year_query = f"""
-            SELECT MAX(CAST(ano AS INTEGER))
-            FROM gold.fct_agg_colegios_ano
-            WHERE {where_clause}
+        # Single CTE: find latest year and compute stats in one table scan
+        combined_query = f"""
+            WITH base AS (
+                SELECT
+                    CAST(ano AS INTEGER) AS ano_int,
+                    avg_punt_global,
+                    total_estudiantes,
+                    colegio_sk,
+                    MAX(CAST(ano AS INTEGER)) OVER () AS max_ano
+                FROM gold.fct_agg_colegios_ano
+                WHERE {where_clause}
+            )
+            SELECT
+                max_ano,
+                ROUND(AVG(avg_punt_global) FILTER (WHERE ano_int = max_ano), 1),
+                SUM(total_estudiantes) FILTER (WHERE ano_int = max_ano),
+                COUNT(DISTINCT colegio_sk) FILTER (WHERE ano_int = max_ano)
+            FROM base
+            GROUP BY max_ano
         """
-        latest_year_row = conn.execute(
-            resolve_schema(latest_year_query), where_params
-        ).fetchone()
-        latest_year = latest_year_row[0] if latest_year_row else None
-        if not latest_year:
+        combined_row = c.execute(resolve_schema(combined_query), where_params).fetchone()
+        if not combined_row or not combined_row[0]:
             raise Http404("No hay datos para esta ubicación")
 
-        latest_where = f"{where_clause} AND CAST(ano AS INTEGER) = ?"
-        latest_params = where_params + [latest_year]
+        latest_year = int(combined_row[0])
+        year_str = str(latest_year)       # avoids CAST(ano AS INTEGER) in subsequent WHERE
+        min_year_str = str(latest_year - 5)
+        stats_row = (combined_row[1], combined_row[2], combined_row[3])
 
-        stats_query = f"""
-            SELECT
-                ROUND(AVG(avg_punt_global), 1) AS promedio_global,
-                SUM(total_estudiantes) AS total_estudiantes,
-                COUNT(DISTINCT colegio_sk) AS total_colegios
-            FROM gold.fct_agg_colegios_ano
-            WHERE {latest_where}
-        """
-        stats_row = conn.execute(resolve_schema(stats_query), latest_params).fetchone()
-
-        min_year = latest_year - 5  # 6 años públicos (ej. 2019-2024)
         trend_query = f"""
             SELECT
                 CAST(ano AS INTEGER) AS ano,
                 ROUND(AVG(avg_punt_global), 1) AS promedio_global
             FROM gold.fct_agg_colegios_ano
             WHERE {where_clause}
-            AND CAST(ano AS INTEGER) >= ?
-            GROUP BY CAST(ano AS INTEGER)
-            ORDER BY CAST(ano AS INTEGER)
+              AND ano >= ?
+            GROUP BY ano
+            ORDER BY ano
         """
-        trend_rows = conn.execute(resolve_schema(trend_query), where_params + [min_year]).fetchall()
+        trend_rows = c.execute(resolve_schema(trend_query), where_params + [min_year_str]).fetchall()
 
         f_where, f_params = _build_geo_where(departamento, municipio, alias="f")
-        f_latest_where = f"{f_where} AND CAST(f.ano AS INTEGER) = ?"
-        f_latest_params = f_params + [latest_year]
+        f_latest_params = f_params + [year_str]
 
         top_schools_query = f"""
             SELECT
@@ -181,12 +193,13 @@ def _geo_landing_context(request, departamento, municipio=None):
                 COALESCE(s.slug, '') AS slug
             FROM gold.fct_agg_colegios_ano f
             LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-            WHERE {f_latest_where}
+            WHERE {f_where}
+              AND f.ano = ?
               AND f.nombre_colegio IS NOT NULL
             ORDER BY f.avg_punt_global DESC
             LIMIT 10
         """
-        top_rows = conn.execute(resolve_schema(top_schools_query), f_latest_params).fetchall()
+        top_rows = c.execute(resolve_schema(top_schools_query), f_latest_params).fetchall()
 
         all_schools_in_municipality = []
         if municipio is not None:
@@ -198,11 +211,12 @@ def _geo_landing_context(request, departamento, municipio=None):
                     COALESCE(s.slug, '') AS slug
                 FROM gold.fct_agg_colegios_ano f
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-                WHERE {f_latest_where}
+                WHERE {f_where}
+                  AND f.ano = ?
                   AND f.nombre_colegio IS NOT NULL
                 ORDER BY f.nombre_colegio ASC
             """
-            all_schools_rows = conn.execute(
+            all_schools_rows = c.execute(
                 resolve_schema(all_schools_query), f_latest_params
             ).fetchall()
             all_schools_in_municipality = [
@@ -224,15 +238,15 @@ def _geo_landing_context(request, departamento, municipio=None):
                     COUNT(DISTINCT colegio_sk) AS total_colegios
                 FROM gold.fct_agg_colegios_ano
                 WHERE departamento = ?
-                  AND CAST(ano AS INTEGER) = ?
+                  AND ano = ?
                   AND municipio IS NOT NULL
                   AND municipio != ''
                 GROUP BY municipio
                 ORDER BY promedio_global DESC
                 LIMIT 30
             """
-            municipios_rows = conn.execute(
-                resolve_schema(municipios_query), [departamento, latest_year]
+            municipios_rows = c.execute(
+                resolve_schema(municipios_query), [departamento, year_str]
             ).fetchall()
             municipios = [
                 {
@@ -408,12 +422,13 @@ def department_landing_page(request, departamento_slug):
     try:
         with get_duckdb_connection() as conn:
             departamento = _resolve_departamento(conn, departamento_slug)
-        if not departamento:
-            raise Http404("Departamento no encontrado")
-        canonical_slug = slugify(departamento)
-        if canonical_slug != departamento_slug:
-            return redirect(f"/icfes/departamento/{canonical_slug}/", permanent=True)
-        context = _geo_landing_context(request, departamento=departamento, municipio=None)
+            if not departamento:
+                raise Http404("Departamento no encontrado")
+            canonical_slug = slugify(departamento)
+            if canonical_slug != departamento_slug:
+                return redirect(f"/icfes/departamento/{canonical_slug}/", permanent=True)
+            # Reuse the same connection — avoids opening a second DuckDB connection
+            context = _geo_landing_context(request, departamento=departamento, municipio=None, conn=conn)
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
     except Http404:
         raise
@@ -433,16 +448,17 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
             if not municipio:
                 return HttpResponse(status=410)  # Gone — municipio sin datos suficientes
 
-        canonical_dept = slugify(departamento)
-        canonical_muni = slugify(municipio)
-        if canonical_dept != departamento_slug or canonical_muni != municipio_slug:
-            return redirect(
-                f"/icfes/departamento/{canonical_dept}/municipio/{canonical_muni}/",
-                permanent=True,
+            canonical_dept = slugify(departamento)
+            canonical_muni = slugify(municipio)
+            if canonical_dept != departamento_slug or canonical_muni != municipio_slug:
+                return redirect(
+                    f"/icfes/departamento/{canonical_dept}/municipio/{canonical_muni}/",
+                    permanent=True,
+                )
+            # Reuse the same connection — avoids opening a second DuckDB connection
+            context = _geo_landing_context(
+                request, departamento=departamento, municipio=municipio, conn=conn
             )
-        context = _geo_landing_context(
-            request, departamento=departamento, municipio=municipio
-        )
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
     except Exception as e:
         logger.error(
