@@ -99,10 +99,12 @@ def _sector_from_slug(sector_slug):
     return mapping.get((sector_slug or "").strip().lower())
 
 
-def _resolve_location(conn, sector_value, year, departamento_slug, municipio_slug=None):
+@lru_cache(maxsize=16)
+def _get_location_pairs(sector_value, year):
     """
-    Resolve slug(s) → real names in a single DB query instead of two separate scans.
-    Returns (departamento, municipio) — municipio is None when municipio_slug is not given.
+    Cached fetch of all (dept, muni, dept_slug, muni_slug) tuples for a sector+year.
+    Result is stable within a deployment — cached in-process to avoid repeated full scans.
+    Only ~4 unique combinations exist (2 sectors × 2 recent years).
     """
     query = """
         SELECT DISTINCT departamento, municipio
@@ -112,16 +114,25 @@ def _resolve_location(conn, sector_value, year, departamento_slug, municipio_slu
           AND departamento IS NOT NULL AND departamento != ''
           AND municipio IS NOT NULL AND municipio != ''
     """
-    rows = conn.execute(resolve_schema(query), [str(year), sector_value]).fetchall()
+    with get_duckdb_connection() as conn:
+        rows = conn.execute(resolve_schema(query), [str(year), sector_value]).fetchall()
+    return tuple((dept, muni, slugify(dept), slugify(muni)) for (dept, muni) in rows)
+
+
+def _resolve_location(conn, sector_value, year, departamento_slug, municipio_slug=None):
+    """
+    Resolve slug(s) → real names using in-process cached location pairs.
+    Returns (departamento, municipio) — municipio is None when municipio_slug is not given.
+    """
     dept_found = None
     muni_found = None
-    for (dept, muni) in rows:
-        if slugify(dept) != departamento_slug:
+    for (dept, muni, dept_s, muni_s) in _get_location_pairs(sector_value, year):
+        if dept_s != departamento_slug:
             continue
         dept_found = dept
         if municipio_slug is None:
             break
-        if slugify(muni) == municipio_slug:
+        if muni_s == municipio_slug:
             muni_found = muni
             break
     return dept_found, muni_found
