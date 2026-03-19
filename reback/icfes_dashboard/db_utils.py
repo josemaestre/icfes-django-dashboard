@@ -2,17 +2,21 @@
 Utilidades para trabajar con DuckDB en el dashboard ICFES.
 """
 import logging
-import duckdb
-import pandas as pd
-import numpy as np
-from django.conf import settings
-from contextlib import contextmanager
+import os
+import subprocess
 import threading
+from contextlib import contextmanager
+
+import duckdb
+import numpy as np
+import pandas as pd
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Schema configuration: 'gold' for dev (dev.duckdb), 'main' for prod (prod.duckdb)
-# Detection: explicit setting > DB path check > default 'gold'
+
+# ── Schema ───────────────────────────────────────────────────────────────────
+
 def _detect_schema():
     explicit = getattr(settings, 'ICFES_DB_SCHEMA', None)
     if explicit:
@@ -33,190 +37,115 @@ def resolve_schema(query):
     return query
 
 
-# Lock para crear vistas solo una vez
-_views_lock = threading.Lock()
-_views_created = set()
+# ── DB file management ───────────────────────────────────────────────────────
 
-# Lock para evitar descargas concurrentes desde S3
 _download_lock = threading.Lock()
-
-# Una vez verificado/descargado el archivo, no volver a llamar a S3 en requests siguientes
 _db_initialized = False
+_local_db_path = None   # set once after file is confirmed ready
 
-def _ensure_gold_views_exist(db_path):
-    """Asegura que las vistas gold existan (thread-safe)."""
-    if db_path in _views_created:
-        return
-    
-    with _views_lock:
-        # Double-check después del lock
-        if db_path in _views_created:
-            return
-        
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        try:
-            # Conectar temporalmente en read-write para crear vistas
-            temp_conn = duckdb.connect(db_path, read_only=False)
-            
-            logger.info(f"Creating gold schema views for {db_path}")
-            
-            # Crear schema gold
-            temp_conn.execute("CREATE SCHEMA IF NOT EXISTS gold;")
-            
-            # Check schemas in priority order
-            source_schema = 'main'
-            tables_query = "SELECT table_name FROM information_schema.tables WHERE table_schema = ?"
-            tables = temp_conn.execute(tables_query, [source_schema]).fetchall()
-            
-            if not tables:
-                # Try 'prod' schema if main is empty
-                logger.info("No tables found in 'main' schema, checking 'prod' schema...")
-                tables = temp_conn.execute(tables_query, ['prod']).fetchall()
-                if tables:
-                    source_schema = 'prod'
-            
-            logger.info(f"Found {len(tables)} tables in {source_schema} schema")
-            
-            # Get existing tables in gold schema to avoid conflicts
-            existing_gold_tables = set()
-            try:
-                gold_tables = temp_conn.execute("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'gold'
-                """).fetchall()
-                existing_gold_tables = {table[0] for table in gold_tables}
-                logger.info(f"Found {len(existing_gold_tables)} existing tables in gold schema")
-            except Exception as e:
-                logger.warning(f"Could not check existing gold tables: {e}")
-            
-            # Crear vistas gold.* -> source_schema.* (skip if already exists in gold)
-            views_created = 0
-            views_skipped = 0
-            for (table_name,) in tables:
-                # Skip if table already exists in gold
-                if table_name in existing_gold_tables:
-                    views_skipped += 1
-                    continue
-                try:
-                    temp_conn.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM {source_schema}.{table_name}")
-                    views_created += 1
-                except Exception as e:
-                    logger.warning(f"Failed to create view for {table_name}: {e}")
-            
-            temp_conn.close()
-            logger.info(f"Successfully created {views_created} gold schema views from {source_schema}, skipped {views_skipped} existing tables")
-            
-            # Marcar como creado
-            _views_created.add(db_path)
-            
-        except Exception as e:
-            logger.error(f"Error creating gold schema views: {e}")
-            # No raise - continuar con conexión normal
+
+def _ensure_db_file():
+    """
+    Guarantee the local DuckDB file is ready and return its path.
+    Called on every get_duckdb_connection() but only does real work once
+    per worker process (guarded by _db_initialized flag + _download_lock).
+
+    S3 path: download if missing or smaller than 1 GB; otherwise trust the
+    existing file (no ETag check — eliminates the ~2 s AWS round-trip that
+    was blocking all threads on every worker restart).
+    Local path: use as-is.
+
+    To force a fresh download on Railway: delete /app/data/prod.duckdb from
+    the volume before redeploying.
+    """
+    global _db_initialized, _local_db_path
+
+    if _db_initialized:
+        return _local_db_path
+
+    with _download_lock:
+        if _db_initialized:
+            return _local_db_path
+
+        db_path = getattr(settings, 'ICFES_DUCKDB_PATH', None)
+        is_s3 = db_path and db_path.startswith('s3://')
+
+        if not is_s3:
+            _local_db_path = db_path
+            _db_initialized = True
+            logger.info(f"DuckDB ready (local): {db_path}")
+            return _local_db_path
+
+        local_path = '/app/data/prod.duckdb'
+        min_size = 1 * 1024 * 1024 * 1024  # 1 GB
+        os.makedirs('/app/data', exist_ok=True)
+
+        file_exists = os.path.exists(local_path)
+        file_size   = os.path.getsize(local_path) if file_exists else 0
+
+        if not file_exists or file_size < min_size:
+            logger.info(f"Downloading {db_path} → {local_path} ...")
+            aws_env = os.environ.copy()
+            aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
+            aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+            aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
+            result = subprocess.run(
+                ['aws', 's3', 'cp', db_path, local_path],
+                env=aws_env, capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                raise Exception(
+                    f"S3 download failed rc={result.returncode}\n"
+                    f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+                )
+            logger.info("Download complete")
+        else:
+            logger.info(
+                f"DuckDB ready (volume): {local_path} "
+                f"({file_size / (1024**3):.2f} GB) — skipping ETag check"
+            )
+
+        _local_db_path = local_path
+        _db_initialized = True
+        return _local_db_path
+
+
+# ── Thread-local connection pool ─────────────────────────────────────────────
+
+_thread_local = threading.local()
+
+
+def _get_thread_conn():
+    """
+    Return a persistent DuckDB connection for the current thread.
+
+    With gunicorn --workers 2 --threads 4 there are exactly 8 threads total.
+    Each thread creates its connection once on first use and keeps it open for
+    the lifetime of the worker process.  This eliminates the open/close
+    overhead that was occurring on every request (and every sub-query call
+    such as _get_cached_years_snapshot / _get_location_pairs).
+    """
+    conn = getattr(_thread_local, 'conn', None)
+    if conn is None:
+        local_path = _ensure_db_file()
+        conn = duckdb.connect(local_path, read_only=True)
+        _thread_local.conn = conn
+        logger.info(
+            f"DuckDB thread-local connection opened "
+            f"(thread={threading.current_thread().name})"
+        )
+    return conn
 
 
 @contextmanager
 def get_duckdb_connection(read_only=True):
     """
-    Context manager para obtener una conexión a DuckDB.
-    Soporta tanto archivos locales como S3.
-    
-    Para S3, descarga el archivo a /tmp en el primer uso.
-    
-    Args:
-        read_only: Si True, abre la BD en modo solo lectura (default: True)
-    
-    Yields:
-        duckdb.DuckDBPyConnection: Conexión a DuckDB
-    
-    Example:
-        with get_duckdb_connection() as con:
-            df = con.execute("SELECT * FROM gold.fact_icfes_analytics LIMIT 10").df()
+    Yield the persistent per-thread DuckDB connection.
+
+    The connection is intentionally NOT closed after the with-block — it
+    lives for the lifetime of the thread and is reused on the next request.
     """
-    import os
-    import subprocess
-    
-    con = None
-    try:
-        # Crear conexión en memoria para S3 o local para archivo
-        db_path = getattr(settings, 'ICFES_DUCKDB_PATH', None)
-        
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"Database path: {db_path}")
-        
-        # Determinar si es S3 o local
-        is_s3 = db_path and db_path.startswith('s3://')
-        logger.info(f"Is S3: {is_s3}")
-        
-        if is_s3:
-            local_path = '/app/data/prod.duckdb'
-
-            # Ya verificado en este proceso: conectar directo sin tocar S3
-            global _db_initialized
-            if _db_initialized:
-                con = duckdb.connect(local_path, read_only=read_only)
-            else:
-                # Primera vez en este proceso: verificar/descargar si es necesario
-                os.makedirs('/app/data', exist_ok=True)
-                min_size = 1 * 1024 * 1024 * 1024  # 1 GB
-
-                aws_env = os.environ.copy()
-                aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
-                aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-                aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
-
-                with _download_lock:
-                    # Re-verificar dentro del lock: otro worker puede haber inicializado ya
-                    if _db_initialized:
-                        pass  # ya listo
-                    else:
-                        file_exists = os.path.exists(local_path)
-                        file_size   = os.path.getsize(local_path) if file_exists else 0
-                        logger.info(f"DB check: exists={file_exists}, size={file_size / (1024**3):.2f} GB")
-
-                        needs_download = not file_exists or file_size < min_size
-
-                        if needs_download:
-                            logger.info(f"Downloading {db_path} → {local_path} ...")
-                            result = subprocess.run(
-                                ['aws', 's3', 'cp', db_path, local_path],
-                                env=aws_env, capture_output=True, text=True
-                            )
-                            if result.returncode != 0:
-                                error_msg = (
-                                    f"Failed to download from S3. rc={result.returncode}\n"
-                                    f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}\n"
-                                    f"S3: {db_path} → {local_path}"
-                                )
-                                logger.error(error_msg)
-                                raise Exception(error_msg)
-
-                            logger.info(f"Download complete: {local_path}")
-                        else:
-                            # File already present with valid size — connect directly.
-                            # Skipping S3 ETag check avoids blocking all threads (~2s AWS
-                            # round-trip) on every gunicorn worker restart.
-                            # To force a fresh download, delete /app/data/prod.duckdb
-                            # from the Railway volume before redeploying.
-                            logger.info(
-                                f"DB file present ({file_size / (1024**3):.2f} GB) "
-                                "— skipping ETag check, connecting directly"
-                            )
-
-                        _db_initialized = True
-
-                con = duckdb.connect(local_path, read_only=read_only)
-        else:
-            # Conexión local tradicional
-            con = duckdb.connect(db_path, read_only=read_only)
-        
-        yield con
-    finally:
-        if con:
-            con.close()
+    yield _get_thread_conn()
 
 
 def execute_query(query, params=None):
