@@ -18,7 +18,7 @@ def _detect_schema():
     if explicit:
         return explicit
     db_path = getattr(settings, 'ICFES_DUCKDB_PATH', '')
-    if db_path.startswith('s3://') or 'prod.duckdb' in db_path:
+    if db_path.startswith('s3://') or 'prod' in db_path:
         return 'main'
     return 'gold'
 
@@ -33,222 +33,78 @@ def resolve_schema(query):
     return query
 
 
-# Lock para crear vistas solo una vez
-_views_lock = threading.Lock()
-_views_created = set()
-
-# Lock para evitar descargas concurrentes desde S3
+# Lock para evitar descargas concurrentes desde S3 (primer arranque con volumen vacío)
 _download_lock = threading.Lock()
 
-# Una vez verificado/descargado el archivo, no volver a llamar a S3 en requests siguientes
-_db_initialized = False
+# Tamaño mínimo aceptable para considerar el archivo válido (1 GB)
+_MIN_DB_SIZE = 1 * 1024 * 1024 * 1024
 
-def _ensure_gold_views_exist(db_path):
-    """Asegura que las vistas gold existan (thread-safe)."""
-    if db_path in _views_created:
-        return
-    
-    with _views_lock:
-        # Double-check después del lock
-        if db_path in _views_created:
-            return
-        
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        try:
-            # Conectar temporalmente en read-write para crear vistas
-            temp_conn = duckdb.connect(db_path, read_only=False)
-            
-            logger.info(f"Creating gold schema views for {db_path}")
-            
-            # Crear schema gold
-            temp_conn.execute("CREATE SCHEMA IF NOT EXISTS gold;")
-            
-            # Check schemas in priority order
-            source_schema = 'main'
-            tables_query = "SELECT table_name FROM information_schema.tables WHERE table_schema = ?"
-            tables = temp_conn.execute(tables_query, [source_schema]).fetchall()
-            
-            if not tables:
-                # Try 'prod' schema if main is empty
-                logger.info("No tables found in 'main' schema, checking 'prod' schema...")
-                tables = temp_conn.execute(tables_query, ['prod']).fetchall()
-                if tables:
-                    source_schema = 'prod'
-            
-            logger.info(f"Found {len(tables)} tables in {source_schema} schema")
-            
-            # Get existing tables in gold schema to avoid conflicts
-            existing_gold_tables = set()
-            try:
-                gold_tables = temp_conn.execute("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'gold'
-                """).fetchall()
-                existing_gold_tables = {table[0] for table in gold_tables}
-                logger.info(f"Found {len(existing_gold_tables)} existing tables in gold schema")
-            except Exception as e:
-                logger.warning(f"Could not check existing gold tables: {e}")
-            
-            # Crear vistas gold.* -> source_schema.* (skip if already exists in gold)
-            views_created = 0
-            views_skipped = 0
-            for (table_name,) in tables:
-                # Skip if table already exists in gold
-                if table_name in existing_gold_tables:
-                    views_skipped += 1
-                    continue
-                try:
-                    temp_conn.execute(f"CREATE OR REPLACE VIEW gold.{table_name} AS SELECT * FROM {source_schema}.{table_name}")
-                    views_created += 1
-                except Exception as e:
-                    logger.warning(f"Failed to create view for {table_name}: {e}")
-            
-            temp_conn.close()
-            logger.info(f"Successfully created {views_created} gold schema views from {source_schema}, skipped {views_skipped} existing tables")
-            
-            # Marcar como creado
-            _views_created.add(db_path)
-            
-        except Exception as e:
-            logger.error(f"Error creating gold schema views: {e}")
-            # No raise - continuar con conexión normal
+
+def _download_from_s3(s3_url, local_path):
+    """Descarga el archivo DuckDB desde S3. Solo se llama cuando el volumen está vacío."""
+    import os
+    import subprocess
+
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+
+    aws_env = os.environ.copy()
+    aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
+
+    logger.info(f"Downloading {s3_url} → {local_path} ...")
+    result = subprocess.run(
+        ['aws', 's3', 'cp', s3_url, local_path],
+        env=aws_env, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise Exception(
+            f"S3 download failed (rc={result.returncode})\n"
+            f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        )
+    logger.info(f"Download complete: {local_path}")
 
 
 @contextmanager
 def get_duckdb_connection(read_only=True):
     """
     Context manager para obtener una conexión a DuckDB.
-    Soporta tanto archivos locales como S3.
-    
-    Para S3, descarga el archivo a /tmp en el primer uso.
-    
-    Args:
-        read_only: Si True, abre la BD en modo solo lectura (default: True)
-    
-    Yields:
-        duckdb.DuckDBPyConnection: Conexión a DuckDB
-    
-    Example:
-        with get_duckdb_connection() as con:
-            df = con.execute("SELECT * FROM gold.fact_icfes_analytics LIMIT 10").df()
+
+    En producción (Railway) el archivo vive en el volumen persistente
+    /app/data/prod_v2.duckdb. Si el volumen está vacío (primer arranque),
+    se descarga automáticamente desde DUCKDB_S3_PATH.
+
+    En desarrollo se conecta al archivo local configurado en ICFES_DUCKDB_PATH.
     """
     import os
-    import subprocess
-    
-    con = None
+
+    db_path = getattr(settings, 'ICFES_DUCKDB_PATH', '') or ''
+
+    # Si el path configurado es S3, redirigir al archivo local del volumen
+    if db_path.startswith('s3://'):
+        local_path = '/app/data/prod_v2.duckdb'
+        s3_url = db_path
+    else:
+        local_path = db_path
+        s3_url = os.environ.get('DUCKDB_S3_PATH', '')
+
+    # Descargar solo si el archivo no existe o está incompleto (< 1 GB)
+    file_ready = os.path.exists(local_path) and os.path.getsize(local_path) >= _MIN_DB_SIZE
+    if not file_ready:
+        if not s3_url:
+            raise Exception(
+                f"DB file not found at '{local_path}' and DUCKDB_S3_PATH is not set."
+            )
+        with _download_lock:
+            # Re-verificar dentro del lock: otro worker puede haber descargado ya
+            if not (os.path.exists(local_path) and os.path.getsize(local_path) >= _MIN_DB_SIZE):
+                _download_from_s3(s3_url, local_path)
+
+    con = duckdb.connect(local_path, read_only=read_only)
     try:
-        # Crear conexión en memoria para S3 o local para archivo
-        db_path = getattr(settings, 'ICFES_DUCKDB_PATH', None)
-        
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"Database path: {db_path}")
-        
-        # Determinar si es S3 o local
-        is_s3 = db_path and db_path.startswith('s3://')
-        logger.info(f"Is S3: {is_s3}")
-        
-        if is_s3:
-            import json
-            local_path = '/app/data/prod.duckdb'
-            etag_path  = '/app/data/prod.duckdb.etag'
-
-            # Ya verificado en este proceso: conectar directo sin tocar S3
-            global _db_initialized
-            if _db_initialized:
-                con = duckdb.connect(local_path, read_only=read_only)
-            else:
-                # Primera vez en este proceso: verificar/descargar si es necesario
-                os.makedirs('/app/data', exist_ok=True)
-                min_size = 1 * 1024 * 1024 * 1024  # 1 GB
-
-                aws_env = os.environ.copy()
-                aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
-                aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-                aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
-
-                def _get_s3_etag():
-                    try:
-                        s3_suffix = db_path[5:]
-                        bucket, key = s3_suffix.split('/', 1)
-                        result = subprocess.run(
-                            ['aws', 's3api', 'head-object', '--bucket', bucket, '--key', key],
-                            env=aws_env, capture_output=True, text=True, timeout=30
-                        )
-                        if result.returncode == 0:
-                            return json.loads(result.stdout).get('ETag', '').strip('"')
-                    except Exception as e:
-                        logger.warning(f"Could not get S3 ETag: {e}")
-                    return None
-
-                def _read_local_etag():
-                    try:
-                        if os.path.exists(etag_path):
-                            with open(etag_path) as f:
-                                return f.read().strip()
-                    except Exception:
-                        pass
-                    return None
-
-                with _download_lock:
-                    # Re-verificar dentro del lock: otro worker puede haber inicializado ya
-                    if _db_initialized:
-                        pass  # ya listo
-                    else:
-                        file_exists = os.path.exists(local_path)
-                        file_size   = os.path.getsize(local_path) if file_exists else 0
-                        logger.info(f"DB check: exists={file_exists}, size={file_size / (1024**3):.2f} GB")
-
-                        needs_download = not file_exists or file_size < min_size
-
-                        if not needs_download:
-                            s3_etag    = _get_s3_etag()
-                            local_etag = _read_local_etag()
-                            if s3_etag and local_etag and s3_etag == local_etag:
-                                logger.info(f"DB up-to-date (ETag {s3_etag[:12]}...) — skipping download")
-                            else:
-                                logger.info(f"ETag changed (S3={s3_etag}, local={local_etag}) — downloading")
-                                needs_download = True
-
-                        if needs_download:
-                            logger.info(f"Downloading {db_path} → {local_path} ...")
-                            result = subprocess.run(
-                                ['aws', 's3', 'cp', db_path, local_path],
-                                env=aws_env, capture_output=True, text=True
-                            )
-                            if result.returncode != 0:
-                                error_msg = (
-                                    f"Failed to download from S3. rc={result.returncode}\n"
-                                    f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}\n"
-                                    f"S3: {db_path} → {local_path}"
-                                )
-                                logger.error(error_msg)
-                                raise Exception(error_msg)
-
-                            logger.info(f"Download complete: {local_path}")
-                            s3_etag = _get_s3_etag()
-                            if s3_etag:
-                                try:
-                                    with open(etag_path, 'w') as f:
-                                        f.write(s3_etag)
-                                    logger.info(f"Saved ETag {s3_etag[:12]}...")
-                                except Exception as e:
-                                    logger.warning(f"Could not save ETag: {e}")
-
-                        _db_initialized = True
-
-                con = duckdb.connect(local_path, read_only=read_only)
-        else:
-            # Conexión local tradicional
-            con = duckdb.connect(db_path, read_only=read_only)
-        
         yield con
     finally:
-        if con:
-            con.close()
+        con.close()
 
 
 def execute_query(query, params=None):
