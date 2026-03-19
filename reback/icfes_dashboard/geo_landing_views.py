@@ -433,7 +433,8 @@ def department_landing_page(request, departamento_slug):
     except Http404:
         raise
     except Exception as e:
-        logger.error("Error in department_landing_page for slug %s: %s", departamento_slug, e)
+        import traceback
+        logger.error("Error in department_landing_page for slug %s: %s\n%s", departamento_slug, e, traceback.format_exc())
         raise Http404("Error al cargar el departamento")
 
 
@@ -461,10 +462,12 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
             )
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
     except Exception as e:
+        import traceback
         logger.error(
-            "Error in municipality_landing_page for slugs %s/%s: %s",
+            "Error in municipality_landing_page for slugs %s/%s: %s\n%s",
             departamento_slug,
             municipio_slug,
             e,
+            traceback.format_exc(),
         )
         raise Http404("Error al cargar el municipio")
