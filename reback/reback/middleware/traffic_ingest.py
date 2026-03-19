@@ -16,6 +16,17 @@ from icfes_dashboard.traffic_utils import classify_bot, extract_path_fields
 
 logger = logging.getLogger(__name__)
 
+# Paths that carry zero analytics value — skip the Postgres INSERT entirely.
+_SKIP_PREFIXES = (
+    '/static/',
+    '/media/',
+    '/favicon',
+    '/robots.txt',
+    '/sitemap',
+    '/__debug__/',
+    '/health',
+)
+
 
 class TrafficIngestMiddleware:
     captured_count = 0
@@ -41,6 +52,10 @@ class TrafficIngestMiddleware:
 
         try:
             full_path = request.get_full_path() or request.path or ""
+
+            # Skip static assets and health-check noise — no analytics value.
+            if any(full_path.startswith(p) for p in _SKIP_PREFIXES):
+                return response
             ua = (request.META.get("HTTP_USER_AGENT", "") or "")[:1000]
             fields = extract_path_fields(full_path)
 

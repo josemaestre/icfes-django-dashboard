@@ -152,9 +152,7 @@ def get_duckdb_connection(read_only=True):
         logger.info(f"Is S3: {is_s3}")
         
         if is_s3:
-            import json
             local_path = '/app/data/prod.duckdb'
-            etag_path  = '/app/data/prod.duckdb.etag'
 
             # Ya verificado en este proceso: conectar directo sin tocar S3
             global _db_initialized
@@ -170,29 +168,6 @@ def get_duckdb_connection(read_only=True):
                 aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
                 aws_env['AWS_DEFAULT_REGION']    = os.environ.get('AWS_S3_REGION', 'us-east-1')
 
-                def _get_s3_etag():
-                    try:
-                        s3_suffix = db_path[5:]
-                        bucket, key = s3_suffix.split('/', 1)
-                        result = subprocess.run(
-                            ['aws', 's3api', 'head-object', '--bucket', bucket, '--key', key],
-                            env=aws_env, capture_output=True, text=True, timeout=30
-                        )
-                        if result.returncode == 0:
-                            return json.loads(result.stdout).get('ETag', '').strip('"')
-                    except Exception as e:
-                        logger.warning(f"Could not get S3 ETag: {e}")
-                    return None
-
-                def _read_local_etag():
-                    try:
-                        if os.path.exists(etag_path):
-                            with open(etag_path) as f:
-                                return f.read().strip()
-                    except Exception:
-                        pass
-                    return None
-
                 with _download_lock:
                     # Re-verificar dentro del lock: otro worker puede haber inicializado ya
                     if _db_initialized:
@@ -203,15 +178,6 @@ def get_duckdb_connection(read_only=True):
                         logger.info(f"DB check: exists={file_exists}, size={file_size / (1024**3):.2f} GB")
 
                         needs_download = not file_exists or file_size < min_size
-
-                        if not needs_download:
-                            s3_etag    = _get_s3_etag()
-                            local_etag = _read_local_etag()
-                            if s3_etag and local_etag and s3_etag == local_etag:
-                                logger.info(f"DB up-to-date (ETag {s3_etag[:12]}...) — skipping download")
-                            else:
-                                logger.info(f"ETag changed (S3={s3_etag}, local={local_etag}) — downloading")
-                                needs_download = True
 
                         if needs_download:
                             logger.info(f"Downloading {db_path} → {local_path} ...")
@@ -229,14 +195,16 @@ def get_duckdb_connection(read_only=True):
                                 raise Exception(error_msg)
 
                             logger.info(f"Download complete: {local_path}")
-                            s3_etag = _get_s3_etag()
-                            if s3_etag:
-                                try:
-                                    with open(etag_path, 'w') as f:
-                                        f.write(s3_etag)
-                                    logger.info(f"Saved ETag {s3_etag[:12]}...")
-                                except Exception as e:
-                                    logger.warning(f"Could not save ETag: {e}")
+                        else:
+                            # File already present with valid size — connect directly.
+                            # Skipping S3 ETag check avoids blocking all threads (~2s AWS
+                            # round-trip) on every gunicorn worker restart.
+                            # To force a fresh download, delete /app/data/prod.duckdb
+                            # from the Railway volume before redeploying.
+                            logger.info(
+                                f"DB file present ({file_size / (1024**3):.2f} GB) "
+                                "— skipping ETag check, connecting directly"
+                            )
 
                         _db_initialized = True
 
