@@ -102,20 +102,26 @@ def school_landing_page(request, slug):
 
             # Use latest available year for this school
             stats_2024_query = """
-                SELECT 
-                    ano,
-                    avg_punt_global,
-                    avg_punt_matematicas,
-                    avg_punt_lectura_critica,
-                    avg_punt_c_naturales,
-                    avg_punt_sociales_ciudadanas,
-                    avg_punt_ingles
-                FROM gold.fct_colegio_historico
-                WHERE codigo_dane = ?
-                AND CAST(ano AS INTEGER) = ?
+                SELECT
+                    h.ano,
+                    h.avg_punt_global,
+                    h.avg_punt_matematicas,
+                    h.avg_punt_lectura_critica,
+                    h.avg_punt_c_naturales,
+                    h.avg_punt_sociales_ciudadanas,
+                    h.avg_punt_ingles,
+                    h.ranking_nacional,
+                    h.ranking_municipal,
+                    h.total_colegios_municipio,
+                    e.total_colegios AS total_colegios_nacional
+                FROM gold.fct_colegio_historico h
+                LEFT JOIN gold.fct_estadisticas_anuales e
+                    ON CAST(h.ano AS INTEGER) = CAST(e.ano AS INTEGER)
+                WHERE h.codigo_dane = ?
+                AND CAST(h.ano AS INTEGER) = ?
                 LIMIT 1
             """
-            
+
             stats_2024 = conn.execute(resolve_schema(stats_2024_query), [codigo, report_year]).fetchone()
             
             # Get historical data (last 6 years public)
@@ -185,79 +191,41 @@ def school_landing_page(request, slug):
                 except Exception as e:
                     logger.error(f"Error fetching cluster for {colegio_sk}: {e}")
             
-            # Calculate ranking with direct position estimates for selected year.
+            # Build ranking_info from pre-calculated columns in fct_colegio_historico
+            # (avoids 2 full table scans — ranking_nacional/municipal already computed by dbt)
             ranking_info = {
                 'rank': None,
-                'total': 15000,  # Approximate
+                'total': None,
                 'percentile': None,
                 'municipal_rank': None,
                 'municipal_total': None,
                 'municipal_percentile': None,
             }
+            if stats_2024:
+                rank_nac = int(stats_2024[7]) if stats_2024[7] is not None else None
+                rank_mun = int(stats_2024[8]) if stats_2024[8] is not None else None
+                total_mun = int(stats_2024[9]) if stats_2024[9] is not None else None
+                total_nac = int(stats_2024[10]) if stats_2024[10] is not None else None
+                ranking_info['rank'] = rank_nac
+                ranking_info['total'] = total_nac
+                ranking_info['municipal_rank'] = rank_mun
+                ranking_info['municipal_total'] = total_mun
+                if rank_nac and total_nac and total_nac > 0:
+                    ranking_info['percentile'] = round(
+                        ((total_nac - rank_nac + 1) / total_nac) * 100, 1
+                    )
+                if rank_mun and total_mun and total_mun > 0:
+                    ranking_info['municipal_percentile'] = round(
+                        ((total_mun - rank_mun + 1) / total_mun) * 100, 1
+                    )
 
             # --- SEO ENHANCEMENTS: Similar Schools & Best in Class ---
-            
-            # 1. Colegios Similares
-            
+
             # Define variables needed for queries
             current_score = float(stats_2024[1]) if stats_2024 and len(stats_2024) > 1 and stats_2024[1] is not None else 250
             current_municipio = current_context[1] if current_context and len(current_context) > 1 else school_found['municipio']
             current_departamento = current_context[2] if current_context and len(current_context) > 2 else school_found['departamento']
             current_sector = current_context[0] if current_context and len(current_context) > 0 else school_found['sector']
-
-            if stats_2024:
-                try:
-                    national_rank_query = """
-                        SELECT
-                            1 + SUM(CASE WHEN avg_punt_global > ? THEN 1 ELSE 0 END) AS rank_nacional,
-                            COUNT(*) AS total_nacional
-                        FROM gold.fct_colegio_historico
-                        WHERE CAST(ano AS INTEGER) = ?
-                          AND avg_punt_global IS NOT NULL
-                    """
-                    national_rank_res = conn.execute(
-                        resolve_schema(national_rank_query), [current_score, report_year]
-                    ).fetchone()
-
-                    if national_rank_res and national_rank_res[1]:
-                        rank_nacional = int(national_rank_res[0]) if national_rank_res[0] else None
-                        total_nacional = int(national_rank_res[1])
-                        ranking_info['rank'] = rank_nacional
-                        ranking_info['total'] = total_nacional
-                        if rank_nacional and total_nacional > 0:
-                            ranking_info['percentile'] = round(
-                                ((total_nacional - rank_nacional + 1) / total_nacional) * 100, 1
-                            )
-                except Exception as e:
-                    logger.error(f"Error calculating national rank for {slug}: {e}")
-
-                try:
-                    municipal_rank_query = """
-                        SELECT
-                            1 + SUM(CASE WHEN avg_punt_global > ? THEN 1 ELSE 0 END) AS rank_municipal,
-                            COUNT(*) AS total_municipal
-                        FROM gold.fct_colegio_historico
-                        WHERE CAST(ano AS INTEGER) = ?
-                          AND avg_punt_global IS NOT NULL
-                          AND municipio = ?
-                          AND sector = ?
-                    """
-                    municipal_rank_res = conn.execute(
-                        resolve_schema(municipal_rank_query),
-                        [current_score, report_year, current_municipio, current_sector],
-                    ).fetchone()
-
-                    if municipal_rank_res and municipal_rank_res[1]:
-                        rank_municipal = int(municipal_rank_res[0]) if municipal_rank_res[0] else None
-                        total_municipal = int(municipal_rank_res[1])
-                        ranking_info['municipal_rank'] = rank_municipal
-                        ranking_info['municipal_total'] = total_municipal
-                        if rank_municipal and total_municipal > 0:
-                            ranking_info['municipal_percentile'] = round(
-                                ((total_municipal - rank_municipal + 1) / total_municipal) * 100, 1
-                            )
-                except Exception as e:
-                    logger.error(f"Error calculating municipal rank for {slug}: {e}")
             
             similar_schools = []
             try:
