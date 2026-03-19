@@ -154,6 +154,11 @@ ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
 
 # LOGGING
 # ------------------------------------------------------------------------------
+# Set LOG_LEVEL=DEBUG in Railway variables to get verbose output.
+# Default is WARNING — only errors/warnings reach the console.
+# Perf lines (path/status/ms/cache) always show regardless of LOG_LEVEL.
+_LOG_LEVEL = env("LOG_LEVEL", default="WARNING")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -180,26 +185,39 @@ LOGGING = {
             "formatter": "error_detail",
         },
     },
-    "root": {"level": "INFO", "handlers": ["console"]},
+    # Root at _LOG_LEVEL — silences django internals, cache backend, etc.
+    "root": {"level": _LOG_LEVEL, "handlers": ["console"]},
     "loggers": {
         "django.request": {
             "handlers": ["console"],
             "level": "ERROR",
-            "propagate": True,
+            "propagate": False,
         },
         "django.security.DisallowedHost": {
             "level": "ERROR",
             "handlers": ["console"],
-            "propagate": True,
+            "propagate": False,
         },
         "http_errors": {
             "handlers": ["console", "error_file"],
             "level": "WARNING",
             "propagate": False,
         },
+        # Perf lines always show — they are the useful signal in production.
         "perf": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
+        },
+        # App loggers: respect LOG_LEVEL so DEBUG/INFO only appear when requested.
+        "icfes_dashboard": {
+            "handlers": ["console"],
+            "level": _LOG_LEVEL,
+            "propagate": False,
+        },
+        "db_utils": {
+            "handlers": ["console"],
+            "level": _LOG_LEVEL,
             "propagate": False,
         },
     },

@@ -384,6 +384,16 @@
                     </tbody>
                 </table>
             </div>
+            {% if locked_count %}
+            <div class="text-center py-3 border-top mt-2">
+                <p class="text-muted small mb-2">
+                    + {{ locked_count }} años históricos adicionales disponibles con cuenta gratuita
+                </p>
+                <a href="{% url 'account_signup' %}" class="btn btn-outline-primary btn-sm px-4">
+                    Ver historial completo — es gratis
+                </a>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 

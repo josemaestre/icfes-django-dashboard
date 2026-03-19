@@ -474,7 +474,7 @@ def ranking_colegios_year_page(request, ano):
             {
                 "mode": "ranking_general",
                 "year": year,
-                "years": years[:10],
+                "years": years[:6],
                 "year_base_url": "/icfes/ranking/colegios/",
                 "rows": [
                     {
@@ -580,7 +580,7 @@ def ranking_matematicas_year_page(request, ano):
             {
                 "mode": "ranking_matematicas",
                 "year": year,
-                "years": years[:10],
+                "years": years[:6],
                 "year_base_url": "/icfes/ranking/matematicas/",
                 "rows": [
                     {
@@ -668,14 +668,14 @@ def historico_nacional_page(request):
         )
 
         latest_year_nacional = max(int(row[0]) for row in rows) if rows else 2024
-        min_year_chart = latest_year_nacional - 5  # 6 años públicos en el chart
+        min_year_chart = latest_year_nacional - 5  # 6 años en el chart y en la tabla
         chart = {
             "years": [int(row[0]) for row in rows if int(row[0]) >= min_year_chart],
             "scores": [float(row[1]) if row[1] is not None else None for row in rows if int(row[0]) >= min_year_chart],
             "min_year": min_year_chart,
         }
 
-        table_rows = [
+        all_rows = [
             {
                 "ano": int(row[0]),
                 "promedio_global": float(row[1]) if row[1] is not None else None,
@@ -684,6 +684,8 @@ def historico_nacional_page(request):
             }
             for row in reversed(rows)
         ]
+        table_rows = [r for r in all_rows if r["ano"] >= min_year_chart]
+        locked_count = len([r for r in all_rows if r["ano"] < min_year_chart])
 
         return render(
             request,
@@ -691,6 +693,7 @@ def historico_nacional_page(request):
             {
                 "mode": "historico_nacional",
                 "rows": table_rows,
+                "locked_count": locked_count,
                 "chart": chart,
                 "seo": {
                     "title": title,
@@ -1028,7 +1031,7 @@ def ranking_materia_page(request, materia_slug, ano):
                 "materia_slug": materia_slug,
                 "materia_label": materia_label,
                 "year": year,
-                "years": years[:10],
+                "years": years[:6],
                 "year_base_url": f"/icfes/materia/{materia_slug}/",
                 "rows": [
                     {
