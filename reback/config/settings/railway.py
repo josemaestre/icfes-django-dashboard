@@ -207,9 +207,9 @@ LOGGING = {
 
 # DuckDB Configuration
 # ------------------------------------------------------------------------------
-# The DB lives on the Railway persistent volume at /app/data/prod_v2.duckdb.
-# DUCKDB_S3_PATH is only needed for the first boot (empty volume → download).
-ICFES_DUCKDB_PATH = env("DUCKDB_PATH", default="/app/data/prod_v2.duckdb")
+# Use S3 path if DUCKDB_S3_PATH is set, otherwise use local path (for dev)
+ICFES_DUCKDB_PATH = env("DUCKDB_S3_PATH", default=env(
+    "DUCKDB_PATH", default="/app/data/dev.duckdb"))
 # ------------------------------------------------------------------------------
 
 # AI / LLM
