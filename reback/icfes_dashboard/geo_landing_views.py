@@ -350,7 +350,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
             "total_colegios": int(stats_row[2]) if stats_row and stats_row[2] else 0,
         },
         "latest_year": int(latest_year),
-        "trend_min_year": int(min_year),
+        "trend_min_year": int(min_year_str),
         "trend_chart": {
             "years": [int(row[0]) for row in trend_rows],
             "scores": [float(row[1]) if row[1] is not None else None for row in trend_rows],
