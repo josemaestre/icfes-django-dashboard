@@ -4,6 +4,7 @@ Uses lightweight aggregate queries from fct_agg_colegios_ano.
 """
 import json
 import logging
+from functools import lru_cache
 
 from django.conf import settings
 from django.http import Http404, HttpResponse
@@ -88,31 +89,23 @@ _MUNICIPIO_SLUG_ALIASES = {
 }
 
 
-def _resolve_departamento(conn, departamento_slug):
+@lru_cache(maxsize=1)
+def _get_all_departamentos():
+    """Fetch all department names once per process — 33 rows, changes only on redeploy."""
     query = """
         SELECT DISTINCT departamento
         FROM gold.fct_agg_colegios_ano
         WHERE departamento IS NOT NULL AND departamento != ''
         ORDER BY departamento
     """
-    rows = conn.execute(resolve_schema(query)).fetchall()
-
-    # Primero: match exacto por slug
-    for (departamento,) in rows:
-        if slugify(departamento) == departamento_slug:
-            return departamento
-
-    # Segundo: match por alias conocido
-    alias_fragment = _DEPARTAMENTO_SLUG_ALIASES.get(departamento_slug)
-    if alias_fragment:
-        for (departamento,) in rows:
-            if alias_fragment.lower() in departamento.lower():
-                return departamento
-
-    return None
+    with get_duckdb_connection() as conn:
+        rows = conn.execute(resolve_schema(query)).fetchall()
+    return [row[0] for row in rows]
 
 
-def _resolve_municipio(conn, departamento, municipio_slug):
+@lru_cache(maxsize=64)
+def _get_municipios_for_depto(departamento):
+    """Fetch all municipalities for a department once per process — changes only on redeploy."""
     query = """
         SELECT DISTINCT municipio
         FROM gold.fct_agg_colegios_ano
@@ -121,14 +114,38 @@ def _resolve_municipio(conn, departamento, municipio_slug):
           AND municipio != ''
         ORDER BY municipio
     """
-    rows = conn.execute(resolve_schema(query), [departamento]).fetchall()
-    for (municipio,) in rows:
+    with get_duckdb_connection() as conn:
+        rows = conn.execute(resolve_schema(query), [departamento]).fetchall()
+    return [row[0] for row in rows]
+
+
+def _resolve_departamento(conn, departamento_slug):
+    rows = _get_all_departamentos()
+
+    # Primero: match exacto por slug
+    for departamento in rows:
+        if slugify(departamento) == departamento_slug:
+            return departamento
+
+    # Segundo: match por alias conocido
+    alias_fragment = _DEPARTAMENTO_SLUG_ALIASES.get(departamento_slug)
+    if alias_fragment:
+        for departamento in rows:
+            if alias_fragment.lower() in departamento.lower():
+                return departamento
+
+    return None
+
+
+def _resolve_municipio(conn, departamento, municipio_slug):
+    rows = _get_municipios_for_depto(departamento)
+    for municipio in rows:
         if slugify(municipio) == municipio_slug:
             return municipio
 
     alias_fragment = _MUNICIPIO_SLUG_ALIASES.get((municipio_slug or "").strip().lower())
     if alias_fragment:
-        for (municipio,) in rows:
+        for municipio in rows:
             if alias_fragment.lower() in municipio.lower():
                 return municipio
     return None
@@ -417,7 +434,7 @@ def departments_index_page(request):
         raise Http404("Error al cargar departamentos")
 
 
-@cache_page(60 * 60 * 4)
+@cache_page(60 * 60 * 24 * 7)
 def department_landing_page(request, departamento_slug):
     try:
         with get_duckdb_connection() as conn:
@@ -438,7 +455,7 @@ def department_landing_page(request, departamento_slug):
         raise Http404("Error al cargar el departamento")
 
 
-@cache_page(60 * 60 * 4)
+@cache_page(60 * 60 * 24 * 7)
 def municipality_landing_page(request, departamento_slug, municipio_slug):
     try:
         with get_duckdb_connection() as conn:

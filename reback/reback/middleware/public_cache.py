@@ -17,8 +17,8 @@ from django.utils.cache import patch_cache_control
 # so we provide the TTL here to match the intended caching strategy.
 _PUBLIC_PREFIXES = (
     ('/icfes/colegio/',       86400),   # 24 h — school landings
-    ('/icfes/departamento/',  14400),   # 4 h  — department/municipality landings
-    ('/icfes/municipio/',     14400),
+    ('/icfes/departamento/',  604800),  # 7 d  — department/municipality landings
+    ('/icfes/municipio/',     604800),
     ('/icfes/departamentos/', 43200),   # 12 h — department index
     ('/icfes/ranking/',       21600),   # 6 h  — ranking pages
     ('/icfes/historico/',     43200),   # 12 h — historical pages
