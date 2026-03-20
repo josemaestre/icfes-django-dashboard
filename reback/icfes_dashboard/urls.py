@@ -1,7 +1,8 @@
 """
 URLs para el dashboard ICFES.
 """
-from django.urls import path
+from django.urls import path, re_path
+from django.views.generic import RedirectView
 from . import (
     api_views,
     bilingues_landing_views,
@@ -89,6 +90,10 @@ urlpatterns = [
     # Dynamic school landing pages (SEO)
     path('colegio/<slug:slug>/',
          landing_views.school_landing_page, name='school_landing'),
+    # Catch-all: redirect bots that append meta-tag content to the school URL
+    # e.g. /colegio/some-slug/summary_large_image  or  /colegio/some-slug/index, follow,...
+    re_path(r'^colegio/(?P<slug>[-\w]+)/.+$',
+            RedirectView.as_view(url='/icfes/colegio/%(slug)s/', permanent=False)),
     path('departamentos/',
          geo_landing_views.departments_index_page, name='departments_index'),
     path('departamento/<slug:departamento_slug>/',
