@@ -284,3 +284,317 @@ def api_motivacional_tendencia(request):
     except Exception as exc:
         logger.error("api_motivacional_tendencia error: %s", exc)
         return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Colegios por perfil/cluster (tabla interactiva) ─────────────────────
+
+@require_GET
+def api_motivacional_colegios_perfil(request):
+    ano          = request.GET.get('ano', '2024')
+    cluster      = request.GET.get('cluster', '')
+    departamento = request.GET.get('departamento', '')
+    sector       = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            clauses, params = [], []
+            if ano:
+                clauses.append("CAST(ano AS INTEGER) = ?")
+                params.append(int(ano))
+            if cluster:
+                clauses.append("cluster_nombre = ?")
+                params.append(cluster)
+            if departamento:
+                clauses.append("UPPER(departamento) = UPPER(?)")
+                params.append(departamento)
+            if sector:
+                clauses.append("UPPER(sector) = UPPER(?)")
+                params.append(sector)
+            where = " AND ".join(clauses) if clauses else "1=1"
+            query = f"""
+            SELECT
+                colegio_bk, nombre_colegio, departamento, sector,
+                cluster_nombre, materia_fortaleza, materia_debilidad
+            FROM gold.fct_perfil_motivacional
+            WHERE {where}
+            ORDER BY cluster_nombre, departamento, nombre_colegio
+            LIMIT 500
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_colegios_perfil_{ano}_{cluster}_{departamento}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_colegios_perfil error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Distribución de clusters por departamento ────────────────────────────
+
+@require_GET
+def api_motivacional_clusters_depto(request):
+    ano    = request.GET.get('ano', '2024')
+    sector = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, sector, None)
+            query = f"""
+            SELECT
+                departamento,
+                cluster_nombre,
+                COUNT(*) AS colegios
+            FROM gold.fct_perfil_motivacional
+            WHERE {where}
+            GROUP BY departamento, cluster_nombre
+            ORDER BY departamento, cluster_nombre
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_clusters_depto_{ano}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_clusters_depto error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Fortalezas y debilidades por cluster (heatmap) ──────────────────────
+
+@require_GET
+def api_motivacional_fortalezas(request):
+    ano    = request.GET.get('ano', '2024')
+    sector = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, sector, None)
+            query = f"""
+            SELECT cluster_nombre, materia_fortaleza AS materia,
+                   COUNT(*) AS n_fortaleza, 0 AS n_debilidad
+            FROM gold.fct_perfil_motivacional
+            WHERE {where} AND materia_fortaleza IS NOT NULL
+            GROUP BY cluster_nombre, materia_fortaleza
+            UNION ALL
+            SELECT cluster_nombre, materia_debilidad AS materia,
+                   0 AS n_fortaleza, COUNT(*) AS n_debilidad
+            FROM gold.fct_perfil_motivacional
+            WHERE {where} AND materia_debilidad IS NOT NULL
+            GROUP BY cluster_nombre, materia_debilidad
+            ORDER BY cluster_nombre, materia
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_fortalezas_{ano}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_fortalezas error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Scatter score vs momentum (4 cuadrantes) ────────────────────────────
+
+@require_GET
+def api_motivacional_scatter_momentum(request):
+    ano     = request.GET.get('ano', '2024')
+    materia = request.GET.get('materia', 'global')
+    sector  = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, sector, materia)
+            query = f"""
+            SELECT
+                nombre_colegio, departamento, sector,
+                ROUND(weighted_score, 3) AS weighted_score,
+                ROUND(momentum_score, 4) AS momentum_score
+            FROM gold.fct_momentum_motivacional
+            WHERE {where} AND momentum_score IS NOT NULL
+            ORDER BY momentum_score DESC
+            LIMIT 5000
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_scatter_momentum_{ano}_{materia}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_scatter_momentum error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Heatmap momentum por departamento × materia ─────────────────────────
+
+@require_GET
+def api_motivacional_heatmap_momentum(request):
+    ano    = request.GET.get('ano', '2024')
+    sector = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, sector, None)
+            query = f"""
+            SELECT
+                departamento, materia,
+                ROUND(AVG(momentum_score) FILTER (WHERE momentum_score IS NOT NULL), 4) AS momentum_promedio,
+                COUNT(*) FILTER (WHERE direccion = 'mejorando')    AS n_mejorando,
+                COUNT(*) FILTER (WHERE direccion = 'deteriorando') AS n_deteriorando,
+                COUNT(*) AS total_colegios
+            FROM gold.fct_momentum_motivacional
+            WHERE {where}
+            GROUP BY departamento, materia
+            ORDER BY departamento, materia
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_heatmap_momentum_{ano}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_heatmap_momentum error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Ranking top colegios por momentum ───────────────────────────────────
+
+@require_GET
+def api_motivacional_ranking_momentum(request):
+    ano       = request.GET.get('ano', '2024')
+    materia   = request.GET.get('materia', 'global')
+    sector    = request.GET.get('sector', '')
+    direccion = request.GET.get('direccion', 'mejorando')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, sector, materia)
+            order = "DESC" if direccion == 'mejorando' else "ASC"
+            query = f"""
+            SELECT
+                nombre_colegio, departamento, sector,
+                ROUND(weighted_score, 3) AS weighted_score,
+                ROUND(momentum_score, 4) AS momentum_score,
+                direccion
+            FROM gold.fct_momentum_motivacional
+            WHERE {where} AND momentum_score IS NOT NULL AND direccion = ?
+            ORDER BY momentum_score {order}
+            LIMIT 20
+            """
+            params.append(direccion)
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_ranking_momentum_{ano}_{materia}_{sector}_{direccion}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_ranking_momentum error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Scatter HHI vs bimodalidad por departamento ─────────────────────────
+
+@require_GET
+def api_motivacional_scatter_polarizacion(request):
+    ano     = request.GET.get('ano', '2024')
+    materia = request.GET.get('materia', 'global')
+    sector  = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, sector, materia)
+            query = f"""
+            SELECT
+                departamento, categoria_polarizacion,
+                ROUND(AVG(hhi), 4)         AS hhi,
+                ROUND(AVG(bimodalidad), 4) AS bimodalidad,
+                ROUND(AVG(gini), 4)        AS gini,
+                COUNT(*) AS colegios
+            FROM gold.fct_polarizacion_academica
+            WHERE {where}
+            GROUP BY departamento, categoria_polarizacion
+            ORDER BY departamento
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_scatter_polar_{ano}_{materia}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_scatter_polarizacion error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Ranking departamentos por polarización ───────────────────────────────
+
+@require_GET
+def api_motivacional_ranking_polarizacion(request):
+    ano     = request.GET.get('ano', '2024')
+    materia = request.GET.get('materia', 'global')
+
+    def fetch():
+        try:
+            where, params = _build_where(ano, None, None, materia)
+            query = f"""
+            SELECT
+                departamento,
+                ROUND(AVG(hhi), 4)         AS hhi_promedio,
+                ROUND(AVG(bimodalidad), 4) AS bimodalidad_promedio,
+                ROUND(AVG(gini), 4)        AS gini_promedio,
+                COUNT(*) FILTER (WHERE categoria_polarizacion = 'polarizado')  AS n_polarizado,
+                COUNT(*) FILTER (WHERE categoria_polarizacion = 'concentrado') AS n_concentrado,
+                COUNT(*) FILTER (WHERE categoria_polarizacion = 'distribuido') AS n_distribuido,
+                COUNT(*) AS total_colegios
+            FROM gold.fct_polarizacion_academica
+            WHERE {where}
+            GROUP BY departamento
+            ORDER BY hhi_promedio DESC
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_ranking_polar_{ano}_{materia}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_ranking_polarizacion error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)

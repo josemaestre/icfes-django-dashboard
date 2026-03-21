@@ -60,7 +60,15 @@ urlpatterns = [
     path('api/motivacional/momentum/',     views_motivacional.api_motivacional_momentum,     name='api_motivacional_momentum'),
     path('api/motivacional/distribucion/', views_motivacional.api_motivacional_distribucion, name='api_motivacional_distribucion'),
     path('api/motivacional/polarizacion/', views_motivacional.api_motivacional_polarizacion, name='api_motivacional_polarizacion'),
-    path('api/motivacional/tendencia/',    views_motivacional.api_motivacional_tendencia,    name='api_motivacional_tendencia'),
+    path('api/motivacional/tendencia/',            views_motivacional.api_motivacional_tendencia,            name='api_motivacional_tendencia'),
+    path('api/motivacional/colegios-perfil/',      views_motivacional.api_motivacional_colegios_perfil,      name='api_motivacional_colegios_perfil'),
+    path('api/motivacional/clusters-depto/',       views_motivacional.api_motivacional_clusters_depto,       name='api_motivacional_clusters_depto'),
+    path('api/motivacional/fortalezas/',           views_motivacional.api_motivacional_fortalezas,           name='api_motivacional_fortalezas'),
+    path('api/motivacional/scatter-momentum/',     views_motivacional.api_motivacional_scatter_momentum,     name='api_motivacional_scatter_momentum'),
+    path('api/motivacional/heatmap-momentum/',     views_motivacional.api_motivacional_heatmap_momentum,     name='api_motivacional_heatmap_momentum'),
+    path('api/motivacional/ranking-momentum/',     views_motivacional.api_motivacional_ranking_momentum,     name='api_motivacional_ranking_momentum'),
+    path('api/motivacional/scatter-polarizacion/', views_motivacional.api_motivacional_scatter_polarizacion, name='api_motivacional_scatter_polarizacion'),
+    path('api/motivacional/ranking-polarizacion/', views_motivacional.api_motivacional_ranking_polarizacion, name='api_motivacional_ranking_polarizacion'),
 
     # API endpoints — Cuadrante Educativo
     path('api/cuadrante/data/', views_cuadrante.api_cuadrante_data, name='api_cuadrante_data'),

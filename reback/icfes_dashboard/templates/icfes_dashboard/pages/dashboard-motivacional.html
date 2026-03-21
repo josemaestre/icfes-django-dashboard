@@ -56,12 +56,16 @@
         <div class="card py-2 px-3 shadow-sm">
             <div class="d-flex gap-1 flex-wrap align-items-center" style="font-size:11px;">
                 <span class="text-muted me-1" style="font-size:10px;letter-spacing:.5px;text-transform:uppercase;">Ir a:</span>
-                <a href="#sec-kpi"          class="btn btn-sm btn-outline-secondary py-0 px-2">KPIs</a>
-                <a href="#sec-perfiles"     class="btn btn-sm btn-outline-primary   py-0 px-2">Perfiles</a>
-                <a href="#sec-momentum"     class="btn btn-sm btn-outline-success   py-0 px-2">Momentum</a>
-                <a href="#sec-distribucion" class="btn btn-sm btn-outline-info      py-0 px-2">Distribución</a>
-                <a href="#sec-tendencia"    class="btn btn-sm btn-outline-warning   py-0 px-2">Tendencia Histórica</a>
-                <a href="#sec-polarizacion" class="btn btn-sm btn-outline-danger    py-0 px-2">Polarización</a>
+                <a href="#sec-kpi"            class="btn btn-sm btn-outline-secondary py-0 px-2">KPIs</a>
+                <a href="#sec-perfiles"       class="btn btn-sm btn-outline-primary   py-0 px-2">Perfiles</a>
+                <a href="#sec-clusters-depto" class="btn btn-sm btn-outline-primary   py-0 px-2">Clusters×Depto</a>
+                <a href="#sec-fortalezas"     class="btn btn-sm btn-outline-primary   py-0 px-2">Fortalezas</a>
+                <a href="#sec-momentum"       class="btn btn-sm btn-outline-success   py-0 px-2">Momentum</a>
+                <a href="#sec-scatter-mom"    class="btn btn-sm btn-outline-success   py-0 px-2">Scatter Mom.</a>
+                <a href="#sec-heatmap-mom"    class="btn btn-sm btn-outline-success   py-0 px-2">Heatmap Mom.</a>
+                <a href="#sec-distribucion"   class="btn btn-sm btn-outline-info      py-0 px-2">Distribución</a>
+                <a href="#sec-tendencia"      class="btn btn-sm btn-outline-warning   py-0 px-2">Tendencia</a>
+                <a href="#sec-polarizacion"   class="btn btn-sm btn-outline-danger    py-0 px-2">Polarización</a>
             </div>
         </div>
     </div>
@@ -181,6 +185,65 @@
         </div>
     </div>
 
+    <!-- ══ SECCIÓN 2b: CLUSTERS POR DEPARTAMENTO ════════════════════════════ -->
+    <div id="sec-clusters-depto"></div>
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Clusters por Departamento</h5>
+                    <small class="text-muted">Distribución de perfiles motivacionales por depto</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-clusters-depto" style="min-height:320px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">Colegios por Cluster</h5>
+                        <small class="text-muted">Selecciona un cluster para ver la lista</small>
+                    </div>
+                    <select id="sel-cluster-tabla" class="form-select form-select-sm w-auto">
+                        <option value="">Todos</option>
+                        <option value="Rezagado">Rezagado</option>
+                        <option value="Emergente">Emergente</option>
+                        <option value="Promedio">Promedio</option>
+                        <option value="Consolidado">Consolidado</option>
+                        <option value="Avanzado">Avanzado</option>
+                        <option value="Excepcional">Excepcional</option>
+                    </select>
+                </div>
+                <div class="card-body p-0" style="overflow-y:auto;max-height:340px;">
+                    <table class="table table-sm table-hover mb-0" style="font-size:11px;">
+                        <thead class="table-dark sticky-top"><tr>
+                            <th>Colegio</th><th>Depto</th><th>Cluster</th><th>Fortaleza</th><th>Debilidad</th>
+                        </tr></thead>
+                        <tbody id="tbody-colegios-perfil"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 2c: FORTALEZAS Y DEBILIDADES ══════════════════════════════ -->
+    <div id="sec-fortalezas"></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Fortalezas y Debilidades por Cluster</h5>
+                    <small class="text-muted">Qué materias son fortaleza (verde) y debilidad (rojo) en cada perfil motivacional</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-fortalezas" style="min-height:300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ SECCIÓN 3: MOMENTUM ══════════════════════════════════════════════ -->
     <div id="sec-momentum"></div>
     <div class="row mb-4">
@@ -192,6 +255,67 @@
                 </div>
                 <div class="card-body">
                     <div id="chart-momentum" style="min-height:420px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 3b: SCATTER SCORE vs MOMENTUM (4 cuadrantes) ════════════ -->
+    <div id="sec-scatter-mom"></div>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title mb-0">Score Actual vs Momentum</h5>
+                        <small class="text-muted">Cada punto = un colegio. Cuadrantes: ascenso / líder / recuperación / declive</small>
+                    </div>
+                    <select id="sel-scatter-mom-sector" class="form-select form-select-sm w-auto">
+                        <option value="">Todos los sectores</option>
+                        <option value="OFICIAL">Oficial</option>
+                        <option value="NO OFICIAL">No Oficial</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div id="chart-scatter-momentum" style="min-height:380px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">Top 20 Colegios</h5>
+                        <small class="text-muted">Por momentum</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-xs btn-success active" id="btn-rank-mejorando" style="font-size:10px;padding:2px 6px;">↑ Mejorando</button>
+                        <button class="btn btn-xs btn-outline-danger"  id="btn-rank-deteriorando" style="font-size:10px;padding:2px 6px;">↓ Deteriorando</button>
+                    </div>
+                </div>
+                <div class="card-body p-0" style="overflow-y:auto;max-height:420px;">
+                    <table class="table table-sm table-hover mb-0" style="font-size:10px;">
+                        <thead class="table-dark sticky-top"><tr>
+                            <th>#</th><th>Colegio</th><th>Depto</th><th>Score</th><th>Mom.</th>
+                        </tr></thead>
+                        <tbody id="tbody-ranking-momentum"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 3c: HEATMAP MOMENTUM depto × materia ══════════════════════ -->
+    <div id="sec-heatmap-mom"></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Momentum por Departamento × Materia</h5>
+                    <small class="text-muted">Verde = mejora, rojo = deterioro. Promedio de pts/año por colegio en cada cruce.</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-heatmap-momentum" style="min-height:420px;"></div>
                 </div>
             </div>
         </div>
@@ -275,6 +399,37 @@
         </div>
     </div>
 
+    <!-- ══ SECCIÓN 7: SCATTER POLARIZACIÓN (HHI vs Bimodalidad) ══════════════ -->
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">HHI vs Bimodalidad por Departamento</h5>
+                    <small class="text-muted">HHI alto = concentración; Bimodalidad alta = dos extremos (élite + rezagado)</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-scatter-polarizacion" style="min-height:340px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ranking Departamentos — Polarización</h5>
+                    <small class="text-muted">Ordenados por HHI promedio (más concentrados primero)</small>
+                </div>
+                <div class="card-body p-0" style="overflow-y:auto;max-height:380px;">
+                    <table class="table table-sm table-hover mb-0" style="font-size:10px;">
+                        <thead class="table-dark sticky-top"><tr>
+                            <th>Departamento</th><th>HHI</th><th>Gini</th><th title="Polarizados">Pol.</th><th title="Concentrados">Con.</th><th title="Distribuidos">Dis.</th>
+                        </tr></thead>
+                        <tbody id="tbody-ranking-polarizacion"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div><!-- /container-fluid -->
 {% endblock page_content %}
 
@@ -323,14 +478,314 @@
 
     function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch(e) {} } return null; }
 
+    var CLUSTER_ORDER  = ['Rezagado','Emergente','Promedio','Consolidado','Avanzado','Excepcional'];
+    var CLUSTER_COLORS = {
+        'Rezagado':    '#dc3545', 'Emergente':   '#fd7e14',
+        'Promedio':    '#ffc107', 'Consolidado': '#20c997',
+        'Avanzado':    '#0d6efd', 'Excepcional': '#198754',
+    };
+    var MATERIA_LABELS = {
+        'global':'Global','matematicas':'Matemáticas','lectura_critica':'Lectura',
+        'ingles':'Inglés','c_naturales':'Ciencias','sociales_ciudadanas':'Sociales',
+    };
+
+    // ── A. Clusters por Departamento ────────────────────────────────────────
+    var chartClustersDepto = null;
+    function loadClustersDepto() {
+        var url = '/icfes/api/motivacional/clusters-depto/?ano=' + getAno() + '&sector=' + getSector();
+        fetch(url).then(r=>r.json()).then(function(resp){ renderClustersDepto(resp.data||[]); });
+    }
+    function renderClustersDepto(data) {
+        var deptos = [...new Set(data.map(r=>r.departamento))].sort();
+        var series = CLUSTER_ORDER.map(function(cl) {
+            return {
+                name: cl,
+                data: deptos.map(function(d) {
+                    var row = data.find(r=>r.departamento===d && r.cluster_nombre===cl);
+                    return row ? row.colegios : 0;
+                }),
+            };
+        });
+        chartClustersDepto = destroyChart(chartClustersDepto);
+        chartClustersDepto = new ApexCharts(document.querySelector('#chart-clusters-depto'), {
+            chart: { type:'bar', height:320, stacked:true, toolbar:{show:false} },
+            series: series,
+            colors: CLUSTER_ORDER.map(c=>CLUSTER_COLORS[c]),
+            xaxis: { categories: deptos, labels:{ rotate:-45, style:{fontSize:'8px'} } },
+            legend: { position:'top', fontSize:'10px' },
+            tooltip: { y:{ formatter:v=>v+' colegios' } },
+            plotOptions: { bar:{ columnWidth:'85%' } },
+        });
+        chartClustersDepto.render();
+    }
+
+    // ── B. Tabla colegios por cluster ───────────────────────────────────────
+    function loadColegiosPerfil(cluster) {
+        var url = '/icfes/api/motivacional/colegios-perfil/?ano=' + getAno()
+                + '&sector=' + getSector()
+                + (cluster ? '&cluster=' + encodeURIComponent(cluster) : '');
+        fetch(url).then(r=>r.json()).then(function(resp){ renderColegiosPerfil(resp.data||[]); });
+    }
+    function renderColegiosPerfil(data) {
+        var tbody = document.getElementById('tbody-colegios-perfil');
+        tbody.innerHTML = data.map(function(r, i) {
+            var color = CLUSTER_COLORS[r.cluster_nombre] || '#aaa';
+            return '<tr><td>' + (r.nombre_colegio||r.colegio_bk) + '</td>'
+                 + '<td>' + (r.departamento||'') + '</td>'
+                 + '<td><span class="badge" style="background:' + color + ';font-size:9px;">' + (r.cluster_nombre||'') + '</span></td>'
+                 + '<td style="color:#198754;">' + (r.materia_fortaleza||'–') + '</td>'
+                 + '<td style="color:#dc3545;">' + (r.materia_debilidad||'–') + '</td>'
+                 + '</tr>';
+        }).join('');
+    }
+    document.getElementById('sel-cluster-tabla').addEventListener('change', function() {
+        loadColegiosPerfil(this.value);
+    });
+
+    // ── C. Fortalezas/Debilidades por cluster (heatmap) ─────────────────────
+    var chartFortalezas = null;
+    function loadFortalezas() {
+        var url = '/icfes/api/motivacional/fortalezas/?ano=' + getAno() + '&sector=' + getSector();
+        fetch(url).then(r=>r.json()).then(function(resp){ renderFortalezas(resp.data||[]); });
+    }
+    function renderFortalezas(data) {
+        var materias  = [...new Set(data.map(r=>r.materia))].sort();
+        var clusters  = CLUSTER_ORDER.filter(c=> data.some(r=>r.cluster_nombre===c));
+        // serie fortaleza (positivo) y debilidad (negativo)
+        var seriesFort = clusters.map(function(cl) {
+            return {
+                name: cl + ' (fortaleza)',
+                data: materias.map(function(m) {
+                    var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===m);
+                    return rows.reduce((s,r)=>s+r.n_fortaleza,0);
+                }),
+            };
+        });
+        var seriesDebi = clusters.map(function(cl) {
+            return {
+                name: cl + ' (debilidad)',
+                data: materias.map(function(m) {
+                    var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===m);
+                    return -rows.reduce((s,r)=>s+r.n_debilidad,0);
+                }),
+            };
+        });
+        chartFortalezas = destroyChart(chartFortalezas);
+        chartFortalezas = new ApexCharts(document.querySelector('#chart-fortalezas'), {
+            chart: { type:'bar', height:300, stacked:true, toolbar:{show:false} },
+            series: [...seriesFort, ...seriesDebi],
+            colors: [...clusters.map(c=>CLUSTER_COLORS[c]), ...clusters.map(c=>CLUSTER_COLORS[c])],
+            xaxis: { categories: materias.map(m=>MATERIA_LABELS[m]||m) },
+            yaxis: { labels:{ formatter:v=>Math.abs(v) } },
+            tooltip: { y:{ formatter:v=>Math.abs(v)+' colegios' } },
+            legend: { show:false },
+            annotations: { yaxis:[{ y:0, borderColor:'#aaa', borderWidth:2 }] },
+        });
+        chartFortalezas.render();
+    }
+
+    // ── D. Scatter: Score vs Momentum ───────────────────────────────────────
+    var chartScatterMom = null;
+    function loadScatterMomentum() {
+        var sector = document.getElementById('sel-scatter-mom-sector').value;
+        var url = '/icfes/api/motivacional/scatter-momentum/?ano=' + getAno()
+                + '&materia=' + getMateria()
+                + (sector ? '&sector=' + sector : '');
+        fetch(url).then(r=>r.json()).then(function(resp){ renderScatterMomentum(resp.data||[]); });
+    }
+    function renderScatterMomentum(data) {
+        // agrupar por sector para colorear
+        var grupos = {};
+        data.forEach(function(r) {
+            var g = r.sector || 'SIN SECTOR';
+            if (!grupos[g]) grupos[g] = [];
+            grupos[g].push({ x: r.weighted_score, y: r.momentum_score, nombre: r.nombre_colegio, departamento: r.departamento });
+        });
+        var series = Object.entries(grupos).map(([k,v])=>({ name:k, data:v }));
+        // medianas para líneas de cuadrante
+        var allScores = data.map(r=>r.weighted_score).filter(Boolean).sort((a,b)=>a-b);
+        var medScore  = allScores[Math.floor(allScores.length/2)] || 0.5;
+        chartScatterMom = destroyChart(chartScatterMom);
+        chartScatterMom = new ApexCharts(document.querySelector('#chart-scatter-momentum'), {
+            chart: { type:'scatter', height:380, toolbar:{show:false}, zoom:{enabled:false} },
+            series: series,
+            colors: ['#0d6efd','#198754','#fd7e14','#dc3545','#6f42c1'],
+            xaxis: { title:{text:'Score Motivacional'}, labels:{formatter:v=>v?v.toFixed(2):''} },
+            yaxis: { title:{text:'Momentum (pts/año)'}, labels:{formatter:v=>v?v.toFixed(3):''} },
+            markers: { size:4, strokeWidth:0, fillOpacity:0.7 },
+            tooltip: {
+                custom: function({ seriesIndex, dataPointIndex, w }) {
+                    var d = w.config.series[seriesIndex].data[dataPointIndex];
+                    return '<div class="p-2" style="font-size:11px;">'
+                        + '<b>' + (d.nombre||'') + '</b><br>'
+                        + d.departamento + '<br>'
+                        + 'Score: ' + d.x + ' | Mom: ' + d.y
+                        + '</div>';
+                }
+            },
+            annotations: {
+                yaxis:[{ y:0, borderColor:'#adb5bd', borderWidth:1, strokeDashArray:4 }],
+                xaxis:[{ x:medScore, borderColor:'#adb5bd', borderWidth:1, strokeDashArray:4 }],
+            },
+        });
+        chartScatterMom.render();
+    }
+    document.getElementById('sel-scatter-mom-sector').addEventListener('change', loadScatterMomentum);
+
+    // ── E. Ranking momentum ──────────────────────────────────────────────────
+    var _rankDir = 'mejorando';
+    function loadRankingMomentum() {
+        var url = '/icfes/api/motivacional/ranking-momentum/?ano=' + getAno()
+                + '&materia=' + getMateria() + '&sector=' + getSector()
+                + '&direccion=' + _rankDir;
+        fetch(url).then(r=>r.json()).then(function(resp){ renderRankingMomentum(resp.data||[]); });
+    }
+    function renderRankingMomentum(data) {
+        var tbody = document.getElementById('tbody-ranking-momentum');
+        tbody.innerHTML = data.map(function(r, i) {
+            var mColor = r.momentum_score > 0 ? '#198754' : '#dc3545';
+            return '<tr><td>' + (i+1) + '</td>'
+                 + '<td>' + (r.nombre_colegio||r.colegio_bk||'') + '</td>'
+                 + '<td>' + (r.departamento||'') + '</td>'
+                 + '<td>' + (r.weighted_score||'') + '</td>'
+                 + '<td style="color:' + mColor + ';font-weight:bold;">' + (r.momentum_score > 0 ? '+' : '') + (r.momentum_score||'') + '</td>'
+                 + '</tr>';
+        }).join('');
+    }
+    document.getElementById('btn-rank-mejorando').addEventListener('click', function() {
+        _rankDir = 'mejorando';
+        this.className = 'btn btn-xs btn-success active';
+        document.getElementById('btn-rank-deteriorando').className = 'btn btn-xs btn-outline-danger';
+        loadRankingMomentum();
+    });
+    document.getElementById('btn-rank-deteriorando').addEventListener('click', function() {
+        _rankDir = 'deteriorando';
+        this.className = 'btn btn-xs btn-danger active';
+        document.getElementById('btn-rank-mejorando').className = 'btn btn-xs btn-outline-success';
+        loadRankingMomentum();
+    });
+
+    // ── F. Heatmap momentum: depto × materia ────────────────────────────────
+    var chartHeatmapMom = null;
+    var MATERIAS_HEATMAP = ['global','matematicas','lectura_critica','ingles','c_naturales','sociales_ciudadanas'];
+    function loadHeatmapMomentum() {
+        var url = '/icfes/api/motivacional/heatmap-momentum/?ano=' + getAno() + '&sector=' + getSector();
+        fetch(url).then(r=>r.json()).then(function(resp){ renderHeatmapMomentum(resp.data||[]); });
+    }
+    function renderHeatmapMomentum(data) {
+        var deptos = [...new Set(data.map(r=>r.departamento))].sort();
+        var series = MATERIAS_HEATMAP.map(function(mat) {
+            return {
+                name: MATERIA_LABELS[mat]||mat,
+                data: deptos.map(function(d) {
+                    var row = data.find(r=>r.departamento===d && r.materia===mat);
+                    return row ? { x: d, y: row.momentum_promedio || 0 } : { x: d, y: 0 };
+                }),
+            };
+        });
+        chartHeatmapMom = destroyChart(chartHeatmapMom);
+        chartHeatmapMom = new ApexCharts(document.querySelector('#chart-heatmap-momentum'), {
+            chart: { type:'heatmap', height:420, toolbar:{show:false} },
+            series: series,
+            dataLabels: { enabled:false },
+            colors: ['#128FD9'],
+            xaxis: { labels:{ rotate:-45, style:{fontSize:'8px'} } },
+            tooltip: { y:{ formatter:v=>v?(v>0?'+':'')+v.toFixed(4)+' pts/año':'sin datos' } },
+            plotOptions: {
+                heatmap: {
+                    colorScale: {
+                        ranges: [
+                            { from:-1, to:-0.01, color:'#dc3545', name:'Deteriorando' },
+                            { from:-0.01, to:0.01, color:'#adb5bd', name:'Estable' },
+                            { from:0.01, to:1, color:'#198754', name:'Mejorando' },
+                        ],
+                    },
+                },
+            },
+        });
+        chartHeatmapMom.render();
+    }
+
+    // ── G. Scatter HHI vs Bimodalidad ───────────────────────────────────────
+    var chartScatterPolar = null;
+    var POLAR_CAT_COLORS = { 'concentrado':'#198754','distribuido':'#0d6efd','polarizado':'#dc3545' };
+    function loadScatterPolarizacion() {
+        var url = '/icfes/api/motivacional/scatter-polarizacion/?ano=' + getAno()
+                + '&materia=' + getMateria() + '&sector=' + getSector();
+        fetch(url).then(r=>r.json()).then(function(resp){ renderScatterPolarizacion(resp.data||[]); });
+    }
+    function renderScatterPolarizacion(data) {
+        var cats = ['concentrado','distribuido','polarizado'];
+        var series = cats.map(function(cat) {
+            return {
+                name: cat.charAt(0).toUpperCase()+cat.slice(1),
+                data: data.filter(r=>r.categoria_polarizacion===cat).map(r=>({
+                    x: r.hhi, y: r.bimodalidad,
+                    nombre: r.departamento, colegios: r.colegios,
+                })),
+            };
+        });
+        chartScatterPolar = destroyChart(chartScatterPolar);
+        chartScatterPolar = new ApexCharts(document.querySelector('#chart-scatter-polarizacion'), {
+            chart: { type:'scatter', height:340, toolbar:{show:false}, zoom:{enabled:false} },
+            series: series,
+            colors: cats.map(c=>POLAR_CAT_COLORS[c]||'#aaa'),
+            xaxis: { title:{text:'HHI (concentración)'}, min:0, max:1, labels:{formatter:v=>v.toFixed(2)} },
+            yaxis: { title:{text:'Bimodalidad (polarización)'}, labels:{formatter:v=>v?v.toFixed(2):''} },
+            markers: { size:8, strokeWidth:1 },
+            tooltip: {
+                custom: function({ seriesIndex, dataPointIndex, w }) {
+                    var d = w.config.series[seriesIndex].data[dataPointIndex];
+                    return '<div class="p-2" style="font-size:11px;">'
+                        + '<b>' + (d.nombre||'') + '</b><br>'
+                        + 'HHI: ' + (d.x||0).toFixed(4) + '<br>'
+                        + 'Bimodalidad: ' + (d.y||0).toFixed(4) + '<br>'
+                        + d.colegios + ' colegios'
+                        + '</div>';
+                }
+            },
+            legend: { position:'top' },
+        });
+        chartScatterPolar.render();
+    }
+
+    // ── H. Ranking polarización por departamento ─────────────────────────────
+    function loadRankingPolarizacion() {
+        var url = '/icfes/api/motivacional/ranking-polarizacion/?ano=' + getAno() + '&materia=' + getMateria();
+        fetch(url).then(r=>r.json()).then(function(resp){ renderRankingPolarizacion(resp.data||[]); });
+    }
+    function renderRankingPolarizacion(data) {
+        var tbody = document.getElementById('tbody-ranking-polarizacion');
+        tbody.innerHTML = data.map(function(r) {
+            var semaforo = r.n_polarizado > r.total_colegios*0.3 ? '🔴'
+                         : r.n_concentrado > r.total_colegios*0.5 ? '🟡' : '🟢';
+            return '<tr>'
+                 + '<td>' + semaforo + ' ' + r.departamento + '</td>'
+                 + '<td>' + (r.hhi_promedio||0).toFixed(3) + '</td>'
+                 + '<td>' + (r.gini_promedio||0).toFixed(3) + '</td>'
+                 + '<td style="color:#dc3545;">' + (r.n_polarizado||0) + '</td>'
+                 + '<td style="color:#ffc107;">' + (r.n_concentrado||0) + '</td>'
+                 + '<td style="color:#198754;">' + (r.n_distribuido||0) + '</td>'
+                 + '</tr>';
+        }).join('');
+    }
+
     // ── loadAll ─────────────────────────────────────────────────────────────
     function loadAll() {
         loadResumen();
         loadPerfiles();
+        loadClustersDepto();
+        loadColegiosPerfil('');
+        loadFortalezas();
         loadMomentum();
+        loadScatterMomentum();
+        loadRankingMomentum();
+        loadHeatmapMomentum();
         loadDistribucion();
         loadTendencia();
         loadPolarizacion();
+        loadScatterPolarizacion();
+        loadRankingPolarizacion();
     }
 
     // ── 1. Resumen KPIs ─────────────────────────────────────────────────────
