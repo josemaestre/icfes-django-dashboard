@@ -84,7 +84,9 @@ class WompiClient:
             
             # For recurring payments with saved card
             if payment_source_id:
-                payload["payment_method"]["payment_source_id"] = payment_source_id
+                payload["payment_source_id"] = payment_source_id
+                payload.pop("acceptance_token", None)
+                payload.pop("payment_method", None)
             
             # Add redirect URL if provided
             if redirect_url:

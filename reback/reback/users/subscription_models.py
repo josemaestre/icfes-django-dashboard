@@ -114,6 +114,7 @@ class UserSubscription(models.Model):
     # Información de pago Wompi (Colombia)
     wompi_subscription_id = models.CharField(max_length=255, blank=True, default="")
     wompi_payment_method_id = models.CharField(max_length=255, blank=True, default="")
+    last_billing_date = models.DateField(null=True, blank=True, help_text="Último cobro exitoso recurrente")
     
     # Tracking de uso diario
     queries_today = models.IntegerField(default=0)

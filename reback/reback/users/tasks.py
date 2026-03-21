@@ -30,10 +30,16 @@ def charge_monthly_subscriptions():
     failed_count = 0
     
     for subscription in subscriptions:
-        # Check if subscription is due for renewal (30 days since start)
-        days_since_start = (timezone.now() - subscription.start_date).days
+        # Check if subscription is due for renewal (30 days since start, strictly based on dates)
+        today = timezone.now().date()
+        start = subscription.start_date.date()
+        days_since_start = (today - start).days
         
-        if days_since_start > 0 and days_since_start % 30 == 0:
+        # Extra check: ensure we haven't charged them today already if the task runs multiple times
+        last_charge_date = getattr(subscription, 'last_billing_date', None)
+        has_charged_today = (last_charge_date == today)
+        
+        if days_since_start > 0 and days_since_start % 30 == 0 and not has_charged_today:
             # Time to charge
             success = charge_subscription(subscription)
             if success:
@@ -84,6 +90,8 @@ def charge_subscription(subscription: UserSubscription) -> bool:
         
         if status == 'APPROVED':
             logger.info(f"Successfully charged subscription {subscription.id}")
+            subscription.last_billing_date = timezone.now().date()
+            subscription.save(update_fields=['last_billing_date'])
             return True
         else:
             logger.warning(f"Transaction not approved for subscription {subscription.id}: {status}")

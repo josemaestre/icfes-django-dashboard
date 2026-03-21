@@ -15,6 +15,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_http_methods
+from reback.users.decorators import subscription_required
 
 from .db_utils import (
     execute_query,
@@ -170,6 +171,7 @@ def dashboard_charts(request):
 
 
 @login_required
+@subscription_required(tier='premium')
 def brecha_educativa_dashboard(request):
     """Vista del dashboard de brechas educativas: Oficial vs No Oficial."""
     context = {
@@ -220,6 +222,7 @@ def ingles_dashboard(request):
 
 
 @login_required
+@subscription_required(tier='premium')
 def motivacional_dashboard(request):
     """Vista del dashboard Nacional Motivacional."""
     try:
