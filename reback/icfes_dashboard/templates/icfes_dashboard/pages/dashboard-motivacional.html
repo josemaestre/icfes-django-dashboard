@@ -334,8 +334,8 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Distribución Motivacional</h5>
-                    <small class="text-muted">% de estudiantes en cada banda: desmotivado → excelencia</small>
+                    <h5 class="card-title mb-0">Distribución Motivacional: Público vs Privado</h5>
+                    <small class="text-muted">% de estudiantes en cada banda motivacional — ¿dónde hay más diferencia entre sectores?</small>
                 </div>
                 <div class="card-body">
                     <div id="chart-distribucion" style="min-height:340px;"></div>
@@ -972,17 +972,25 @@
     }
 
     function renderDistribucion(data) {
-        var sectores = [...new Set(data.map(function(r) { return r.sector; }))].sort();
+        if (!data || !data.length) return;
+        // Solo OFICIAL / NO OFICIAL (el API ya filtra, pero por si acaso)
+        var SECTOR_MAP = { 'OFICIAL': 'Público', 'NO OFICIAL': 'Privado' };
+        var filtered = data.filter(function(r) { return SECTOR_MAP[r.sector]; });
+        if (!filtered.length) return;
 
         // Total por sector para calcular %
         var totales = {};
-        data.forEach(function(r) { totales[r.sector] = (totales[r.sector] || 0) + (r.estudiantes || 0); });
+        filtered.forEach(function(r) { totales[r.sector] = (totales[r.sector] || 0) + (r.estudiantes || 0); });
 
-        var series = BAND_ORDER.map(function(banda) {
+        var sectores = Object.keys(SECTOR_MAP).filter(function(s) { return totales[s]; });
+
+        // Series: una por sector (Público / Privado), datos = % por banda
+        // X axis = bandas motivacionales — así se compara directamente sector vs sector
+        var series = sectores.map(function(sec) {
             return {
-                name: banda.charAt(0).toUpperCase() + banda.slice(1),
-                data: sectores.map(function(sec) {
-                    var row = data.find(function(r) { return r.sector === sec && r.nivel === banda; });
+                name: SECTOR_MAP[sec],
+                data: BAND_ORDER.map(function(banda) {
+                    var row = filtered.find(function(r) { return r.sector === sec && r.nivel === banda; });
                     if (!row || !totales[sec]) return 0;
                     return Math.round(row.estudiantes * 1000 / totales[sec]) / 10;
                 }),
@@ -991,13 +999,18 @@
 
         chartDistribucion = destroyChart(chartDistribucion);
         chartDistribucion = new ApexCharts(document.querySelector('#chart-distribucion'), {
-            chart: { type: 'bar', height: 320, stacked: true, stackType: '100%', toolbar: { show: false } },
+            chart: { type: 'bar', height: 320, toolbar: { show: false } },
             series: series,
-            colors: BAND_ORDER.map(function(b) { return BAND_COLORS[b]; }),
-            xaxis: { categories: sectores.map(function(s){ return s==='OFICIAL'?'Público':'Privado'; }) },
-            plotOptions: { bar: { horizontal: false, columnWidth: '50%' } },
-            legend: { position: 'bottom', fontSize: '11px' },
-            yaxis: { labels: { formatter: function(v) { return v + '%'; } } },
+            colors: ['#0d6efd', '#fd7e14'],
+            xaxis: { categories: BAND_ORDER.map(function(b) { return b.charAt(0).toUpperCase() + b.slice(1); }) },
+            yaxis: { labels: { formatter: function(v) { return v + '%'; } }, max: 55 },
+            plotOptions: { bar: { columnWidth: '65%' } },
+            dataLabels: {
+                enabled: true,
+                formatter: function(v) { return v > 4 ? v + '%' : ''; },
+                style: { fontSize: '10px' },
+            },
+            legend: { position: 'top' },
             tooltip: { y: { formatter: function(v) { return v + '%'; } } },
         });
         chartDistribucion.render();
