@@ -82,9 +82,10 @@ def _ensure_db_file():
 
         file_exists = os.path.exists(local_path)
         file_size   = os.path.getsize(local_path) if file_exists else 0
+        force       = os.environ.get('FORCE_DB_REDOWNLOAD', '').lower() in ('1', 'true', 'yes')
 
-        if not file_exists or file_size < min_size:
-            logger.info(f"Downloading {db_path} → {local_path} ...")
+        if force or not file_exists or file_size < min_size:
+            logger.warning(f"[DuckDB] Downloading {db_path} → {local_path} ...")
             aws_env = os.environ.copy()
             aws_env['AWS_ACCESS_KEY_ID']     = os.environ.get('AWS_ACCESS_KEY_ID', '')
             aws_env['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
@@ -98,11 +99,12 @@ def _ensure_db_file():
                     f"S3 download failed rc={result.returncode}\n"
                     f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
                 )
-            logger.info("Download complete")
+            final_size = os.path.getsize(local_path)
+            logger.warning(f"[DuckDB] Download complete — {final_size / (1024**3):.2f} GB")
         else:
-            logger.info(
-                f"DuckDB ready (volume): {local_path} "
-                f"({file_size / (1024**3):.2f} GB) — skipping ETag check"
+            logger.warning(
+                f"[DuckDB] Ready (volume): {local_path} "
+                f"({file_size / (1024**3):.2f} GB) — skipping download"
             )
 
         _local_db_path = local_path
