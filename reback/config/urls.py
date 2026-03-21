@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
@@ -10,17 +11,25 @@ from icfes_dashboard import email_graph_views
 from icfes_dashboard import sitemap_views
 from reback import seo_views
 
+
+def health_check(request):
+    """Lightweight health check — no DB, no DuckDB. Railway uses this to detect readiness."""
+    return HttpResponse("ok", content_type="text/plain", status=200)
+
 home_redirect_view = RedirectView.as_view(url='/', permanent=True)
 legacy_icfes_dashboard_redirect = RedirectView.as_view(url='/icfes/', permanent=False)
 
 urlpatterns = [
+    # Health check — no DB touch, responds instantly even during DuckDB cold start
+    path("health/", health_check),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
     path("users/", include("reback.users.urls", namespace="users")),
-    # Redirect no-trailing-slash allauth URLs (WhatsApp/bot compatibility)
+    # Redirect no-trailing-slash URLs (WhatsApp/bot/user compatibility)
     path("accounts/signup", RedirectView.as_view(url='/accounts/signup/', permanent=True)),
     path("accounts/login", RedirectView.as_view(url='/accounts/login/', permanent=True)),
+    path("pricing", RedirectView.as_view(url='/pricing/', permanent=True)),
     path("accounts/", include("allauth.urls")),
     path("landing/", home_redirect_view),  # Redirect /landing/ to /
     path("icfes-dashboard/", legacy_icfes_dashboard_redirect),
