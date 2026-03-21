@@ -333,14 +333,25 @@
                 </div>
                 <div class="card-body">
                     <div id="chart-distribucion" style="min-height:340px;"></div>
-                    <div class="d-flex justify-content-center gap-2 flex-wrap mt-2" style="font-size:11px;">
-                        <span class="badge bg-danger">Desmotivado</span>
-                        <span class="badge bg-warning text-dark">Desconectado</span>
-                        <span class="badge bg-info text-dark">Motivado</span>
-                        <span class="badge" style="background:#6c757d;">Pasaron</span>
-                        <span class="badge bg-primary">Comprometido</span>
-                        <span class="badge bg-success">Dedicado</span>
-                        <span class="badge" style="background:#198754;">Excelencia</span>
+                    <!-- Tabla de referencia de umbrales -->
+                    <div class="mt-3">
+                        <p class="text-muted mb-1" style="font-size:11px;"><strong>¿Qué significa cada banda?</strong> Umbral sobre puntaje ICFES (escala 0-500 global / 0-100 por materia)</p>
+                        <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" style="font-size:10px;max-width:600px;">
+                            <thead class="table-dark"><tr>
+                                <th>Banda</th><th>Global (0-500)</th><th>Por materia (0-100)</th><th>Interpretación</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr><td><span class="badge bg-danger">Desmotivado</span></td><td>0 – 100</td><td>0 – 20</td><td>Rendimiento muy bajo, posible abandono o desenganche severo</td></tr>
+                                <tr><td><span class="badge bg-warning text-dark">Desconectado</span></td><td>101 – 199</td><td>21 – 39</td><td>Por debajo del mínimo; no logra los estándares básicos</td></tr>
+                                <tr><td><span class="badge bg-info text-dark">Motivado</span></td><td>200 – 249</td><td>40 – 49</td><td>Nivel básico alcanzado; esfuerzo presente pero resultados limitados</td></tr>
+                                <tr><td><span class="badge" style="background:#6c757d;">Pasaron</span></td><td>250 – 299</td><td>50 – 59</td><td>Supera el mínimo; rendimiento aceptable pero sin destacar</td></tr>
+                                <tr><td><span class="badge bg-primary">Comprometido</span></td><td>300 – 349</td><td>60 – 69</td><td>Buen desempeño; por encima del promedio nacional</td></tr>
+                                <tr><td><span class="badge bg-success">Dedicado</span></td><td>350 – 399</td><td>70 – 79</td><td>Alto rendimiento; dentro del cuartil superior</td></tr>
+                                <tr><td><span class="badge" style="background:#198754;">Excelencia</span></td><td>400 – 500</td><td>80 – 100</td><td>Rendimiento sobresaliente; top nacional</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -859,7 +870,7 @@
 
         // Agrupar por cluster + sector
         var clusters = [...new Set(filtered.map(function(r) { return r.cluster_nombre; }))].sort();
-        var sectores  = ['OFICIAL', 'NO_OFICIAL'];
+        var sectores  = ['OFICIAL', 'NO OFICIAL'];
 
         var series = sectores.map(function(sec) {
             return {
@@ -955,9 +966,7 @@
             chart: { type: 'bar', height: 320, stacked: true, stackType: '100%', toolbar: { show: false } },
             series: series,
             colors: BAND_ORDER.map(function(b) { return BAND_COLORS[b]; }),
-            xaxis: {
-                categories: sectores.map(function(s) { return s === 'OFICIAL' ? 'Público' : 'Privado'; }),
-            },
+            xaxis: { categories: sectores },
             plotOptions: { bar: { horizontal: false, columnWidth: '50%' } },
             legend: { position: 'bottom', fontSize: '11px' },
             yaxis: { labels: { formatter: function(v) { return v + '%'; } } },
