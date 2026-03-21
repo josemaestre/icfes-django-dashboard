@@ -762,5 +762,33 @@
         });
     </script>
     {% endif %}
+
+    <!-- ══ BANNER STICKY para usuarios anónimos ════════════════════════════════ -->
+    {% if not user.is_authenticated %}
+    <div id="retention-banner" style="
+        position: fixed; bottom: 0; left: 0; right: 0; z-index: 1050;
+        background: linear-gradient(90deg, #0d6efd 0%, #0a58ca 100%);
+        color: #fff; padding: 12px 20px;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.2);">
+      <div style="flex:1; min-width:200px;">
+        <strong style="font-size:14px;">¿Quieres guardar este colegio y ver el historial completo desde 1996?</strong>
+        <span style="font-size:12px; opacity:.85; display:block; margin-top:2px;">
+          Crea una cuenta gratuita en menos de 1 minuto — sin tarjeta de crédito.
+        </span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+        <a href="{% url 'account_signup' %}?next={{ request.path }}"
+           class="btn btn-light btn-sm fw-semibold px-4"
+           style="color:#0d6efd; white-space:nowrap;">
+          Crear cuenta gratis →
+        </a>
+        <button onclick="document.getElementById('retention-banner').style.display='none'"
+                style="background:none;border:none;color:#fff;opacity:.7;font-size:20px;line-height:1;cursor:pointer;"
+                aria-label="Cerrar">×</button>
+      </div>
+    </div>
+    {% endif %}
 </body>
 </html>

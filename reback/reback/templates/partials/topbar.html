@@ -45,6 +45,14 @@
           </button>
         </div>
 
+        <!-- CTA para usuarios anónimos: Login + Crear cuenta -->
+        {% if not user.is_authenticated %}
+        <div class="d-flex align-items-center gap-1 topbar-item">
+          <a href="{% url 'account_login' %}" class="btn btn-sm btn-outline-secondary px-3">Iniciar sesión</a>
+          <a href="{% url 'account_signup' %}" class="btn btn-sm btn-primary px-3">Crear cuenta</a>
+        </div>
+        {% endif %}
+
         <!-- User -->
         <div class="dropdown topbar-item">
           <a type="button" class="topbar-button" id="page-header-user-dropdown" data-bs-toggle="dropdown"
@@ -101,11 +109,20 @@
             </a>
             {% endif %}
 
+            {% if user.is_authenticated %}
             <div class="dropdown-divider my-1"></div>
-
             <a class="dropdown-item text-danger" href="{% url 'account_logout' %}">
               <i class="bx bx-log-out fs-18 align-middle me-1"></i><span class="align-middle">Cerrar Sesión</span>
             </a>
+            {% else %}
+            <div class="dropdown-divider my-1"></div>
+            <a class="dropdown-item" href="{% url 'account_login' %}">
+              <i class="bx bx-log-in fs-18 align-middle me-1"></i><span class="align-middle">Iniciar Sesión</span>
+            </a>
+            <a class="dropdown-item text-primary" href="{% url 'account_signup' %}">
+              <i class="bx bx-user-plus fs-18 align-middle me-1"></i><span class="align-middle">Crear Cuenta Gratis</span>
+            </a>
+            {% endif %}
           </div>
         </div>
       </div>
