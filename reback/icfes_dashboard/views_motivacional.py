@@ -394,7 +394,7 @@ def api_motivacional_fortalezas(request):
             GROUP BY cluster_nombre, materia_debilidad
             ORDER BY cluster_nombre, materia
             """
-            df = execute_query(query, params=params)
+            df = execute_query(query, params=params + params)  # UNION ALL needs params twice
             return df.to_dict(orient='records')
         except Exception as exc:
             if _is_table_missing(exc):

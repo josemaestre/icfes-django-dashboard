@@ -550,37 +550,41 @@
         fetch(url).then(r=>r.json()).then(function(resp){ renderFortalezas(resp.data||[]); });
     }
     function renderFortalezas(data) {
-        var materias  = [...new Set(data.map(r=>r.materia))].sort();
-        var clusters  = CLUSTER_ORDER.filter(c=> data.some(r=>r.cluster_nombre===c));
-        // serie fortaleza (positivo) y debilidad (negativo)
-        var seriesFort = clusters.map(function(cl) {
-            return {
-                name: cl + ' (fortaleza)',
-                data: materias.map(function(m) {
+        if (!data || !data.length) return;
+        var materias = [...new Set(data.map(r=>r.materia))].sort();
+        var clusters = CLUSTER_ORDER.filter(c=> data.some(r=>r.cluster_nombre===c));
+        if (!clusters.length || !materias.length) return;
+
+        // Dos series simples: fortaleza y debilidad, agrupadas por materia×cluster
+        var seriesFort = {
+            name: 'Fortaleza',
+            data: clusters.map(function(cl) {
+                return materias.reduce(function(tot, m) {
                     var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===m);
-                    return rows.reduce((s,r)=>s+r.n_fortaleza,0);
-                }),
-            };
-        });
-        var seriesDebi = clusters.map(function(cl) {
-            return {
-                name: cl + ' (debilidad)',
-                data: materias.map(function(m) {
+                    return tot + rows.reduce((s,r)=>s+r.n_fortaleza, 0);
+                }, 0);
+            }),
+        };
+        var seriesDebi = {
+            name: 'Debilidad',
+            data: clusters.map(function(cl) {
+                return materias.reduce(function(tot, m) {
                     var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===m);
-                    return -rows.reduce((s,r)=>s+r.n_debilidad,0);
-                }),
-            };
-        });
+                    return tot + rows.reduce((s,r)=>s+r.n_debilidad, 0);
+                }, 0);
+            }),
+        };
         chartFortalezas = destroyChart(chartFortalezas);
         chartFortalezas = new ApexCharts(document.querySelector('#chart-fortalezas'), {
-            chart: { type:'bar', height:300, stacked:true, toolbar:{show:false} },
-            series: [...seriesFort, ...seriesDebi],
-            colors: [...clusters.map(c=>CLUSTER_COLORS[c]), ...clusters.map(c=>CLUSTER_COLORS[c])],
-            xaxis: { categories: materias.map(m=>MATERIA_LABELS[m]||m) },
-            yaxis: { labels:{ formatter:v=>Math.abs(v) } },
-            tooltip: { y:{ formatter:v=>Math.abs(v)+' colegios' } },
-            legend: { show:false },
-            annotations: { yaxis:[{ y:0, borderColor:'#aaa', borderWidth:2 }] },
+            chart: { type:'bar', height:300, toolbar:{show:false} },
+            series: [seriesFort, seriesDebi],
+            colors: ['#198754','#dc3545'],
+            xaxis: { categories: clusters },
+            yaxis: { labels:{ formatter:v=>Math.round(v)+' col.' } },
+            tooltip: { y:{ formatter:v=>v+' colegios' } },
+            legend: { position:'top' },
+            plotOptions: { bar:{ columnWidth:'60%', grouped:true } },
+            dataLabels: { enabled:false },
         });
         chartFortalezas.render();
     }
