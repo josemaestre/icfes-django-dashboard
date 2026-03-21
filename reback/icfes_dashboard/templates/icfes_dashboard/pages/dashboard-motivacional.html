@@ -338,12 +338,11 @@
                     <small class="text-muted">% de estudiantes en cada banda motivacional — ¿dónde hay más diferencia entre sectores?</small>
                 </div>
                 <div class="card-body">
-                    <div id="chart-distribucion" style="min-height:340px;"></div>
-                    <!-- Tabla de referencia de umbrales -->
-                    <div class="mt-3">
+                    <!-- Tabla de referencia de umbrales — ANTES de la gráfica -->
+                    <div class="mb-3">
                         <p class="text-muted mb-1" style="font-size:11px;"><strong>¿Qué significa cada banda?</strong> Umbral sobre puntaje ICFES (escala 0-500 global / 0-100 por materia)</p>
                         <div class="table-responsive">
-                        <table class="table table-sm table-bordered mb-0" style="font-size:10px;max-width:600px;">
+                        <table class="table table-sm table-bordered mb-0" style="font-size:10px;max-width:620px;">
                             <thead class="table-dark"><tr>
                                 <th>Banda</th><th>Global (0-500)</th><th>Por materia (0-100)</th><th>Interpretación</th>
                             </tr></thead>
@@ -359,6 +358,7 @@
                         </table>
                         </div>
                     </div>
+                    <div id="chart-distribucion" style="min-height:340px;"></div>
                 </div>
             </div>
         </div>
@@ -1007,7 +1007,7 @@
             plotOptions: { bar: { columnWidth: '65%' } },
             dataLabels: {
                 enabled: true,
-                formatter: function(v) { return v > 4 ? v + '%' : ''; },
+                formatter: function(v) { return v >= 2 ? v + '%' : ''; },
                 style: { fontSize: '10px' },
             },
             legend: { position: 'top' },
