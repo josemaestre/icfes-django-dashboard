@@ -179,15 +179,14 @@ def api_motivacional_distribucion(request):
             where, params = _build_where(ano, None, sector, materia)
             query = f"""
             SELECT
-                CASE WHEN sector = 'OFICIAL' THEN 'Público' ELSE 'Privado' END AS sector,
-                materia,
+                sector,
                 nivel,
                 nivel_orden,
                 SUM(estudiantes) AS estudiantes
             FROM gold.fct_distribucion_niveles
             WHERE {where}
               AND sector IN ('OFICIAL', 'NO OFICIAL')
-            GROUP BY sector, materia, nivel, nivel_orden
+            GROUP BY sector, nivel, nivel_orden
             ORDER BY sector, nivel_orden
             """
             df = execute_query(query, params=params)

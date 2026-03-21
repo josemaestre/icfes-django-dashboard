@@ -966,7 +966,7 @@
             chart: { type: 'bar', height: 320, stacked: true, stackType: '100%', toolbar: { show: false } },
             series: series,
             colors: BAND_ORDER.map(function(b) { return BAND_COLORS[b]; }),
-            xaxis: { categories: sectores },
+            xaxis: { categories: sectores.map(function(s){ return s==='OFICIAL'?'Público':'Privado'; }) },
             plotOptions: { bar: { horizontal: false, columnWidth: '50%' } },
             legend: { position: 'bottom', fontSize: '11px' },
             yaxis: { labels: { formatter: function(v) { return v + '%'; } } },
