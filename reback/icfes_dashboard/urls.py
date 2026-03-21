@@ -60,6 +60,7 @@ urlpatterns = [
     path('api/motivacional/momentum/',     views_motivacional.api_motivacional_momentum,     name='api_motivacional_momentum'),
     path('api/motivacional/distribucion/', views_motivacional.api_motivacional_distribucion, name='api_motivacional_distribucion'),
     path('api/motivacional/polarizacion/', views_motivacional.api_motivacional_polarizacion, name='api_motivacional_polarizacion'),
+    path('api/motivacional/tendencia/',    views_motivacional.api_motivacional_tendencia,    name='api_motivacional_tendencia'),
 
     # API endpoints — Cuadrante Educativo
     path('api/cuadrante/data/', views_cuadrante.api_cuadrante_data, name='api_cuadrante_data'),

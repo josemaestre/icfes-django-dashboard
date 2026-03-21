@@ -60,6 +60,7 @@
                 <a href="#sec-perfiles"     class="btn btn-sm btn-outline-primary   py-0 px-2">Perfiles</a>
                 <a href="#sec-momentum"     class="btn btn-sm btn-outline-success   py-0 px-2">Momentum</a>
                 <a href="#sec-distribucion" class="btn btn-sm btn-outline-info      py-0 px-2">Distribución</a>
+                <a href="#sec-tendencia"    class="btn btn-sm btn-outline-warning   py-0 px-2">Tendencia Histórica</a>
                 <a href="#sec-polarizacion" class="btn btn-sm btn-outline-danger    py-0 px-2">Polarización</a>
             </div>
         </div>
@@ -221,7 +222,33 @@
         </div>
     </div>
 
-    <!-- ══ SECCIÓN 5: POLARIZACIÓN ══════════════════════════════════════════ -->
+    <!-- ══ SECCIÓN 5: TENDENCIA HISTÓRICA ═══════════════════════════════════ -->
+    <div id="sec-tendencia"></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title mb-0">Evolución Histórica de Bandas Motivacionales</h5>
+                        <small class="text-muted">% de estudiantes por banda año a año</small>
+                    </div>
+                    <div class="d-flex gap-1 flex-wrap" id="tabs-tendencia" style="font-size:12px;">
+                        <button class="btn btn-sm btn-primary tab-tend active"    data-mat="global">Global</button>
+                        <button class="btn btn-sm btn-outline-secondary tab-tend" data-mat="matematicas">Matemáticas</button>
+                        <button class="btn btn-sm btn-outline-secondary tab-tend" data-mat="lectura_critica">Lectura</button>
+                        <button class="btn btn-sm btn-outline-secondary tab-tend" data-mat="ingles">Inglés</button>
+                        <button class="btn btn-sm btn-outline-secondary tab-tend" data-mat="c_naturales">Ciencias</button>
+                        <button class="btn btn-sm btn-outline-secondary tab-tend" data-mat="sociales_ciudadanas">Sociales</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="chart-tendencia" style="min-height:360px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 6: POLARIZACIÓN ══════════════════════════════════════════ -->
     <div id="sec-polarizacion"></div>
     <div class="row mb-4">
         <div class="col-md-5">
@@ -302,6 +329,7 @@
         loadPerfiles();
         loadMomentum();
         loadDistribucion();
+        loadTendencia();
         loadPolarizacion();
     }
 
@@ -464,7 +492,74 @@
         chartDistribucion.render();
     }
 
-    // ── 5. Polarización ──────────────────────────────────────────────────────
+    // ── 5. Tendencia Histórica ────────────────────────────────────────────────
+    var chartTendencia = null;
+    var _tendMateria = 'global';
+
+    function loadTendencia(materia) {
+        _tendMateria = materia || _tendMateria;
+        var sector = document.getElementById('filtro-sector') ? document.getElementById('filtro-sector').value : '';
+        var url = '/icfes/api/motivacional/tendencia/?materia=' + _tendMateria + (sector ? '&sector=' + sector : '');
+        fetch(url).then(r => r.json()).then(function(resp) {
+            renderTendencia(resp.data || []);
+        }).catch(function(e) { console.error('tendencia error', e); });
+    }
+
+    function renderTendencia(data) {
+        if (!data.length) return;
+        var anos = [...new Set(data.map(function(r) { return r.ano; }))].sort();
+
+        // Total por año para %
+        var totAno = {};
+        data.forEach(function(r) { totAno[r.ano] = (totAno[r.ano] || 0) + (r.estudiantes || 0); });
+
+        var series = BAND_ORDER.map(function(banda) {
+            return {
+                name: banda.charAt(0).toUpperCase() + banda.slice(1),
+                data: anos.map(function(a) {
+                    var row = data.find(function(r) { return r.ano === a && r.nivel === banda; });
+                    if (!row || !totAno[a]) return 0;
+                    return Math.round(row.estudiantes * 1000 / totAno[a]) / 10;
+                }),
+            };
+        });
+
+        chartTendencia = destroyChart(chartTendencia);
+        chartTendencia = new ApexCharts(document.querySelector('#chart-tendencia'), {
+            chart: { type: 'bar', height: 340, stacked: true, stackType: '100%', toolbar: { show: false } },
+            series: series,
+            colors: BAND_ORDER.map(function(b) { return BAND_COLORS[b]; }),
+            xaxis: {
+                categories: anos,
+                labels: { style: { fontSize: '11px' } },
+            },
+            yaxis: { labels: { formatter: function(v) { return v + '%'; } }, max: 100 },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) { return val > 5 ? Math.round(val) + '%' : ''; },
+                style: { fontSize: '10px', colors: ['#fff'] },
+            },
+            legend: { position: 'top', fontSize: '11px' },
+            tooltip: { y: { formatter: function(v) { return v + '%'; } } },
+            plotOptions: { bar: { columnWidth: '80%' } },
+        });
+        chartTendencia.render();
+    }
+
+    // Tabs de materia para tendencia
+    document.querySelectorAll('.tab-tend').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-tend').forEach(function(b) {
+                b.classList.remove('btn-primary', 'active');
+                b.classList.add('btn-outline-secondary');
+            });
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-primary', 'active');
+            loadTendencia(btn.dataset.mat);
+        });
+    });
+
+    // ── 6. Polarización ──────────────────────────────────────────────────────
     function loadPolarizacion() {
         var url = '/icfes/api/motivacional/polarizacion/?ano=' + getAno() + '&materia=' + getMateria() + '&departamento=' + getDepto();
         fetch(url).then(r => r.json()).then(function(resp) {

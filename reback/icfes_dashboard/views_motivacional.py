@@ -241,3 +241,46 @@ def api_motivacional_polarizacion(request):
     except Exception as exc:
         logger.error("api_motivacional_polarizacion error: %s", exc)
         return JsonResponse({'error': str(exc)}, status=500)
+
+
+# ── API: Tendencia histórica de bandas motivacionales (todos los años) ────────
+
+@require_GET
+def api_motivacional_tendencia(request):
+    materia = request.GET.get('materia', 'global')
+    sector  = request.GET.get('sector', '')
+
+    def fetch():
+        try:
+            clauses, params = [], []
+            if materia:
+                clauses.append("materia = ?")
+                params.append(materia)
+            if sector:
+                clauses.append("UPPER(sector) = UPPER(?)")
+                params.append(sector)
+            where = " AND ".join(clauses) if clauses else "1=1"
+            query = f"""
+            SELECT
+                CAST(ano AS INTEGER)  AS ano,
+                nivel,
+                nivel_orden,
+                SUM(estudiantes)      AS estudiantes
+            FROM gold.fct_distribucion_niveles
+            WHERE {where}
+            GROUP BY ano, nivel, nivel_orden
+            ORDER BY ano, nivel_orden
+            """
+            df = execute_query(query, params=params)
+            return df.to_dict(orient='records')
+        except Exception as exc:
+            if _is_table_missing(exc):
+                return []
+            raise
+
+    key = f"mot_tendencia_{materia}_{sector}"
+    try:
+        return JsonResponse({'data': _cached(key, _CACHE_TTL, fetch)})
+    except Exception as exc:
+        logger.error("api_motivacional_tendencia error: %s", exc)
+        return JsonResponse({'error': str(exc)}, status=500)
