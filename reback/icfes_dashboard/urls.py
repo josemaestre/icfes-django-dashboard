@@ -108,6 +108,9 @@ urlpatterns = [
     # Dynamic school landing pages (SEO)
     path('colegio/<slug:slug>/',
          landing_views.school_landing_page, name='school_landing'),
+    # Redirect no-trailing-slash: /colegio/slug → /icfes/colegio/slug/ (WhatsApp, bots)
+    re_path(r'^colegio/(?P<slug>[-\w]+)$',
+            RedirectView.as_view(url='/icfes/colegio/%(slug)s/', permanent=True)),
     # Catch-all: redirect bots that append meta-tag content to the school URL
     # e.g. /colegio/some-slug/summary_large_image  or  /colegio/some-slug/index, follow,...
     re_path(r'^colegio/(?P<slug>[-\w]+)/.+$',
