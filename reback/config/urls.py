@@ -18,6 +18,9 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
     path("users/", include("reback.users.urls", namespace="users")),
+    # Redirect no-trailing-slash allauth URLs (WhatsApp/bot compatibility)
+    path("accounts/signup", RedirectView.as_view(url='/accounts/signup/', permanent=True)),
+    path("accounts/login", RedirectView.as_view(url='/accounts/login/', permanent=True)),
     path("accounts/", include("allauth.urls")),
     path("landing/", home_redirect_view),  # Redirect /landing/ to /
     path("icfes-dashboard/", legacy_icfes_dashboard_redirect),
