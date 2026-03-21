@@ -385,12 +385,14 @@ def api_motivacional_fortalezas(request):
                    COUNT(*) AS n_fortaleza, 0 AS n_debilidad
             FROM gold.fct_perfil_motivacional
             WHERE {where} AND materia_fortaleza IS NOT NULL
+              AND materia_fortaleza != 'global'
             GROUP BY cluster_nombre, materia_fortaleza
             UNION ALL
             SELECT cluster_nombre, materia_debilidad AS materia,
                    0 AS n_fortaleza, COUNT(*) AS n_debilidad
             FROM gold.fct_perfil_motivacional
             WHERE {where} AND materia_debilidad IS NOT NULL
+              AND materia_debilidad != 'global'
             GROUP BY cluster_nombre, materia_debilidad
             ORDER BY cluster_nombre, materia
             """

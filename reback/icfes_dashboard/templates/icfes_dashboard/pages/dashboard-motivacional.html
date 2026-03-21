@@ -595,7 +595,7 @@
     function _renderFortChart() {
         var data     = _fortData;
         var clusters = dataClusterOrder(data);
-        var materias = [...new Set(data.map(r=>r.materia))].sort();
+        var materias = [...new Set(data.map(r=>r.materia))].filter(m=>m!=='global').sort();
         if (!clusters.length || !materias.length) return;
 
         var campo = _fortMode === 'fortaleza' ? 'n_fortaleza' : 'n_debilidad';
