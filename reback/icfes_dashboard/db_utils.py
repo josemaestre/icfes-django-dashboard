@@ -131,12 +131,12 @@ def _get_thread_conn():
     if conn is None:
         local_path = _ensure_db_file()
         conn = duckdb.connect(local_path, read_only=True)
-        conn.execute("SET memory_limit='1.5GB'")
+        conn.execute("SET memory_limit='3.5GB'")
         conn.execute("SET threads=2")
         _thread_local.conn = conn
         logger.warning(
             f"[DuckDB] Thread-local connection opened "
-            f"(thread={threading.current_thread().name}, memory_limit=1.5GB)"
+            f"(thread={threading.current_thread().name}, memory_limit=3.5GB)"
         )
     return conn
 
