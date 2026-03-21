@@ -450,7 +450,8 @@
     function getAno()    { return document.getElementById('filter-ano').value; }
     function getDepto()  { return document.getElementById('filter-depto').value; }
     function getMateria(){ return document.getElementById('filter-materia').value; }
-    function getCluster(){ return document.getElementById('filter-cluster').value; }
+    function getCluster(){ return document.getElementById('filter-cluster') ? document.getElementById('filter-cluster').value : ''; }
+    function getSector() { var el = document.getElementById('filter-sector'); return el ? el.value : ''; }
     function qs(sel)     { return document.querySelector(sel); }
     function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
 
@@ -953,8 +954,7 @@
 
     function loadTendencia(materia) {
         _tendMateria = materia || _tendMateria;
-        var sector = document.getElementById('filtro-sector') ? document.getElementById('filtro-sector').value : '';
-        var url = '/icfes/api/motivacional/tendencia/?materia=' + _tendMateria + (sector ? '&sector=' + sector : '');
+        var url = '/icfes/api/motivacional/tendencia/?materia=' + _tendMateria + (getSector() ? '&sector=' + getSector() : '');
         fetch(url).then(r => r.json()).then(function(resp) {
             renderTendencia(resp.data || []);
         }).catch(function(e) { console.error('tendencia error', e); });
