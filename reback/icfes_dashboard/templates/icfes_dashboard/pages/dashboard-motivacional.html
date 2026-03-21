@@ -234,9 +234,15 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Fortalezas y Debilidades por Cluster</h5>
-                    <small class="text-muted">Qué materias son fortaleza (verde) y debilidad (rojo) en cada perfil motivacional</small>
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h5 class="card-title mb-0">Distribución de Materias por Cluster</h5>
+                        <small class="text-muted">¿En qué materia sobresale (o falla) cada perfil motivacional? % de colegios del cluster</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-success active" id="btn-fort-fortaleza" style="font-size:11px;">↑ Fortaleza</button>
+                        <button class="btn btn-sm btn-outline-danger"  id="btn-fort-debilidad" style="font-size:11px;">↓ Debilidad</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="chart-fortalezas" style="min-height:300px;"></div>
@@ -574,45 +580,67 @@
         var url = '/icfes/api/motivacional/fortalezas/?ano=' + getAno() + '&sector=' + getSector();
         fetch(url).then(r=>r.json()).then(function(resp){ renderFortalezas(resp.data||[]); });
     }
+    var _fortData = [];
+    var _fortMode = 'fortaleza';  // 'fortaleza' | 'debilidad'
+    var MAT_COLORS = {
+        'global':'#6f42c1','matematicas':'#0d6efd','lectura_critica':'#20c997',
+        'ingles':'#fd7e14','c_naturales':'#198754','sociales_ciudadanas':'#dc3545',
+    };
+
     function renderFortalezas(data) {
         if (!data || !data.length) return;
-        var materias = [...new Set(data.map(r=>r.materia))].sort();
+        _fortData = data;
+        _renderFortChart();
+    }
+    function _renderFortChart() {
+        var data     = _fortData;
         var clusters = dataClusterOrder(data);
+        var materias = [...new Set(data.map(r=>r.materia))].sort();
         if (!clusters.length || !materias.length) return;
 
-        // Dos series simples: fortaleza y debilidad, agrupadas por materia×cluster
-        var seriesFort = {
-            name: 'Fortaleza',
-            data: clusters.map(function(cl) {
-                return materias.reduce(function(tot, m) {
-                    var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===m);
-                    return tot + rows.reduce((s,r)=>s+r.n_fortaleza, 0);
-                }, 0);
-            }),
-        };
-        var seriesDebi = {
-            name: 'Debilidad',
-            data: clusters.map(function(cl) {
-                return materias.reduce(function(tot, m) {
-                    var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===m);
-                    return tot + rows.reduce((s,r)=>s+r.n_debilidad, 0);
-                }, 0);
-            }),
-        };
+        var campo = _fortMode === 'fortaleza' ? 'n_fortaleza' : 'n_debilidad';
+
+        // Una serie por materia: valor = nº colegios en ese cluster con esa materia como fortaleza/debilidad
+        var series = materias.map(function(mat) {
+            return {
+                name: MATERIA_LABELS[mat] || mat,
+                data: clusters.map(function(cl) {
+                    var rows = data.filter(r=>r.cluster_nombre===cl && r.materia===mat);
+                    return rows.reduce((s,r)=>s+r[campo], 0);
+                }),
+            };
+        });
+
         chartFortalezas = destroyChart(chartFortalezas);
         chartFortalezas = new ApexCharts(document.querySelector('#chart-fortalezas'), {
-            chart: { type:'bar', height:300, toolbar:{show:false} },
-            series: [seriesFort, seriesDebi],
-            colors: ['#198754','#dc3545'],
-            xaxis: { categories: clusters },
-            yaxis: { labels:{ formatter:v=>Math.round(v)+' col.' } },
+            chart: { type:'bar', height:300, stacked:true, stackType:'100%', toolbar:{show:false} },
+            series: series,
+            colors: materias.map(m=>MAT_COLORS[m]||'#adb5bd'),
+            xaxis: { categories: clusters, labels:{ style:{fontSize:'11px'} } },
+            yaxis: { labels:{ formatter:v=>v+'%' } },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) { return val > 8 ? Math.round(val)+'%' : ''; },
+                style: { fontSize:'10px', colors:['#fff'] },
+            },
             tooltip: { y:{ formatter:v=>v+' colegios' } },
-            legend: { position:'top' },
-            plotOptions: { bar:{ columnWidth:'60%', grouped:true } },
-            dataLabels: { enabled:false },
+            legend: { position:'top', fontSize:'11px' },
         });
         chartFortalezas.render();
     }
+
+    document.getElementById('btn-fort-fortaleza').addEventListener('click', function() {
+        _fortMode = 'fortaleza';
+        this.className = 'btn btn-sm btn-success active';
+        document.getElementById('btn-fort-debilidad').className = 'btn btn-sm btn-outline-danger';
+        _renderFortChart();
+    });
+    document.getElementById('btn-fort-debilidad').addEventListener('click', function() {
+        _fortMode = 'debilidad';
+        this.className = 'btn btn-sm btn-danger active';
+        document.getElementById('btn-fort-fortaleza').className = 'btn btn-sm btn-outline-success';
+        _renderFortChart();
+    });
 
     // ── D. Scatter: Score vs Momentum ───────────────────────────────────────
     var chartScatterMom = null;
