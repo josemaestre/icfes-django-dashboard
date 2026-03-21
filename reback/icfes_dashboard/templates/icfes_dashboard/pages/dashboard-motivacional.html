@@ -209,10 +209,11 @@
                     <select id="sel-cluster-tabla" class="form-select form-select-sm w-auto">
                         <option value="">Todos</option>
                         <option value="Rezagado">Rezagado</option>
-                        <option value="Emergente">Emergente</option>
-                        <option value="Promedio">Promedio</option>
-                        <option value="Consolidado">Consolidado</option>
-                        <option value="Avanzado">Avanzado</option>
+                        <option value="Polarizado">Polarizado</option>
+                        <option value="Medio-Bajo">Medio-Bajo</option>
+                        <option value="Comprometido">Comprometido</option>
+                        <option value="Sólido">Sólido</option>
+                        <option value="Alto Rendimiento">Alto Rendimiento</option>
                         <option value="Excepcional">Excepcional</option>
                     </select>
                 </div>
@@ -479,12 +480,23 @@
 
     function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch(e) {} } return null; }
 
-    var CLUSTER_ORDER  = ['Rezagado','Emergente','Promedio','Consolidado','Avanzado','Excepcional'];
+    var CLUSTER_ORDER  = ['Rezagado','Polarizado','Medio-Bajo','Comprometido','Sólido','Alto Rendimiento','Excepcional'];
     var CLUSTER_COLORS = {
-        'Rezagado':    '#dc3545', 'Emergente':   '#fd7e14',
-        'Promedio':    '#ffc107', 'Consolidado': '#20c997',
-        'Avanzado':    '#0d6efd', 'Excepcional': '#198754',
+        'Rezagado':          '#dc3545',
+        'Polarizado':        '#fd7e14',
+        'Medio-Bajo':        '#ffc107',
+        'Comprometido':      '#20c997',
+        'Sólido':            '#0d6efd',
+        'Alto Rendimiento':  '#6f42c1',
+        'Excepcional':       '#198754',
     };
+    function clusterColor(c) { return CLUSTER_COLORS[c] || '#adb5bd'; }
+    function dataClusterOrder(data) {
+        // usa CLUSTER_ORDER si hay match, si no, orden de los datos
+        var inData = [...new Set(data.map(r=>r.cluster_nombre))];
+        var ordered = CLUSTER_ORDER.filter(c=>inData.includes(c));
+        return ordered.length ? ordered : inData.sort();
+    }
     var MATERIA_LABELS = {
         'global':'Global','matematicas':'Matemáticas','lectura_critica':'Lectura',
         'ingles':'Inglés','c_naturales':'Ciencias','sociales_ciudadanas':'Sociales',
@@ -497,8 +509,10 @@
         fetch(url).then(r=>r.json()).then(function(resp){ renderClustersDepto(resp.data||[]); });
     }
     function renderClustersDepto(data) {
-        var deptos = [...new Set(data.map(r=>r.departamento))].sort();
-        var series = CLUSTER_ORDER.map(function(cl) {
+        if (!data || !data.length) return;
+        var deptos   = [...new Set(data.map(r=>r.departamento))].sort();
+        var clusters = dataClusterOrder(data);
+        var series = clusters.map(function(cl) {
             return {
                 name: cl,
                 data: deptos.map(function(d) {
@@ -511,7 +525,7 @@
         chartClustersDepto = new ApexCharts(document.querySelector('#chart-clusters-depto'), {
             chart: { type:'bar', height:320, stacked:true, toolbar:{show:false} },
             series: series,
-            colors: CLUSTER_ORDER.map(c=>CLUSTER_COLORS[c]),
+            colors: clusters.map(c=>clusterColor(c)),
             xaxis: { categories: deptos, labels:{ rotate:-45, style:{fontSize:'8px'} } },
             legend: { position:'top', fontSize:'10px' },
             tooltip: { y:{ formatter:v=>v+' colegios' } },
@@ -530,7 +544,7 @@
     function renderColegiosPerfil(data) {
         var tbody = document.getElementById('tbody-colegios-perfil');
         tbody.innerHTML = data.map(function(r, i) {
-            var color = CLUSTER_COLORS[r.cluster_nombre] || '#aaa';
+            var color = clusterColor(r.cluster_nombre);
             return '<tr><td>' + (r.nombre_colegio||r.colegio_bk) + '</td>'
                  + '<td>' + (r.departamento||'') + '</td>'
                  + '<td><span class="badge" style="background:' + color + ';font-size:9px;">' + (r.cluster_nombre||'') + '</span></td>'
@@ -552,7 +566,7 @@
     function renderFortalezas(data) {
         if (!data || !data.length) return;
         var materias = [...new Set(data.map(r=>r.materia))].sort();
-        var clusters = CLUSTER_ORDER.filter(c=> data.some(r=>r.cluster_nombre===c));
+        var clusters = dataClusterOrder(data);
         if (!clusters.length || !materias.length) return;
 
         // Dos series simples: fortaleza y debilidad, agrupadas por materia×cluster
