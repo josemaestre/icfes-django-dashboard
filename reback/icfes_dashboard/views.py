@@ -219,6 +219,23 @@ def ingles_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-ingles.html', context)
 
 
+@login_required
+def motivacional_dashboard(request):
+    """Vista del dashboard Nacional Motivacional."""
+    try:
+        context = {
+            'anos_disponibles': get_anos_disponibles(),
+            'departamentos': get_departamentos(),
+        }
+    except Exception:
+        logger.exception("Failed loading context for /icfes/motivacional/")
+        context = {
+            'anos_disponibles': [],
+            'departamentos': [],
+        }
+    return render(request, 'icfes_dashboard/pages/dashboard-motivacional.html', context)
+
+
 # ============================================================================
 # ENDPOINTS API - DATOS GENERALES
 # ============================================================================

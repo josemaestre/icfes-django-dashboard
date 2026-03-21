@@ -19,6 +19,7 @@ from . import (
     views_ingles,
     views_mi_colegio,
     views_ml,
+    views_motivacional,
     views_potencial,
     views_school_endpoints,
 )
@@ -50,7 +51,15 @@ urlpatterns = [
     path('supero-prediccion/<slug:first_slug>/', views_potencial.potencial_landing, name='potencial_landing_filter'),
     path('supero-prediccion/<slug:first_slug>/<slug:sector_slug>/', views_potencial.potencial_landing, name='potencial_landing_depto_sector'),
     path('ml/', views_ml.ml_dashboard, name='ml_dashboard'),
+    path('motivacional/', views.motivacional_dashboard, name='motivacional_dashboard'),
     path('trafico/', traffic_views.traffic_dashboard, name='traffic_dashboard'),
+
+    # API endpoints — Dashboard Motivacional
+    path('api/motivacional/resumen/',      views_motivacional.api_motivacional_resumen,      name='api_motivacional_resumen'),
+    path('api/motivacional/perfiles/',     views_motivacional.api_motivacional_perfiles,     name='api_motivacional_perfiles'),
+    path('api/motivacional/momentum/',     views_motivacional.api_motivacional_momentum,     name='api_motivacional_momentum'),
+    path('api/motivacional/distribucion/', views_motivacional.api_motivacional_distribucion, name='api_motivacional_distribucion'),
+    path('api/motivacional/polarizacion/', views_motivacional.api_motivacional_polarizacion, name='api_motivacional_polarizacion'),
 
     # API endpoints — Cuadrante Educativo
     path('api/cuadrante/data/', views_cuadrante.api_cuadrante_data, name='api_cuadrante_data'),

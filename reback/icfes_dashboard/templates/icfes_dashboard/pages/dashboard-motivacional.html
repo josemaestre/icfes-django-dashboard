@@ -1,0 +1,526 @@
+{% extends 'layout_vertical.html' %}
+{% load static i18n %}
+
+{% block title %}Análisis Motivacional - ICFES Analytic{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Análisis Motivacional' sub_title='Perfiles, Momentum y Polarización Académica por Colegio' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- FILTROS -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">Año</label>
+                    <select class="form-select" id="filter-ano">
+                        {% for ano in anos_disponibles %}
+                        <option value="{{ ano }}" {% if forloop.first %}selected{% endif %}>{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-medium mb-1">Departamento</label>
+                    <select class="form-select" id="filter-depto">
+                        <option value="">Todo Colombia</option>
+                        {% for dept in departamentos %}
+                        <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-medium mb-1">Materia</label>
+                    <select class="form-select" id="filter-materia">
+                        <option value="global">Global (todas)</option>
+                        <option value="matematicas">Matemáticas</option>
+                        <option value="lectura_critica">Lectura Crítica</option>
+                        <option value="ingles">Inglés</option>
+                        <option value="c_naturales">Ciencias Naturales</option>
+                        <option value="sociales_ciudadanas">Sociales</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="btn-apply">
+                        <i class="bx bx-filter-alt align-middle me-1"></i> Aplicar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVEGACIÓN STICKY -->
+    <div id="dash-sticky-nav" class="mb-3" style="position:sticky;top:70px;z-index:900;">
+        <div class="card py-2 px-3 shadow-sm">
+            <div class="d-flex gap-1 flex-wrap align-items-center" style="font-size:11px;">
+                <span class="text-muted me-1" style="font-size:10px;letter-spacing:.5px;text-transform:uppercase;">Ir a:</span>
+                <a href="#sec-kpi"          class="btn btn-sm btn-outline-secondary py-0 px-2">KPIs</a>
+                <a href="#sec-perfiles"     class="btn btn-sm btn-outline-primary   py-0 px-2">Perfiles</a>
+                <a href="#sec-momentum"     class="btn btn-sm btn-outline-success   py-0 px-2">Momentum</a>
+                <a href="#sec-distribucion" class="btn btn-sm btn-outline-info      py-0 px-2">Distribución</a>
+                <a href="#sec-polarizacion" class="btn btn-sm btn-outline-danger    py-0 px-2">Polarización</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 1: KPIs ══════════════════════════════════════════════════ -->
+    <div id="sec-kpi"></div>
+    <div class="row mb-4" id="kpi-row">
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Colegios Mejorando</p>
+                            <h4 class="mb-0 text-success" id="kpi-mejorando">--</h4>
+                            <small class="text-muted">% con tendencia positiva</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle bg-success d-flex align-items-center justify-content-center">
+                                <i class="bx bx-trending-up text-white fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Colegios Deteriorando</p>
+                            <h4 class="mb-0 text-danger" id="kpi-deteriorando">--</h4>
+                            <small class="text-muted">% con tendencia negativa</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle bg-danger d-flex align-items-center justify-content-center">
+                                <i class="bx bx-trending-down text-white fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Score Promedio</p>
+                            <h4 class="mb-0 text-primary" id="kpi-score">--</h4>
+                            <small class="text-muted">Ponderado motivacional (1-7)</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle bg-primary d-flex align-items-center justify-content-center">
+                                <i class="bx bx-bar-chart-alt text-white fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Colegios Estables</p>
+                            <h4 class="mb-0 text-warning" id="kpi-estable">--</h4>
+                            <small class="text-muted">% sin cambio significativo</small>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="avatar-sm rounded-circle bg-warning d-flex align-items-center justify-content-center">
+                                <i class="bx bx-minus text-white fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 2: PERFILES MOTIVACIONALES (KMeans) ══════════════════════ -->
+    <div id="sec-perfiles"></div>
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Perfiles de Colegio</h5>
+                    <small class="text-muted">Distribución de los 6 arquetipos motivacionales</small>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div id="chart-perfiles" style="min-height:300px;width:100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">Colegios por Perfil</h5>
+                        <small class="text-muted">Público vs Privado</small>
+                    </div>
+                    <select class="form-select form-select-sm w-auto" id="filter-cluster">
+                        <option value="">Todos los perfiles</option>
+                        <option value="Rezagado">Rezagado</option>
+                        <option value="Medio-Bajo">Medio-Bajo</option>
+                        <option value="Sólido">Sólido</option>
+                        <option value="Comprometido">Comprometido</option>
+                        <option value="Alto Rendimiento">Alto Rendimiento</option>
+                        <option value="Excepcional">Excepcional</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div id="chart-perfiles-sector" style="min-height:280px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 3: MOMENTUM ══════════════════════════════════════════════ -->
+    <div id="sec-momentum"></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Momentum por Departamento</h5>
+                    <small class="text-muted">¿Cuántos colegios mejoran vs deterioran en cada departamento?</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-momentum" style="min-height:420px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 4: DISTRIBUCIÓN DE BANDAS ════════════════════════════════ -->
+    <div id="sec-distribucion"></div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Distribución Motivacional</h5>
+                    <small class="text-muted">% de estudiantes en cada banda: desmotivado → excelencia</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-distribucion" style="min-height:340px;"></div>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap mt-2" style="font-size:11px;">
+                        <span class="badge bg-danger">Desmotivado</span>
+                        <span class="badge bg-warning text-dark">Desconectado</span>
+                        <span class="badge bg-info text-dark">Motivado</span>
+                        <span class="badge" style="background:#6c757d;">Pasaron</span>
+                        <span class="badge bg-primary">Comprometido</span>
+                        <span class="badge bg-success">Dedicado</span>
+                        <span class="badge" style="background:#198754;">Excelencia</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECCIÓN 5: POLARIZACIÓN ══════════════════════════════════════════ -->
+    <div id="sec-polarizacion"></div>
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Categorías de Polarización</h5>
+                    <small class="text-muted">Nacional — distribución de tipos</small>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div id="chart-polarizacion-pie" style="min-height:280px;width:100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Polarización por Departamento</h5>
+                    <small class="text-muted">% concentrado / polarizado / distribuido</small>
+                </div>
+                <div class="card-body">
+                    <div id="chart-polarizacion-depto" style="min-height:280px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+{% endblock page_content %}
+
+{% block extra_javascript %}
+<script>
+(function () {
+    'use strict';
+
+    // ── Instancias de gráficas ──────────────────────────────────────────────
+    var chartPerfiles        = null;
+    var chartPerfilesSector  = null;
+    var chartMomentum        = null;
+    var chartDistribucion    = null;
+    var chartPolarPie        = null;
+    var chartPolarDepto      = null;
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function getAno()    { return document.getElementById('filter-ano').value; }
+    function getDepto()  { return document.getElementById('filter-depto').value; }
+    function getMateria(){ return document.getElementById('filter-materia').value; }
+    function getCluster(){ return document.getElementById('filter-cluster').value; }
+    function qs(sel)     { return document.querySelector(sel); }
+    function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+
+    // ── Botón aplicar ───────────────────────────────────────────────────────
+    document.getElementById('btn-apply').addEventListener('click', loadAll);
+    document.getElementById('filter-cluster').addEventListener('change', loadPerfiles);
+    document.getElementById('filter-materia').addEventListener('change', function() {
+        loadResumen(); loadMomentum(); loadDistribucion(); loadPolarizacion();
+    });
+
+    // ── Colores de bandas motivacionales ────────────────────────────────────
+    var BAND_COLORS = {
+        'desmotivado':  '#dc3545',
+        'desconectado': '#fd7e14',
+        'motivado':     '#ffc107',
+        'pasaron':      '#6c757d',
+        'comprometido': '#0d6efd',
+        'dedicado':     '#198754',
+        'excelencia':   '#0a3d2e',
+    };
+    var BAND_ORDER = ['desmotivado','desconectado','motivado','pasaron','comprometido','dedicado','excelencia'];
+
+    var PERFIL_COLORS = ['#dc3545','#fd7e14','#ffc107','#0d6efd','#198754','#0a3d2e'];
+    var POLAR_COLORS  = { 'concentrado': '#ffc107', 'polarizado': '#dc3545', 'distribuido': '#198754' };
+
+    function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch(e) {} } return null; }
+
+    // ── loadAll ─────────────────────────────────────────────────────────────
+    function loadAll() {
+        loadResumen();
+        loadPerfiles();
+        loadMomentum();
+        loadDistribucion();
+        loadPolarizacion();
+    }
+
+    // ── 1. Resumen KPIs ─────────────────────────────────────────────────────
+    function loadResumen() {
+        var url = '/icfes/api/motivacional/resumen/?ano=' + getAno() + '&materia=' + getMateria();
+        fetch(url).then(r => r.json()).then(function(resp) {
+            var d = resp.data || {};
+            setText('kpi-mejorando',   (d.pct_mejorando    ?? '--') + '%');
+            setText('kpi-deteriorando',(d.pct_deteriorando ?? '--') + '%');
+            setText('kpi-score',       d.score_promedio ?? '--');
+            setText('kpi-estable',     (d.pct_estable    ?? '--') + '%');
+        }).catch(function(e) { console.error('resumen error', e); });
+    }
+
+    // ── 2. Perfiles (KMeans) ─────────────────────────────────────────────────
+    var _perfilesData = [];
+
+    function loadPerfiles() {
+        var url = '/icfes/api/motivacional/perfiles/?ano=' + getAno();
+        fetch(url).then(r => r.json()).then(function(resp) {
+            _perfilesData = resp.data || [];
+            renderPerfilesPie(_perfilesData);
+            renderPerfilesSector(_perfilesData, getCluster());
+        }).catch(function(e) { console.error('perfiles error', e); });
+    }
+
+    function renderPerfilesPie(data) {
+        // Agrupar por cluster_nombre (suma colegios)
+        var totales = {};
+        data.forEach(function(r) {
+            totales[r.cluster_nombre] = (totales[r.cluster_nombre] || 0) + r.colegios;
+        });
+        var labels = Object.keys(totales);
+        var valores = labels.map(function(k) { return totales[k]; });
+
+        chartPerfiles = destroyChart(chartPerfiles);
+        var opts = {
+            chart: { type: 'donut', height: 300 },
+            labels: labels,
+            series: valores,
+            colors: PERFIL_COLORS,
+            legend: { position: 'bottom', fontSize: '12px' },
+            plotOptions: { pie: { donut: { size: '60%' } } },
+            tooltip: { y: { formatter: function(v) { return v + ' colegios'; } } },
+        };
+        chartPerfiles = new ApexCharts(document.querySelector('#chart-perfiles'), opts);
+        chartPerfiles.render();
+    }
+
+    function renderPerfilesSector(data, filtroCluster) {
+        var filtered = filtroCluster ? data.filter(function(r) { return r.cluster_nombre === filtroCluster; }) : data;
+
+        // Agrupar por cluster + sector
+        var clusters = [...new Set(filtered.map(function(r) { return r.cluster_nombre; }))].sort();
+        var sectores  = ['OFICIAL', 'NO_OFICIAL'];
+
+        var series = sectores.map(function(sec) {
+            return {
+                name: sec === 'OFICIAL' ? 'Público' : 'Privado',
+                data: clusters.map(function(cl) {
+                    var row = filtered.find(function(r) { return r.cluster_nombre === cl && r.sector === sec; });
+                    return row ? row.colegios : 0;
+                }),
+            };
+        });
+
+        chartPerfilesSector = destroyChart(chartPerfilesSector);
+        chartPerfilesSector = new ApexCharts(document.querySelector('#chart-perfiles-sector'), {
+            chart: { type: 'bar', height: 280, toolbar: { show: false } },
+            series: series,
+            colors: ['#0d6efd','#fd7e14'],
+            xaxis: { categories: clusters, labels: { style: { fontSize: '11px' } } },
+            plotOptions: { bar: { horizontal: false, columnWidth: '55%' } },
+            legend: { position: 'top' },
+            tooltip: { y: { formatter: function(v) { return v + ' colegios'; } } },
+        });
+        chartPerfilesSector.render();
+    }
+
+    // ── 3. Momentum por departamento ────────────────────────────────────────
+    function loadMomentum() {
+        var url = '/icfes/api/motivacional/momentum/?ano=' + getAno() + '&materia=' + getMateria() + '&departamento=' + getDepto();
+        fetch(url).then(r => r.json()).then(function(resp) {
+            var data = resp.data || [];
+            renderMomentum(data);
+        }).catch(function(e) { console.error('momentum error', e); });
+    }
+
+    function renderMomentum(data) {
+        var deptos = [...new Set(data.map(function(r) { return r.departamento; }))].sort();
+        var dirs   = ['mejorando','estable','deteriorando'];
+        var colores = { mejorando: '#198754', estable: '#6c757d', deteriorando: '#dc3545' };
+
+        var series = dirs.map(function(dir) {
+            return {
+                name: dir.charAt(0).toUpperCase() + dir.slice(1),
+                data: deptos.map(function(dep) {
+                    var row = data.find(function(r) { return r.departamento === dep && r.direccion === dir; });
+                    return row ? row.colegios : 0;
+                }),
+            };
+        });
+
+        chartMomentum = destroyChart(chartMomentum);
+        chartMomentum = new ApexCharts(document.querySelector('#chart-momentum'), {
+            chart: { type: 'bar', height: 420, stacked: true, toolbar: { show: false } },
+            series: series,
+            colors: dirs.map(function(d) { return colores[d]; }),
+            xaxis: {
+                categories: deptos,
+                labels: { rotate: -45, style: { fontSize: '10px' } },
+            },
+            plotOptions: { bar: { horizontal: false, columnWidth: '70%' } },
+            legend: { position: 'top' },
+            tooltip: { y: { formatter: function(v) { return v + ' colegios'; } } },
+        });
+        chartMomentum.render();
+    }
+
+    // ── 4. Distribución de bandas ────────────────────────────────────────────
+    function loadDistribucion() {
+        var url = '/icfes/api/motivacional/distribucion/?ano=' + getAno() + '&materia=' + getMateria();
+        fetch(url).then(r => r.json()).then(function(resp) {
+            renderDistribucion(resp.data || []);
+        }).catch(function(e) { console.error('distribucion error', e); });
+    }
+
+    function renderDistribucion(data) {
+        var sectores = [...new Set(data.map(function(r) { return r.sector; }))].sort();
+
+        // Total por sector para calcular %
+        var totales = {};
+        data.forEach(function(r) { totales[r.sector] = (totales[r.sector] || 0) + (r.estudiantes || 0); });
+
+        var series = BAND_ORDER.map(function(banda) {
+            return {
+                name: banda.charAt(0).toUpperCase() + banda.slice(1),
+                data: sectores.map(function(sec) {
+                    var row = data.find(function(r) { return r.sector === sec && r.nivel === banda; });
+                    if (!row || !totales[sec]) return 0;
+                    return Math.round(row.estudiantes * 1000 / totales[sec]) / 10;
+                }),
+            };
+        });
+
+        chartDistribucion = destroyChart(chartDistribucion);
+        chartDistribucion = new ApexCharts(document.querySelector('#chart-distribucion'), {
+            chart: { type: 'bar', height: 320, stacked: true, stackType: '100%', toolbar: { show: false } },
+            series: series,
+            colors: BAND_ORDER.map(function(b) { return BAND_COLORS[b]; }),
+            xaxis: {
+                categories: sectores.map(function(s) { return s === 'OFICIAL' ? 'Público' : 'Privado'; }),
+            },
+            plotOptions: { bar: { horizontal: false, columnWidth: '50%' } },
+            legend: { position: 'bottom', fontSize: '11px' },
+            yaxis: { labels: { formatter: function(v) { return v + '%'; } } },
+            tooltip: { y: { formatter: function(v) { return v + '%'; } } },
+        });
+        chartDistribucion.render();
+    }
+
+    // ── 5. Polarización ──────────────────────────────────────────────────────
+    function loadPolarizacion() {
+        var url = '/icfes/api/motivacional/polarizacion/?ano=' + getAno() + '&materia=' + getMateria() + '&departamento=' + getDepto();
+        fetch(url).then(r => r.json()).then(function(resp) {
+            renderPolarizacion(resp.data || []);
+        }).catch(function(e) { console.error('polarizacion error', e); });
+    }
+
+    function renderPolarizacion(data) {
+        // Pie nacional
+        var totCat = {};
+        data.forEach(function(r) { totCat[r.categoria_polarizacion] = (totCat[r.categoria_polarizacion] || 0) + r.colegios; });
+        var cats = Object.keys(totCat);
+
+        chartPolarPie = destroyChart(chartPolarPie);
+        chartPolarPie = new ApexCharts(document.querySelector('#chart-polarizacion-pie'), {
+            chart: { type: 'donut', height: 280 },
+            labels: cats,
+            series: cats.map(function(c) { return totCat[c]; }),
+            colors: cats.map(function(c) { return POLAR_COLORS[c] || '#adb5bd'; }),
+            legend: { position: 'bottom', fontSize: '12px' },
+            tooltip: { y: { formatter: function(v) { return v + ' colegios'; } } },
+        });
+        chartPolarPie.render();
+
+        // Stacked por departamento
+        var deptos = [...new Set(data.map(function(r) { return r.departamento; }))].sort();
+        var catOrden = ['distribuido','concentrado','polarizado'];
+
+        var seriesDepto = catOrden.map(function(cat) {
+            return {
+                name: cat.charAt(0).toUpperCase() + cat.slice(1),
+                data: deptos.map(function(dep) {
+                    var row = data.find(function(r) { return r.departamento === dep && r.categoria_polarizacion === cat; });
+                    return row ? row.colegios : 0;
+                }),
+            };
+        });
+
+        chartPolarDepto = destroyChart(chartPolarDepto);
+        chartPolarDepto = new ApexCharts(document.querySelector('#chart-polarizacion-depto'), {
+            chart: { type: 'bar', height: 280, stacked: true, toolbar: { show: false } },
+            series: seriesDepto,
+            colors: catOrden.map(function(c) { return POLAR_COLORS[c] || '#adb5bd'; }),
+            xaxis: {
+                categories: deptos,
+                labels: { rotate: -45, style: { fontSize: '9px' } },
+            },
+            legend: { position: 'top' },
+            tooltip: { y: { formatter: function(v) { return v + ' colegios'; } } },
+        });
+        chartPolarDepto.render();
+    }
+
+    // ── Inicializar ──────────────────────────────────────────────────────────
+    loadAll();
+
+})();
+</script>
+{% endblock extra_javascript %}
