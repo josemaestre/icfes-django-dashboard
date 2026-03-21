@@ -322,6 +322,18 @@
                 {% if school.rector %}<div>Rector(a): {{ school.rector }}</div>{% endif %}
             </div>
             {% endif %}
+            {% if not user.is_authenticated %}
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                   class="btn btn-light fw-semibold px-4">
+                   <i class="bx bx-bookmark me-1"></i> Guardar este colegio
+                </a>
+                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                   class="btn btn-outline-light px-4">
+                   <i class="bx bx-bell me-1"></i> Recibir resultados 2025
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -523,9 +535,37 @@
             <div class="col-lg-6">
                 <div class="card-block">
                     <h3 class="section-title">Acciones recomendadas</h3>
-                    {% for recommendation in action_recommendations %}
-                    <div class="action-item">{{ recommendation }}</div>
-                    {% endfor %}
+                    {% if user.is_authenticated %}
+                        {% for recommendation in action_recommendations %}
+                        <div class="action-item">{{ recommendation }}</div>
+                        {% endfor %}
+                    {% else %}
+                        {# Mostrar las primeras 2 acciones, bloquear el resto #}
+                        {% for recommendation in action_recommendations %}
+                            {% if forloop.counter <= 2 %}
+                            <div class="action-item">{{ recommendation }}</div>
+                            {% endif %}
+                        {% endfor %}
+                        <div style="position:relative; margin-top:8px;">
+                            {# Preview borroso de la siguiente acción #}
+                            {% for recommendation in action_recommendations %}
+                                {% if forloop.counter == 3 %}
+                                <div class="action-item" style="filter:blur(4px); user-select:none; pointer-events:none; opacity:.6;">{{ recommendation }}</div>
+                                {% endif %}
+                            {% endfor %}
+                            <div style="
+                                position:absolute; inset:0;
+                                display:flex; flex-direction:column; align-items:center; justify-content:center;
+                                background:rgba(var(--bs-body-bg-rgb),.7);
+                                border-radius:8px; text-align:center; padding:12px;">
+                                <p class="mb-2 small fw-semibold">{{ action_recommendations|length }} acciones recomendadas para este colegio</p>
+                                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                                   class="btn btn-primary btn-sm px-4">
+                                   Ver todas — es gratis
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="col-lg-6">
@@ -642,6 +682,28 @@
                 </li>
             </ul>
         </div>
+
+        {% if not user.is_authenticated %}
+        <div class="card-block" style="
+            background: linear-gradient(135deg, #0d6efd15 0%, #6f42c115 100%);
+            border: 1px solid #0d6efd30;
+            text-align:center; padding:32px 24px;">
+            <div style="font-size:2rem; margin-bottom:12px;">🔔</div>
+            <h3 class="section-title mb-2">¿Quieres saber cuándo salgan los resultados ICFES 2025?</h3>
+            <p class="text-muted mb-4" style="max-width:500px; margin:0 auto 16px;">
+                Crea una cuenta gratuita y te avisamos cuando los datos de
+                <strong>{{ school.nombre }}</strong> estén disponibles.
+                También podrás guardar este colegio, compararlo y ver el historial completo desde 1996.
+            </p>
+            <a href="{% url 'account_signup' %}?next={{ request.path }}"
+               class="btn btn-primary px-5 btn-lg">
+               Crear cuenta gratis
+            </a>
+            <div class="mt-2">
+                <small class="text-muted">Sin tarjeta de crédito · Sin spam</small>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="card-block">
             <h3 class="section-title">Preguntas frecuentes</h3>
