@@ -225,7 +225,8 @@
                 <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;">
                     <a href="/accounts/signup/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=paywall_tabla"
                        style="background:#0e4d6b;color:#fff;border-radius:999px;padding:10px 24px;
-                              text-decoration:none;font-weight:700;display:inline-block;">
+                              text-decoration:none;font-weight:700;display:inline-block;"
+                       data-cta-source="potencial_tabla">
                         Crear cuenta gratis →
                     </a>
                     <a href="/accounts/login/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=paywall_tabla"
@@ -301,10 +302,13 @@
                 <a href="/pricing/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=cta_planes"
                    class="cta-btn">Ver planes</a>
                 <a href="/accounts/signup/?utm_source=seo&utm_medium=potencial_landing&utm_campaign=cta_signup"
-                   class="btn btn-outline-secondary">Crear cuenta gratis</a>
+                   class="btn btn-outline-secondary" data-cta-source="potencial_cta">Crear cuenta gratis</a>
             </div>
         </div>
 
     </main>
+<script>
+(function(){document.querySelectorAll('a[data-cta-source]').forEach(function(el){el.addEventListener('click',function(){window.dataLayer=window.dataLayer||[];window.dataLayer.push({'event':'signup_cta_click','cta_source':this.getAttribute('data-cta-source')});});});})();
+</script>
 </body>
 </html>

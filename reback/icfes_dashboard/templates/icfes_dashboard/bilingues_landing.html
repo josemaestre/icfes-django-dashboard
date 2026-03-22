@@ -210,8 +210,12 @@
             <h3 class="mb-2">¿Quieres un diagnóstico completo de tu colegio?</h3>
             <p class="lead mb-3">Obtén reportes personalizados con brechas por materia, tendencias históricas y acciones concretas de mejora.</p>
             <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-                <a href="/?utm_source=seo&utm_medium=landing&utm_campaign=bilingues&utm_content=cta_planes" class="btn btn-primary btn-lg">Solicitar diagnóstico gratuito</a>
-                <a href="/icfes/departamentos/?utm_source=seo&utm_medium=landing&utm_campaign=bilingues&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Explorar el portal ICFES</a>
+                {% if not user.is_authenticated %}
+                <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-primary btn-lg" data-cta-source="bilingues_cta">Crear cuenta gratuita</a>
+                {% else %}
+                <a href="/dashboard-icfes/" class="btn btn-primary btn-lg">Ir al dashboard</a>
+                {% endif %}
+                <a href="/icfes/departamentos/" class="btn btn-outline-primary btn-lg">Explorar el portal ICFES</a>
             </div>
         </div>
     </section>
@@ -221,5 +225,10 @@
             <p class="mb-0">&copy; 2024 ICFES Analytics. Un producto de <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color:#fff; text-decoration: underline;">www.sabededatos.com</a></p>
         </div>
     </footer>
+{% if not user.is_authenticated %}
+<script>
+(function(){document.querySelectorAll('a[data-cta-source]').forEach(function(el){el.addEventListener('click',function(){window.dataLayer=window.dataLayer||[];window.dataLayer.push({'event':'signup_cta_click','cta_source':this.getAttribute('data-cta-source')});});});})();
+</script>
+{% endif %}
 </body>
 </html>
