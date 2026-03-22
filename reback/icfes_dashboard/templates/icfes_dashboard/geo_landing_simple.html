@@ -146,7 +146,8 @@
                 <p class="text-muted small mb-2">
                     Mostrando los últimos 6 años · Datos históricos desde 1996 disponibles con cuenta gratuita
                 </p>
-                <a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm px-4">
+                <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-primary btn-sm px-4"
+                   data-cta-source="geo_historial">
                     Ver historial completo — es gratis
                 </a>
             </div>
@@ -284,11 +285,34 @@
         <h3 class="mb-2">¿Quieres un diagnóstico completo de tu colegio?</h3>
         <p class="lead mb-3">Obtén reportes personalizados con brechas por materia, tendencias históricas y acciones concretas de mejora.</p>
         <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-            <a href="/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_planes" class="btn btn-primary btn-lg">Solicitar diagnóstico gratuito</a>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-primary btn-lg"
+               data-cta-source="geo_diagnostico">Crear cuenta gratuita</a>
             <a href="/icfes/departamentos/?utm_source=seo&utm_medium=landing&utm_campaign=geo_landing&utm_content=cta_portal" class="btn btn-outline-primary btn-lg">Explorar el portal ICFES</a>
+            {% else %}
+            <a href="/dashboard-icfes/" class="btn btn-primary btn-lg">Ir al dashboard</a>
+            <a href="/icfes/departamentos/" class="btn btn-outline-primary btn-lg">Explorar el portal ICFES</a>
+            {% endif %}
         </div>
     </div>
 </section>
+
+{% if not user.is_authenticated %}
+<script>
+(function() {
+    document.querySelectorAll('a[data-cta-source]').forEach(function(el) {
+        el.addEventListener('click', function() {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'signup_cta_click',
+                'cta_source': this.getAttribute('data-cta-source'),
+                'geo_name': '{{ geo.name|escapejs }}',
+            });
+        });
+    });
+})();
+</script>
+{% endif %}
 
 <footer class="footer">
     <div class="container">
