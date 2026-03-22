@@ -219,10 +219,13 @@
             <h2 class="h4 mb-2">Consulta el perfil ICFES de tu colegio</h2>
             <p class="text-muted mb-3">Sin registro, sin costo. Datos del ICFES 2014-2024.</p>
             <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-                <a href="/icfes/departamentos/?utm_source=seo&utm_medium=landing&utm_campaign=que_es&utm_content=cta_deptos"
-                   class="btn btn-primary btn-lg">Explorar por departamento</a>
-                <a href="/icfes/historico/puntaje-global/?utm_source=seo&utm_medium=landing&utm_campaign=que_es&utm_content=cta_historico"
-                   class="btn btn-outline-primary btn-lg">Ver histórico nacional</a>
+                {% if not user.is_authenticated %}
+                <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-primary btn-lg" data-cta-source="que_es_cta">Crear cuenta gratuita</a>
+                <a href="/icfes/departamentos/" class="btn btn-outline-primary btn-lg">Explorar por departamento</a>
+                {% else %}
+                <a href="/dashboard-icfes/" class="btn btn-primary btn-lg">Ir al dashboard</a>
+                <a href="/icfes/departamentos/" class="btn btn-outline-primary btn-lg">Explorar por departamento</a>
+                {% endif %}
             </div>
         </section>
 
@@ -235,5 +238,10 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% if not user.is_authenticated %}
+<script>
+(function(){document.querySelectorAll('a[data-cta-source]').forEach(function(el){el.addEventListener('click',function(){window.dataLayer=window.dataLayer||[];window.dataLayer.push({'event':'signup_cta_click','cta_source':this.getAttribute('data-cta-source')});});});})();
+</script>
+{% endif %}
 </body>
 </html>
