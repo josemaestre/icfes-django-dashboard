@@ -102,6 +102,7 @@ def sitemap_index(request):
     items.append(f"{base}/sitemap-bilingues.xml")
     items.append(f"{base}/sitemap-cuadrante.xml")
     items.append(f"{base}/sitemap-potencial.xml")
+    items.append(f"{base}/sitemap-motivacional.xml")
 
     xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
     xml.append("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
@@ -620,6 +621,47 @@ def sitemap_cuadrante(request):
             xml.append("    <changefreq>yearly</changefreq>")
             xml.append("    <priority>0.60</priority>")
             xml.append("  </url>")
+
+    xml.append("</urlset>")
+    return HttpResponse("\n".join(xml), content_type="application/xml")
+
+
+def sitemap_motivacional(request):
+    """Sitemap for /icfes/bandas-motivacionales/ — nacional + 33 departamentos."""
+    base = _base_url(request)
+    lastmod = datetime.now(timezone.utc).date().isoformat()
+
+    query = """
+        SELECT DISTINCT departamento
+        FROM gold.fct_distribucion_niveles
+        WHERE departamento IS NOT NULL
+          AND departamento NOT IN ('', 'EXTERIOR', 'SIN INFORMACION')
+        ORDER BY departamento
+    """
+    with get_duckdb_connection() as conn:
+        rows = conn.execute(resolve_schema(query)).fetchall()
+
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>"]
+    xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">")
+
+    # Nacional
+    xml.append("  <url>")
+    xml.append(f"    <loc>{escape(f'{base}/icfes/bandas-motivacionales/')}</loc>")
+    xml.append(f"    <lastmod>{lastmod}</lastmod>")
+    xml.append("    <changefreq>monthly</changefreq>")
+    xml.append("    <priority>0.75</priority>")
+    xml.append("  </url>")
+
+    # Por departamento
+    for (departamento,) in rows:
+        dept_slug = slugify(departamento)
+        loc = f"{base}/icfes/bandas-motivacionales/{dept_slug}/"
+        xml.append("  <url>")
+        xml.append(f"    <loc>{escape(loc)}</loc>")
+        xml.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml.append("    <changefreq>monthly</changefreq>")
+        xml.append("    <priority>0.65</priority>")
+        xml.append("  </url>")
 
     xml.append("</urlset>")
     return HttpResponse("\n".join(xml), content_type="application/xml")

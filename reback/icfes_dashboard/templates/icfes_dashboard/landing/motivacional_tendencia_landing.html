@@ -348,8 +348,13 @@
             toolbar: { show: false },
             fontFamily: 'system-ui, -apple-system, sans-serif',
             events: {
-                mounted: function(ctx) { applyBlurOverlay(ctx, anos, ANO_LOCK); },
-                updated: function(ctx) { applyBlurOverlay(ctx, anos, ANO_LOCK); },
+                // defer para que el browser complete el layout antes de medir rects
+                mounted: function(ctx) {
+                    requestAnimationFrame(() => requestAnimationFrame(() => applyBlurOverlay(ctx, anos, ANO_LOCK)));
+                },
+                updated: function(ctx) {
+                    requestAnimationFrame(() => applyBlurOverlay(ctx, anos, ANO_LOCK));
+                },
             }
         },
         colors: seriesColors,
