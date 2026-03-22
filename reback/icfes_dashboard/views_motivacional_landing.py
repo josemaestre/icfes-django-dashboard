@@ -1,9 +1,10 @@
 """
-Bandas Motivacionales — Landing SEO pública.
+Evolución del rendimiento académico — Landing SEO pública.
 
-Nacional y por departamento (solo materia Global, últimos 10 años).
-La historia completa (1996–2024) y el detalle por materia quedan
-detrás del login como palanca de conversión.
+Nacional y por departamento (materia Global, todos los años 1996-2024).
+Los datos anteriores a _ANO_PUBLIC_FROM aparecen con blur en el gráfico
+para crear FOMO y convertir a registro. El detalle por materia queda
+detrás del login como palanca adicional de conversión.
 """
 from __future__ import annotations
 
@@ -19,7 +20,7 @@ from .db_utils import execute_query
 
 logger = logging.getLogger(__name__)
 _CACHE_TTL = 60 * 60 * 12   # 12 h
-_ANO_MIN_PUBLIC = 2015       # 10 años públicos (2015-2024)
+_ANO_PUBLIC_FROM = 2015      # años < este valor aparecen con blur en el gráfico
 
 # Colores por nivel — deben coincidir con el dashboard interno
 _NIVEL_COLORS = {
@@ -83,14 +84,14 @@ def _pretty_depto(name: str) -> str:
     return ' '.join(result)
 
 
-def _get_chart_data(departamento: str | None, ano_min: int = _ANO_MIN_PUBLIC) -> list[dict]:
-    """Query histórico de bandas motivacionales por año (materia=global)."""
-    cache_key = f"motland_chart_{departamento or 'nacional'}_{ano_min}"
+def _get_chart_data(departamento: str | None) -> list[dict]:
+    """Query histórico completo de bandas motivacionales por año (materia=global, todos los años)."""
+    cache_key = f"motland_chart_v2_{departamento or 'nacional'}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
     try:
-        clauses = ["materia = 'global'", f"CAST(ano AS INTEGER) >= {ano_min}"]
+        clauses = ["materia = 'global'"]
         params: list = []
         if departamento:
             clauses.append("UPPER(departamento) = UPPER(?)")
@@ -169,28 +170,32 @@ def motivacional_tendencia_landing(request, departamento_slug: str | None = None
     pct_desconectado = kpis.get('desconectado', 0)
     ano = kpis.get('ano', 2024)
 
+    ano_min_data = min((r['ano'] for r in chart_data), default=1996)
+
     if departamento_label:
         title = (
-            f"Bandas Motivacionales ICFES {departamento_label} "
-            f"{_ANO_MIN_PUBLIC}–{ano} | ICFES Analytics"
+            f"Evolución del rendimiento ICFES en {departamento_label} "
+            f"({ano_min_data}–{ano}) | ICFES Analytics"
         )
         description = (
-            f"En {departamento_label}, el {pct_dedicado}% de estudiantes alcanzó "
-            f"la banda Dedicado y el {pct_desconectado}% está Desconectado ({ano}). "
-            f"Evolución histórica de las 7 bandas motivacionales ICFES."
+            f"¿Está mejorando la educación en {departamento_label}? "
+            f"En {ano}, el {pct_dedicado}% de estudiantes alcanzó nivel Dedicado "
+            f"y el {pct_desconectado}% está Desconectado. "
+            f"Análisis histórico ICFES {ano_min_data}–{ano} por bandas motivacionales."
         )
         canonical = (
             f"https://www.icfes-analytics.com/icfes/bandas-motivacionales/{departamento_slug}/"
         )
     else:
         title = (
-            f"Evolución de Bandas Motivacionales ICFES en Colombia "
-            f"{_ANO_MIN_PUBLIC}–{ano} | ICFES Analytics"
+            f"Evolución del rendimiento académico en Colombia "
+            f"(ICFES {ano_min_data}–{ano}) | ICFES Analytics"
         )
         description = (
-            f"Colombia se polariza: la banda Dedicado creció al {pct_dedicado}% en {ano}, "
-            f"pero el Desconectado también sube. Análisis de 7 bandas motivacionales ICFES "
-            f"por departamento desde {_ANO_MIN_PUBLIC}."
+            f"¿Está mejorando realmente la educación en Colombia? "
+            f"Analiza cómo ha evolucionado el rendimiento ICFES desde {ano_min_data}: "
+            f"más estudiantes alcanzan niveles altos… pero también persiste una población desconectada. "
+            f"Datos {ano_min_data}–{ano} por departamento."
         )
         canonical = "https://www.icfes-analytics.com/icfes/bandas-motivacionales/"
 
@@ -203,7 +208,8 @@ def motivacional_tendencia_landing(request, departamento_slug: str | None = None
             'departamento_slug': departamento_slug,
             'departamento_label': departamento_label,
             'kpis': kpis,
-            'ano_min_public': _ANO_MIN_PUBLIC,
+            'ano_public_from': _ANO_PUBLIC_FROM,
+            'ano_min_data': ano_min_data,
             'depto_links': depto_links,
             'seo': {'title': title, 'description': description},
             'canonical_url': canonical,

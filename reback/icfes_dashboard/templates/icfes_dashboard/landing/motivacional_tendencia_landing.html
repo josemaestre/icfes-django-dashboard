@@ -16,26 +16,63 @@
     <meta property="og:title" content="{{ seo.title }}">
     <meta property="og:description" content="{{ seo.description }}">
     <meta property="og:url" content="{{ canonical_url }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "{{ seo.title|escapejs }}",
+      "description": "{{ seo.description|escapejs }}",
+      "datePublished": "2025-01-01",
+      "dateModified": "{{ kpis.ano }}-12-31",
+      "author": {"@type": "Organization", "name": "ICFES Analytics", "url": "https://www.icfes-analytics.com"},
+      "publisher": {"@type": "Organization", "name": "ICFES Analytics", "url": "https://www.icfes-analytics.com"},
+      "url": "{{ canonical_url }}"
+    }
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js" defer></script>
     <style>
         body { background: #f8fafc; color: #1f2937; font-family: system-ui, -apple-system, sans-serif; }
         .hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); color: #fff; padding: 48px 0 36px; }
         .hero h1 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; line-height: 1.25; }
-        .hero .subtitle { opacity: .80; font-size: .97rem; }
+        .hero .subtitle { opacity: .82; font-size: .97rem; line-height: 1.6; }
         .panel { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 24px; }
-        .kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 8px rgba(0,0,0,.07); padding: 20px; text-align: center; }
-        .kpi-num { font-size: 2.2rem; font-weight: 800; line-height: 1; }
-        .kpi-label { font-size: .82rem; color: #64748b; margin-top: 4px; }
+        .kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 8px rgba(0,0,0,.07); padding: 18px; text-align: center; }
+        .kpi-num  { font-size: 2rem; font-weight: 800; line-height: 1; }
+        .kpi-label{ font-size: .8rem; color: #64748b; margin-top: 4px; }
+        /* Chart + blur overlay */
+        #chart-container { position: relative; }
+        #chart-wrap { min-height: 380px; }
+        #blur-overlay {
+            position: absolute; top: 0; bottom: 0; left: 0;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            background: rgba(248,250,252,.72);
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; z-index: 10; cursor: default;
+        }
+        #blur-overlay .lock-card {
+            background: #fff; border-radius: 10px;
+            box-shadow: 0 4px 24px rgba(0,0,0,.15);
+            padding: 20px 24px; text-align: center; max-width: 240px;
+        }
+        /* CTAs */
         .cta-section { background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%); color: #fff; border-radius: 12px; padding: 36px; text-align: center; }
-        .cta-section .btn-light { font-weight: 700; }
-        .lock-banner { background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 18px 20px; text-align: center; }
+        /* Share */
+        .share-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .btn-whatsapp { background: #25D366; color: #fff; border: none; }
+        .btn-whatsapp:hover { background: #1ebe5d; color: #fff; }
+        .btn-twitter  { background: #1da1f2; color: #fff; border: none; }
+        .btn-twitter:hover  { background: #0d8fd8; color: #fff; }
+        /* Dept pills */
         .depto-pill { display: inline-block; background: #f1f5f9; border-radius: 20px; padding: 5px 14px; font-size: .82rem; color: #374151; text-decoration: none; margin: 3px; transition: background .15s; }
         .depto-pill:hover { background: #dbeafe; color: #1d4ed8; }
-        .footer { background: #24324a; color: #fff; padding: 18px 0; text-align: center; font-size: .88rem; }
         .editorial p { color: #374151; line-height: 1.75; font-size: .97rem; }
         .editorial blockquote { border-left: 4px solid #3b82f6; padding-left: 16px; color: #1e3a5f; font-style: italic; font-weight: 600; }
-        #chart-wrap { min-height: 380px; }
+        .footer { background: #24324a; color: #fff; padding: 18px 0; text-align: center; font-size: .88rem; }
     </style>
 </head>
 <body>
@@ -46,23 +83,23 @@
 <section class="hero">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-lg-8">
+            <div class="col-lg-7">
                 {% if departamento_label %}
                 <p class="mb-1" style="opacity:.7;font-size:.85rem;">
                     <a href="/icfes/bandas-motivacionales/" style="color:#93c5fd;text-decoration:none;">← Colombia nacional</a>
                 </p>
-                <h1>Bandas Motivacionales ICFES<br>en <span style="color:#38bdf8;">{{ departamento_label }}</span></h1>
+                <h1>¿Está mejorando la educación<br>en <span style="color:#38bdf8;">{{ departamento_label }}</span>?</h1>
                 {% else %}
-                <h1>Evolución de Bandas Motivacionales<br><span style="color:#38bdf8;">Colombia</span> {{ ano_min_public }}–{{ kpis.ano }}</h1>
+                <h1>¿Está mejorando realmente<br><span style="color:#38bdf8;">la educación en Colombia</span>?</h1>
                 {% endif %}
-                <p class="subtitle mt-2">
-                    ¿Cuántos estudiantes están Dedicados, Motivados o Desconectados de su formación?<br>
-                    Datos ICFES {{ ano_min_public }}–{{ kpis.ano }} · Solo materia Global.
+                <p class="subtitle mt-2 mb-0">
+                    Durante casi 30 años de datos ICFES, observamos una tendencia clara:
+                    más estudiantes alcanzan niveles altos… pero también persiste una población desconectada.
                     <span style="color:#fde68a;">El análisis por materia (Inglés, Matemáticas…) requiere cuenta gratuita.</span>
                 </p>
             </div>
             {% if kpis.dedicado %}
-            <div class="col-lg-4 mt-3 mt-lg-0">
+            <div class="col-lg-5 mt-3 mt-lg-0">
                 <div class="row g-2">
                     <div class="col-6">
                         <div class="kpi-card">
@@ -101,99 +138,98 @@
 
 <main class="container py-4">
 
-    <!-- GRÁFICO PRINCIPAL -->
+    <!-- GRÁFICO CON BLUR OVERLAY -->
     <div class="panel mb-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
             <div>
-                <h2 class="h5 mb-0 fw-bold">Evolución Histórica de Bandas Motivacionales</h2>
-                <p class="text-muted small mb-0">% de estudiantes por banda · {{ ano_min_public }}–{{ kpis.ano }} · Solo Global</p>
+                <h2 class="h5 mb-0 fw-bold">Evolución del rendimiento académico en Colombia (ICFES {{ ano_min_data }}–{{ kpis.ano }})</h2>
+                <p class="text-muted small mb-0">% de estudiantes por banda · Global
+                    {% if not user.is_authenticated %} · <span style="color:#f97316;">años {{ ano_min_data }}–{{ ano_public_from|add:"-1" }} con acceso restringido</span>{% endif %}
+                </p>
             </div>
-            <div>
-                {% if not user.is_authenticated %}
-                <a href="{% url 'account_signup' %}?next={{ request.path }}"
-                   class="btn btn-sm btn-primary" data-cta-source="motland_materia_tabs">
-                    Ver por materia — es gratis
-                </a>
-                {% endif %}
-            </div>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'account_signup' %}?next={{ request.path }}"
+               class="btn btn-sm btn-primary" data-cta-source="motland_materia_tabs">
+                Ver por materia — es gratis
+            </a>
+            {% endif %}
         </div>
-        <div id="chart-wrap"></div>
+
+        <div id="chart-container">
+            <div id="chart-wrap"></div>
+            {% if not user.is_authenticated %}
+            <div id="blur-overlay" style="display:none;">
+                <div class="lock-card">
+                    <div style="font-size:1.8rem;margin-bottom:6px;">🔒</div>
+                    <div class="fw-bold mb-1" style="color:#1e3a5f;font-size:.9rem;">Datos {{ ano_min_data }}–{{ ano_public_from|add:"-1" }}</div>
+                    <p class="text-muted small mb-3">Incluye el quiebre histórico de 2000 y el origen de la polarización</p>
+                    <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                       class="btn btn-primary btn-sm w-100" data-cta-source="motland_blur_overlay">
+                        Ver historia completa<br><small class="fw-normal">— es gratis</small>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
-    <!-- LOCK BANNER: historia completa 1996 -->
-    {% if not user.is_authenticated %}
-    <div class="lock-banner mb-4">
-        <span style="font-size:1.3rem;">🔒</span>
-        <strong class="ms-2">Historia completa 1996–{{ kpis.ano }} disponible con cuenta gratuita</strong>
-        <p class="text-muted small mb-2 mt-1">
-            Ve cómo era el panorama antes del año 2000 y rastrea el origen de la polarización actual.
-        </p>
-        <a href="{% url 'account_signup' %}?next={{ request.path }}"
-           class="btn btn-primary btn-sm px-4" data-cta-source="motland_lock_historico">
-            Ver 1996–{{ kpis.ano }} completo — es gratis
-        </a>
-    </div>
-    {% endif %}
-
-    <!-- EDITORIAL -->
+    <!-- INSIGHT BLOCK -->
     <div class="panel editorial mb-4">
         <h2 class="h5 fw-bold mb-3">
-            {% if departamento_label %}
-            ¿Qué nos dice la evolución en {{ departamento_label }}?
-            {% else %}
-            ¿Qué nos dice este gráfico sobre la educación en Colombia?
-            {% endif %}
+            {% if departamento_label %}¿Qué nos dicen los datos de {{ departamento_label }}?
+            {% else %}¿Qué nos dicen los datos?{% endif %}
         </h2>
-        {% if departamento_label %}
-        <p>
-            Las <strong>bandas motivacionales</strong> miden el nivel de compromiso y desempeño de los
-            estudiantes en el examen ICFES Saber 11. Cada año, los resultados de
-            <strong>{{ departamento_label }}</strong> revelan una realidad compleja:
-            algunos estudiantes escalan hacia la <em>excelencia</em>, mientras otros se desconectan
-            del proceso educativo.
-        </p>
+        <ul class="mb-3" style="color:#374151;line-height:1.8;">
+            <li>Desde 2012 aparece una nueva categoría de alto rendimiento: <strong style="color:#10b981;">"Dedicado"</strong>.</li>
+            <li>El porcentaje de estudiantes comprometidos y dedicados ha crecido de forma sostenida hasta {{ kpis.ano }}.</li>
+            <li>Sin embargo, el grupo de estudiantes <strong style="color:#f97316;">Desconectados</strong> no desaparece — indica una brecha persistente.</li>
+        </ul>
+
+        <h2 class="h5 fw-bold mb-2">¿Está mejorando la educación o aumentando la desigualdad?</h2>
         <blockquote class="my-3">
-            La polarización no es un fenómeno nacional uniforme — cada departamento tiene su propia
-            historia de avances y retrocesos.
+            Aunque el promedio nacional mejora, los datos muestran una <strong>polarización educativa</strong>:
+            una parte de los estudiantes alcanza niveles altos, mientras que otra permanece rezagada.
         </blockquote>
+        {% if not departamento_label %}
         <p>
-            El análisis por materia (Inglés, Matemáticas, Ciencias, Lectura crítica) permite identificar
-            en qué áreas específicas se concentran las fortalezas y las brechas de
-            <strong>{{ departamento_label }}</strong>. Disponible con cuenta gratuita.
+            Este fenómeno no es uniforme — varía radicalmente entre departamentos y entre colegios
+            oficiales y privados. El análisis por departamento (a continuación) permite diagnosticar
+            con precisión qué está pasando en cada contexto. El detalle por materia está disponible
+            con cuenta gratuita.
         </p>
         {% else %}
         <p>
-            Las <strong>bandas motivacionales</strong> clasifican a los estudiantes según su nivel de
-            compromiso y desempeño en el ICFES Saber 11, desde <em>Desmotivado</em> hasta
-            <em>Excelencia</em>. El gráfico revela una tendencia que pocos anticipaban:
-        </p>
-        <blockquote class="my-3">
-            Colombia está produciendo simultáneamente más excelencia <em>y</em> más desconexión.
-            El sistema educativo está creando dos países dentro de uno.
-        </blockquote>
-        <p>
-            Desde 2015, la banda <strong style="color:#10b981;">Dedicado</strong> ha crecido
-            sostenidamente, señal positiva de que más estudiantes logran superar la media.
-            Sin embargo, el segmento <strong style="color:#f97316;">Desconectado</strong> también
-            aumenta — estudiantes que asisten pero no se involucran activamente con su aprendizaje.
-            Mientras tanto, el grueso <em>Motivado</em> se contrae: el centro se vacía.
-        </p>
-        <p>
-            Esta polarización no es uniforme: varía radicalmente entre departamentos, entre colegios
-            oficiales y privados, y entre materias. El análisis por departamento (a continuación)
-            y el detalle por materia (disponible con cuenta gratuita) permiten diagnosticar con
-            precisión qué está pasando en cada contexto.
+            El análisis por materia (Inglés, Matemáticas, Lectura crítica, Ciencias) permite identificar
+            en qué áreas específicas se concentran las fortalezas y las brechas de
+            <strong>{{ departamento_label }}</strong>. Disponible con cuenta gratuita.
         </p>
         {% endif %}
     </div>
 
-    <!-- NAVEGACIÓN POR DEPARTAMENTO (solo en nacional) -->
+    <!-- COMPARTIR -->
+    <div class="panel mb-4">
+        <h3 class="h6 fw-bold mb-2">¿Crees que la educación en Colombia está mejorando?</h3>
+        <p class="text-muted small mb-3">Comparte este análisis y abre la conversación.</p>
+        <div class="share-bar">
+            <a href="https://api.whatsapp.com/send?text={{ seo.title|urlencode }}%20{{ canonical_url|urlencode }}"
+               target="_blank" rel="noopener" class="btn btn-sm btn-whatsapp" data-cta-source="motland_share_whatsapp">
+                📱 WhatsApp
+            </a>
+            <a href="https://twitter.com/intent/tweet?text={{ seo.title|urlencode }}&url={{ canonical_url|urlencode }}&via=ICFESAnalytics"
+               target="_blank" rel="noopener" class="btn btn-sm btn-twitter" data-cta-source="motland_share_twitter">
+                𝕏 Twitter
+            </a>
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyLink()" id="copyBtn">
+                🔗 Copiar enlace
+            </button>
+        </div>
+    </div>
+
+    <!-- VER POR DEPARTAMENTO -->
     {% if depto_links %}
     <div class="panel mb-4">
-        <h2 class="h5 fw-bold mb-3">Ver por departamento</h2>
-        <p class="text-muted small mb-3">
-            Selecciona un departamento para ver su evolución de bandas motivacionales.
-        </p>
+        <h2 class="h5 fw-bold mb-1">Compara esta evolución con tu departamento</h2>
+        <p class="text-muted small mb-3">Descubre si tu región sigue la tendencia nacional o presenta un comportamiento diferente.</p>
         <div>
             {% for d in depto_links %}
             <a href="/icfes/bandas-motivacionales/{{ d.slug }}/" class="depto-pill">{{ d.label }}</a>
@@ -207,47 +243,54 @@
         {% if not user.is_authenticated %}
         <h2 class="h4 mb-2">
             {% if departamento_label %}
-            ¿Tu colegio está en la banda correcta?
+            ¿Cómo está tu colegio dentro de {{ departamento_label }}?
             {% else %}
-            ¿Tu colegio está mejorando o retrocediendo?
+            Compara esta evolución con tu colegio o municipio
             {% endif %}
         </h2>
-        <p class="mb-3" style="opacity:.9;">
-            Crea una cuenta gratuita para ver el diagnóstico motivacional completo
-            de cualquier colegio de Colombia — con historia desde 1996, análisis por materia
-            y comparativo con el promedio nacional.
+        <p class="mb-3" style="opacity:.92;max-width:560px;margin-left:auto;margin-right:auto;">
+            Crea una cuenta gratuita para ver el rendimiento histórico de tu colegio,
+            con historia desde {{ ano_min_data }}, análisis por materia y comparativo con el promedio
+            {% if departamento_label %}de {{ departamento_label }}{% else %}nacional{% endif %}.
         </p>
         <a href="{% url 'account_signup' %}?next={{ request.path }}"
-           class="btn btn-light btn-lg px-5 fw-bold me-2" data-cta-source="motland_cta_final">
-            Crear cuenta gratuita
+           class="btn btn-light btn-lg px-5 fw-bold" data-cta-source="motland_cta_final">
+            Crear cuenta gratuita →
         </a>
         {% else %}
         <h2 class="h4 mb-2">Ver diagnóstico motivacional completo</h2>
-        <p class="mb-3" style="opacity:.9;">Accede al análisis completo por materia, colegio y comparativo nacional.</p>
+        <p class="mb-3" style="opacity:.9;">Accede al análisis completo con detalle por materia, colegio y comparativo.</p>
         <a href="/dashboard-icfes/motivacional/" class="btn btn-light btn-lg px-5 fw-bold">
             Ir al dashboard motivacional
         </a>
         {% endif %}
     </div>
 
-    <!-- LINK A DEPARTAMENTO ARRIBA (depto pages: nav entre deptos) -->
-    {% if departamento_slug and depto_links == '' %}
-    <!-- nothing extra needed -->
-    {% endif %}
+    <!-- LINKS RELACIONADOS -->
+    <div class="panel mb-4">
+        <h3 class="h6 fw-bold mb-2">También te puede interesar</h3>
+        <ul class="mb-0 small" style="color:#374151;line-height:2;">
+            <li><a href="/icfes/historico/puntaje-global/">Histórico nacional del puntaje global ICFES</a></li>
+            <li><a href="/icfes/colegios-bilingues/">Colegios bilingues en Colombia</a></li>
+            <li><a href="/icfes/ranking/colegios/{{ kpis.ano }}/">Ranking nacional de colegios {{ kpis.ano }}</a></li>
+            <li><a href="/icfes/que-es-icfes-analytics/">¿Qué es ICFES Analytics?</a></li>
+        </ul>
+    </div>
 
 </main>
 
 <footer class="footer">
     <div class="container">
-        <p class="mb-0">&copy; 2025 ICFES Analytics · <a href="/icfes/que-es-icfes-analytics/" style="color:#93c5fd;">¿Qué es ICFES Analytics?</a> · <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;">sabededatos.com</a></p>
+        <p class="mb-0">&copy; 2025 ICFES Analytics · <a href="https://www.sabededatos.com" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;">sabededatos.com</a></p>
     </div>
 </footer>
 
-<!-- ApexCharts init -->
+<!-- ApexCharts init + blur overlay -->
 <script>
 (function () {
-    const raw = {{ chart_data_json|safe }};
-    const colors = {{ nivel_colors_json|safe }};
+    const raw      = {{ chart_data_json|safe }};
+    const colors   = {{ nivel_colors_json|safe }};
+    const ANO_LOCK = {{ ano_public_from }};   // años < este valor → blur
 
     if (!raw || raw.length === 0) {
         document.getElementById('chart-wrap').innerHTML =
@@ -263,7 +306,7 @@
     raw.forEach(r => { nivelMap[r.nivel] = r.nivel_orden; });
     const niveles = Object.keys(nivelMap).sort((a, b) => nivelMap[a] - nivelMap[b]);
 
-    // Totales por año
+    // Totales por año (para %)
     const totals = {};
     anos.forEach(a => { totals[a] = 0; });
     raw.forEach(r => { totals[r.ano] = (totals[r.ano] || 0) + r.estudiantes; });
@@ -284,44 +327,72 @@
         series,
         chart: {
             type: 'bar',
-            height: 380,
+            height: 400,
             stacked: true,
             stackType: '100%',
             toolbar: { show: false },
             fontFamily: 'system-ui, -apple-system, sans-serif',
+            events: {
+                mounted: function(ctx) { applyBlurOverlay(ctx, anos, ANO_LOCK); },
+                updated: function(ctx) { applyBlurOverlay(ctx, anos, ANO_LOCK); },
+            }
         },
         colors: seriesColors,
-        plotOptions: {
-            bar: { horizontal: false, columnWidth: '85%' },
-        },
+        plotOptions: { bar: { horizontal: false, columnWidth: '88%' } },
         dataLabels: {
             enabled: true,
-            formatter: (val) => val >= 6 ? Math.round(val) + '%' : '',
+            formatter: (val) => val >= 7 ? Math.round(val) + '%' : '',
             style: { fontSize: '11px', fontWeight: '600', colors: ['#fff'] },
         },
         stroke: { width: 0 },
         xaxis: {
             categories: anos,
-            labels: { style: { fontSize: '12px' } },
+            labels: { style: { fontSize: '11px' } },
         },
-        yaxis: {
-            labels: { formatter: (val) => Math.round(val) + '%' },
-        },
-        tooltip: {
-            y: { formatter: (val) => val.toFixed(1) + '%' },
-        },
-        legend: {
-            position: 'top',
-            horizontalAlign: 'center',
-            fontSize: '13px',
-        },
+        yaxis: { labels: { formatter: (val) => Math.round(val) + '%' } },
+        tooltip: { y: { formatter: (val) => val.toFixed(1) + '%' } },
+        legend: { position: 'top', horizontalAlign: 'center', fontSize: '13px' },
         fill: { opacity: 1 },
-        theme: { mode: 'light' },
     };
 
     const chart = new ApexCharts(document.getElementById('chart-wrap'), options);
     chart.render();
+
+    function applyBlurOverlay(ctx, anos, anoLock) {
+        const overlay = document.getElementById('blur-overlay');
+        if (!overlay) return;   // usuario autenticado → no hay overlay en DOM
+
+        // Número de años bloqueados (< anoLock)
+        const lockedCount  = anos.filter(a => a < anoLock).length;
+        const totalCount   = anos.length;
+        if (lockedCount === 0) { overlay.style.display = 'none'; return; }
+
+        // Calcular ancho del plot area usando el SVG interno
+        const container = document.getElementById('chart-container');
+        const inner = container.querySelector('.apexcharts-inner');
+        if (!inner) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const innerRect     = inner.getBoundingClientRect();
+        const plotLeft      = innerRect.left - containerRect.left;
+        const plotWidth     = innerRect.width;
+        const barWidth      = plotWidth / totalCount;
+
+        overlay.style.left    = plotLeft + 'px';
+        overlay.style.width   = (barWidth * lockedCount) + 'px';
+        overlay.style.top     = (innerRect.top - containerRect.top) + 'px';
+        overlay.style.height  = innerRect.height + 'px';
+        overlay.style.display = 'flex';
+    }
 })();
+
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✅ Copiado';
+        setTimeout(() => { btn.textContent = '🔗 Copiar enlace'; }, 2000);
+    });
+}
 </script>
 
 <!-- GA4 Tracking -->
