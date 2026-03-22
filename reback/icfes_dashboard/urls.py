@@ -20,6 +20,7 @@ from . import (
     views_mi_colegio,
     views_ml,
     views_motivacional,
+    views_motivacional_landing,
     views_potencial,
     views_school_endpoints,
 )
@@ -158,6 +159,14 @@ urlpatterns = [
          longtail_landing_views.colegios_mejoraron_hub_page, name='colegios_mejoraron_hub'),
     path('colegios-que-mas-mejoraron/<int:ano>/',
          longtail_landing_views.colegios_mejoraron_page, name='colegios_mejoraron'),
+
+    # Bandas Motivacionales — landing pública SEO (nacional + departamentos)
+    path('bandas-motivacionales/',
+         views_motivacional_landing.motivacional_tendencia_landing,
+         name='motivacional_tendencia_nacional'),
+    path('bandas-motivacionales/<slug:departamento_slug>/',
+         views_motivacional_landing.motivacional_tendencia_landing,
+         name='motivacional_tendencia_depto'),
 
     # Colegios bilingues (nacional, departamental, municipal)
     path('colegios-bilingues/',

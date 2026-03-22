@@ -979,6 +979,7 @@ def school_landing_page(request, slug):
                     "cuadrante_slug": cuadrante_slug or "",
                     "potencial_url": f"/icfes/supero-prediccion/{dept_slug}/",
                     "has_potencial": potencial_row is not None,
+                    "motivacional_url": f"/icfes/bandas-motivacionales/{dept_slug}/",
                 },
                 "internal_links": {
                     "municipio_url": _absolute_url(

@@ -365,7 +365,7 @@
             </div>
         </div>
 
-        {% if discovery_links.cuadrante_slug or discovery_links.has_potencial %}
+        {% if discovery_links.cuadrante_slug or discovery_links.has_potencial or discovery_links.motivacional_url %}
         <div class="card-block">
             <h3 class="section-title">Hallazgos destacados de este colegio</h3>
             <div class="highlight-grid">
@@ -385,6 +385,12 @@
                     <a href="{{ discovery_links.potencial_url }}" class="btn btn-sm btn-outline-primary">Ver colegios que superaron su rendimiento esperado</a>
                 </div>
                 {% endif %}
+                <div class="highlight-card">
+                    <div class="highlight-kicker">Motivación y compromiso</div>
+                    <div class="highlight-title">¿Cuántos estudiantes están Dedicados o Desconectados en {{ school.departamento }}?</div>
+                    <p class="highlight-copy">Evolución histórica de las 7 bandas motivacionales ICFES en {{ school.departamento }} desde 2015. Ve cómo cambia el compromiso estudiantil año a año.</p>
+                    <a href="{{ discovery_links.motivacional_url }}" class="btn btn-sm btn-outline-primary">Ver evolución motivacional</a>
+                </div>
             </div>
         </div>
         {% endif %}
