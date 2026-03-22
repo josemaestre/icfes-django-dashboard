@@ -312,10 +312,14 @@
                 fortalezas y oportunidades de mejora para cualquier colegio de Colombia.
             </p>
             <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                {% if not user.is_authenticated %}
+                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                   class="cta-btn" data-cta-source="cuadrante_cta">Crear cuenta gratuita</a>
+                {% else %}
+                <a href="/dashboard-icfes/" class="cta-btn">Ir al dashboard</a>
+                {% endif %}
                 <a href="/pricing/?utm_source=seo&utm_medium=cuadrante_landing&utm_campaign=cta_planes"
-                   class="cta-btn">Ver planes</a>
-                <a href="/accounts/signup/?utm_source=seo&utm_medium=cuadrante_landing&utm_campaign=cta_signup"
-                   class="btn btn-outline-secondary" data-cta-source="cuadrante_cta">Crear cuenta gratis</a>
+                   class="btn btn-outline-secondary">Ver planes</a>
             </div>
         </div>
 

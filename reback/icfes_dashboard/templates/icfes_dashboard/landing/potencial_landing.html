@@ -239,6 +239,16 @@
             {% endif %}
         </div>
 
+        {% if not user.is_authenticated %}
+        <div class="cardx mb-4" style="background:linear-gradient(135deg,#0f766e 0%,#0ea5e9 100%);color:#fff;padding:28px 24px;text-align:center;border-radius:12px;">
+            <p style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">¿Tu colegio está aquí?</p>
+            <p style="margin-bottom:18px;opacity:.9;">Crea una cuenta gratuita para ver el diagnóstico completo, tendencias históricas y acciones recomendadas.</p>
+            <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-light btn-sm px-4 fw-semibold" data-cta-source="potencial_banner">
+                Crear cuenta gratuita
+            </a>
+        </div>
+        {% endif %}
+
         <!-- ══ DESCRIPCIÓN EDITORIAL ═══════════════════════════════════════ -->
         <div class="cardx mb-4">
             <h3 class="h5 mb-3">¿Qué significa rendir por encima de lo esperado?</h3>
