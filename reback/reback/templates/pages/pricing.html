@@ -120,11 +120,11 @@
     <!-- Pricing Cards -->
     <div class="row g-4 justify-content-center mb-5">
         
-        <!-- TIPO 1: Plan Comunidad -->
-        <div class="col-lg-3 col-md-6">
+        <!-- TIPO 1: Segmento B2C / Free (Padres y Estudiantes) -->
+        <div class="col-lg-4 col-md-6">
             <div class="card pricing-card text-center p-4">
-                <h4 class="card-title fw-bold">Plan Comunidad</h4>
-                <p class="text-muted mb-4">Para estudiantes y padres de familia.</p>
+                <h4 class="card-title fw-bold">Comunidad</h4>
+                <p class="text-muted mb-4">Estudiantes, padres y colegios públicos.</p>
                 
                 <div class="mb-4">
                     <span class="price-amount">$0</span>
@@ -133,115 +133,74 @@
 
                 <div class="mb-4">
                     {% if user.is_authenticated and current_tier == 'free' %}
-                        <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold" disabled>Plan Actual</button>
+                        <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold" disabled>Tu Plan Actual</button>
                     {% else %}
                         <a href="{% url 'pages:home' %}" class="btn btn-outline-primary btn-lg w-100 mb-4 fw-bold">Explorar gratis</a>
                     {% endif %}
                 </div>
 
                 <ul class="feature-list text-start">
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Puntaje global 2024</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Métricas Globales 2024</span></li>
                     <li><i class="bi bi-check-circle-fill"></i> <span>Resumen de fortalezas y debilidades</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Tendencia histórica (últimos 6 años)</span></li>
-                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Explorador jerárquico nacional</span></li>
-                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Histórico completo desde 1996</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Datos municipales y departamentales</span></li>
+                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Histórico absoluto (1996 - 2024)</span></li>
+                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Descarga de microdatos (Excel)</span></li>
                 </ul>
             </div>
         </div>
 
-        <!-- TIPO 3: Plan Pro Estratégico (Destacado) -->
-        <div class="col-lg-3 col-md-6">
+        <!-- TIPO 2: Segmento B2B Privados / Consultores (Único plan pago visible) -->
+        <div class="col-lg-4 col-md-6">
             <div class="card pricing-card featured text-center p-4">
-                <span class="featured-badge">RECOMENDADO</span>
-                <h4 class="card-title fw-bold text-primary">Plan Pro Estratégico</h4>
-                <p class="text-muted mb-4">Para rectores y directivos de colegios.</p>
+                <span class="featured-badge">COLEGIOS Y RECEPTORES</span>
+                <h4 class="card-title fw-bold text-primary">Pro Estratégico</h4>
+                <p class="text-muted mb-4">Para Colegios Privados, Rectores y Consultores.</p>
                 
                 <div class="mb-4">
                     <span class="price-amount">$990.000</span>
                     <span class="price-period">COP / año</span>
-                    <div class="text-success small fw-bold">~ $82.500 COP al mes</div>
                 </div>
 
-                <!-- Botón Wompi Plan Pro -->
                 <div class="mb-4">
                     {% if user.is_authenticated %}
                         {% if current_tier == 'premium' or current_tier == 'enterprise' %}
                             <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold shadow-sm" disabled>Plan Actual</button>
                         {% else %}
-                            <a href="{% url 'payments:wompi_checkout' %}?plan=premium" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Desbloquear Plan Pro</a>
+                            <a href="{% url 'payments:wompi_checkout' %}?plan=premium" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Suscribirse con Wompi</a>
                         {% endif %}
                     {% else %}
-                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Iniciar Sesión</a>
+                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Suscribirse con Wompi</a>
                     {% endif %}
                 </div>
 
                 <ul class="feature-list text-start">
                     <li><i class="bi bi-check-circle-fill"></i> <strong>Histórico absoluto (desde 1996)</strong></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <strong>Explorador Jerárquico Total</strong></li>
                     <li><i class="bi bi-check-circle-fill"></i> <strong>Z-Scores y percentiles reales</strong></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <strong>Comparativas con otros colegios</strong></li>
                     <li><i class="bi bi-check-circle-fill"></i> <strong>Exportación de datos crudos (CSV/Excel)</strong></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Todo lo del plan Esencial</span></li>
                 </ul>
             </div>
         </div>
 
-        <!-- TIPO 2: Plan Institucional Esencial -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card pricing-card text-center p-4">
-                <h4 class="card-title fw-bold">Plan Esencial</h4>
-                <p class="text-muted mb-4">Para coordinadores académicos locales.</p>
-                
-                <div class="mb-4">
-                    <span class="price-amount">$490.000</span>
-                    <span class="price-period">COP / año</span>
-                    <div class="text-success small fw-bold">~ $40.800 COP al mes</div>
-                </div>
-
-                <!-- Botón Wompi Plan Esencial -->
-                <div class="mb-4">
-                    {% if user.is_authenticated %}
-                        {% if current_tier == 'basic' or current_tier == 'premium' or current_tier == 'enterprise' %}
-                            <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold" disabled>Plan Adquirido</button>
-                        {% else %}
-                            <a href="{% url 'payments:wompi_checkout' %}?plan=basic" class="btn btn-outline-dark btn-lg w-100 mb-4 fw-bold">Empezar Plan Esencial</a>
-                        {% endif %}
-                    {% else %}
-                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-outline-dark btn-lg w-100 mb-4 fw-bold">Iniciar Sesión</a>
-                    {% endif %}
-                </div>
-
-                <ul class="feature-list text-start">
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Todo lo del plan Comunidad</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Historial a 10 años</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Comparativa municipal</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span>Insignias de rendimiento (PNG)</span></li>
-                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Z-Scores y percentiles reales</span></li>
-                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Exportación a Excel</span></li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- TIPO 4: Plan Territorial / Gubernamental -->
-        <div class="col-lg-3 col-md-6">
+        <!-- TIPO 3: Segmento B2G Gobierno / Secretarías -->
+        <div class="col-lg-4 col-md-6">
             <div class="card pricing-card bg-dark text-white text-center p-4">
-                <h4 class="card-title fw-bold">Plan Territorial</h4>
-                <p class="text-light opacity-75 mb-4">Para Alcaldías, Secretarías y Ministerios.</p>
+                <h4 class="card-title fw-bold">Territorial / Gobierno</h4>
+                <p class="text-light opacity-75 mb-4">Alcaldías, Secretarías de Educación y MEN.</p>
                 
                 <div class="mb-4">
                     <span class="price-amount text-white">A Medida</span>
                 </div>
 
-                <!-- Botón de Contacto Ventas -->
                 <div class="mb-4">
                     <a href="mailto:ventas@icfes-analytics.com?subject=Interes%20en%20plan%20Territorial" class="btn btn-light btn-lg w-100 mb-4 fw-bold text-dark">Contactar a Ventas</a>
                 </div>
 
                 <ul class="feature-list text-start">
-                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Análisis agregado por municipio/departamento</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">API para integración con sistemas propios</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Tableros de control personalizados</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Exportación de datos de todos los colegios de la región</span></li>
-                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Capacitación a funcionarios</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Licencias para múltiples colegios públicos</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">API privada para integración gubernamental</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Soporte técnico y capacitación (Onboarding)</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span class="text-white">Reportes macro de brechas educativas municipales</span></li>
                 </ul>
             </div>
         </div>
