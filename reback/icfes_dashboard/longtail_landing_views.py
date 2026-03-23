@@ -496,6 +496,9 @@ def ranking_colegios_year_page(request, ano):
                     {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
                     {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
                     {"label": "Histórico nacional de puntaje global", "url": "/icfes/historico/puntaje-global/"},
+                    {"label": "Colegios estrella en Colombia", "url": "/icfes/cuadrante/estrella/"},
+                    {"label": "Colegios que superaron su rendimiento esperado", "url": "/icfes/supero-prediccion/"},
+                    {"label": "Evolución motivacional en Colombia", "url": "/icfes/bandas-motivacionales/"},
                 ],
                 "seo": {
                     "title": title,
@@ -602,6 +605,9 @@ def ranking_matematicas_year_page(request, ano):
                     {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
                     {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
                     {"label": "Histórico nacional de puntaje global", "url": "/icfes/historico/puntaje-global/"},
+                    {"label": "Colegios estrella en Colombia", "url": "/icfes/cuadrante/estrella/"},
+                    {"label": "Colegios que superaron su rendimiento esperado", "url": "/icfes/supero-prediccion/"},
+                    {"label": "Evolución motivacional en Colombia", "url": "/icfes/bandas-motivacionales/"},
                 ],
                 "seo": {
                     "title": title,
@@ -634,9 +640,14 @@ def historico_nacional_page(request):
             query = """
                 SELECT
                     CAST(ano AS INTEGER) AS ano,
-                    ROUND(AVG(avg_punt_global), 1) AS promedio_global,
-                    SUM(total_estudiantes) AS total_estudiantes,
-                    COUNT(DISTINCT colegio_sk) AS total_colegios
+                    ROUND(AVG(avg_punt_global), 1)               AS promedio_global,
+                    SUM(total_estudiantes)                        AS total_estudiantes,
+                    COUNT(DISTINCT colegio_sk)                    AS total_colegios,
+                    ROUND(AVG(avg_punt_matematicas), 1)          AS promedio_matematicas,
+                    ROUND(AVG(avg_punt_ingles), 1)               AS promedio_ingles,
+                    ROUND(AVG(avg_punt_lectura_critica), 1)      AS promedio_lectura,
+                    ROUND(AVG(avg_punt_c_naturales), 1)          AS promedio_naturales,
+                    ROUND(AVG(avg_punt_sociales_ciudadanas), 1)  AS promedio_sociales
                 FROM gold.fct_agg_colegios_ano
                 GROUP BY CAST(ano AS INTEGER)
                 ORDER BY CAST(ano AS INTEGER)
@@ -678,9 +689,14 @@ def historico_nacional_page(request):
         all_rows = [
             {
                 "ano": int(row[0]),
-                "promedio_global": float(row[1]) if row[1] is not None else None,
-                "total_estudiantes": int(row[2]) if row[2] else 0,
-                "total_colegios": int(row[3]) if row[3] else 0,
+                "promedio_global":      float(row[1]) if row[1] is not None else None,
+                "total_estudiantes":    int(row[2]) if row[2] else 0,
+                "total_colegios":       int(row[3]) if row[3] else 0,
+                "promedio_matematicas": float(row[4]) if row[4] is not None else None,
+                "promedio_ingles":      float(row[5]) if row[5] is not None else None,
+                "promedio_lectura":     float(row[6]) if row[6] is not None else None,
+                "promedio_naturales":   float(row[7]) if row[7] is not None else None,
+                "promedio_sociales":    float(row[8]) if row[8] is not None else None,
             }
             for row in reversed(rows)
         ]
@@ -695,6 +711,15 @@ def historico_nacional_page(request):
                 "rows": table_rows,
                 "locked_count": locked_count,
                 "chart": chart,
+                "related_links": [
+                    {"label": "Ranking nacional de colegios", "url": f"/icfes/ranking/colegios/{max(years)}/"},
+                    {"label": "Ranking sector público nacional", "url": "/icfes/ranking/sector/oficiales/colombia/"},
+                    {"label": "Ranking sector privado nacional", "url": "/icfes/ranking/sector/privados/colombia/"},
+                    {"label": "Colegios estrella en Colombia", "url": "/icfes/cuadrante/estrella/"},
+                    {"label": "Colegios que superaron su rendimiento esperado", "url": "/icfes/supero-prediccion/"},
+                    {"label": "Evolución motivacional en Colombia", "url": "/icfes/bandas-motivacionales/"},
+                    {"label": "Resultados ICFES por departamento", "url": "/icfes/departamentos/"},
+                ],
                 "seo": {
                     "title": title,
                     "description": description,
@@ -752,6 +777,9 @@ def ranking_sector_nacional_page(request, sector_slug):
                     else "/icfes/ranking/sector/oficiales/colombia/"
                 ),
             },
+            {"label": "Colegios estrella en Colombia", "url": "/icfes/cuadrante/estrella/"},
+            {"label": "Colegios que superaron su rendimiento esperado", "url": "/icfes/supero-prediccion/"},
+            {"label": "Evolución motivacional en Colombia", "url": "/icfes/bandas-motivacionales/"},
         ]
         links.extend(_top_departamento_links(rows, sector_slug, limit=8))
         return _render_sector_ranking(
@@ -814,6 +842,9 @@ def ranking_sector_departamento_page(request, sector_slug, departamento_slug):
                     else f"/icfes/ranking/sector/oficiales/departamento/{departamento_slug}/"
                 ),
             },
+            {"label": f"Colegios estrella en {departamento}", "url": f"/icfes/cuadrante/estrella/{departamento_slug}/"},
+            {"label": f"Colegios que superaron su rendimiento en {departamento}", "url": f"/icfes/supero-prediccion/{departamento_slug}/"},
+            {"label": f"Evolución motivacional en {departamento}", "url": f"/icfes/bandas-motivacionales/{departamento_slug}/"},
         ]
         links.extend(_top_municipio_links(rows, sector_slug, limit=10))
         return _render_sector_ranking(

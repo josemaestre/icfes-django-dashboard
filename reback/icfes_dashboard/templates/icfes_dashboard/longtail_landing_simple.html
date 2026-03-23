@@ -360,25 +360,59 @@
             {% endif %}
         </div>
 
+        <div class="panel p-3 mb-4" style="background:#f0f7ff;border-left:4px solid #3b82f6;">
+            <h2 class="h6 fw-bold mb-2" style="color:#1e3a5f;">¿Qué mide el puntaje global ICFES?</h2>
+            <p class="mb-1 small" style="color:#374151;line-height:1.7;">
+                El puntaje global es el promedio de cinco pruebas: <strong>Lectura Crítica, Matemáticas,
+                Ciencias Naturales, Sociales y Ciudadanas</strong> e <strong>Inglés</strong>.
+                Cada prueba tiene escala de 0 a 100. La tabla muestra el promedio nacional de todos los
+                colegios oficiales y no oficiales reportados año a año.
+            </p>
+            <p class="mb-0 small" style="color:#374151;">
+                La tendencia sostenida al alza desde {{ rows|last.ano|default:"2019" }} refleja tanto
+                mejoras reales en aprendizaje como ajustes en la escala de medición aplicados por el ICFES.
+                El detalle por colegio, municipio y departamento está disponible en la plataforma.
+            </p>
+        </div>
+
         <div class="panel p-3">
-            <h2 class="h5 mb-3">Serie anual</h2>
+            <h2 class="h5 mb-3">Serie anual por materia</h2>
             <div class="table-responsive">
-                <table class="table table-striped align-middle">
+                <table class="table table-striped table-sm align-middle" style="font-size:.9rem;">
                     <thead>
                         <tr>
                             <th>Año</th>
-                            <th>Promedio Global</th>
-                            <th>Colegios</th>
-                            <th>Estudiantes</th>
+                            <th>Global</th>
+                            <th>Inglés</th>
+                            <th>Matemáticas</th>
+                            <th>Lectura</th>
+                            <th>Naturales</th>
+                            <th>Sociales</th>
+                            <th class="text-muted">
+                                {% if not user.is_authenticated %}<span title="Disponible con cuenta gratuita">🔒</span> {% endif %}Colegios
+                            </th>
+                            <th class="text-muted">
+                                {% if not user.is_authenticated %}<span title="Disponible con cuenta gratuita">🔒</span> {% endif %}Estudiantes
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for row in rows %}
                         <tr>
-                            <td>{{ row.ano }}</td>
+                            <td><strong>{{ row.ano }}</strong></td>
                             <td>{{ row.promedio_global|default:"-" }}</td>
+                            <td>{{ row.promedio_ingles|default:"-" }}</td>
+                            <td>{{ row.promedio_matematicas|default:"-" }}</td>
+                            <td>{{ row.promedio_lectura|default:"-" }}</td>
+                            <td>{{ row.promedio_naturales|default:"-" }}</td>
+                            <td>{{ row.promedio_sociales|default:"-" }}</td>
+                            {% if user.is_authenticated %}
                             <td>{{ row.total_colegios }}</td>
                             <td>{{ row.total_estudiantes }}</td>
+                            {% else %}
+                            <td style="filter:blur(5px);user-select:none;color:#64748b;" title="Crea una cuenta gratuita para ver este dato">{{ row.total_colegios }}</td>
+                            <td style="filter:blur(5px);user-select:none;color:#64748b;" title="Crea una cuenta gratuita para ver este dato">{{ row.total_estudiantes }}</td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -387,10 +421,17 @@
             {% if locked_count %}
             <div class="text-center py-3 border-top mt-2">
                 <p class="text-muted small mb-2">
-                    + {{ locked_count }} años históricos adicionales disponibles con cuenta gratuita
+                    + {{ locked_count }} años históricos adicionales (desde 1996) disponibles con cuenta gratuita
                 </p>
                 <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-outline-primary btn-sm px-4" data-cta-source="longtail_tabla">
                     Ver historial completo — es gratis
+                </a>
+            </div>
+            {% elif not user.is_authenticated %}
+            <div class="text-center py-2 border-top mt-2">
+                <p class="text-muted small mb-2">Desbloquea los conteos de colegios y estudiantes por año</p>
+                <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-outline-primary btn-sm px-4" data-cta-source="longtail_tabla_cols">
+                    Crear cuenta gratuita
                 </a>
             </div>
             {% endif %}

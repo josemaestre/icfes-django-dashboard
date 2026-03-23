@@ -199,6 +199,17 @@
                 <li><a href="/icfes/colegios-bilingues/">Colegios bilingues en Colombia</a></li>
                 <li><a href="/icfes/materia/ingles/{{ latest_year }}/">Ranking de colegios por inglés ICFES {{ latest_year }}</a></li>
                 <li><a href="/icfes/departamentos/">Resultados ICFES por departamento</a></li>
+                <li><a href="/icfes/ranking/colegios/{{ latest_year }}/">Mejores colegios en Colombia {{ latest_year }}</a></li>
+                {% if departamento_slug %}
+                <li><a href="/icfes/cuadrante/estrella/{{ departamento_slug }}/">Colegios estrella en {{ departamento }}</a></li>
+                <li><a href="/icfes/supero-prediccion/{{ departamento_slug }}/">Colegios que superaron su rendimiento esperado en {{ departamento }}</a></li>
+                <li><a href="/icfes/bandas-motivacionales/{{ departamento_slug }}/">Evolución motivacional en {{ departamento }}</a></li>
+                {% else %}
+                <li><a href="/icfes/cuadrante/estrella/">Colegios estrella en Colombia</a></li>
+                <li><a href="/icfes/supero-prediccion/">Colegios que superaron su rendimiento esperado</a></li>
+                <li><a href="/icfes/bandas-motivacionales/">Evolución motivacional en Colombia</a></li>
+                {% endif %}
+                <li><a href="/icfes/historico/puntaje-global/">Histórico nacional del puntaje ICFES</a></li>
             </ul>
         </div>
     </main>
