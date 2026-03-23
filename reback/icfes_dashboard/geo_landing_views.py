@@ -161,11 +161,11 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
         combined_query = f"""
             WITH base AS (
                 SELECT
-                    CAST(ano AS INTEGER) AS ano_int,
+                    TRY_CAST(ano AS INTEGER) AS ano_int,
                     avg_punt_global,
                     total_estudiantes,
                     colegio_sk,
-                    MAX(CAST(ano AS INTEGER)) OVER () AS max_ano
+                    MAX(TRY_CAST(ano AS INTEGER)) OVER () AS max_ano
                 FROM gold.fct_agg_colegios_ano
                 WHERE {where_clause}
             )
@@ -188,12 +188,12 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
 
         trend_query = f"""
             SELECT
-                CAST(ano AS INTEGER) AS ano,
+                TRY_CAST(ano AS INTEGER) AS ano,
                 ROUND(AVG(avg_punt_global), 1) AS promedio_global
             FROM gold.fct_agg_colegios_ano
             WHERE {where_clause}
-              AND ano >= ?
-            GROUP BY ano
+              AND TRY_CAST(ano AS INTEGER) >= ?
+            GROUP BY TRY_CAST(ano AS INTEGER)
             ORDER BY ano
         """
         trend_rows = c.execute(resolve_schema(trend_query), where_params + [min_year_str]).fetchall()
@@ -406,19 +406,19 @@ def departments_index_page(request):
                 WITH ranked AS (
                     SELECT
                         departamento,
-                        CAST(ano AS INTEGER) AS ano,
+                        TRY_CAST(ano AS INTEGER) AS ano,
                         ROUND(AVG(avg_punt_global), 1)  AS promedio_global,
                         SUM(total_estudiantes)           AS total_estudiantes,
                         COUNT(DISTINCT colegio_sk)       AS total_colegios,
                         ROW_NUMBER() OVER (
                             PARTITION BY departamento
-                            ORDER BY CAST(ano AS INTEGER) DESC
+                            ORDER BY TRY_CAST(ano AS INTEGER) DESC
                         ) AS rn
                     FROM gold.fct_agg_colegios_ano
                     WHERE departamento IS NOT NULL
                       AND departamento != ''
                       AND sector != 'SINTETICO'
-                    GROUP BY departamento, CAST(ano AS INTEGER)
+                    GROUP BY departamento, TRY_CAST(ano AS INTEGER)
                 )
                 SELECT
                     cur.departamento,
