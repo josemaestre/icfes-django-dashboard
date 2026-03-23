@@ -114,6 +114,13 @@
                         {% if user.subscription %}
                         <h6 class="mb-1">{{ user.subscription.plan.name }}</h6>
                         <p class="text-muted mb-0 fs-13">Explora los planes disponibles para desbloquear más funcionalidades.</p>
+                        {% if user.subscription.plan.tier == 'free' %}
+                  <div class="mt-4">
+                    <a href="{% url 'pages:pricing' %}" class="btn btn-outline-success btn-sm">
+                      <i class="bx bx-rocket me-1"></i> Mejorar Plan
+                    </a>
+                </div>
+                        {% endif %}
                         {% else %}
                         <h6 class="mb-1">Sin plan activo</h6>
                         <p class="text-muted mb-0 fs-13">Activa un plan para acceder a todas las funcionalidades.</p>

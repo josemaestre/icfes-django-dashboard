@@ -73,7 +73,7 @@ class SubscriptionMiddleware:
                         'current_plan': subscription.plan.tier,
                         'queries_used': subscription.queries_today,
                         'queries_limit': subscription.plan.max_queries_per_day,
-                        'upgrade_url': reverse('pages:dynamic_pages', kwargs={'template_name': 'pages-pricing'})
+                        'upgrade_url': reverse('pages:pricing')
                     }, status=429)
                 
                 # Agregar info de suscripción al request

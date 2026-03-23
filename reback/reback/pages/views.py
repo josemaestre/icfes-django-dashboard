@@ -118,13 +118,13 @@ def root_page_view(request):
 def dynamic_pages_view(request, template_name):
     """
     Render dynamic pages. 
-    Pricing page is public, all other pages require login.
     """
-    # Public pages that don't require authentication
-    public_pages = ['pages-pricing']
-    
-    # Require login for non-public pages
-    if template_name not in public_pages and not request.user.is_authenticated:
+    if template_name == 'pages-pricing':
+        from django.shortcuts import redirect
+        return redirect('pages:pricing', permanent=True)
+        
+    # Require login for all dynamic pages
+    if not request.user.is_authenticated:
         from django.contrib.auth.views import redirect_to_login
         return redirect_to_login(request.get_full_path())
     
@@ -132,5 +132,3 @@ def dynamic_pages_view(request, template_name):
         return render(request, f'pages/{template_name}.html')
     except TemplateDoesNotExist:
         return render(request, f'pages/pages-404.html')
-
-
