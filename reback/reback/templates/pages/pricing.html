@@ -5,239 +5,247 @@
 
 {% block extra_css %}
 <style>
+    .pricing-header {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .mission-box {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        border-radius: 0.5rem;
+    }
+
     .pricing-card {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-radius: 15px;
-        overflow: hidden;
+        border-radius: 1rem;
+        border: 1px solid #e9ecef;
+        height: 100%;
     }
 
     .pricing-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
 
     .pricing-card.featured {
-        border: 3px solid #0d6efd;
+        border: 2px solid #0d6efd;
+        box-shadow: 0 10px 30px rgba(13, 110, 253, 0.15);
         position: relative;
     }
 
-    .pricing-card.featured::before {
-        content: "MÁS POPULAR";
+    .featured-badge {
         position: absolute;
-        top: 0;
-        right: 0;
-        background: #0d6efd;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #0d6efd;
         color: white;
-        padding: 5px 20px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        border-bottom-left-radius: 10px;
+        padding: 4px 15px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
     }
 
-    .price {
-        font-size: 3rem;
-        font-weight: 700;
-        color: #0d6efd;
+    .price-amount {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #212529;
+    }
+
+    .price-period {
+        color: #6c757d;
+        font-weight: 500;
     }
 
     .feature-list {
         list-style: none;
         padding: 0;
+        margin: 0;
     }
 
     .feature-list li {
-        padding: 10px 0;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f9fa;
+        display: flex;
+        align-items: flex-start;
     }
 
     .feature-list li:last-child {
         border-bottom: none;
     }
 
-    .feature-list i {
-        color: #28a745;
+    .feature-list .bi-check-circle-fill {
+        color: #198754;
         margin-right: 10px;
+        margin-top: 3px;
+    }
+
+    .feature-list .bi-x-circle {
+        color: #adb5bd;
+        margin-right: 10px;
+        margin-top: 3px;
+    }
+
+    .feature-disabled {
+        color: #6c757d;
+        text-decoration: line-through;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <!-- Header -->
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold">Planes y Precios</h1>
-        <p class="lead text-muted">Elige el plan que mejor se adapte a tus necesidades</p>
+    <!-- Header Section -->
+    <div class="pricing-header text-center mb-5">
+        <h1 class="display-5 fw-bold mb-3">Convierte los datos de tu colegio en una ventaja competitiva.</h1>
+        <p class="lead text-muted">
+            Deja de pelear con hojas de cálculo interminables. ICFES Analytics te entrega en milisegundos las tendencias, brechas y comparativas que necesitas para tomar decisiones académicas estratégicas y subir en el ranking.
+        </p>
+    </div>
+
+    <!-- Misión Social -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="mission-box p-4 p-md-5">
+                <h5 class="fw-bold text-primary mb-3">Nuestra Misión Educativa</h5>
+                <p class="mb-0 fs-5 text-secondary">
+                    "El acceso a los puntajes básicos es y siempre será 100% gratuito. Creemos en el poder de la educación, porque sabemos que un excelente ICFES transforma futuros y abre las puertas a becas universitarias. Sin embargo, para mantener esta infraestructura tecnológica de alto rendimiento y ofrecer inteligencia de datos avanzada a los directivos, hemos diseñado planes institucionales a la medida."
+                </p>
+            </div>
+        </div>
     </div>
 
     <!-- Pricing Cards -->
-    <div class="row g-4">
-        <!-- Free Plan -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card pricing-card h-100">
-                <div class="card-body p-4">
-                    <h3 class="card-title text-center mb-3">{{ free_plan.name|default:"Free" }}</h3>
-                    <div class="text-center mb-4">
-                        <span class="price">${{ free_plan.price_monthly|default:0|floatformat:0 }}</span>
-                        <span class="text-muted">COP/mes</span>
-                    </div>
-
-                    <ul class="feature-list">
-                        <li><i class="bi bi-check-circle-fill"></i> 10 consultas/día</li>
-                        <li><i class="bi bi-check-circle-fill"></i> 3 años de datos</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Datos regionales</li>
-                        <li><i class="bi bi-x-circle-fill text-muted"></i> Exportación</li>
-                        <li><i class="bi bi-x-circle-fill text-muted"></i> API access</li>
-                    </ul>
-
-                    <div class="d-grid mt-4">
-                        {% if user.is_authenticated and current_tier == 'free' %}
-                        <button class="btn btn-outline-secondary" disabled>Plan Actual</button>
-                        {% else %}
-                        <a href="{% url 'account_signup' %}" class="btn btn-outline-primary">Comenzar Gratis</a>
-                        {% endif %}
-                    </div>
+    <div class="row g-4 justify-content-center mb-5">
+        
+        <!-- TIPO 1: Plan Comunidad -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card pricing-card text-center p-4">
+                <h4 class="card-title fw-bold">Plan Comunidad</h4>
+                <p class="text-muted mb-4">Para estudiantes y padres de familia.</p>
+                
+                <div class="mb-4">
+                    <span class="price-amount">$0</span>
+                    <span class="price-period">COP</span>
                 </div>
+
+                <a href="{% url 'pages:home' %}" class="btn btn-outline-primary btn-lg w-100 mb-4 fw-bold">Explorar gratis</a>
+
+                <ul class="feature-list text-start">
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Puntaje global 2024</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Resumen de fortalezas y debilidades</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Tendencia histórica (últimos 6 años)</span></li>
+                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Explorador jerárquico nacional</span></li>
+                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Histórico completo desde 1996</span></li>
+                </ul>
             </div>
         </div>
 
-        <!-- Basic Plan -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card pricing-card h-100">
-                <div class="card-body p-4">
-                    <h3 class="card-title text-center mb-3">{{ basic_plan.name|default:"Basic" }}</h3>
-                    <div class="text-center mb-4">
-                        <span class="price">${{ basic_plan.price_monthly|default:39900|floatformat:0 }}</span>
-                        <span class="text-muted">COP/mes</span>
-                    </div>
-
-                    <ul class="feature-list">
-                        <li><i class="bi bi-check-circle-fill"></i> 100 consultas/día</li>
-                        <li><i class="bi bi-check-circle-fill"></i> 10 años de datos</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Datos municipales</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Exportación CSV</li>
-                        <li><i class="bi bi-x-circle-fill text-muted"></i> API access</li>
-                    </ul>
-
-                    <div class="d-grid mt-4">
-                        {% if user.is_authenticated %}
-                        {% if current_tier == 'basic' %}
-                        <button class="btn btn-outline-secondary" disabled>Plan Actual</button>
-                        {% else %}
-                        <a href="{% url 'payments:wompi_checkout' %}?plan=basic" class="btn btn-primary">Seleccionar
-                            Plan</a>
-                        {% endif %}
-                        {% else %}
-                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}"
-                            class="btn btn-primary">Iniciar Sesión</a>
-                        {% endif %}
-                    </div>
+        <!-- TIPO 3: Plan Pro Estratégico (Destacado) -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card pricing-card featured text-center p-4">
+                <span class="featured-badge">RECOMENDADO</span>
+                <h4 class="card-title fw-bold text-primary">Plan Pro Estratégico</h4>
+                <p class="text-muted mb-4">Para rectores y directivos de colegios.</p>
+                
+                <div class="mb-4">
+                    <span class="price-amount">$990.000</span>
+                    <span class="price-period">COP / año</span>
+                    <div class="text-success small fw-bold">~ $82.500 COP al mes</div>
                 </div>
+
+                <!-- Botón Wompi Plan Pro -->
+                <a href="#" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Desbloquear Plan Pro</a>
+
+                <ul class="feature-list text-start">
+                    <li><i class="bi bi-check-circle-fill"></i> <strong>Histórico absoluto (desde 1996)</strong></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <strong>Explorador Jerárquico Total</strong></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <strong>Z-Scores y percentiles reales</strong></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <strong>Exportación de datos crudos (CSV/Excel)</strong></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Todo lo del plan Esencial</span></li>
+                </ul>
             </div>
         </div>
 
-        <!-- Premium Plan (Featured) -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card pricing-card featured h-100">
-                <div class="card-body p-4">
-                    <h3 class="card-title text-center mb-3">{{ premium_plan.name|default:"Premium" }}</h3>
-                    <div class="text-center mb-4">
-                        <span class="price">${{ premium_plan.price_monthly|default:100000|floatformat:0 }}</span>
-                        <span class="text-muted">COP/mes</span>
-                    </div>
-
-                    <ul class="feature-list">
-                        <li><i class="bi bi-check-circle-fill"></i> Consultas ilimitadas</li>
-                        <li><i class="bi bi-check-circle-fill"></i> 29 años de datos</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Datos de colegios</li>
-                        <li><i class="bi bi-check-circle-fill"></i> CSV + Excel + PDF</li>
-                        <li><i class="bi bi-check-circle-fill"></i> API access</li>
-                    </ul>
-
-                    <div class="d-grid mt-4">
-                        {% if user.is_authenticated %}
-                        {% if current_tier == 'premium' %}
-                        <button class="btn btn-outline-secondary" disabled>Plan Actual</button>
-                        {% else %}
-                        <a href="{% url 'payments:wompi_checkout' %}?plan=premium" class="btn btn-primary">Seleccionar
-                            Plan</a>
-                        {% endif %}
-                        {% else %}
-                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}"
-                            class="btn btn-primary">Iniciar Sesión</a>
-                        {% endif %}
-                    </div>
+        <!-- TIPO 2: Plan Institucional Esencial -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card pricing-card text-center p-4">
+                <h4 class="card-title fw-bold">Plan Esencial</h4>
+                <p class="text-muted mb-4">Para coordinadores académicos locales.</p>
+                
+                <div class="mb-4">
+                    <span class="price-amount">$490.000</span>
+                    <span class="price-period">COP / año</span>
+                    <div class="text-success small fw-bold">~ $40.800 COP al mes</div>
                 </div>
+
+                <!-- Botón Wompi Plan Esencial -->
+                <a href="#" class="btn btn-outline-dark btn-lg w-100 mb-4 fw-bold">Empezar Plan Esencial</a>
+
+                <ul class="feature-list text-start">
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Todo lo del plan Comunidad</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Historial a 10 años</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Comparativa municipal</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i> <span>Insignias de rendimiento (PNG)</span></li>
+                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Z-Scores y percentiles reales</span></li>
+                    <li class="feature-disabled"><i class="bi bi-x-circle"></i> <span>Exportación a Excel</span></li>
+                </ul>
             </div>
         </div>
 
-        <!-- Enterprise Plan -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card pricing-card h-100 bg-dark text-white">
-                <div class="card-body p-4">
-                    <h3 class="card-title text-center mb-3">{{ enterprise_plan.name|default:"Enterprise" }}</h3>
-                    <div class="text-center mb-4">
-                        <span class="price text-white">${{ enterprise_plan.price_monthly|default:500000|floatformat:0 }}</span>
-                        <span class="text-light">COP/mes</span>
-                    </div>
-
-                    <ul class="feature-list">
-                        <li><i class="bi bi-check-circle-fill"></i> Todo ilimitado</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Soporte prioritario</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Múltiples usuarios</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Todas las exportaciones</li>
-                        <li><i class="bi bi-check-circle-fill"></i> API sin límites</li>
-                    </ul>
-
-                    <div class="d-grid mt-4">
-                        {% if user.is_authenticated %}
-                        {% if current_tier == 'enterprise' %}
-                        <button class="btn btn-outline-light" disabled>Plan Actual</button>
-                        {% else %}
-                        <a href="{% url 'payments:wompi_checkout' %}?plan=enterprise" class="btn btn-light">Seleccionar
-                            Plan</a>
-                        {% endif %}
-                        {% else %}
-                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-light">Iniciar
-                            Sesión</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- FAQ Section -->
-    <div class="row mt-5">
+    <div class="row pt-5 mt-4 border-top">
         <div class="col-lg-8 mx-auto">
-            <h2 class="text-center mb-4">Preguntas Frecuentes</h2>
-            <div class="accordion" id="faqAccordion">
-                <div class="accordion-item">
+            <h2 class="text-center fw-bold mb-5">Preguntas Frecuentes</h2>
+            
+            <div class="accordion accordion-flush" id="faqAccordion">
+                <!-- FAQ 1 -->
+                <div class="accordion-item mb-3 border rounded shadow-sm">
                     <h2 class="accordion-header">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                            ¿Puedo cambiar de plan en cualquier momento?
+                        <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            ¿Puedo pagar mensual?
                         </button>
                     </h2>
                     <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            Sí, puedes actualizar o degradar tu plan en cualquier momento. Los cambios se aplicarán
-                            inmediatamente.
+                        <div class="accordion-body text-secondary">
+                            Para garantizar el acceso ininterrumpido durante todo el ciclo lectivo y permitir una planeación estratégica profunda, nuestros planes están diseñados con un único pago anual de gran valor.
                         </div>
                     </div>
                 </div>
-                <div class="accordion-item">
+                
+                <!-- FAQ 2 -->
+                <div class="accordion-item mb-3 border rounded shadow-sm">
                     <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#faq2">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
                             ¿Qué métodos de pago aceptan?
                         </button>
                     </h2>
                     <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            Aceptamos PSE, Nequi y tarjetas de crédito/débito a través de Wompi.
+                        <div class="accordion-body text-secondary">
+                            Procesamos todos los pagos de forma 100% segura vía <strong>Wompi</strong> (respaldado por Bancolombia). Aceptamos transferencias directas desde la cuenta del colegio mediante PSE, Nequi o cualquier tarjeta de crédito.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="accordion-item mb-3 border rounded shadow-sm">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            ¿La plataforma se actualiza con los nuevos resultados del ICFES?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            ¡Sí! En cuanto el ICFES libera públicamente los nuevos microdatos oficiales, nuestra arquitectura Data Warehouse (DuckDB) los procesa casi en tiempo real y estarán disponibles en tu panel analítico sin ningún costo adicional durante tu anualidad.
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
 </div>
