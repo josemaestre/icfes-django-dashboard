@@ -75,13 +75,13 @@
                 </h6>
                 {% if user.subscription %}
                   {% if user.subscription.plan.tier == 'free' %}
-                  <span class="badge bg-secondary-subtle text-secondary mt-1">Plan Gratuito</span>
+                  <span class="badge bg-secondary-subtle text-secondary mt-1">Comunidad</span>
                   {% elif user.subscription.plan.tier == 'basic' %}
-                  <span class="badge bg-info-subtle text-info mt-1">Plan Básico</span>
+                  <span class="badge bg-info-subtle text-info mt-1">Esencial</span>
                   {% elif user.subscription.plan.tier == 'premium' %}
-                  <span class="badge bg-primary-subtle text-primary mt-1">Plan Premium</span>
+                  <span class="badge bg-primary-subtle text-primary mt-1">Pro Estratégico</span>
                   {% elif user.subscription.plan.tier == 'enterprise' %}
-                  <span class="badge bg-success-subtle text-success mt-1">Plan Enterprise</span>
+                  <span class="badge bg-success-subtle text-success mt-1">Territorial</span>
                   {% endif %}
                 {% else %}
                 <span class="badge bg-secondary-subtle text-secondary mt-1">Sin Plan</span>

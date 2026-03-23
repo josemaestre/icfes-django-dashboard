@@ -54,3 +54,26 @@ Todo PR que toque SEO programatico debe incluir:
 - cobertura indexada por tipo de pagina
 - profundidad de crawl
 - crecimiento de URLs validas en sitemap
+
+## Monitoreo en tiempo real (Google Analytics 4)
+El informe “Páginas en tiempo real” es clave para detectar incidentes de carga masiva, picos en onboarding y problemas de UX en tráfico orgánico inmediato.
+
+Métricas principales:
+- Usuarios activos últimos 30 minutos (ej: 5)
+- Visualizaciones últimos 30 minutos (ej: 13)
+- Usuarios activos por minuto (ej: 1-2)
+- Top rutas de página (`/accounts/signup/`, `/icfes/colegio/...`, `/icfes/departamento/...`, etc.)
+
+Qué validar:
+- Que no haya concentraciones inesperadas en páginas con poco contenido SEO (ej. paso de signup) que indican campaña/errores de funnel.
+- Que las fichas de colegio (puntos 4) y socio-geográficas (punto 3) aparezcan en top 10 cuando hay campaña local.
+- Que no estén registrando rutas de error 4xx/5xx en tiempo real.
+
+Acción operativa:
+1. Configurar alertas GA4/BigQuery para decrecimiento de conversión o subida abrupta de session_rate en `/accounts/signup/`.
+2. Registrar resumén diario de tráfico en dashboards con top-10 rutas, usuarios activos y vistas.
+3. Relacionar con logs de backend de Sitemaps/SSR para verificar origen de visitas (Organic Search vs direct/referral).
+
+Integración con la política de cambios SEO:
+- Todo cambio de estructura de URL debe acompañarse de validación explícita en este informe (antes y después de deploy).
+- Registrar los 9-10 endpoints más vistos en un release para no perder foco en las páginas críticas.

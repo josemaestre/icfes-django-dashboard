@@ -49,9 +49,9 @@
     </a>
     {% else %}
     <a class="nav-link disabled locked-shake" href="#" data-bs-toggle="modal" data-bs-target="#upgradeModal"
-      data-bs-original-title="Requiere Plan Básico" title="Requiere Plan Básico">
+      data-bs-original-title="Requiere Plan Pro" title="Requiere Plan Pro">
       <i class="bx bx-lock-alt me-1"></i> Mapa Geográfico
-      <span class="badge bg-info-subtle text-info ms-1" style="font-size: 0.65rem;">Básico</span>
+      <span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Pro</span>
     </a>
     {% endif %}
   </li>
@@ -64,9 +64,9 @@
     </a>
     {% else %}
     <a class="nav-link disabled locked-shake" href="#" data-bs-toggle="modal" data-bs-target="#upgradeModal"
-      data-bs-original-title="Requiere Plan Premium" title="Requiere Plan Premium">
+      data-bs-original-title="Requiere Plan Pro" title="Requiere Plan Pro">
       <i class="bx bx-lock-alt me-1"></i> Comparar Colegios
-      <span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Premium</span>
+      <span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Pro</span>
     </a>
     {% endif %}
   </li>
@@ -552,7 +552,7 @@
               </p>
               <button class="btn btn-upgrade" data-bs-toggle="modal" data-bs-target="#upgradeModal">
                 <i class="bx bx-rocket"></i>
-                Desbloquear con Plan Básico - Desde $49,900/mes
+                Desbloquear con Plan Pro - $990.000/año
               </button>
             </div>
           </div>
@@ -618,7 +618,7 @@
               <div class="col-md-7">
                 <h5 class="mb-2">
                   <i class="bx bx-lock-alt me-2"></i>Análisis de Clustering Bloqueado
-                  <span class="badge bg-info-subtle text-info ms-2" style="font-size: 0.65rem;">Básico</span>
+                  <span class="badge bg-primary-subtle text-primary ms-2" style="font-size: 0.65rem;">Pro</span>
                 </h5>
                 <p class="text-muted mb-2">
                   Descubre colegios similares basados en análisis de clustering con machine learning
@@ -633,9 +633,9 @@
               <div class="col-md-3 text-center">
                 <button class="btn btn-upgrade w-100" data-bs-toggle="modal" data-bs-target="#upgradeModal">
                   <i class="bx bx-rocket"></i>
-                  Desbloquear con Plan Básico
+                  Desbloquear con Plan Pro
                 </button>
-                <small class="text-muted d-block mt-2">Desde $49,900/mes</small>
+                <small class="text-muted d-block mt-2">Pase 1 Año - $990.000 COP</small>
               </div>
             </div>
           </div>
@@ -781,7 +781,7 @@
               <h5 class="card-title mb-0">
                 <i class="bx bx-pie-chart-alt-2 me-1"></i> Distribución de Niveles de Desempeño
                 {% if not has_basic %}
-                <span class="badge bg-info-subtle text-info ms-2" style="font-size: 0.65rem;">Básico</span>
+                <span class="badge bg-primary-subtle text-primary ms-2" style="font-size: 0.65rem;">Pro</span>
                 {% endif %}
               </h5>
               {% if has_basic %}
@@ -795,7 +795,7 @@
               </select>
               {% else %}
               <select id="nivelesSubjectSelector" class="form-select form-select-sm" disabled
-                style="width: auto; min-width: 220px;" title="Actualiza a Plan Básico para cambiar materia">
+                style="width: auto; min-width: 220px;" title="Actualiza a Plan Pro para cambiar materia">
                 <option value="matematicas">Matemáticas (Solo vista)</option>
               </select>
               {% endif %}

@@ -17,12 +17,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 # Celery Beat schedule for recurring tasks
-app.conf.beat_schedule = {
-    'charge-monthly-subscriptions': {
-        'task': 'reback.users.tasks.charge_monthly_subscriptions',
-        'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
-    },
-}
+app.conf.beat_schedule = {}
 
 @app.task(bind=True)
 def debug_task(self):

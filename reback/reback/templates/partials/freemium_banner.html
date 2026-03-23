@@ -12,18 +12,18 @@
                 <div class="d-flex align-items-center">
                     <i class="bx bx-info-circle fs-5 me-2"></i>
                     <div>
-                        <strong>Estás usando el Plan Gratuito.</strong>
+                        <strong>Estás usando el Plan Comunidad.</strong>
                         <span class="d-none d-md-inline">
-                            Desbloquea análisis departamental, comparaciones entre colegios y exportaciones avanzadas.
+                            Desbloquea el histórico absoluto, percentiles reales y exportaciones avanzadas.
                         </span>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-lg-2 text-end">
-                <button class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                <a href="{% url 'pages:pricing' %}" class="btn btn-light btn-sm me-2">
                     <i class="bx bx-rocket me-1"></i>
-                    Ver Planes
-                </button>
+                    Ver Plan Pro
+                </a>
                 <button class="btn btn-outline-light btn-sm" onclick="dismissFreemiumBanner()" aria-label="Cerrar">
                     <i class="bx bx-x"></i>
                 </button>
