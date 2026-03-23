@@ -111,7 +111,7 @@
             <div class="mission-box p-4 p-md-5">
                 <h5 class="fw-bold text-primary mb-3">Nuestra Misión Educativa</h5>
                 <p class="mb-0 fs-5 text-secondary">
-                    "El acceso a los puntajes básicos es y siempre será 100% gratuito. Creemos en el poder de la educación, porque sabemos que un excelente ICFES transforma futuros y abre las puertas a becas universitarias. Sin embargo, para mantener esta infraestructura tecnológica de alto rendimiento y ofrecer inteligencia de datos avanzada a los directivos, hemos diseñado planes institucionales a la medida."
+                    "En <strong>ICFES Analytics</strong> estamos profundamente comprometidos con la educación en Colombia. Siempre buscaremos formas de suministrarle información de alto valor a los padres de familia, a los rectores, a los estudiantes y a las instituciones que lo requieran, y mucha de ella <strong>siempre será 100% gratuita</strong>. Creemos en el poder de los datos para transformar futuros; sin embargo, para lograr mantener esta infraestructura tecnológica en pie y ofrecer inteligencia avanzada a los directivos, hemos diseñado estos planes institucionales a la medida."
                 </p>
             </div>
         </div>
@@ -131,7 +131,13 @@
                     <span class="price-period">COP</span>
                 </div>
 
-                <a href="{% url 'pages:home' %}" class="btn btn-outline-primary btn-lg w-100 mb-4 fw-bold">Explorar gratis</a>
+                <div class="mb-4">
+                    {% if user.is_authenticated and current_tier == 'free' %}
+                        <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold" disabled>Plan Actual</button>
+                    {% else %}
+                        <a href="{% url 'pages:home' %}" class="btn btn-outline-primary btn-lg w-100 mb-4 fw-bold">Explorar gratis</a>
+                    {% endif %}
+                </div>
 
                 <ul class="feature-list text-start">
                     <li><i class="bi bi-check-circle-fill"></i> <span>Puntaje global 2024</span></li>
@@ -157,7 +163,17 @@
                 </div>
 
                 <!-- Botón Wompi Plan Pro -->
-                <a href="#" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Desbloquear Plan Pro</a>
+                <div class="mb-4">
+                    {% if user.is_authenticated %}
+                        {% if current_tier == 'premium' or current_tier == 'enterprise' %}
+                            <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold shadow-sm" disabled>Plan Actual</button>
+                        {% else %}
+                            <a href="{% url 'payments:wompi_checkout' %}?plan=premium" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Desbloquear Plan Pro</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-primary btn-lg w-100 mb-4 fw-bold shadow-sm">Iniciar Sesión</a>
+                    {% endif %}
+                </div>
 
                 <ul class="feature-list text-start">
                     <li><i class="bi bi-check-circle-fill"></i> <strong>Histórico absoluto (desde 1996)</strong></li>
@@ -182,7 +198,17 @@
                 </div>
 
                 <!-- Botón Wompi Plan Esencial -->
-                <a href="#" class="btn btn-outline-dark btn-lg w-100 mb-4 fw-bold">Empezar Plan Esencial</a>
+                <div class="mb-4">
+                    {% if user.is_authenticated %}
+                        {% if current_tier == 'basic' or current_tier == 'premium' or current_tier == 'enterprise' %}
+                            <button class="btn btn-outline-secondary btn-lg w-100 mb-4 fw-bold" disabled>Plan Adquirido</button>
+                        {% else %}
+                            <a href="{% url 'payments:wompi_checkout' %}?plan=basic" class="btn btn-outline-dark btn-lg w-100 mb-4 fw-bold">Empezar Plan Esencial</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'account_login' %}?next={% url 'pages:pricing' %}" class="btn btn-outline-dark btn-lg w-100 mb-4 fw-bold">Iniciar Sesión</a>
+                    {% endif %}
+                </div>
 
                 <ul class="feature-list text-start">
                     <li><i class="bi bi-check-circle-fill"></i> <span>Todo lo del plan Comunidad</span></li>
