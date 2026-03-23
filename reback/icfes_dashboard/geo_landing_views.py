@@ -524,6 +524,13 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
                 request, departamento=departamento, municipio=municipio, conn=conn
             )
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
+    except Http404:
+        # Municipality exists in DB but has no current-year data — redirect to dept page
+        logger.warning(
+            "Municipality %s/%s has no data — redirecting to dept page",
+            departamento_slug, municipio_slug,
+        )
+        return redirect(f"/icfes/departamento/{departamento_slug}/", permanent=False)
     except Exception as e:
         import traceback
         logger.error(
