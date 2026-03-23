@@ -398,7 +398,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
     }
 
 
-@cache_page(60 * 60 * 12)
+@cache_page(60 * 60 * 6)
 def departments_index_page(request):
     try:
         with get_duckdb_connection() as conn:
