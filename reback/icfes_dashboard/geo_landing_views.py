@@ -403,25 +403,71 @@ def departments_index_page(request):
     try:
         with get_duckdb_connection() as conn:
             query = """
-                SELECT DISTINCT departamento
-                FROM gold.fct_agg_colegios_ano
-                WHERE departamento IS NOT NULL
-                  AND departamento != ''
-                ORDER BY departamento
+                WITH ranked AS (
+                    SELECT
+                        departamento,
+                        CAST(ano AS INTEGER) AS ano,
+                        ROUND(AVG(avg_punt_global), 1)  AS promedio_global,
+                        SUM(total_estudiantes)           AS total_estudiantes,
+                        COUNT(DISTINCT colegio_sk)       AS total_colegios,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY departamento
+                            ORDER BY CAST(ano AS INTEGER) DESC
+                        ) AS rn
+                    FROM gold.fct_agg_colegios_ano
+                    WHERE departamento IS NOT NULL
+                      AND departamento != ''
+                      AND sector != 'SINTETICO'
+                    GROUP BY departamento, CAST(ano AS INTEGER)
+                )
+                SELECT
+                    cur.departamento,
+                    cur.ano                                                     AS latest_ano,
+                    cur.promedio_global,
+                    cur.total_estudiantes,
+                    cur.total_colegios,
+                    ROUND(cur.promedio_global - COALESCE(prev.promedio_global, cur.promedio_global), 1) AS delta
+                FROM ranked cur
+                LEFT JOIN ranked prev
+                       ON prev.departamento = cur.departamento AND prev.rn = 2
+                WHERE cur.rn = 1
+                  AND cur.departamento NOT IN ('EXTERIOR', 'SIN INFORMACION')
+                ORDER BY cur.promedio_global DESC NULLS LAST
             """
             rows = conn.execute(resolve_schema(query)).fetchall()
-        departments = [{"name": row[0], "slug": slugify(row[0])} for row in rows]
+
+        departments = [
+            {
+                "name":        row[0],
+                "slug":        slugify(row[0]),
+                "ano":         int(row[1]) if row[1] else None,
+                "promedio":    float(row[2]) if row[2] is not None else None,
+                "estudiantes": int(row[3]) if row[3] else 0,
+                "colegios":    int(row[4]) if row[4] else 0,
+                "delta":       float(row[5]) if row[5] is not None else 0.0,
+            }
+            for row in rows
+        ]
+
+        latest_year = departments[0]["ano"] if departments else 2024
+        promedio_nacional = (
+            round(sum(d["promedio"] for d in departments if d["promedio"]) / len(departments), 1)
+            if departments else None
+        )
+
         return render(
             request,
             "icfes_dashboard/geo_landing_simple.html",
             {
                 "index_mode": True,
                 "departments": departments,
+                "latest_year": latest_year,
+                "promedio_nacional": promedio_nacional,
                 "seo": {
-                    "title": "Departamentos con resultados ICFES | ICFES Analytics",
+                    "title": f"Resultados ICFES por Departamento {latest_year} | Ranking Colombia",
                     "description": (
-                        "Explora resultados ICFES por departamento en Colombia, con acceso a rankings, "
-                        "tendencias históricas y páginas municipales."
+                        f"Compara el promedio ICFES {latest_year} de los 33 departamentos de Colombia. "
+                        "Rankings, tendencias y colegios destacados por región."
                     ),
                     "keywords": "ICFES por departamento, ranking departamentos ICFES, pruebas saber 11",
                     "og_image": _default_og_image(_build_base_url(request)),

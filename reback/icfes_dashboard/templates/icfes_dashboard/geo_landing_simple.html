@@ -61,25 +61,156 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5TWMTCNR" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 {% if index_mode %}
-    <section class="py-5 hero">
-        <div class="container">
-            <h1 class="mb-2">Resultados ICFES por Departamento</h1>
-            <p class="mb-0">Selecciona un departamento para ver tendencia histórica y ranking de colegios.</p>
-        </div>
-    </section>
-    <main class="container py-4">
-        <div class="panel p-4">
-            <div class="row g-3">
-                {% for d in departments %}
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <a class="btn btn-outline-primary w-100 text-start" href="/icfes/departamento/{{ d.slug }}/">
-                        {{ d.name }}
-                    </a>
+<style>
+    .dept-card {
+        background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.08);
+        padding:18px; transition:transform .15s,box-shadow .15s; height:100%;
+        text-decoration:none; color:inherit; display:block;
+    }
+    .dept-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.14); color:inherit; }
+    .dept-name { font-weight:700; font-size:1rem; color:#1e3a5f; margin-bottom:6px; }
+    .dept-score { font-size:1.6rem; font-weight:800; line-height:1; color:#0f766e; }
+    .dept-delta-pos { color:#16a34a; font-size:.82rem; font-weight:600; }
+    .dept-delta-neg { color:#dc2626; font-size:.82rem; font-weight:600; }
+    .dept-delta-neu { color:#94a3b8; font-size:.82rem; }
+    .dept-meta { font-size:.78rem; color:#64748b; margin-top:4px; }
+    .dept-rank { font-size:.7rem; font-weight:700; background:#e0f2fe; color:#0369a1;
+                 border-radius:20px; padding:2px 8px; float:right; }
+    .search-box { border-radius:30px; padding:10px 20px; border:2px solid #e2e8f0;
+                  font-size:.95rem; width:100%; max-width:420px; outline:none; }
+    .search-box:focus { border-color:#0ea5e9; }
+    .top-dept-card { border-left:4px solid; border-radius:10px; padding:14px 18px;
+                     background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+</style>
+
+<section class="py-4 hero">
+    <div class="container">
+        <h1 class="mb-1" style="font-size:clamp(1.4rem,3vw,2rem);font-weight:800;">
+            Resultados ICFES {{ latest_year }} por Departamento
+        </h1>
+        <p class="mb-3" style="opacity:.88;">
+            Compara el promedio ICFES de los 33 departamentos de Colombia · Promedio nacional: <strong>{{ promedio_nacional }}</strong> pts
+        </p>
+        <input id="dept-search" class="search-box" type="text"
+               placeholder="🔍  Buscar departamento..." autocomplete="off">
+    </div>
+</section>
+
+<main class="container py-4">
+
+    <!-- TOP 3 / BOTTOM 3 -->
+    {% if departments %}
+    <div class="row g-3 mb-4">
+        <div class="col-12"><h2 class="h6 fw-bold text-muted mb-2">MEJORES PROMEDIOS {{ latest_year }}</h2></div>
+        {% for d in departments|slice:":3" %}
+        <div class="col-12 col-md-4">
+            <a href="/icfes/departamento/{{ d.slug }}/" class="top-dept-card d-block text-decoration-none"
+               style="border-color:#0f766e;color:inherit;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span style="font-weight:700;color:#1e3a5f;">{{ d.name|title }}</span>
+                    <span style="font-size:1.3rem;font-weight:800;color:#0f766e;">{{ d.promedio }}</span>
                 </div>
-                {% endfor %}
-            </div>
+                <div class="mt-1" style="font-size:.8rem;color:#64748b;">
+                    {{ d.colegios }} colegios ·
+                    {% if d.delta > 0 %}<span style="color:#16a34a;">↑ +{{ d.delta }} vs {{ latest_year|add:"-1" }}</span>
+                    {% elif d.delta < 0 %}<span style="color:#dc2626;">↓ {{ d.delta }} vs {{ latest_year|add:"-1" }}</span>
+                    {% endif %}
+                </div>
+            </a>
         </div>
-    </main>
+        {% endfor %}
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12"><h2 class="h6 fw-bold text-muted mb-2">CON MÁS OPORTUNIDAD DE MEJORA</h2></div>
+        {% for d in departments reversed|slice:":3" %}
+        <div class="col-12 col-md-4">
+            <a href="/icfes/departamento/{{ d.slug }}/" class="top-dept-card d-block text-decoration-none"
+               style="border-color:#f97316;color:inherit;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span style="font-weight:700;color:#1e3a5f;">{{ d.name|title }}</span>
+                    <span style="font-size:1.3rem;font-weight:800;color:#f97316;">{{ d.promedio }}</span>
+                </div>
+                <div class="mt-1" style="font-size:.8rem;color:#64748b;">
+                    {{ d.colegios }} colegios ·
+                    {% if d.delta > 0 %}<span style="color:#16a34a;">↑ +{{ d.delta }} vs {{ latest_year|add:"-1" }}</span>
+                    {% elif d.delta < 0 %}<span style="color:#dc2626;">↓ {{ d.delta }} vs {{ latest_year|add:"-1" }}</span>
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- TODAS LAS TARJETAS -->
+    <h2 class="h6 fw-bold text-muted mb-3">TODOS LOS DEPARTAMENTOS</h2>
+    <div class="row g-3" id="dept-grid">
+        {% for d in departments %}
+        <div class="col-12 col-sm-6 col-lg-4 col-card">
+            <a href="/icfes/departamento/{{ d.slug }}/" class="dept-card"
+               data-name="{{ d.name|lower }}">
+                <span class="dept-rank">#{{ forloop.counter }}</span>
+                <div class="dept-name">{{ d.name|title }}</div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <span class="dept-score">{{ d.promedio|default:"—" }}</span>
+                    <span class="text-muted" style="font-size:.8rem;">pts globales</span>
+                    {% if d.delta > 0 %}
+                    <span class="dept-delta-pos">↑ +{{ d.delta }}</span>
+                    {% elif d.delta < 0 %}
+                    <span class="dept-delta-neg">↓ {{ d.delta }}</span>
+                    {% else %}
+                    <span class="dept-delta-neu">→ sin cambio</span>
+                    {% endif %}
+                </div>
+                <div class="dept-meta">
+                    {{ d.colegios }} colegios · {{ d.estudiantes|floatformat:"0" }} estudiantes
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="no-results" class="text-center py-5" style="display:none;">
+        <p class="text-muted">No se encontró ese departamento.</p>
+    </div>
+
+    <!-- CTA index -->
+    <div class="panel p-4 mt-4" style="background:linear-gradient(135deg,#1d4ed8 0%,#0891b2 100%);color:#fff;text-align:center;">
+        <h3 class="h5 mb-2">¿Quieres ver el diagnóstico completo de tu colegio?</h3>
+        <p class="mb-3" style="opacity:.9;">Historia desde 1996, análisis por materia y comparación con tu departamento.</p>
+        {% if not user.is_authenticated %}
+        <a href="{% url 'account_signup' %}?next={{ request.path }}"
+           class="btn btn-light btn-lg px-5 fw-bold" data-cta-source="deptos_index_cta">
+            Crear cuenta gratuita →
+        </a>
+        {% else %}
+        <a href="/dashboard-icfes/" class="btn btn-light btn-lg px-5 fw-bold">Ir al dashboard →</a>
+        {% endif %}
+    </div>
+
+</main>
+
+<script>
+(function(){
+    const input = document.getElementById('dept-search');
+    const cards = document.querySelectorAll('#dept-grid .col-card');
+    const noResults = document.getElementById('no-results');
+    input.addEventListener('input', function(){
+        const q = this.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        let visible = 0;
+        cards.forEach(function(col){
+            const name = col.querySelector('.dept-card').dataset.name
+                .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+            const show = name.includes(q);
+            col.style.display = show ? '' : 'none';
+            if(show) visible++;
+        });
+        noResults.style.display = visible === 0 ? '' : 'none';
+    });
+})();
+</script>
+
 {% else %}
     <section class="py-5 hero">
         <div class="container">
@@ -280,6 +411,7 @@
     </script>
 {% endif %}
 
+{% if not index_mode %}
 {% include "icfes_dashboard/_share_buttons.html" %}
 
 <section class="container mb-4">
@@ -315,6 +447,7 @@
 })();
 </script>
 {% endif %}
+{% endif %}{# /if not index_mode #}
 
 <footer class="footer">
     <div class="container">
