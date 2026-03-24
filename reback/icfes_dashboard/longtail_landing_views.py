@@ -1135,7 +1135,7 @@ def colegios_mejoraron_hub_page(request):
         with get_duckdb_connection() as conn:
             row = conn.execute(
                 resolve_schema(f"""
-                    SELECT MAX({_YEAR_EXPR_H})
+                    SELECT MAX({_YEAR_EXPR})
                     FROM gold.fct_colegio_historico
                     WHERE punt_global_ano_anterior IS NOT NULL
                 """)
