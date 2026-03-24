@@ -24,6 +24,16 @@ def _noop_ctx(conn):
 
 logger = logging.getLogger(__name__)
 
+# Cross-version-safe integer parsing for `ano` (avoids hard failures on dirty values).
+YEAR_INT_EXPR = (
+    "CASE WHEN regexp_matches(CAST(ano AS VARCHAR), '^[0-9]+$') "
+    "THEN CAST(ano AS INTEGER) ELSE NULL END"
+)
+YEAR_INT_EXPR_F = (
+    "CASE WHEN regexp_matches(CAST(f.ano AS VARCHAR), '^[0-9]+$') "
+    "THEN CAST(f.ano AS INTEGER) ELSE NULL END"
+)
+
 
 def _build_geo_where(departamento=None, municipio=None, alias=""):
     prefix = f"{alias}." if alias else ""
@@ -92,11 +102,11 @@ _MUNICIPIO_SLUG_ALIASES = {
 @lru_cache(maxsize=1)
 def _get_all_departamentos():
     """Fetch all department names once per process — 33 rows, changes only on redeploy."""
-    query = """
+    query = f"""
         SELECT DISTINCT departamento
         FROM gold.fct_agg_colegios_ano
         WHERE departamento IS NOT NULL AND departamento != ''
-          AND TRY_CAST(ano AS INTEGER) IS NOT NULL
+          AND {YEAR_INT_EXPR} IS NOT NULL
         ORDER BY departamento
     """
     with get_duckdb_connection() as conn:
@@ -162,14 +172,14 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
         combined_query = f"""
             WITH base AS (
                 SELECT
-                    TRY_CAST(ano AS INTEGER) AS ano_int,
+                    {YEAR_INT_EXPR} AS ano_int,
                     avg_punt_global,
                     total_estudiantes,
                     colegio_sk,
-                    MAX(TRY_CAST(ano AS INTEGER)) OVER () AS max_ano
+                    MAX({YEAR_INT_EXPR}) OVER () AS max_ano
                 FROM gold.fct_agg_colegios_ano
                 WHERE {where_clause}
-                  AND TRY_CAST(ano AS INTEGER) IS NOT NULL
+                  AND {YEAR_INT_EXPR} IS NOT NULL
             )
             SELECT
                 max_ano,
@@ -189,24 +199,24 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
 
         trend_query = f"""
             SELECT
-                TRY_CAST(ano AS INTEGER) AS ano,
+                {YEAR_INT_EXPR} AS ano,
                 ROUND(AVG(avg_punt_global), 1) AS promedio_global
             FROM gold.fct_agg_colegios_ano
             WHERE {where_clause}
-              AND TRY_CAST(ano AS INTEGER) >= ?
-            GROUP BY TRY_CAST(ano AS INTEGER)
+              AND {YEAR_INT_EXPR} >= ?
+            GROUP BY {YEAR_INT_EXPR}
             ORDER BY ano
         """
         trend_rows = c.execute(resolve_schema(trend_query), where_params + [min_year]).fetchall()
 
         national_trend_query = """
             SELECT
-                TRY_CAST(ano AS INTEGER) AS ano,
+                CASE WHEN regexp_matches(CAST(ano AS VARCHAR), '^[0-9]+$') THEN CAST(ano AS INTEGER) ELSE NULL END AS ano,
                 ROUND(AVG(avg_punt_global), 1) AS promedio_nacional
             FROM gold.fct_agg_colegios_ano
-            WHERE TRY_CAST(ano AS INTEGER) >= ?
+            WHERE CASE WHEN regexp_matches(CAST(ano AS VARCHAR), '^[0-9]+$') THEN CAST(ano AS INTEGER) ELSE NULL END >= ?
               AND sector != 'SINTETICO'
-            GROUP BY TRY_CAST(ano AS INTEGER)
+            GROUP BY CASE WHEN regexp_matches(CAST(ano AS VARCHAR), '^[0-9]+$') THEN CAST(ano AS INTEGER) ELSE NULL END
             ORDER BY ano
         """
         national_trend_rows = c.execute(resolve_schema(national_trend_query), [min_year]).fetchall()
@@ -223,7 +233,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
             FROM gold.fct_agg_colegios_ano f
             LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
             WHERE {f_where}
-              AND TRY_CAST(f.ano AS INTEGER) = ?
+              AND {YEAR_INT_EXPR_F} = ?
               AND f.nombre_colegio IS NOT NULL
             ORDER BY f.avg_punt_global DESC
             LIMIT 10
@@ -241,7 +251,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
                 FROM gold.fct_agg_colegios_ano f
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
                 WHERE {f_where}
-                  AND TRY_CAST(f.ano AS INTEGER) = ?
+                  AND {YEAR_INT_EXPR_F} = ?
                   AND f.nombre_colegio IS NOT NULL
                 ORDER BY f.nombre_colegio ASC
             """
@@ -267,7 +277,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
                     COUNT(DISTINCT colegio_sk) AS total_colegios
                 FROM gold.fct_agg_colegios_ano
                 WHERE departamento = ?
-                  AND TRY_CAST(ano AS INTEGER) = ?
+                  AND {YEAR_INT_EXPR} = ?
                   AND municipio IS NOT NULL
                   AND municipio != ''
                 GROUP BY municipio
@@ -415,24 +425,24 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
 def departments_index_page(request):
     try:
         with get_duckdb_connection() as conn:
-            query = """
+            query = f"""
                 WITH ranked AS (
                     SELECT
                         departamento,
-                        TRY_CAST(ano AS INTEGER) AS ano,
+                        {YEAR_INT_EXPR} AS ano,
                         ROUND(AVG(avg_punt_global), 1)  AS promedio_global,
                         SUM(total_estudiantes)           AS total_estudiantes,
                         COUNT(DISTINCT colegio_sk)       AS total_colegios,
                         ROW_NUMBER() OVER (
                             PARTITION BY departamento
-                            ORDER BY TRY_CAST(ano AS INTEGER) DESC
+                            ORDER BY {YEAR_INT_EXPR} DESC
                         ) AS rn
                     FROM gold.fct_agg_colegios_ano
                     WHERE departamento IS NOT NULL
                       AND departamento != ''
                       AND sector != 'SINTETICO'
-                      AND TRY_CAST(ano AS INTEGER) IS NOT NULL
-                    GROUP BY departamento, TRY_CAST(ano AS INTEGER)
+                      AND {YEAR_INT_EXPR} IS NOT NULL
+                    GROUP BY departamento, {YEAR_INT_EXPR}
                 )
                 SELECT
                     cur.departamento,
