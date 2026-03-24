@@ -599,10 +599,12 @@ def department_landing_page(request, departamento_slug):
         return render(request, "icfes_dashboard/geo_landing_simple.html", context)
     except Http404:
         raise
-    except Exception as e:
-        import traceback
-        logger.error("Error in department_landing_page for slug %s: %s\n%s", departamento_slug, e, traceback.format_exc())
-        raise Http404("Error al cargar el departamento")
+    except Exception:
+        logger.exception(
+            "Error in department_landing_page for slug %s; redirecting to /icfes/departamentos/",
+            departamento_slug,
+        )
+        return redirect("/icfes/departamentos/", permanent=False)
 
 
 @cache_page(60 * 60 * 24 * 7)
@@ -635,13 +637,10 @@ def municipality_landing_page(request, departamento_slug, municipio_slug):
             departamento_slug, municipio_slug,
         )
         return redirect(f"/icfes/departamento/{departamento_slug}/", permanent=False)
-    except Exception as e:
-        import traceback
-        logger.error(
-            "Error in municipality_landing_page for slugs %s/%s: %s\n%s",
+    except Exception:
+        logger.exception(
+            "Error in municipality_landing_page for slugs %s/%s; redirecting to dept page",
             departamento_slug,
             municipio_slug,
-            e,
-            traceback.format_exc(),
         )
-        raise Http404("Error al cargar el municipio")
+        return redirect(f"/icfes/departamento/{departamento_slug}/", permanent=False)
