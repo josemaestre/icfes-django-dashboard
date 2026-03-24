@@ -14,6 +14,7 @@ django-anymail==10.3  # https://github.com/anymail/django-anymail
 # ------------------------------------------------------------------------------
 psycopg2-binary==2.9.9  # PostgreSQL adapter
 whitenoise==6.6.0  # Static file serving
+brotli==1.1.0  # WhiteNoise brotli pre-compression (collectstatic generates .br files)
 dj-database-url==2.1.0  # Database URL parsing
 
 # Payments
