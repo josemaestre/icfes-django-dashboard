@@ -96,6 +96,7 @@ def _get_all_departamentos():
         SELECT DISTINCT departamento
         FROM gold.fct_agg_colegios_ano
         WHERE departamento IS NOT NULL AND departamento != ''
+          AND TRY_CAST(ano AS INTEGER) IS NOT NULL
         ORDER BY departamento
     """
     with get_duckdb_connection() as conn:
@@ -168,6 +169,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
                     MAX(TRY_CAST(ano AS INTEGER)) OVER () AS max_ano
                 FROM gold.fct_agg_colegios_ano
                 WHERE {where_clause}
+                  AND TRY_CAST(ano AS INTEGER) IS NOT NULL
             )
             SELECT
                 max_ano,
@@ -429,6 +431,7 @@ def departments_index_page(request):
                     WHERE departamento IS NOT NULL
                       AND departamento != ''
                       AND sector != 'SINTETICO'
+                      AND TRY_CAST(ano AS INTEGER) IS NOT NULL
                     GROUP BY departamento, TRY_CAST(ano AS INTEGER)
                 )
                 SELECT
