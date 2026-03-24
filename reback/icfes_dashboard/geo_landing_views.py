@@ -182,8 +182,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
             raise Http404("No hay datos para esta ubicación")
 
         latest_year = int(combined_row[0])
-        year_str = str(latest_year)       # avoids CAST(ano AS INTEGER) in subsequent WHERE
-        min_year_str = str(latest_year - 5)
+        min_year = latest_year - 5
         stats_row = (combined_row[1], combined_row[2], combined_row[3])
 
         trend_query = f"""
@@ -196,10 +195,21 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
             GROUP BY TRY_CAST(ano AS INTEGER)
             ORDER BY ano
         """
-        trend_rows = c.execute(resolve_schema(trend_query), where_params + [min_year_str]).fetchall()
+        trend_rows = c.execute(resolve_schema(trend_query), where_params + [min_year]).fetchall()
+
+        national_trend_query = """
+            SELECT
+                TRY_CAST(ano AS INTEGER) AS ano,
+                ROUND(AVG(avg_punt_global), 1) AS promedio_nacional
+            FROM gold.fct_agg_colegios_ano
+            WHERE TRY_CAST(ano AS INTEGER) >= ?
+              AND sector != 'SINTETICO'
+            GROUP BY TRY_CAST(ano AS INTEGER)
+            ORDER BY ano
+        """
+        national_trend_rows = c.execute(resolve_schema(national_trend_query), [min_year]).fetchall()
 
         f_where, f_params = _build_geo_where(departamento, municipio, alias="f")
-        f_latest_params = f_params + [year_str]
 
         top_schools_query = f"""
             SELECT
@@ -211,12 +221,12 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
             FROM gold.fct_agg_colegios_ano f
             LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
             WHERE {f_where}
-              AND f.ano = ?
+              AND TRY_CAST(f.ano AS INTEGER) = ?
               AND f.nombre_colegio IS NOT NULL
             ORDER BY f.avg_punt_global DESC
             LIMIT 10
         """
-        top_rows = c.execute(resolve_schema(top_schools_query), f_latest_params).fetchall()
+        top_rows = c.execute(resolve_schema(top_schools_query), f_params + [latest_year]).fetchall()
 
         all_schools_in_municipality = []
         if municipio is not None:
@@ -229,12 +239,12 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
                 FROM gold.fct_agg_colegios_ano f
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
                 WHERE {f_where}
-                  AND f.ano = ?
+                  AND TRY_CAST(f.ano AS INTEGER) = ?
                   AND f.nombre_colegio IS NOT NULL
                 ORDER BY f.nombre_colegio ASC
             """
             all_schools_rows = c.execute(
-                resolve_schema(all_schools_query), f_latest_params
+                resolve_schema(all_schools_query), f_params + [latest_year]
             ).fetchall()
             all_schools_in_municipality = [
                 {
@@ -255,7 +265,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
                     COUNT(DISTINCT colegio_sk) AS total_colegios
                 FROM gold.fct_agg_colegios_ano
                 WHERE departamento = ?
-                  AND ano = ?
+                  AND TRY_CAST(ano AS INTEGER) = ?
                   AND municipio IS NOT NULL
                   AND municipio != ''
                 GROUP BY municipio
@@ -263,7 +273,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
                 LIMIT 30
             """
             municipios_rows = c.execute(
-                resolve_schema(municipios_query), [departamento, year_str]
+                resolve_schema(municipios_query), [departamento, latest_year]
             ).fetchall()
             municipios = [
                 {
@@ -366,11 +376,12 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
             "total_estudiantes": int(stats_row[1]) if stats_row and stats_row[1] else 0,
             "total_colegios": int(stats_row[2]) if stats_row and stats_row[2] else 0,
         },
-        "latest_year": int(latest_year),
-        "trend_min_year": int(min_year_str),
+        "latest_year": latest_year,
+        "trend_min_year": min_year,
         "trend_chart": {
             "years": [int(row[0]) for row in trend_rows],
             "scores": [float(row[1]) if row[1] is not None else None for row in trend_rows],
+            "national_scores": [float(row[1]) if row[1] is not None else None for row in national_trend_rows],
         },
         "top_schools": [
             {

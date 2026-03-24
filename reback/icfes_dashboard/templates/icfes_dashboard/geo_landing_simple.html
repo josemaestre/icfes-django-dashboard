@@ -269,6 +269,36 @@
             </div>
         </div>
 
+        <div class="panel p-4 mb-4" style="background: #ffffff; border: 1px solid #e2e8f0;">
+            <h2 class="h5 mb-3 d-flex align-items-center"><i class="bx bx-bulb text-warning me-2 fs-4" style="color: #f59e0b !important;"></i> Hallazgos destacados en {{ geo.name }}</h2>
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div class="p-3 d-flex flex-column" style="background:#f8fafc; border-radius:10px; height:100%; border:1px solid #e2e8f0;">
+                        <h6 class="text-primary fw-bold mb-2 text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px; color:#1d4ed8 !important;">Análisis Especial</h6>
+                        <p class="fw-bold mb-2" style="font-size:1.05rem; color:#0f172a;">Colegios estrella de {{ geo.name }}</p>
+                        <p class="small text-muted mb-3" style="font-size:0.85rem">Esta clasificación destaca colegios según su nivel de desempeño y su tendencia reciente. Sirve para identificar instituciones con trayectoria positiva.</p>
+                        <a href="/icfes/cuadrante/estrella/{{ geo.departamento_slug }}/{% if geo.municipio_slug %}{{ geo.municipio_slug }}/{% endif %}" class="btn btn-outline-primary btn-sm w-100 mt-auto">Ver colegios estrella</a>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="p-3 d-flex flex-column" style="background:#f8fafc; border-radius:10px; height:100%; border:1px solid #e2e8f0;">
+                        <h6 class="text-primary fw-bold mb-2 text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px; color:#1d4ed8 !important;">Rendimiento Esperado</h6>
+                        <p class="fw-bold mb-2" style="font-size:1.05rem; color:#0f172a;">Rindieron por encima de lo esperado</p>
+                        <p class="small text-muted mb-3" style="font-size:0.85rem">Comparamos su resultado real con el puntaje esperado para un contexto similar. Ideal para detectar a las instituciones con rendimiento superlativo.</p>
+                        <a href="/icfes/supero-prediccion/{{ geo.departamento_slug }}/{% if geo.municipio_slug %}{{ geo.municipio_slug }}/{% endif %}" class="btn btn-outline-primary btn-sm w-100 mt-auto">Ver colegios que superaron</a>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="p-3 d-flex flex-column" style="background:#f8fafc; border-radius:10px; height:100%; border:1px solid #e2e8f0;">
+                        <h6 class="text-primary fw-bold mb-2 text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px; color:#1d4ed8 !important;">Motivación y Compromiso</h6>
+                        <p class="fw-bold mb-2" style="font-size:1.05rem; color:#0f172a;">Estudiantes Dedicados o Desconectados</p>
+                        <p class="small text-muted mb-3" style="font-size:0.85rem">Evolución histórica de las 7 bandas motivacionales ICFES desde 2015. Ve cómo cambia el compromiso y riesgo de deserción año a año en {{ geo.departamento }}.</p>
+                        <a href="/icfes/bandas-motivacionales/{{ geo.departamento_slug }}/" class="btn btn-outline-primary btn-sm w-100 mt-auto">Ver evolución motivacional</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="panel p-3 mb-4">
             <h2 class="h5 mb-3">Tendencia histórica del puntaje ICFES en {{ geo.name }}</h2>
             <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
@@ -382,6 +412,7 @@
         const trendData = JSON.parse(document.getElementById('trend-data').textContent);
         const years = trendData.years || [];
         const scores = trendData.scores || [];
+        const nationalScores = trendData.national_scores || [];
 
         if (years.length > 0) {
             new Chart(document.getElementById('trendChart'), {
@@ -389,13 +420,22 @@
                 data: {
                     labels: years,
                     datasets: [{
-                        label: 'Promedio Global ICFES',
+                        label: 'Promedio en {{ geo.name }}',
                         data: scores,
                         borderColor: '#0284c7',
                         backgroundColor: 'rgba(2, 132, 199, 0.18)',
                         fill: true,
                         tension: 0.25,
-                        pointRadius: 2
+                        pointRadius: 3
+                    }, {
+                        label: 'Promedio Nacional',
+                        data: nationalScores,
+                        borderColor: '#9ca3af',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.25,
+                        pointRadius: 0
                     }]
                 },
                 options: {
