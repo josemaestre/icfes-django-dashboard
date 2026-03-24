@@ -280,7 +280,7 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
 
         municipios = []
         if municipio is None:
-            municipios_query = """
+            municipios_query = f"""
                 SELECT
                     municipio,
                     ROUND(AVG(avg_punt_global), 1) AS promedio_global,
