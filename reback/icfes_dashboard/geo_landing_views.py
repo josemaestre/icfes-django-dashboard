@@ -35,6 +35,16 @@ YEAR_INT_EXPR_F = (
 )
 
 
+def _safe_year_int(value):
+    text = str(value or "").strip()
+    if len(text) == 4 and text.isdigit():
+        try:
+            return int(text)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def _build_geo_where(departamento=None, municipio=None, alias=""):
     prefix = f"{alias}." if alias else ""
     where = [f"{prefix}departamento IS NOT NULL", f"{prefix}departamento != ''"]
@@ -425,40 +435,87 @@ def _geo_landing_context(request, departamento, municipio=None, conn=None):
 def departments_index_page(request):
     try:
         with get_duckdb_connection() as conn:
-            query = f"""
-                WITH ranked AS (
+            try:
+                query = f"""
+                    WITH ranked AS (
+                        SELECT
+                            departamento,
+                            {YEAR_INT_EXPR} AS ano,
+                            ROUND(AVG(avg_punt_global), 1)  AS promedio_global,
+                            SUM(total_estudiantes)           AS total_estudiantes,
+                            COUNT(DISTINCT colegio_sk)       AS total_colegios,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY departamento
+                                ORDER BY {YEAR_INT_EXPR} DESC
+                            ) AS rn
+                        FROM gold.fct_agg_colegios_ano
+                        WHERE departamento IS NOT NULL
+                          AND departamento != ''
+                          AND sector != 'SINTETICO'
+                          AND {YEAR_INT_EXPR} IS NOT NULL
+                        GROUP BY departamento, {YEAR_INT_EXPR}
+                    )
+                    SELECT
+                        cur.departamento,
+                        cur.ano                                                     AS latest_ano,
+                        cur.promedio_global,
+                        cur.total_estudiantes,
+                        cur.total_colegios,
+                        ROUND(cur.promedio_global - COALESCE(prev.promedio_global, cur.promedio_global), 1) AS delta
+                    FROM ranked cur
+                    LEFT JOIN ranked prev
+                           ON prev.departamento = cur.departamento AND prev.rn = 2
+                    WHERE cur.rn = 1
+                      AND cur.departamento NOT IN ('EXTERIOR', 'SIN INFORMACION')
+                    ORDER BY cur.promedio_global DESC NULLS LAST
+                """
+                rows = conn.execute(resolve_schema(query)).fetchall()
+            except Exception:
+                # Fallback for engines/envs where complex casting/window SQL can fail.
+                logger.exception("Primary departments index query failed; using fallback query")
+                fallback_query = """
                     SELECT
                         departamento,
-                        {YEAR_INT_EXPR} AS ano,
+                        ano,
                         ROUND(AVG(avg_punt_global), 1)  AS promedio_global,
                         SUM(total_estudiantes)           AS total_estudiantes,
-                        COUNT(DISTINCT colegio_sk)       AS total_colegios,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY departamento
-                            ORDER BY {YEAR_INT_EXPR} DESC
-                        ) AS rn
+                        COUNT(DISTINCT colegio_sk)       AS total_colegios
                     FROM gold.fct_agg_colegios_ano
                     WHERE departamento IS NOT NULL
                       AND departamento != ''
                       AND sector != 'SINTETICO'
-                      AND {YEAR_INT_EXPR} IS NOT NULL
-                    GROUP BY departamento, {YEAR_INT_EXPR}
-                )
-                SELECT
-                    cur.departamento,
-                    cur.ano                                                     AS latest_ano,
-                    cur.promedio_global,
-                    cur.total_estudiantes,
-                    cur.total_colegios,
-                    ROUND(cur.promedio_global - COALESCE(prev.promedio_global, cur.promedio_global), 1) AS delta
-                FROM ranked cur
-                LEFT JOIN ranked prev
-                       ON prev.departamento = cur.departamento AND prev.rn = 2
-                WHERE cur.rn = 1
-                  AND cur.departamento NOT IN ('EXTERIOR', 'SIN INFORMACION')
-                ORDER BY cur.promedio_global DESC NULLS LAST
-            """
-            rows = conn.execute(resolve_schema(query)).fetchall()
+                    GROUP BY departamento, ano
+                """
+                raw_rows = conn.execute(resolve_schema(fallback_query)).fetchall()
+                by_depto = {}
+                for dep, ano_raw, promedio, estudiantes, colegios in raw_rows:
+                    if dep in ("EXTERIOR", "SIN INFORMACION"):
+                        continue
+                    year = _safe_year_int(ano_raw)
+                    if year is None:
+                        continue
+                    by_depto.setdefault(dep, []).append(
+                        (year, promedio, estudiantes, colegios)
+                    )
+
+                rows = []
+                for dep, dep_rows in by_depto.items():
+                    dep_rows.sort(key=lambda x: x[0], reverse=True)
+                    cur = dep_rows[0]
+                    prev = dep_rows[1] if len(dep_rows) > 1 else cur
+                    cur_prom = float(cur[1]) if cur[1] is not None else 0.0
+                    prev_prom = float(prev[1]) if prev[1] is not None else cur_prom
+                    rows.append(
+                        (
+                            dep,
+                            cur[0],
+                            cur_prom,
+                            cur[2],
+                            cur[3],
+                            round(cur_prom - prev_prom, 1),
+                        )
+                    )
+                rows.sort(key=lambda r: (r[2] is None, -(r[2] or 0.0)))
 
         departments = [
             {
