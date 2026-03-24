@@ -3,10 +3,11 @@ Long-tail SEO landing pages for high-intent ICFES searches.
 """
 import json
 import logging
+import traceback
 from functools import lru_cache
 
 from django.conf import settings
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
@@ -1387,3 +1388,34 @@ def que_es_icfes_analytics_page(request):
             "structured_data_json": schema_data,
         },
     )
+
+
+def debug_years(request):
+    """Temporary diagnostic: returns available years or the exact error. Remove after fix."""
+    result = {}
+    try:
+        from .db_utils import SCHEMA, get_duckdb_connection, resolve_schema
+        result["schema"] = SCHEMA
+        with get_duckdb_connection() as conn:
+            try:
+                count = conn.execute(resolve_schema("SELECT COUNT(*) FROM gold.fct_agg_colegios_ano")).fetchone()[0]
+                result["row_count"] = count
+            except Exception as e:
+                result["row_count_error"] = str(e)
+
+            try:
+                rows = conn.execute(resolve_schema("SELECT ano, typeof(ano) FROM gold.fct_agg_colegios_ano LIMIT 5")).fetchall()
+                result["ano_sample"] = [{"ano": str(r[0]), "type": r[1]} for r in rows]
+            except Exception as e:
+                result["ano_sample_error"] = str(e)
+
+            try:
+                years = _available_years(conn)
+                result["available_years"] = years[:5]
+            except Exception as e:
+                result["available_years_error"] = str(e)
+                result["available_years_traceback"] = traceback.format_exc()
+    except Exception as e:
+        result["fatal_error"] = str(e)
+        result["fatal_traceback"] = traceback.format_exc()
+    return JsonResponse(result)
