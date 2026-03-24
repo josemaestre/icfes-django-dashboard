@@ -122,8 +122,6 @@ urlpatterns = [
          geo_landing_views.department_landing_page, name='department_landing'),
     path('departamento/<slug:departamento_slug>/municipio/<slug:municipio_slug>/',
          geo_landing_views.municipality_landing_page, name='municipality_landing'),
-    # Diagnostic endpoint — remove after ranking-404 bug is fixed
-    path('api/debug-years/', longtail_landing_views.debug_years, name='debug_years'),
     path('ranking/colegios/',
          longtail_landing_views.ranking_colegios_hub_page, name='ranking_colegios_hub'),
     path('ranking/colegios/<int:ano>/',

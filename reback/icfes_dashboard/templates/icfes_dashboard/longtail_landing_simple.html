@@ -369,7 +369,7 @@
                 colegios oficiales y no oficiales reportados año a año.
             </p>
             <p class="mb-0 small" style="color:#374151;">
-                La tendencia sostenida al alza desde {{ rows|last.ano|default:"2019" }} refleja tanto
+                La tendencia sostenida al alza desde {% with lr=rows|first %}{{ lr.ano|default:"2019" }}{% endwith %} refleja tanto
                 mejoras reales en aprendizaje como ajustes en la escala de medición aplicados por el ICFES.
                 El detalle por colegio, municipio y departamento está disponible en la plataforma.
             </p>

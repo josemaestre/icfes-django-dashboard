@@ -3,11 +3,10 @@ Long-tail SEO landing pages for high-intent ICFES searches.
 """
 import json
 import logging
-import traceback
 from functools import lru_cache
 
 from django.conf import settings
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.cache import cache_page
@@ -1390,101 +1389,3 @@ def que_es_icfes_analytics_page(request):
     )
 
 
-def debug_years(request):
-    """Temporary diagnostic — traces the EXACT path of ranking_colegios_year_page."""
-    result = {"step": "start"}
-    try:
-        from .db_utils import SCHEMA, get_duckdb_connection, resolve_schema
-        result["schema"] = SCHEMA
-        year = 2024
-
-        result["step"] = "opening_conn"
-        with get_duckdb_connection() as conn:
-            result["step"] = "available_years"
-            years = _available_years(conn)
-            result["available_years"] = years[:5]
-            result["year_in_years"] = year in years
-
-            result["step"] = "ranking_query"
-            query = """
-                SELECT
-                    f.nombre_colegio, f.departamento, f.municipio, f.sector,
-                    ROUND(f.avg_punt_global, 1) AS promedio_global,
-                    f.total_estudiantes, COALESCE(s.slug, '') AS slug
-                FROM gold.fct_agg_colegios_ano f
-                LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-                WHERE f.ano = ?
-                  AND f.nombre_colegio IS NOT NULL
-                  AND f.sector != 'SINTETICO'
-                ORDER BY f.avg_punt_global DESC
-                LIMIT 50
-            """
-            rows = conn.execute(resolve_schema(query), [str(year)]).fetchall()
-            result["rows_count"] = len(rows)
-
-        result["step"] = "building_context"
-        title = f"Mejores colegios ICFES {year} en Colombia | Ranking actualizado"
-        description = (
-            f"Ranking ICFES {year} de colegios en Colombia. "
-            "Consulta top colegios por puntaje global, departamento y municipio."
-        )
-        title = _trim_meta(title, 65)
-        description = _fit_meta_description(description, min_len=110, max_len=155)
-        canonical_url = request.build_absolute_uri(request.path)
-        og_image = _default_og_image(_build_base_url(request))
-
-        result["step"] = "building_rows"
-        ctx_rows = [
-            {
-                "nombre": row[0],
-                "departamento": row[1],
-                "departamento_slug": slugify(row[1]) if row[1] else "",
-                "municipio": row[2],
-                "municipio_slug": slugify(row[2]) if row[2] else "",
-                "sector": row[3],
-                "score": float(row[4]) if row[4] is not None else None,
-                "estudiantes": int(row[5]) if row[5] else 0,
-                "slug": row[6],
-            }
-            for row in rows
-        ]
-        result["ctx_rows_count"] = len(ctx_rows)
-
-        result["step"] = "json_dumps"
-        schema_data = json.dumps(
-            [{"@context": "https://schema.org", "@type": "WebPage",
-              "@id": f"{canonical_url}#webpage", "url": canonical_url,
-              "name": title, "description": description, "inLanguage": "es-CO"}],
-            ensure_ascii=False,
-        )
-        result["schema_data_len"] = len(schema_data)
-
-        result["step"] = "render"
-        try:
-            rendered = render(
-                request,
-                "icfes_dashboard/longtail_landing_simple.html",
-                {
-                    "mode": "ranking_general",
-                    "year": year,
-                    "years": years[:6],
-                    "year_base_url": "/icfes/ranking/colegios/",
-                    "rows": ctx_rows,
-                    "related_links": [],
-                    "seo": {"title": title, "description": description, "og_image": og_image},
-                    "canonical_url": canonical_url,
-                    "structured_data_json": schema_data,
-                },
-            )
-            result["render_status"] = rendered.status_code
-            result["render_content_len"] = len(rendered.content)
-            result["success"] = True
-        except Exception as e:
-            result["render_error"] = str(e)
-            result["render_traceback"] = traceback.format_exc()
-
-    except Exception as e:
-        result["error_at_step"] = result.get("step")
-        result["error"] = str(e)
-        result["traceback"] = traceback.format_exc()
-    return JsonResponse(result)
