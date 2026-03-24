@@ -556,9 +556,32 @@ def departments_index_page(request):
                 "canonical_url": request.build_absolute_uri(request.path),
             },
         )
-    except Exception as e:
-        logger.error("Error in departments_index_page: %s", e)
-        raise Http404("Error al cargar departamentos")
+    except Exception:
+        logger.exception("Error in departments_index_page")
+        # Never hard-fail public index with 404; return empty state and keep SEO URL alive.
+        latest_year = 2024
+        return render(
+            request,
+            "icfes_dashboard/geo_landing_simple.html",
+            {
+                "index_mode": True,
+                "departments": [],
+                "latest_year": latest_year,
+                "promedio_nacional": None,
+                "seo": {
+                    "title": f"Resultados ICFES por Departamento {latest_year} | Ranking Colombia",
+                    "description": (
+                        f"Compara el promedio ICFES {latest_year} de los departamentos de Colombia. "
+                        "Rankings, tendencias y colegios destacados por región."
+                    ),
+                    "keywords": "ICFES por departamento, ranking departamentos ICFES, pruebas saber 11",
+                    "og_image": _default_og_image(_build_base_url(request)),
+                },
+                "canonical_url": request.build_absolute_uri(request.path),
+                "index_error": True,
+            },
+            status=200,
+        )
 
 
 @cache_page(60 * 60 * 24 * 7)
