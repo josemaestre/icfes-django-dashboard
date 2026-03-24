@@ -15,6 +15,21 @@ from .db_utils import get_duckdb_connection, resolve_schema
 
 logger = logging.getLogger(__name__)
 
+# Safe integer cast for `ano` column (VARCHAR in DuckDB).
+# Avoids ConversionException when prod DB contains non-numeric rows.
+_YEAR_EXPR = (
+    "CASE WHEN regexp_matches(CAST(ano AS VARCHAR), '^[0-9]+$') "
+    "THEN CAST(ano AS INTEGER) ELSE NULL END"
+)
+_YEAR_EXPR_H = (
+    "CASE WHEN regexp_matches(CAST(h.ano AS VARCHAR), '^[0-9]+$') "
+    "THEN CAST(h.ano AS INTEGER) ELSE NULL END"
+)
+_YEAR_EXPR_F = (
+    "CASE WHEN regexp_matches(CAST(f.ano AS VARCHAR), '^[0-9]+$') "
+    "THEN CAST(f.ano AS INTEGER) ELSE NULL END"
+)
+
 
 def _build_base_url(request):
     configured = getattr(settings, "PUBLIC_SITE_URL", "").strip()
@@ -56,10 +71,10 @@ def _fit_meta_description(text, min_len=110, max_len=155):
 
 
 def _available_years(conn):
-    query = """
-        SELECT DISTINCT CAST(ano AS INTEGER) AS ano
+    query = f"""
+        SELECT DISTINCT {_YEAR_EXPR} AS ano
         FROM gold.fct_agg_colegios_ano
-        WHERE ano IS NOT NULL
+        WHERE {_YEAR_EXPR} IS NOT NULL
         ORDER BY ano DESC
     """
     rows = conn.execute(resolve_schema(query)).fetchall()
@@ -145,12 +160,13 @@ def _resolve_departamento(conn, sector_value, year, departamento_slug):
 
 def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=None, municipio=None):
     filters = ["h.sector = ?", "h.total_estudiantes >= 10", "h.nombre_colegio IS NOT NULL"]
-    params = [latest_year]
+    # h.ano is VARCHAR — use string params for the IN clause to avoid CAST errors.
+    params = [str(latest_year)]
     if prev_year is not None:
-        params.append(prev_year)
+        params.append(str(prev_year))
     else:
         # Keep CTE valid when no previous year is available.
-        params.append(latest_year)
+        params.append(str(latest_year))
     params.append(sector_value)
 
     if departamento:
@@ -164,7 +180,7 @@ def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=N
     query = f"""
         WITH source AS (
             SELECT
-                CAST(h.ano AS INTEGER) AS ano,
+                {_YEAR_EXPR_H} AS ano,
                 h.codigo_dane,
                 h.nombre_colegio,
                 h.departamento,
@@ -187,7 +203,7 @@ def _fetch_top20_rows(conn, latest_year, prev_year, sector_value, departamento=N
             LEFT JOIN gold.fct_agg_colegios_ano a
               ON a.colegio_bk = h.codigo_dane
              AND a.ano = h.ano
-            WHERE CAST(h.ano AS INTEGER) IN (?, ?)
+            WHERE h.ano IN (?, ?)
               AND {where_clause}
         ),
         ranked AS (
@@ -436,13 +452,13 @@ def ranking_colegios_year_page(request, ano):
                     COALESCE(s.slug, '') AS slug
                 FROM gold.fct_agg_colegios_ano f
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-                WHERE CAST(f.ano AS INTEGER) = ?
+                WHERE f.ano = ?
                   AND f.nombre_colegio IS NOT NULL
                   AND f.sector != 'SINTETICO'
                 ORDER BY f.avg_punt_global DESC
                 LIMIT 50
             """
-            rows = conn.execute(resolve_schema(query), [year]).fetchall()
+            rows = conn.execute(resolve_schema(query), [str(year)]).fetchall()
 
         title = f"Mejores colegios ICFES {year} en Colombia | Ranking actualizado"
         description = (
@@ -544,14 +560,14 @@ def ranking_matematicas_year_page(request, ano):
                     COALESCE(s.slug, '') AS slug
                 FROM gold.fct_agg_colegios_ano f
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-                WHERE CAST(f.ano AS INTEGER) = ?
+                WHERE f.ano = ?
                   AND f.nombre_colegio IS NOT NULL
                   AND f.avg_punt_matematicas IS NOT NULL
                   AND f.sector != 'SINTETICO'
                 ORDER BY f.avg_punt_matematicas DESC
                 LIMIT 50
             """
-            rows = conn.execute(resolve_schema(query), [year]).fetchall()
+            rows = conn.execute(resolve_schema(query), [str(year)]).fetchall()
 
         title = f"Colegios con mejor matemáticas ICFES {year} | Top Colombia"
         description = (
@@ -637,9 +653,9 @@ def historico_nacional_page(request):
             if not years:
                 raise Http404("No hay datos históricos disponibles")
 
-            query = """
+            query = f"""
                 SELECT
-                    CAST(ano AS INTEGER) AS ano,
+                    {_YEAR_EXPR} AS ano,
                     ROUND(AVG(avg_punt_global), 1)               AS promedio_global,
                     SUM(total_estudiantes)                        AS total_estudiantes,
                     COUNT(DISTINCT colegio_sk)                    AS total_colegios,
@@ -649,8 +665,9 @@ def historico_nacional_page(request):
                     ROUND(AVG(avg_punt_c_naturales), 1)          AS promedio_naturales,
                     ROUND(AVG(avg_punt_sociales_ciudadanas), 1)  AS promedio_sociales
                 FROM gold.fct_agg_colegios_ano
-                GROUP BY CAST(ano AS INTEGER)
-                ORDER BY CAST(ano AS INTEGER)
+                WHERE {_YEAR_EXPR} IS NOT NULL
+                GROUP BY {_YEAR_EXPR}
+                ORDER BY ano
             """
             rows = conn.execute(resolve_schema(query)).fetchall()
 
@@ -1018,7 +1035,7 @@ def ranking_materia_page(request, materia_slug, ano):
                     COALESCE(s.slug, '') AS slug
                 FROM gold.fct_agg_colegios_ano f
                 LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-                WHERE CAST(f.ano AS INTEGER) = ?
+                WHERE f.ano = ?
                   AND f.nombre_colegio IS NOT NULL
                   AND f.{materia_col} IS NOT NULL
                   AND f.total_estudiantes >= 5
@@ -1026,7 +1043,7 @@ def ranking_materia_page(request, materia_slug, ano):
                 ORDER BY f.{materia_col} DESC
                 LIMIT 100
             """
-            rows = conn.execute(resolve_schema(query), [year]).fetchall()
+            rows = conn.execute(resolve_schema(query), [str(year)]).fetchall()
 
         title = (
             f"Colegios con mejor {materia_label} en ICFES {year} | Top 100 Colombia"
@@ -1117,8 +1134,8 @@ def colegios_mejoraron_hub_page(request):
     try:
         with get_duckdb_connection() as conn:
             row = conn.execute(
-                resolve_schema("""
-                    SELECT MAX(CAST(ano AS INTEGER))
+                resolve_schema(f"""
+                    SELECT MAX({_YEAR_EXPR_H})
                     FROM gold.fct_colegio_historico
                     WHERE punt_global_ano_anterior IS NOT NULL
                 """)
@@ -1159,14 +1176,14 @@ def colegios_mejoraron_page(request, ano):
                     COALESCE(s.slug, '') AS slug
                 FROM gold.fct_colegio_historico h
                 LEFT JOIN gold.dim_colegios_slugs s ON s.codigo = h.codigo_dane
-                WHERE CAST(h.ano AS INTEGER) = ?
+                WHERE h.ano = ?
                   AND h.cambio_absoluto_global IS NOT NULL
                   AND h.total_estudiantes >= 10
                   AND h.nombre_colegio IS NOT NULL
                 ORDER BY mejora DESC
                 LIMIT 100
             """
-            rows = conn.execute(resolve_schema(query), [year]).fetchall()
+            rows = conn.execute(resolve_schema(query), [str(year)]).fetchall()
             if not rows:
                 raise Http404("No hay datos de mejora para ese año")
             years = _available_years(conn)
