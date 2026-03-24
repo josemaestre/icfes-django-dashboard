@@ -1460,9 +1460,28 @@ def debug_years(request):
         result["schema_data_len"] = len(schema_data)
 
         result["step"] = "render"
-        # Don't actually render — just confirm we got here
-        result["render_template"] = "icfes_dashboard/longtail_landing_simple.html"
-        result["success"] = True
+        try:
+            rendered = render(
+                request,
+                "icfes_dashboard/longtail_landing_simple.html",
+                {
+                    "mode": "ranking_general",
+                    "year": year,
+                    "years": years[:6],
+                    "year_base_url": "/icfes/ranking/colegios/",
+                    "rows": ctx_rows,
+                    "related_links": [],
+                    "seo": {"title": title, "description": description, "og_image": og_image},
+                    "canonical_url": canonical_url,
+                    "structured_data_json": schema_data,
+                },
+            )
+            result["render_status"] = rendered.status_code
+            result["render_content_len"] = len(rendered.content)
+            result["success"] = True
+        except Exception as e:
+            result["render_error"] = str(e)
+            result["render_traceback"] = traceback.format_exc()
 
     except Exception as e:
         result["error_at_step"] = result.get("step")
