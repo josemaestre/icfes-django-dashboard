@@ -1391,76 +1391,81 @@ def que_es_icfes_analytics_page(request):
 
 
 def debug_years(request):
-    """Temporary diagnostic: returns available years or the exact error. Remove after fix."""
-    result = {}
+    """Temporary diagnostic — traces the EXACT path of ranking_colegios_year_page."""
+    result = {"step": "start"}
     try:
         from .db_utils import SCHEMA, get_duckdb_connection, resolve_schema
         result["schema"] = SCHEMA
+        year = 2024
+
+        result["step"] = "opening_conn"
         with get_duckdb_connection() as conn:
-            try:
-                count = conn.execute(resolve_schema("SELECT COUNT(*) FROM gold.fct_agg_colegios_ano")).fetchone()[0]
-                result["row_count"] = count
-            except Exception as e:
-                result["row_count_error"] = str(e)
+            result["step"] = "available_years"
+            years = _available_years(conn)
+            result["available_years"] = years[:5]
+            result["year_in_years"] = year in years
 
-            try:
-                rows = conn.execute(resolve_schema("SELECT ano, typeof(ano) FROM gold.fct_agg_colegios_ano LIMIT 5")).fetchall()
-                result["ano_sample"] = [{"ano": str(r[0]), "type": r[1]} for r in rows]
-            except Exception as e:
-                result["ano_sample_error"] = str(e)
+            result["step"] = "ranking_query"
+            query = """
+                SELECT
+                    f.nombre_colegio, f.departamento, f.municipio, f.sector,
+                    ROUND(f.avg_punt_global, 1) AS promedio_global,
+                    f.total_estudiantes, COALESCE(s.slug, '') AS slug
+                FROM gold.fct_agg_colegios_ano f
+                LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+                WHERE f.ano = ?
+                  AND f.nombre_colegio IS NOT NULL
+                  AND f.sector != 'SINTETICO'
+                ORDER BY f.avg_punt_global DESC
+                LIMIT 50
+            """
+            rows = conn.execute(resolve_schema(query), [str(year)]).fetchall()
+            result["rows_count"] = len(rows)
 
-            try:
-                years = _available_years(conn)
-                result["available_years"] = years[:5]
-            except Exception as e:
-                result["available_years_error"] = str(e)
-                result["available_years_traceback"] = traceback.format_exc()
+        result["step"] = "building_context"
+        title = f"Mejores colegios ICFES {year} en Colombia | Ranking actualizado"
+        description = (
+            f"Ranking ICFES {year} de colegios en Colombia. "
+            "Consulta top colegios por puntaje global, departamento y municipio."
+        )
+        title = _trim_meta(title, 65)
+        description = _fit_meta_description(description, min_len=110, max_len=155)
+        canonical_url = request.build_absolute_uri(request.path)
+        og_image = _default_og_image(_build_base_url(request))
 
-            # Test the full ranking query
-            try:
-                ranking_query = """
-                    SELECT f.nombre_colegio, f.departamento, f.municipio, f.sector,
-                        ROUND(f.avg_punt_global, 1) AS promedio_global, f.total_estudiantes,
-                        COALESCE(s.slug, '') AS slug
-                    FROM gold.fct_agg_colegios_ano f
-                    LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
-                    WHERE f.ano = ?
-                      AND f.nombre_colegio IS NOT NULL
-                      AND f.sector != 'SINTETICO'
-                    ORDER BY f.avg_punt_global DESC
-                    LIMIT 3
-                """
-                rows = conn.execute(resolve_schema(ranking_query), ["2024"]).fetchall()
-                result["ranking_rows"] = len(rows)
-                result["ranking_sample"] = [str(r[0]) for r in rows[:2]]
-            except Exception as e:
-                result["ranking_error"] = str(e)
-                result["ranking_traceback"] = traceback.format_exc()
+        result["step"] = "building_rows"
+        ctx_rows = [
+            {
+                "nombre": row[0],
+                "departamento": row[1],
+                "departamento_slug": slugify(row[1]) if row[1] else "",
+                "municipio": row[2],
+                "municipio_slug": slugify(row[2]) if row[2] else "",
+                "sector": row[3],
+                "score": float(row[4]) if row[4] is not None else None,
+                "estudiantes": int(row[5]) if row[5] else 0,
+                "slug": row[6],
+            }
+            for row in rows
+        ]
+        result["ctx_rows_count"] = len(ctx_rows)
 
-            # Check dim_colegios_slugs existence
-            try:
-                slug_count = conn.execute(resolve_schema("SELECT COUNT(*) FROM gold.dim_colegios_slugs")).fetchone()[0]
-                result["slugs_count"] = slug_count
-            except Exception as e:
-                result["slugs_error"] = str(e)
+        result["step"] = "json_dumps"
+        schema_data = json.dumps(
+            [{"@context": "https://schema.org", "@type": "WebPage",
+              "@id": f"{canonical_url}#webpage", "url": canonical_url,
+              "name": title, "description": description, "inLanguage": "es-CO"}],
+            ensure_ascii=False,
+        )
+        result["schema_data_len"] = len(schema_data)
 
-            # Test historico query
-            try:
-                hist_query = f"""
-                    SELECT {_YEAR_EXPR} AS ano, ROUND(AVG(avg_punt_global), 1)
-                    FROM gold.fct_agg_colegios_ano
-                    WHERE {_YEAR_EXPR} IS NOT NULL
-                    GROUP BY {_YEAR_EXPR}
-                    ORDER BY ano
-                    LIMIT 3
-                """
-                hist_rows = conn.execute(resolve_schema(hist_query)).fetchall()
-                result["historico_rows"] = len(hist_rows)
-            except Exception as e:
-                result["historico_error"] = str(e)
-                result["historico_traceback"] = traceback.format_exc()
+        result["step"] = "render"
+        # Don't actually render — just confirm we got here
+        result["render_template"] = "icfes_dashboard/longtail_landing_simple.html"
+        result["success"] = True
 
     except Exception as e:
-        result["fatal_error"] = str(e)
-        result["fatal_traceback"] = traceback.format_exc()
+        result["error_at_step"] = result.get("step")
+        result["error"] = str(e)
+        result["traceback"] = traceback.format_exc()
     return JsonResponse(result)
