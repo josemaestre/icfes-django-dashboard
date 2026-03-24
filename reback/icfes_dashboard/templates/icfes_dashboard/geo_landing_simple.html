@@ -123,7 +123,7 @@
 
     <div class="row g-3 mb-4">
         <div class="col-12"><h2 class="h6 fw-bold text-muted mb-2">CON MÁS OPORTUNIDAD DE MEJORA</h2></div>
-        {% for d in departments reversed|slice:":3" %}
+        {% for d in departments|slice:":3" reversed %}
         <div class="col-12 col-md-4">
             <a href="/icfes/departamento/{{ d.slug }}/" class="top-dept-card d-block text-decoration-none"
                style="border-color:#f97316;color:inherit;">
