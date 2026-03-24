@@ -1415,6 +1415,51 @@ def debug_years(request):
             except Exception as e:
                 result["available_years_error"] = str(e)
                 result["available_years_traceback"] = traceback.format_exc()
+
+            # Test the full ranking query
+            try:
+                ranking_query = """
+                    SELECT f.nombre_colegio, f.departamento, f.municipio, f.sector,
+                        ROUND(f.avg_punt_global, 1) AS promedio_global, f.total_estudiantes,
+                        COALESCE(s.slug, '') AS slug
+                    FROM gold.fct_agg_colegios_ano f
+                    LEFT JOIN gold.dim_colegios_slugs s ON f.colegio_bk = s.codigo
+                    WHERE f.ano = ?
+                      AND f.nombre_colegio IS NOT NULL
+                      AND f.sector != 'SINTETICO'
+                    ORDER BY f.avg_punt_global DESC
+                    LIMIT 3
+                """
+                rows = conn.execute(resolve_schema(ranking_query), ["2024"]).fetchall()
+                result["ranking_rows"] = len(rows)
+                result["ranking_sample"] = [str(r[0]) for r in rows[:2]]
+            except Exception as e:
+                result["ranking_error"] = str(e)
+                result["ranking_traceback"] = traceback.format_exc()
+
+            # Check dim_colegios_slugs existence
+            try:
+                slug_count = conn.execute(resolve_schema("SELECT COUNT(*) FROM gold.dim_colegios_slugs")).fetchone()[0]
+                result["slugs_count"] = slug_count
+            except Exception as e:
+                result["slugs_error"] = str(e)
+
+            # Test historico query
+            try:
+                hist_query = f"""
+                    SELECT {_YEAR_EXPR} AS ano, ROUND(AVG(avg_punt_global), 1)
+                    FROM gold.fct_agg_colegios_ano
+                    WHERE {_YEAR_EXPR} IS NOT NULL
+                    GROUP BY {_YEAR_EXPR}
+                    ORDER BY ano
+                    LIMIT 3
+                """
+                hist_rows = conn.execute(resolve_schema(hist_query)).fetchall()
+                result["historico_rows"] = len(hist_rows)
+            except Exception as e:
+                result["historico_error"] = str(e)
+                result["historico_traceback"] = traceback.format_exc()
+
     except Exception as e:
         result["fatal_error"] = str(e)
         result["fatal_traceback"] = traceback.format_exc()
