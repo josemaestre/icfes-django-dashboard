@@ -48,6 +48,7 @@ urlpatterns = [
     path('cuadrante/', views_cuadrante.cuadrante_dashboard, name='cuadrante_educativo'),
     path('cuadrante/<slug:cuadrante>/', views_cuadrante.cuadrante_landing, name='cuadrante_landing'),
     path('cuadrante/<slug:cuadrante>/<slug:depto_slug>/', views_cuadrante.cuadrante_landing, name='cuadrante_landing_depto'),
+    path('cuadrante/<slug:cuadrante>/<slug:depto_slug>/<slug:municipio_slug>/', views_cuadrante.cuadrante_landing, name='cuadrante_landing_municipio'),
     path('supero-prediccion/', views_potencial.potencial_landing, name='potencial_landing'),
     path('supero-prediccion/<slug:first_slug>/', views_potencial.potencial_landing, name='potencial_landing_filter'),
     path('supero-prediccion/<slug:first_slug>/<slug:sector_slug>/', views_potencial.potencial_landing, name='potencial_landing_depto_sector'),

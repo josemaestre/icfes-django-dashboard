@@ -201,7 +201,7 @@
                 <li><a href="/icfes/departamentos/">Resultados ICFES por departamento</a></li>
                 <li><a href="/icfes/ranking/colegios/{{ latest_year }}/">Mejores colegios en Colombia {{ latest_year }}</a></li>
                 {% if departamento_slug %}
-                <li><a href="/icfes/cuadrante/estrella/{{ departamento_slug }}/">Colegios estrella en {{ departamento }}</a></li>
+                <li><a href="/icfes/cuadrante/estrella/{{ departamento_slug }}/{% if municipio_slug %}{{ municipio_slug }}/{% endif %}">Colegios estrella en {% if municipio_slug %}{{ municipio }}{% else %}{{ departamento }}{% endif %}</a></li>
                 <li><a href="/icfes/supero-prediccion/{{ departamento_slug }}/">Colegios que superaron su rendimiento esperado en {{ departamento }}</a></li>
                 <li><a href="/icfes/bandas-motivacionales/{{ departamento_slug }}/">Evolución motivacional en {{ departamento }}</a></li>
                 {% else %}

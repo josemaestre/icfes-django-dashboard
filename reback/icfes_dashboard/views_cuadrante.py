@@ -292,13 +292,66 @@ def _resolve_depto_slug(slug):
     return None
 
 
-def _build_landing_query(depto_name=None):
-    """Build SQL query for landing pages (no sector filter, optional depto)."""
+def _resolve_municipio_slug(depto_nombre, slug):
+    """Map a URL slug to the exact municipio name stored in the DB for a given dept."""
+    slug = (slug or "").strip().lower()
+    if not slug or not depto_nombre:
+        return None
+    try:
+        q = resolve_schema(
+            "SELECT DISTINCT municipio FROM gold.fct_agg_colegios_ano "
+            "WHERE CAST(ano AS INTEGER) = ? AND departamento = ? AND municipio IS NOT NULL "
+            "ORDER BY municipio"
+        )
+        df = execute_query(q, params=[_LANDING_ANO, depto_nombre])
+        municipios = df["municipio"].tolist() if not df.empty else []
+    except Exception:
+        municipios = []
+
+    for mun in municipios:
+        if slugify(_clean_text(mun)) == slug:
+            return _clean_text(mun)
+    return None
+
+
+def _get_municipios_nav(depto_nombre):
+    """Return list of {'nombre': str, 'slug': str} for all municipios in a dept."""
+    if not depto_nombre:
+        return []
+    try:
+        q = resolve_schema(
+            "SELECT DISTINCT municipio FROM gold.fct_agg_colegios_ano "
+            "WHERE CAST(ano AS INTEGER) = ? AND departamento = ? AND municipio IS NOT NULL "
+            "ORDER BY municipio"
+        )
+        df = execute_query(q, params=[_LANDING_ANO, depto_nombre])
+        municipios = df["municipio"].tolist() if not df.empty else []
+    except Exception:
+        municipios = []
+
+    seen = set()
+    result = []
+    for m in municipios:
+        m_clean = _clean_text(m)
+        if not m_clean:
+            continue
+        s = slugify(m_clean)
+        if s not in seen:
+            seen.add(s)
+            result.append({"nombre": m_clean, "slug": s})
+    return result
+
+
+def _build_landing_query(depto_name=None, municipio_name=None):
+    """Build SQL query for landing pages (no sector filter, optional depto/municipio)."""
     clauses = []
     extra_params: list = []
     if depto_name:
         clauses.append("AND a.departamento = ?")
         extra_params.append(depto_name)
+    if municipio_name:
+        clauses.append("AND a.municipio = ?")
+        extra_params.append(municipio_name)
     extra_where = " ".join(clauses)
     query = resolve_schema(_QUERY.format(extra_where=extra_where))
     return query, extra_params
@@ -315,7 +368,7 @@ def _safe_float(v):
         return None
 
 
-def _build_narrative(records, cuadrante, depto_nombre=None, ano=_LANDING_ANO):
+def _build_narrative(records, cuadrante, depto_nombre=None, municipio_nombre=None, ano=_LANDING_ANO):
     """Build a data-driven narrative string for a given quadrant.
 
     Uses only the records already fetched (no extra DB query).
@@ -323,7 +376,7 @@ def _build_narrative(records, cuadrante, depto_nombre=None, ano=_LANDING_ANO):
     """
     from statistics import mean
 
-    scope = depto_nombre or "Colombia"
+    scope = municipio_nombre or depto_nombre or "Colombia"
     ano_ant = ano - 1
     q_records = [r for r in records if r.get("cuadrante") == cuadrante]
     n = len(q_records)
@@ -493,8 +546,8 @@ def api_cuadrante_data(request):
 # ---------------------------------------------------------------------------
 
 @cache_page(_LANDING_CACHE_TTL)
-def cuadrante_landing(request, cuadrante, depto_slug=None):
-    """Public SEO landing page for a quadrant, nationally or by department."""
+def cuadrante_landing(request, cuadrante, depto_slug=None, municipio_slug=None):
+    """Public SEO landing page for a quadrant: national, by department, or by municipality."""
     if cuadrante not in _CUADRANTE_META:
         raise Http404("Cuadrante no encontrado")
 
@@ -509,11 +562,27 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
             raise Http404("Departamento no encontrado")
         canonical_depto_slug = slugify(depto_nombre)
         if canonical_depto_slug != depto_slug:
+            suffix = f"{municipio_slug}/" if municipio_slug else ""
+            return redirect(f"/icfes/cuadrante/{cuadrante}/{canonical_depto_slug}/{suffix}", permanent=True)
+
+    # Resolve municipio slug → exact DB name
+    municipio_nombre = None
+    canonical_municipio_slug = None
+    if municipio_slug and depto_nombre:
+        municipio_nombre = _resolve_municipio_slug(depto_nombre, municipio_slug)
+        if municipio_nombre is None:
+            # Unknown municipio → redirect to dept page
             return redirect(f"/icfes/cuadrante/{cuadrante}/{canonical_depto_slug}/", permanent=True)
+        canonical_municipio_slug = slugify(municipio_nombre)
+        if canonical_municipio_slug != municipio_slug:
+            return redirect(
+                f"/icfes/cuadrante/{cuadrante}/{canonical_depto_slug}/{canonical_municipio_slug}/",
+                permanent=True,
+            )
 
     # Fetch data from DB
     try:
-        query, extra_params = _build_landing_query(depto_nombre)
+        query, extra_params = _build_landing_query(depto_nombre, municipio_nombre)
         params = [_LANDING_ANO, *extra_params, _LANDING_ANO]
         df = execute_query(query, params=params)
         records = df.to_dict(orient="records") if not df.empty else []
@@ -547,11 +616,11 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
 
     # Data-driven narratives for all 4 quadrants
     narratives = {
-        q: _build_narrative(records, q, depto_nombre=depto_nombre, ano=_LANDING_ANO)
+        q: _build_narrative(records, q, depto_nombre=depto_nombre, municipio_nombre=municipio_nombre, ano=_LANDING_ANO)
         for q in _CUADRANTE_META
     }
 
-    # Department nav list
+    # Department nav list (always shown)
     try:
         all_deptos = get_departamentos()
         deptos_raw = [DEPT_NAME_CANONICAL.get(_clean_text(d), _clean_text(d)) for d in all_deptos if _clean_text(d)]
@@ -566,8 +635,11 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
     except Exception:
         deptos_nav = []
 
+    # Municipality nav (shown when viewing a department, not a municipality)
+    municipios_nav = _get_municipios_nav(depto_nombre) if depto_nombre and not municipio_nombre else []
+
     # SEO metadata
-    geo_label = f"en {depto_nombre}" if depto_nombre else "en Colombia"
+    geo_label = f"en {municipio_nombre}" if municipio_nombre else (f"en {depto_nombre}" if depto_nombre else "en Colombia")
     seo_title = f"{meta['emoji']} {meta['nombre']} {geo_label} — ICFES {_LANDING_ANO}"
     n_prot = counts.get(cuadrante, 0)
     seo_description = (
@@ -583,6 +655,11 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
         breadcrumb.append({
             "nombre": depto_nombre,
             "url": f"/icfes/cuadrante/{cuadrante}/{canonical_depto_slug}/",
+        })
+    if municipio_nombre:
+        breadcrumb.append({
+            "nombre": municipio_nombre,
+            "url": f"/icfes/cuadrante/{cuadrante}/{canonical_depto_slug}/{canonical_municipio_slug}/",
         })
     breadcrumb.append({"nombre": meta["nombre"], "url": None})
 
@@ -605,10 +682,13 @@ def cuadrante_landing(request, cuadrante, depto_slug=None):
         "meta": meta,
         "depto_nombre": depto_nombre,
         "depto_slug": canonical_depto_slug,
+        "municipio_nombre": municipio_nombre,
+        "municipio_slug": canonical_municipio_slug,
         "tabla": tabla,
         "counts": counts,
         "chart_data_json": chart_data_json,
         "deptos_nav": deptos_nav,
+        "municipios_nav": municipios_nav,
         "narratives": narratives,
         "otros_cuadrantes": [
             {"key": k, "meta": v, "count": counts.get(k, 0)} for k, v in _CUADRANTE_META.items() if k != cuadrante
