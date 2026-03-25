@@ -20,6 +20,11 @@ class CanonicalHostMiddleware:
         if not self.canonical:
             return self.get_response(request)
 
+        # Health check is probed by Railway against the internal container IP,
+        # not the canonical domain — skip redirect so the probe gets 200 OK.
+        if request.path == '/health/':
+            return self.get_response(request)
+
         host = request.get_host().split(':')[0]  # strip port if present
         if host != self.canonical:
             url = f"https://{self.canonical}{request.get_full_path()}"
