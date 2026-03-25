@@ -27,13 +27,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements folder
-COPY reback/requirements/ requirements/
+COPY requirements/ requirements/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements/production.txt
 
-# Copy all project files from reback folder
-COPY reback/ .
+# Copy all project files
+COPY . .
 
 # Note: Using pre-compiled CSS/JS files from repository
 # Gulp build step skipped to avoid build complexity
