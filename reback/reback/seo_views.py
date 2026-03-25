@@ -14,25 +14,30 @@ def _public_base_url(request):
 
 def robots_txt(request):
     base = _public_base_url(request)
-    lines = [
-        # General crawlers
-        "User-agent: *",
-        "Allow: /",
-        "",
-        # Private/product areas that should not be crawled.
+
+    # Private paths — applied to * and to each AI bot block that overrides *.
+    # When a bot has its own User-agent block it ignores User-agent: *, so these
+    # disallows must be repeated explicitly for every bot-specific block.
+    _private = [
         "Disallow: /admin/",
         "Disallow: /accounts/",
         "Disallow: /users/",
         "Disallow: /payments/",
         "Disallow: /dashboard/",
         "Disallow: /app/",
-        "",
-        # Programmatic/data endpoints that don't add search value.
         "Disallow: /icfes/api/",
         "Disallow: /icfes/export/",
         "Disallow: /email-graphs/",
         "Disallow: /social-card/",
         "Disallow: /*.map$",
+    ]
+
+    lines = [
+        # General crawlers
+        "User-agent: *",
+        "Allow: /",
+        "",
+        *_private,
         "",
         # SEO/audit bots — bloqueados (no usamos estas herramientas)
         "User-agent: SemrushBot",
@@ -93,24 +98,31 @@ def robots_txt(request):
         "User-agent: omgili",
         "Disallow: /",
         "",
-        # AI crawlers — explicitly allowed for public educational content
+        # AI crawlers — allowed for public educational content, private paths blocked.
+        # Each bot needs its own _private block because bot-specific rules override User-agent: *.
         "User-agent: GPTBot",
         "Allow: /",
+        *_private,
         "",
         "User-agent: ChatGPT-User",
         "Allow: /",
+        *_private,
         "",
         "User-agent: OAI-SearchBot",
         "Allow: /",
+        *_private,
         "",
         "User-agent: Google-Extended",
         "Allow: /",
+        *_private,
         "",
         "User-agent: PerplexityBot",
         "Allow: /",
+        *_private,
         "",
         "User-agent: anthropic-ai",
         "Allow: /",
+        *_private,
         "",
         f"Sitemap: {base}/sitemap.xml",
     ]
