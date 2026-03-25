@@ -265,8 +265,74 @@ DB_PATH=/ruta/a/dev.duckdb          # DuckDB local (desarrollo)
 # En producción Railway apunta a prod.duckdb descargado desde S3
 PUBLIC_SITE_URL=https://www.icfes-analytics.com
 DJANGO_SECRET_KEY=...
-DJANGO_SETTINGS_MODULE=config.settings.production
+DJANGO_SETTINGS_MODULE=config.settings.local   # dev
+# DJANGO_SETTINGS_MODULE=config.settings.railway  # producción Railway
 ```
+
+---
+
+## Configuración Railway (producción)
+
+### Root Directory
+
+El proyecto vive en el subdirectorio `reback/` del repositorio. Configurar en Railway:
+
+```
+Settings → General → Root Directory = /reback
+```
+
+Esto hace que Railway encuentre el `Dockerfile` y `railway.toml` correctamente.
+
+### Gunicorn (Dockerfile CMD)
+
+```dockerfile
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 8 --timeout 120"]
+```
+
+- **2 workers × 8 threads** = 16 requests concurrentes
+- Workers: limitados por RAM (DuckDB carga ~3.5 GB por proceso). Con 2 workers se usan ~7 GB.
+- Threads: DuckDB es thread-safe en read-only → se puede subir a 8 sin problema.
+- Timeout 120s: suficiente para las queries más pesadas (~3–5s en práctica).
+
+### Healthcheck
+
+```toml
+# railway.toml
+[deploy]
+healthcheckPath = "/health/"
+healthcheckTimeout = 300
+```
+
+- Railway sondea `/health/` cada ~30s via HTTP (no HTTPS) directamente a la IP del contenedor.
+- **CRÍTICO**: `SECURE_SSL_REDIRECT = True` en `railway.py` causaría 301 en el probe → deploy FAILED.
+- Solución en `config/settings/railway.py`:
+  ```python
+  SECURE_REDIRECT_EXEMPT = [r"^health/$"]   # Railway health probe hits HTTP directly
+  ```
+- También en `middleware/canonical_host.py` hay un bypass explícito para `/health/`.
+- `healthcheckTimeout = 300` cubre el arranque completo (descarga S3 + Django init).
+
+### Por qué NO usar `startCommand` en railway.toml
+
+Si se define `startCommand = "python manage.py migrate && gunicorn ..."`, Railway ejecuta ese comando
+en lugar del `CMD` del Dockerfile. El problema: durante `migrate`, el puerto no está escuchando.
+Railway intenta el healthcheck y falla 4 veces → deploy FAILED.
+
+**Solución**: eliminar `startCommand` del `railway.toml` y dejar que el Dockerfile CMD inicie
+gunicorn directamente. Las migraciones corren una sola vez al hacer deploy manualmente si es necesario.
+
+### Settings module en producción
+
+```
+DJANGO_SETTINGS_MODULE=config.settings.railway
+```
+
+`railway.py` extiende `base.py` con:
+- `ALLOWED_HOSTS` con el dominio Railway
+- `SECURE_SSL_REDIRECT = True`
+- `SECURE_PROXY_SSL_HEADER` para confiar en el proxy de Railway
+- `SECURE_REDIRECT_EXEMPT` para el healthcheck
+- `DEBUG = True` temporalmente (para servir archivos estáticos sin WhiteNoise configurado)
 
 ---
 
