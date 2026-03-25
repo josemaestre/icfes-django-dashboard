@@ -324,12 +324,12 @@
             {% endif %}
             {% if not user.is_authenticated %}
             <div class="mt-4 d-flex flex-wrap gap-2">
-                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                    class="btn btn-light fw-semibold px-4"
                    data-cta-source="hero_guardar">
                    <i class="bx bx-bookmark me-1"></i> Guardar este colegio
                 </a>
-                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                    class="btn btn-outline-light px-4"
                    data-cta-source="hero_alertas">
                    <i class="bx bx-bell me-1"></i> Recibir resultados 2025
@@ -531,7 +531,7 @@
                     {% if not user.is_authenticated %}
                     <div class="text-center mt-3 pt-3 border-top">
                         <p class="text-muted small mb-2">Mostrando los últimos 6 años · Historial completo desde 1996 disponible con cuenta gratuita</p>
-                        <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-primary btn-sm px-4"
+                        <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener" class="btn btn-primary btn-sm px-4"
                            data-cta-source="historial_completo">Ver historial completo — es gratis</a>
                     </div>
                     {% endif %}
@@ -568,7 +568,7 @@
                                 background:rgba(var(--bs-body-bg-rgb),.7);
                                 border-radius:8px; text-align:center; padding:12px;">
                                 <p class="mb-2 small fw-semibold">{{ action_recommendations|length }} acciones recomendadas para este colegio</p>
-                                <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                                <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                                    class="btn btn-primary btn-sm px-4"
                                    data-cta-source="acciones_blur">
                                    Ver todas — es gratis
@@ -705,7 +705,7 @@
                 <strong>{{ school.nombre }}</strong> estén disponibles.
                 También podrás guardar este colegio, compararlo y ver el historial completo desde 1996.
             </p>
-            <a href="{% url 'account_signup' %}?next={{ request.path }}"
+            <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                class="btn btn-primary px-5 btn-lg"
                data-cta-source="alerta_2025">
                Crear cuenta gratis
@@ -872,7 +872,7 @@
         </span>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
-        <a href="{% url 'account_signup' %}?next={{ request.path }}"
+        <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
            class="btn btn-light btn-sm fw-semibold px-4"
            style="color:#0d6efd; white-space:nowrap;"
            data-cta-source="banner_sticky">

@@ -99,7 +99,7 @@
                 </p>
                 {% if not user.is_authenticated %}
                 <div class="mt-3 d-flex flex-wrap gap-2">
-                    <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                    <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                        class="btn btn-primary btn-lg px-4"
                        data-cta-source="motland_hero_signup">
                         Crear cuenta gratuita
@@ -160,7 +160,7 @@
                 </p>
             </div>
             {% if not user.is_authenticated %}
-            <a href="{% url 'account_signup' %}?next={{ request.path }}"
+            <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                class="btn btn-sm btn-primary" data-cta-source="motland_materia_tabs">
                 Ver por materia — es gratis
             </a>
@@ -175,7 +175,7 @@
                     <div style="font-size:1.8rem;margin-bottom:6px;">🔒</div>
                     <div class="fw-bold mb-1" style="color:#1e3a5f;font-size:.9rem;">Datos {{ ano_min_data }}–{{ ano_public_from|add:"-1" }}</div>
                     <p class="text-muted small mb-3">Incluye el quiebre histórico de 2000 y el origen de la polarización</p>
-                    <a href="{% url 'account_signup' %}?next={{ request.path }}"
+                    <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
                        class="btn btn-primary btn-sm w-100" data-cta-source="motland_blur_overlay">
                         Ver historia completa<br><small class="fw-normal">— es gratis</small>
                     </a>
@@ -265,7 +265,7 @@
             con historia desde {{ ano_min_data }}, análisis por materia y comparativo con el promedio
             {% if departamento_label %}de {{ departamento_label }}{% else %}nacional{% endif %}.
         </p>
-        <a href="{% url 'account_signup' %}?next={{ request.path }}"
+        <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
            class="btn btn-light btn-lg px-5 fw-bold" data-cta-source="motland_cta_final">
             Crear cuenta gratuita →
         </a>
