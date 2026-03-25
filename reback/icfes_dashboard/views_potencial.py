@@ -191,7 +191,14 @@ def potencial_landing(request, first_slug=None, sector_slug=None):
 
     if sector_slug is not None:
         if sector_slug not in _SECTOR_MAP:
-            raise Http404("Sector no válido")
+            # Not a valid sector (e.g. municipality name from bot URL speculation).
+            # Redirect to the nearest valid URL instead of returning 404.
+            target = (
+                f"/icfes/supero-prediccion/{canonical_depto_slug}/"
+                if canonical_depto_slug
+                else "/icfes/supero-prediccion/"
+            )
+            return redirect(target, permanent=True)
         sector_db = _SECTOR_MAP[sector_slug]
         sector_label = _SECTOR_LABEL[sector_slug]
 

@@ -30,6 +30,11 @@ def robots_txt(request):
         "Disallow: /email-graphs/",
         "Disallow: /social-card/",
         "Disallow: /*.map$",
+        # supero-prediccion only exists at 1 or 2 slug depth; block bot speculation at 3+.
+        # Allow the valid sector variants first (more specific = wins over the Disallow below).
+        "Allow: /icfes/supero-prediccion/*/oficial/",
+        "Allow: /icfes/supero-prediccion/*/privado/",
+        "Disallow: /icfes/supero-prediccion/*/*/",
     ]
 
     lines = [
