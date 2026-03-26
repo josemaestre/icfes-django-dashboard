@@ -12,6 +12,9 @@ Layer 2 — Bad-behavior signals:
   seconds, it is banned for BAN_DURATION seconds.
 
 Ban checks run before any view logic — banned IPs never reach Django.
+
+Legitimate crawlers (Googlebot, Meta, Bing, etc.) are fully exempt —
+they feed our SEO and social media reputation.
 """
 import logging
 
@@ -34,6 +37,36 @@ BAN_DURATION     = 86400  # seconds — 24 hours
 
 # Paths that should NOT generate 404 signals (static assets, favicons, etc.)
 _NOSIGNAL_PREFIXES = ("/static/", "/media/", "/favicon", "/robots.txt", "/sitemap")
+
+# Legitimate crawlers exempt from all bot detection.
+# These feed SEO rankings and social media previews — never ban them.
+_GOOD_CRAWLERS = (
+    "googlebot",
+    "google-inspectiontool",
+    "google-safety",
+    "adsbot-google",
+    "bingbot",
+    "bingpreview",
+    "msnbot",
+    "meta-externalagent",
+    "facebookexternalhit",
+    "twitterbot",
+    "linkedinbot",
+    "whatsapp",
+    "telegrambot",
+    "applebot",
+    "duckduckbot",
+    "yandexbot",
+    "baiduspider",
+    "slurp",          # Yahoo
+    "ia_archiver",    # Internet Archive / Wayback Machine
+)
+
+
+def _is_good_crawler(request):
+    """Return True if the request comes from a known legitimate crawler."""
+    ua = request.META.get("HTTP_USER_AGENT", "").lower()
+    return any(crawler in ua for crawler in _GOOD_CRAWLERS)
 
 
 def _client_ip(request):
@@ -67,6 +100,10 @@ class BotBanMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # ── 0. Legitimate crawlers are fully exempt. ─────────────────────────
+        if _is_good_crawler(request):
+            return self.get_response(request)
+
         ip = _client_ip(request)
 
         # ── 1. Already banned? Return 403 immediately. ──────────────────────
