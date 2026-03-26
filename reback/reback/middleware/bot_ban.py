@@ -41,30 +41,48 @@ _NOSIGNAL_PREFIXES = ("/static/", "/media/", "/favicon", "/robots.txt", "/sitema
 # Legitimate crawlers exempt from all bot detection.
 # These feed SEO rankings and social media previews — never ban them.
 _GOOD_CRAWLERS = (
+    # Google
     "googlebot",
     "google-inspectiontool",
     "google-safety",
     "adsbot-google",
+    # Bing / Microsoft
     "bingbot",
     "bingpreview",
     "msnbot",
+    # Meta / Facebook
     "meta-externalagent",
+    "meta-webindexer",
     "facebookexternalhit",
+    "facebot",
+    # Social platforms
     "twitterbot",
     "linkedinbot",
+    "tiktokspider",
     "whatsapp",
     "telegrambot",
+    # Apple / DuckDuckGo
     "applebot",
     "duckduckbot",
-    "yandexbot",
+    # Yandex (cubre yandexbot, yandexmarket, etc.)
+    "yandex",
+    # Otros motores de búsqueda
     "baiduspider",
+    "360spider",        # 360 Search (China)
     "slurp",            # Yahoo
     "ia_archiver",      # Internet Archive / Wayback Machine
-    "perplexitybot",    # Perplexity AI search
+    "amzn-searchbot",   # Amazon
+    # AI search
+    "perplexitybot",    # Perplexity
     "claudebot",        # Anthropic Claude
-    "gptbot",           # OpenAI
-    "anthropic-ai",     # Anthropic crawlers
+    "gptbot",           # OpenAI GPTBot
+    "oai-searchbot",    # OpenAI SearchBot
+    "chatgpt-user",     # ChatGPT browsing
+    "anthropic-ai",     # Anthropic
     "cohere-ai",        # Cohere
+    # SEO / herramientas legítimas
+    "ahrefsbot",        # Ahrefs (2240 req en prod)
+    "quillbot",         # QuillBot AI writing
 )
 
 
