@@ -67,7 +67,10 @@ class TrafficIngestMiddleware:
             )
 
             xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
-            src_ip = (xff.split(",")[0].strip() if xff else request.META.get("REMOTE_ADDR", "")) or None
+            # Take the RIGHTMOST IP from X-Forwarded-For — appended by Railway's
+            # trusted proxy. Clients can forge leftmost entries, not the rightmost.
+            remote = request.META.get("REMOTE_ADDR", "")
+            src_ip = (xff.split(",")[-1].strip() if xff else remote) or None
 
             payload = dict(
                 request_id=str(request_id)[:64],

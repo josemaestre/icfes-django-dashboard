@@ -39,6 +39,8 @@ MIDDLEWARE = [
     "reback.middleware.canonical_host.CanonicalHostMiddleware",
     # Normalize double slashes before anything else
     "reback.middleware.slash_normalize.SlashNormalizeMiddleware",
+    # Drop scanner probes (.php, .env, wp-admin, etc.) before any view logic
+    "reback.middleware.security.ScannerBlockMiddleware",
     # Compress responses (cost optimization)
     "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
