@@ -41,6 +41,8 @@ MIDDLEWARE = [
     "reback.middleware.slash_normalize.SlashNormalizeMiddleware",
     # Drop scanner probes (.php, .env, wp-admin, etc.) before any view logic
     "reback.middleware.security.ScannerBlockMiddleware",
+    # Honeypot + dynamic ban by bad behavior (404 signals) — must run early
+    "reback.middleware.bot_ban.BotBanMiddleware",
     # Rate-limit scrapers: 40 req/min per IP on school/dashboard paths
     "reback.middleware.rate_limit.RateLimitMiddleware",
     # Compress responses (cost optimization)

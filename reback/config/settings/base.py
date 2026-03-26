@@ -177,6 +177,8 @@ AUTH_PASSWORD_VALIDATORS = [
 MIDDLEWARE = [
     # Drop scanner probes (.php, .env, wp-admin, etc.) before any view logic
     "reback.middleware.security.ScannerBlockMiddleware",
+    # Honeypot + dynamic ban by bad behavior (404 signals)
+    "reback.middleware.bot_ban.BotBanMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
