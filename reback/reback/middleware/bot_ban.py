@@ -58,8 +58,13 @@ _GOOD_CRAWLERS = (
     "duckduckbot",
     "yandexbot",
     "baiduspider",
-    "slurp",          # Yahoo
-    "ia_archiver",    # Internet Archive / Wayback Machine
+    "slurp",            # Yahoo
+    "ia_archiver",      # Internet Archive / Wayback Machine
+    "perplexitybot",    # Perplexity AI search
+    "claudebot",        # Anthropic Claude
+    "gptbot",           # OpenAI
+    "anthropic-ai",     # Anthropic crawlers
+    "cohere-ai",        # Cohere
 )
 
 
