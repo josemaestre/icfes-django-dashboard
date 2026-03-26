@@ -41,6 +41,8 @@ MIDDLEWARE = [
     "reback.middleware.slash_normalize.SlashNormalizeMiddleware",
     # Drop scanner probes (.php, .env, wp-admin, etc.) before any view logic
     "reback.middleware.security.ScannerBlockMiddleware",
+    # Rate-limit scrapers: 40 req/min per IP on school/dashboard paths
+    "reback.middleware.rate_limit.RateLimitMiddleware",
     # Compress responses (cost optimization)
     "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
