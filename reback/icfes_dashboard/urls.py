@@ -123,6 +123,9 @@ urlpatterns = [
          geo_landing_views.department_landing_page, name='department_landing'),
     path('departamento/<slug:departamento_slug>/municipio/<slug:municipio_slug>/',
          geo_landing_views.municipality_landing_page, name='municipality_landing'),
+    # /icfes/colombia/ → ranking 2024 (bots como ChatGPT-User lo intentan)
+    path('colombia/', RedirectView.as_view(url='/icfes/ranking/colegios/2024/', permanent=True)),
+
     path('ranking/colegios/',
          longtail_landing_views.ranking_colegios_hub_page, name='ranking_colegios_hub'),
     path('ranking/colegios/<int:ano>/',

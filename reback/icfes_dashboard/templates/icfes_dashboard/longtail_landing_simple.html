@@ -115,14 +115,25 @@
         <div class="panel p-3 mb-4">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="h5 mb-0">Año {{ year }}</h2>
-                <div class="small text-muted">Años disponibles:
-                    {% for y in years %}
-                    {% if y == year %}
-                    <strong>{{ y }}</strong>
+                <div class="small text-muted d-flex align-items-center flex-wrap gap-1">
+                    <span>Años:</span>
+                    {% if mode == "ranking_general" %}
+                        {% for y in years_free %}
+                            {% if y == year %}<strong>{{ y }}</strong>
+                            {% else %}<a href="{{ year_base_url }}{{ y }}/">{{ y }}</a>{% endif %}
+                        {% endfor %}
+                        {% for y in years_locked %}
+                            <span class="text-muted" style="opacity:0.45" title="Regístrate para ver este año">{{ y }}</span>
+                        {% endfor %}
+                        {% if years_locked %}
+                            <a href="/accounts/signup/" class="ms-1 fw-semibold text-primary text-nowrap">Regístrate para ver más años →</a>
+                        {% endif %}
                     {% else %}
-                    <a href="{{ year_base_url }}{{ y }}/">{{ y }}</a>
+                        {% for y in years %}
+                            {% if y == year %}<strong>{{ y }}</strong>
+                            {% else %}<a href="{{ year_base_url }}{{ y }}/">{{ y }}</a>{% endif %}
+                        {% endfor %}
                     {% endif %}
-                    {% endfor %}
                 </div>
             </div>
         </div>

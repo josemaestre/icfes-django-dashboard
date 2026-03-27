@@ -490,7 +490,8 @@ def ranking_colegios_year_page(request, ano):
             {
                 "mode": "ranking_general",
                 "year": year,
-                "years": years[:6],
+                "years_free": years[:4],
+                "years_locked": years[4:8],
                 "year_base_url": "/icfes/ranking/colegios/",
                 "rows": [
                     {
