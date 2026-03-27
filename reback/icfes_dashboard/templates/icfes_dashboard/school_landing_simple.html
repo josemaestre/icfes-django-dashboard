@@ -564,7 +564,7 @@
                         </thead>
                         <tbody>
                             {% for row in historical_table %}
-                            <tr {% if row.locked and not user.is_authenticated %}style="filter:blur(4px); user-select:none; pointer-events:none;"{% endif %}>
+                            <tr {% if row.locked %}style="filter:blur(4px); user-select:none; pointer-events:none;"{% endif %}>
                                 <td><strong>{{ row.year }}</strong></td>
                                 <td class="text-center">{{ row.global|default:"—" }}</td>
                                 <td class="text-center">{{ row.matematicas|default:"—" }}</td>
@@ -577,20 +577,24 @@
                         </tbody>
                     </table>
                 </div>
-                {% if not user.is_authenticated %}
                 <div style="
                     position:absolute; bottom:0; left:0; right:0; height:52%;
                     background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,.97) 50%);
                     display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
                     padding-bottom:20px; border-radius:0 0 8px 8px; pointer-events:auto;">
+                    {% if user.is_authenticated %}
+                    <p class="mb-2 fw-semibold small text-center">Historial completo disponible en el dashboard</p>
+                    <a href="/icfes/" class="btn btn-primary btn-sm px-4" data-cta-source="tabla_historica_dashboard">
+                        Ver análisis completo →
+                    </a>
+                    {% else %}
                     <p class="mb-2 fw-semibold small text-center">Historial completo desde 2000 disponible con cuenta gratuita</p>
                     <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
-                       class="btn btn-primary btn-sm px-4"
-                       data-cta-source="tabla_historica">
+                       class="btn btn-primary btn-sm px-4" data-cta-source="tabla_historica">
                        Ver historial completo — es gratis
                     </a>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
         {% endif %}

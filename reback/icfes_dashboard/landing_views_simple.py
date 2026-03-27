@@ -493,8 +493,8 @@ def school_landing_page(request, slug):
                         "has_data": len(years) > 0,
                     }
 
-                # Opción B: tabla histórica multi-materia (todos los años, primeros 3 libres)
-                _FREE_TABLE_ROWS = 3
+                # Opción B: tabla histórica multi-materia (todos los años, primeros 5 libres)
+                _FREE_TABLE_ROWS = 5
                 historical_table = [
                     {
                         "year": str(row[0]),
