@@ -35,9 +35,12 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         Populates user information from social provider info.
 
+        Captura nombre completo, first_name y last_name desde Google OAuth.
         See: https://docs.allauth.org/en/latest/socialaccount/advanced.html#creating-and-populating-user-instances
         """
         user = super().populate_user(request, sociallogin, data)
+
+        # Guardar nombre completo en el campo `name`
         if not user.name:
             if name := data.get("name"):
                 user.name = name
@@ -45,4 +48,21 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
                 user.name = first_name
                 if last_name := data.get("last_name"):
                     user.name += f" {last_name}"
+
+        # Guardar first_name y last_name desde los campos de Google
+        # (given_name / family_name vienen en extra_data de Google)
+        extra_data = getattr(sociallogin.account, "extra_data", {}) or {}
+        if not user.first_name:
+            user.first_name = (
+                data.get("first_name")
+                or extra_data.get("given_name")
+                or ""
+            )
+        if not user.last_name:
+            user.last_name = (
+                data.get("last_name")
+                or extra_data.get("family_name")
+                or ""
+            )
+
         return user

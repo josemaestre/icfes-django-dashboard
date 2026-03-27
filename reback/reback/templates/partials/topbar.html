@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n socialaccount %}
 <header class="topbar">
   <div class="container-xxl">
     <div class="navbar-header">
@@ -57,35 +57,69 @@
         <div class="dropdown topbar-item">
           <a type="button" class="topbar-button" id="page-header-user-dropdown" data-bs-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false">
-            <span class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
-              style="width:32px; height:32px; font-size:14px; line-height:1;">
-              {% if user.is_authenticated %}
-                {% if user.get_full_name %}{{ user.get_full_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}
-              {% else %}?{% endif %}
-            </span>
+            {% if user.is_authenticated %}
+              {% get_social_accounts user as social_accounts %}
+              {% with google_account=social_accounts|dictsort:"provider"|first %}
+                {% if google_account and google_account.extra_data.picture %}
+                  <img src="{{ google_account.extra_data.picture }}"
+                       alt="{{ user.get_full_name|default:user.email }}"
+                       class="rounded-circle"
+                       style="width:34px; height:34px; object-fit:cover; border:2px solid rgba(255,255,255,0.2);"
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <span class="d-none d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
+                    style="width:34px; height:34px; font-size:14px; line-height:1;">
+                    {% if user.get_full_name %}{{ user.get_full_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}
+                  </span>
+                {% else %}
+                  <span class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
+                    style="width:34px; height:34px; font-size:14px; line-height:1;">
+                    {% if user.get_full_name %}{{ user.get_full_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}
+                  </span>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <span class="d-flex align-items-center justify-content-center rounded-circle bg-secondary text-white fw-bold"
+                style="width:34px; height:34px; font-size:14px; line-height:1;">?</span>
+            {% endif %}
           </a>
           <div class="dropdown-menu dropdown-menu-end">
             <!-- item-->
-            <div class="dropdown-header">
+            <div class="dropdown-header d-flex align-items-center gap-2">
               {% if user.is_authenticated %}
-                <h6 class="mb-0">
-                  {% if user.get_full_name %}{{ user.get_full_name }}
-                  {% elif user.email %}{{ user.email }}
-                  {% else %}Usuario{% endif %}
-                </h6>
-                {% if user.subscription %}
-                  {% if user.subscription.plan.tier == 'free' %}
-                  <span class="badge bg-secondary-subtle text-secondary mt-1">Comunidad</span>
-                  {% elif user.subscription.plan.tier == 'basic' %}
-                  <span class="badge bg-info-subtle text-info mt-1">Esencial</span>
-                  {% elif user.subscription.plan.tier == 'premium' %}
-                  <span class="badge bg-primary-subtle text-primary mt-1">Pro Estratégico</span>
-                  {% elif user.subscription.plan.tier == 'enterprise' %}
-                  <span class="badge bg-success-subtle text-success mt-1">Territorial</span>
+                {% get_social_accounts user as dd_social_accounts %}
+                {% with dd_google=dd_social_accounts|dictsort:"provider"|first %}
+                  {% if dd_google and dd_google.extra_data.picture %}
+                    <img src="{{ dd_google.extra_data.picture }}"
+                         alt="{{ user.get_full_name|default:user.email }}"
+                         class="rounded-circle flex-shrink-0"
+                         style="width:40px; height:40px; object-fit:cover;">
+                  {% else %}
+                    <span class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold flex-shrink-0"
+                      style="width:40px; height:40px; font-size:16px;">
+                      {% if user.get_full_name %}{{ user.get_full_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}
+                    </span>
                   {% endif %}
-                {% else %}
-                <span class="badge bg-secondary-subtle text-secondary mt-1">Sin Plan</span>
-                {% endif %}
+                {% endwith %}
+                <div>
+                  <h6 class="mb-0 fw-semibold">
+                    {% if user.get_full_name %}{{ user.get_full_name }}
+                    {% elif user.email %}{{ user.email }}
+                    {% else %}Usuario{% endif %}
+                  </h6>
+                  {% if user.subscription %}
+                    {% if user.subscription.plan.tier == 'free' %}
+                    <span class="badge bg-secondary-subtle text-secondary mt-1">Comunidad</span>
+                    {% elif user.subscription.plan.tier == 'basic' %}
+                    <span class="badge bg-info-subtle text-info mt-1">Esencial</span>
+                    {% elif user.subscription.plan.tier == 'premium' %}
+                    <span class="badge bg-primary-subtle text-primary mt-1">Pro Estratégico</span>
+                    {% elif user.subscription.plan.tier == 'enterprise' %}
+                    <span class="badge bg-success-subtle text-success mt-1">Territorial</span>
+                    {% endif %}
+                  {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary mt-1">Sin Plan</span>
+                  {% endif %}
+                </div>
               {% else %}
                 <h6 class="mb-0">Visitante</h6>
                 <span class="badge bg-secondary-subtle text-secondary mt-1">Sin sesión</span>
