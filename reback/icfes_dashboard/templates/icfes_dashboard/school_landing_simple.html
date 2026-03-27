@@ -540,6 +540,61 @@
             {% endif %}
         </div>
 
+        {% if historical_table %}
+        <div class="card-block">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="section-title mb-0">Resultados por materia — todos los años</h3>
+                {% if not user.is_authenticated %}
+                <span class="badge text-bg-secondary small"><i class="bi bi-lock-fill me-1"></i>Historial completo con cuenta gratis</span>
+                {% endif %}
+            </div>
+            <div style="position:relative;">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0" style="font-size:.85rem; min-width:520px;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Año</th>
+                                <th class="text-center">Global</th>
+                                <th class="text-center">Matemáticas</th>
+                                <th class="text-center">Lectura</th>
+                                <th class="text-center">Ciencias</th>
+                                <th class="text-center">Sociales</th>
+                                <th class="text-center">Inglés</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in historical_table %}
+                            <tr {% if row.locked and not user.is_authenticated %}style="filter:blur(4px); user-select:none; pointer-events:none;"{% endif %}>
+                                <td><strong>{{ row.year }}</strong></td>
+                                <td class="text-center">{{ row.global|default:"—" }}</td>
+                                <td class="text-center">{{ row.matematicas|default:"—" }}</td>
+                                <td class="text-center">{{ row.lectura|default:"—" }}</td>
+                                <td class="text-center">{{ row.ciencias|default:"—" }}</td>
+                                <td class="text-center">{{ row.sociales|default:"—" }}</td>
+                                <td class="text-center">{{ row.ingles|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not user.is_authenticated %}
+                <div style="
+                    position:absolute; bottom:0; left:0; right:0; height:52%;
+                    background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,.97) 50%);
+                    display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+                    padding-bottom:20px; border-radius:0 0 8px 8px; pointer-events:auto;">
+                    <p class="mb-2 fw-semibold small text-center">Historial completo desde 2000 disponible con cuenta gratuita</p>
+                    <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
+                       class="btn btn-primary btn-sm px-4"
+                       data-cta-source="tabla_historica">
+                       Ver historial completo — es gratis
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-lg-6">
                 <div class="card-block">
@@ -692,6 +747,69 @@
                 </li>
             </ul>
         </div>
+
+        {% if prediccion_ingles %}
+        <div class="card-block" style="border: 1px solid #bae6fd; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                    <h3 class="section-title mb-1">
+                        <i class="bi bi-graph-up-arrow me-2" style="color:#0369a1;"></i>Proyección Inglés 2025
+                    </h3>
+                    <p class="text-muted mb-0 small">Predicción de nuestro modelo ML basado en tendencias históricas de {{ school.nombre }}.</p>
+                </div>
+                <span class="badge text-nowrap" style="background:#0369a1;"><i class="bi bi-cpu me-1"></i>ML Predictor</span>
+            </div>
+            {% if user.is_authenticated %}
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="fw-bold" style="font-size:1.8rem; color:#0369a1;">{{ prediccion_ingles.predicho }}</div>
+                    <div class="text-muted small">Puntaje predicho 2025</div>
+                </div>
+                <div class="col-4">
+                    <div class="fw-bold" style="font-size:1.8rem; color:{% if prediccion_ingles.cambio >= 0 %}#16a34a{% else %}#dc2626{% endif %};">
+                        {% if prediccion_ingles.cambio >= 0 %}+{% endif %}{{ prediccion_ingles.cambio }}
+                    </div>
+                    <div class="text-muted small">Cambio esperado</div>
+                </div>
+                <div class="col-4">
+                    <div class="fw-bold" style="font-size:1.2rem; color:#374151; text-transform:capitalize;">{{ prediccion_ingles.tendencia }}</div>
+                    <div class="text-muted small">Tendencia</div>
+                </div>
+            </div>
+            {% else %}
+            <div style="position:relative;">
+                <div style="filter:blur(5px); user-select:none; pointer-events:none;">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="fw-bold" style="font-size:1.8rem; color:#0369a1;">54.2</div>
+                            <div class="text-muted small">Puntaje predicho 2025</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold" style="font-size:1.8rem; color:#16a34a;">+2.8</div>
+                            <div class="text-muted small">Cambio esperado</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold" style="font-size:1.2rem; color:#374151;">Mejorando</div>
+                            <div class="text-muted small">Tendencia</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="
+                    position:absolute; inset:0;
+                    display:flex; flex-direction:column; align-items:center; justify-content:center;
+                    background:rgba(240,249,255,.85); border-radius:8px; text-align:center; padding:12px;">
+                    <i class="bi bi-lock-fill mb-2" style="font-size:1.4rem; color:#0369a1;"></i>
+                    <p class="mb-2 small fw-semibold">Ver la predicción de inglés 2025 para {{ school.nombre }}</p>
+                    <a href="{% url 'account_signup' %}?next={{ request.path }}" rel="nofollow noopener"
+                       class="btn btn-primary btn-sm px-4"
+                       data-cta-source="prediccion_ingles">
+                       Desbloquear predicción — es gratis
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
 
         {% if not user.is_authenticated %}
         <div class="card-block" style="

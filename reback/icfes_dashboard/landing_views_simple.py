@@ -288,6 +288,25 @@ def school_landing_page(request, slug):
             """)
             potencial_row = conn.execute(potencial_query, [codigo]).fetchone()
 
+            # Opción D: predicción inglés 2025
+            prediccion_ingles = None
+            try:
+                pred_row = conn.execute(resolve_schema("""
+                    SELECT avg_ingles_actual, avg_ingles_predicho, cambio_predicho, tendencia
+                    FROM gold.fct_prediccion_ingles
+                    WHERE colegio_bk = ?
+                    LIMIT 1
+                """), [codigo]).fetchone()
+                if pred_row:
+                    prediccion_ingles = {
+                        "actual": _to_float(pred_row[0]),
+                        "predicho": _to_float(pred_row[1]),
+                        "cambio": _to_float(pred_row[2]),
+                        "tendencia": pred_row[3] or "estable",
+                    }
+            except Exception:
+                pass
+
             similar_query = """
                 SELECT
                     h.codigo_dane,
@@ -406,6 +425,7 @@ def school_landing_page(request, slug):
             top_weaknesses = []
             radar_data = {"labels": [], "values": []}
             historical_chart = {"years": [], "scores": [], "has_data": False}
+            historical_table = []
             comparison = None
             indicators = None
             indicator_badges = []
@@ -472,6 +492,23 @@ def school_landing_page(request, slug):
                         "scores": global_scores,
                         "has_data": len(years) > 0,
                     }
+
+                # Opción B: tabla histórica multi-materia (todos los años, primeros 3 libres)
+                _FREE_TABLE_ROWS = 3
+                historical_table = [
+                    {
+                        "year": str(row[0]),
+                        "global": _to_float(row[1]),
+                        "matematicas": _to_float(row[2]),
+                        "lectura": _to_float(row[3]),
+                        "ciencias": _to_float(row[4]),
+                        "sociales": _to_float(row[5]),
+                        "ingles": _to_float(row[6]),
+                        "locked": i >= _FREE_TABLE_ROWS,
+                    }
+                    for i, row in enumerate(all_rows)
+                    if row[1] is not None
+                ]
 
                 if comparison_data:
                     comparison = {
@@ -1035,6 +1072,8 @@ def school_landing_page(request, slug):
                     "og_image": og_image,
                     "robots": robots_meta,
                 },
+                "historical_table": historical_table,
+                "prediccion_ingles": prediccion_ingles,
                 "canonical_url": canonical_url,
                 "structured_data_json": json.dumps(
                     {
