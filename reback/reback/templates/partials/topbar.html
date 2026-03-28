@@ -65,7 +65,7 @@
                        alt="{{ user.get_full_name|default:user.email }}"
                        class="rounded-circle"
                        style="width:34px; height:34px; object-fit:cover; border:2px solid rgba(255,255,255,0.2);"
-                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                       onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none');">
                   <span class="d-none d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
                     style="width:34px; height:34px; font-size:14px; line-height:1;">
                     {% if user.get_full_name %}{{ user.get_full_name|slice:":1"|upper }}{% else %}{{ user.email|slice:":1"|upper }}{% endif %}
