@@ -4,9 +4,7 @@ Migration: Add 'pro' and 'institutional' tiers + max_users field.
 Changes:
   - SubscriptionPlan.tier choices updated to include 'pro' and 'institutional'
   - SubscriptionPlan.max_users field added (default=1)
-  - Seeds new 'pro' and 'institutional' plans
-  - Updates existing 'basic'/'premium' tier display names (no data migration needed
-    since legacy aliases still work via TIER_HIERARCHY)
+  - Seeds new 'pro' and 'institutional' plans using the actual model field names
 """
 from django.db import migrations, models
 
@@ -19,24 +17,20 @@ def seed_new_plans(apps, schema_editor):
     SubscriptionPlan.objects.get_or_create(
         tier='pro',
         defaults={
-            'name': 'Plan Pro Estratégico',
-            'price_monthly': 82500,
-            'price_annual': 990000,
-            'max_queries_per_day': 500,
-            'max_regions': 32,
-            'max_departments': 32,
-            'max_municipalities': 1122,
-            'max_schools': 10000,
-            'access_departments': True,
+            'name':                 'Plan Pro Estratégico',
+            'price_monthly':        82500,
+            'max_queries_per_day':  500,
+            'access_regions':       True,
+            'access_departments':   True,
             'access_municipalities': True,
-            'access_schools': True,
-            'export_csv': True,
-            'export_excel': True,
-            'export_pdf': False,
-            'api_access': False,
-            'years_of_data': 28,
-            'max_users': 1,
-            'is_active': True,
+            'access_schools':       True,
+            'export_csv':           True,
+            'export_excel':         True,
+            'export_pdf':           False,
+            'api_access':           False,
+            'years_of_data':        28,
+            'max_users':            1,
+            'is_active':            True,
         }
     )
 
@@ -44,24 +38,20 @@ def seed_new_plans(apps, schema_editor):
     SubscriptionPlan.objects.get_or_create(
         tier='institutional',
         defaults={
-            'name': 'Plan Institucional',
-            'price_monthly': 0,      # price defined via sales contact
-            'price_annual': 0,        # price defined via sales contact
-            'max_queries_per_day': 99999,
-            'max_regions': 32,
-            'max_departments': 32,
-            'max_municipalities': 1122,
-            'max_schools': 99999,
-            'access_departments': True,
+            'name':                 'Plan Institucional',
+            'price_monthly':        0,      # price defined via sales contact
+            'max_queries_per_day':  99999,
+            'access_regions':       True,
+            'access_departments':   True,
             'access_municipalities': True,
-            'access_schools': True,
-            'export_csv': True,
-            'export_excel': True,
-            'export_pdf': True,
-            'api_access': True,
-            'years_of_data': 28,
-            'max_users': 10,
-            'is_active': True,
+            'access_schools':       True,
+            'export_csv':           True,
+            'export_excel':         True,
+            'export_pdf':           True,
+            'api_access':           True,
+            'years_of_data':        28,
+            'max_users':            10,
+            'is_active':            True,
         }
     )
 
@@ -98,6 +88,7 @@ class Migration(migrations.Migration):
                 ],
                 default='free',
                 max_length=20,
+                unique=True,
             ),
         ),
 
