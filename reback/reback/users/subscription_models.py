@@ -11,10 +11,14 @@ class SubscriptionPlan(models.Model):
     """Planes de suscripción disponibles para ICFES Analytics."""
     
     TIER_CHOICES = [
-        ('free', 'Free'),
-        ('basic', 'Basic'),
-        ('premium', 'Premium'),
-        ('enterprise', 'Enterprise'),
+        # ── Nuevos tiers canónicos ──────────────────────────────────
+        ('free',          'Freemium (Gratis)'),
+        ('pro',           'Pro Estratégico'),
+        ('institutional', 'Institucional'),
+        # ── Aliases legacy (compatibilidad hacia atrás) ──────────
+        ('basic',         'Basic (legacy → Pro)'),
+        ('premium',       'Premium (legacy → Pro)'),
+        ('enterprise',    'Enterprise (legacy → Institucional)'),
     ]
 
     BILLING_PERIOD_CHOICES = [
@@ -74,7 +78,13 @@ class SubscriptionPlan(models.Model):
     # Límites temporales
     years_of_data = models.IntegerField(
         default=3,
-        help_text="Años de datos históricos disponibles"
+        help_text="Años de datos históricos disponibles (free=3, pro=28, institutional=28)"
+    )
+
+    # Plan Institucional — multi-seat
+    max_users = models.IntegerField(
+        default=1,
+        help_text="Número máximo de usuarios por cuenta (1=individual, 10=institucional)"
     )
     
     # Permisos de exportación

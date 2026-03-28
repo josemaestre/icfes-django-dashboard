@@ -28,17 +28,17 @@ class SubscriptionMiddleware:
             '/icfes/api/estadisticas/',
             '/icfes/api/anos/',
             '/icfes/api/charts/',
-            '/icfes/api/promedios-ubicacion/',  # Promedios por ubicación para gauges
+            '/icfes/api/promedios-ubicacion/',
             '/icfes/api/hierarchy/',
-            '/icfes/api/search/colegios/',  # Búsqueda de colegios (Legacy?)
-            '/icfes/api/schools/search/',  # Búsqueda de colegios (Nuevo)
-            '/icfes/api/departments/',  # Lista de departamentos (Signup)
-            '/icfes/api/municipalities/',  # Lista de municipios (Signup)
-            '/icfes/api/generate-ai-analysis/',  # Análisis de IA
-            '/icfes/api/colegios/destacados/',  # Colegios destacados
-            '/icfes/api/colegio/',  # Detalles de colegio (incluye AI recommendations)
-            '/icfes/api/comparar-colegios/',  # Comparación de colegios
-            '/icfes/api/panorama-riesgo/',  # Panorama de riesgo (ML)
+            '/icfes/api/search/colegios/',
+            '/icfes/api/schools/search/',
+            '/icfes/api/departments/',
+            '/icfes/api/municipalities/',
+            '/icfes/api/generate-ai-analysis/',
+            '/icfes/api/colegios/destacados/',
+            '/icfes/api/colegio/',
+            '/icfes/api/comparar-colegios/',
+            '/icfes/api/panorama-riesgo/',
         ]
 
         # Solo aplicar a endpoints de ICFES API

@@ -22,6 +22,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from reback.users.decorators import subscription_required
 from .db_utils import execute_query
 
 SESSION_KEY = "mi_colegio"
@@ -32,6 +33,7 @@ SESSION_KEY = "mi_colegio"
 # ---------------------------------------------------------------------------
 
 @login_required
+@subscription_required(tier='pro')
 def mi_colegio_page(request):
     """Vista principal: buscador si no hay colegio en session, dashboard si hay."""
     mi_colegio = request.session.get(SESSION_KEY)

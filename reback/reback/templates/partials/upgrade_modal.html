@@ -1,25 +1,100 @@
 {% load static subscription_tags %}
 
-<!-- Modal de Upgrade simplificado -->
+<!-- Modal de Upgrade — muestra plan correcto según feature requerida -->
 <div class="modal fade" id="upgradeModal" tabindex="-1" aria-labelledby="upgradeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body text-center py-4">
-                <i class="bx bx-lock-open display-1 text-primary mb-3"></i>
-                <h3 class="fw-bold">Desbloquea el Nivel Pro</h3>
-                <p class="text-muted mb-4">
-                    Para acceder a métricas avanzadas, históricos desde 1996, clustering de colegios idénticos y exportaciones en Excel necesitas un Plan Pro Estratégico.
+
+            <!-- Panel PRO (mostrado por defecto) -->
+            <div class="modal-body text-center py-4 px-4" id="upgradePanelPro">
+                <div class="mb-3">
+                    <span style="font-size: 3rem;">🚀</span>
+                </div>
+                <h4 class="fw-bold mb-2">Desbloquea el Plan Pro Estratégico</h4>
+                <p class="text-muted mb-4 small">
+                    Accede a análisis avanzados, histórico completo desde 1996, mapas geográficos,
+                    comparación de colegios, clustering inteligente y exportaciones CSV/Excel.
                 </p>
+
+                <ul class="list-unstyled text-start small mb-4 mx-auto" style="max-width: 300px;">
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Dashboard Brecha Educativa</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Mapa Geográfico interactivo</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Comparar hasta 3 colegios</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Clustering y colegios similares</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Todos los dashboards analíticos</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Exportación CSV y Excel</li>
+                </ul>
+
+                <div class="mb-3">
+                    <span class="fs-4 fw-bold text-primary">$990.000 COP</span>
+                    <span class="text-muted small"> / año</span>
+                </div>
+
                 <a href="{% url 'pages:pricing' %}" class="btn btn-primary w-100 btn-lg mb-2">
-                    <i class="bx bx-rocket me-1"></i> Ver Planes y Precios
+                    <i class="bx bx-rocket me-1"></i> Ver Planes y Suscribirse
                 </a>
-                <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-light w-100 btn-sm" data-bs-dismiss="modal">
+                    En otro momento
+                </button>
+            </div>
+
+            <!-- Panel INSTITUCIONAL (activado vía JS cuando el feature lo requiere) -->
+            <div class="modal-body text-center py-4 px-4 d-none" id="upgradePanelInstitucional">
+                <div class="mb-3">
+                    <span style="font-size: 3rem;">🏫</span>
+                </div>
+                <h4 class="fw-bold mb-2">Plan Institucional</h4>
+                <p class="text-muted mb-4 small">
+                    Diseñado para Secretarías de Educación, Alcaldías y Gobernaciones.
+                    Incluye acceso total para hasta <strong>10 usuarios</strong>, dashboards de ML/IA,
+                    análisis motivacional y reportes ejecutivos en PDF.
+                </p>
+
+                <ul class="list-unstyled text-start small mb-4 mx-auto" style="max-width: 300px;">
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Todo el Plan Pro más:</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Dashboard Motivacional</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Dashboard ML / Inteligencia Artificial</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Predicción de riesgo académico</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Exportación PDF de reportes</li>
+                    <li class="mb-2"><i class="bx bx-check-circle text-success me-2"></i>Hasta 10 usuarios por institución</li>
+                </ul>
+
+                <div class="mb-3">
+                    <span class="fs-5 fw-bold text-success">Precio a medida</span>
+                    <div class="text-muted small">Contacta a nuestro equipo de ventas</div>
+                </div>
+
+                <a href="mailto:ventas@icfes-analytics.com?subject=Interés%20en%20Plan%20Institucional%20-%20ICFES%20Analytics"
+                   class="btn btn-success w-100 btn-lg mb-2">
+                    <i class="bx bx-envelope me-1"></i> Contactar a Ventas
+                </a>
+                <button type="button" class="btn btn-light w-100 btn-sm" data-bs-dismiss="modal">
                     En otro momento
                 </button>
             </div>
         </div>
     </div>
-</div>
+</div>
+
+<script>
+// Permite mostrar el panel correcto según el tier requerido por el feature bloqueado.
+// Uso: showUpgradeModal('institutional') o showUpgradeModal('pro')
+function showUpgradeModal(tier) {
+    const panelPro = document.getElementById('upgradePanelPro');
+    const panelInst = document.getElementById('upgradePanelInstitucional');
+    if (!panelPro || !panelInst) return;
+
+    if (tier === 'institutional') {
+        panelPro.classList.add('d-none');
+        panelInst.classList.remove('d-none');
+    } else {
+        panelPro.classList.remove('d-none');
+        panelInst.classList.add('d-none');
+    }
+    const modal = new bootstrap.Modal(document.getElementById('upgradeModal'));
+    modal.show();
+}
+</script>

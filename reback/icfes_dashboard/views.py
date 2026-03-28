@@ -171,7 +171,7 @@ def dashboard_charts(request):
 
 
 @login_required
-@subscription_required(tier='premium')
+@subscription_required(tier='pro')
 def brecha_educativa_dashboard(request):
     """Vista del dashboard de brechas educativas: Oficial vs No Oficial."""
     context = {
@@ -182,6 +182,7 @@ def brecha_educativa_dashboard(request):
 
 
 @login_required
+@subscription_required(tier='pro')
 def resumen_ejecutivo_dashboard(request):
     """Vista de resumen ejecutivo de storytelling ICFES."""
     context = {
@@ -222,7 +223,7 @@ def ingles_dashboard(request):
 
 
 @login_required
-@subscription_required(tier='premium')
+@subscription_required(tier='institutional')
 def motivacional_dashboard(request):
     """Vista del dashboard Nacional Motivacional."""
     try:
@@ -3584,6 +3585,7 @@ def api_panorama_riesgo(request):
 # =============================================================================
 
 @login_required
+@subscription_required(tier='pro')
 def social_dashboard(request):
     """Dashboard de contexto social: NBI, conectividad, presidentes, generaciones."""
     return render(request, 'icfes_dashboard/pages/dashboard-social.html', {})

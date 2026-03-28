@@ -20,6 +20,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
+from reback.users.decorators import subscription_required
 from .db_utils import get_duckdb_connection, resolve_schema
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ _CACHE_TTL = 60 * 60  # 1 hora
 # ---------------------------------------------------------------------------
 
 @login_required
+@subscription_required(tier='institutional')
 def ml_dashboard(request):
     return render(request, 'icfes_dashboard/pages/dashboard-ml.html', {})
 

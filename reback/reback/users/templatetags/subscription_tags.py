@@ -1,16 +1,19 @@
 """
 Template tags for subscription-based feature access control.
 
+Tier hierarchy: free (0) < pro (1) < institutional (2)
+
 Usage in templates:
     {% load subscription_tags %}
-    
-    {% has_plan 'basic' as has_basic %}
-    {% if has_basic %}
-        <!-- Show basic features -->
+
+    {% has_plan 'pro' as has_pro %}
+    {% if has_pro %}
+        <!-- Show pro features -->
     {% endif %}
-    
-    {% if user|can_access_feature:"school_comparison" %}
-        <!-- Show comparison feature -->
+
+    {% has_plan 'institutional' as has_institutional %}
+    {% if has_institutional %}
+        <!-- Show institutional features -->
     {% endif %}
 """
 from django import template
@@ -18,233 +21,185 @@ from django import template
 register = template.Library()
 
 
+# ── Canonical tier order ───────────────────────────────────────────────────────
+_TIER_ORDER = {
+    'free':          0,
+    'pro':           1,
+    'institutional': 2,
+    # Legacy aliases (backward-compat)
+    'basic':         1,
+    'premium':       1,
+    'enterprise':    2,
+}
+
+_TIER_DISPLAY = {
+    'free':          'Freemium',
+    'pro':           'Pro Estratégico',
+    'institutional': 'Institucional',
+    'basic':         'Pro Estratégico',
+    'premium':       'Pro Estratégico',
+    'enterprise':    'Institucional',
+}
+
+_BADGE_CONFIG = {
+    'free':          {'class': 'bg-secondary-subtle text-secondary', 'label': 'Gratis'},
+    'pro':           {'class': 'bg-primary-subtle text-primary',     'label': 'Pro'},
+    'institutional': {'class': 'bg-success-subtle text-success',     'label': 'Institucional'},
+    # Legacy aliases
+    'basic':         {'class': 'bg-primary-subtle text-primary',     'label': 'Pro'},
+    'premium':       {'class': 'bg-primary-subtle text-primary',     'label': 'Pro'},
+    'enterprise':    {'class': 'bg-success-subtle text-success',     'label': 'Institucional'},
+}
+
+# Feature → minimum tier required
+_FEATURE_REQUIREMENTS = {
+    # ── FREE ──────────────────────────────────────────────────────
+    'national_view':        'free',
+    'basic_search':         'free',
+    'national_charts':      'free',
+    'top10_colegios':       'free',
+    'tendencias_basicas':   'free',
+
+    # ── PRO ───────────────────────────────────────────────────────
+    'department_analysis':  'pro',
+    'municipality_analysis':'pro',
+    'school_details':       'pro',
+    'school_comparison':    'pro',
+    'clustering':           'pro',
+    'mapa_geografico':      'pro',
+    'explorador_jerarquico':'pro',
+    'export_csv':           'pro',
+    'export_excel':         'pro',
+    'historico_completo':   'pro',
+    'brecha_educativa':     'pro',
+    'resumen_ejecutivo':    'pro',
+    'ingles_avanzado':      'pro',
+    'historia_avanzada':    'pro',
+    'inteligencia_educativa':'pro',
+    'social_dashboard':     'pro',
+    'mi_colegio':           'pro',
+
+    # ── INSTITUCIONAL ─────────────────────────────────────────────
+    'motivacional':         'institutional',
+    'ml_ia':                'institutional',
+    'trafico':              'institutional',
+    'export_pdf':           'institutional',
+    'api_access':           'institutional',
+    'multi_user':           'institutional',
+    'riesgo_ml_detallado':  'institutional',
+}
+
+
+def _get_user_tier(request) -> str:
+    """Return the active tier string for the current user."""
+    if not request:
+        return 'free'
+    user = request.user
+    if not user.is_authenticated:
+        return 'free'
+    if user.is_superuser:
+        return 'institutional'  # superusers have full access
+
+    subscription = getattr(user, 'subscription', None)
+    if not subscription or not subscription.is_active:
+        return 'free'
+
+    plan = getattr(subscription, 'plan', None)
+    return plan.tier if plan else 'free'
+
+
 @register.simple_tag(takes_context=True)
 def has_plan(context, tier):
     """
-    Check if user has specific plan tier or higher.
-    
+    Check if the current user has the specified plan tier or higher.
+
     Args:
-        context: Template context
-        tier: Plan tier to check ('free', 'basic', 'premium', 'enterprise')
-    
+        tier: 'free', 'pro', or 'institutional'
+              Legacy values 'basic', 'premium', 'enterprise' also accepted.
+
     Returns:
-        bool: True if user has the tier or higher
-    
-    Example:
-        {% has_plan 'basic' as has_basic %}
-        {% if has_basic %}
-            <p>You have Basic plan or higher</p>
+        bool: True if user has the tier or higher.
+
+    Example::
+
+        {% has_plan 'pro' as has_pro %}
+        {% if has_pro %}
+            <p>You have Pro plan or higher</p>
         {% endif %}
     """
-    request = context.get('request')
-    if not request:
-        return False
-    
-    user = request.user
-    if not user.is_authenticated:
-        return False
-    
-    # Superusers have access to everything
-    if user.is_superuser:
-        return True
-    
-    # Check if user has subscription
-    if not hasattr(user, 'subscription') or not user.subscription:
-        # No subscription = free tier
-        return tier == 'free'
-    
-    # Check if subscription is active
-    if not user.subscription.is_active:
-        return tier == 'free'
-    
-    # Define tier hierarchy
-    tier_order = {
-        'free': 0,
-        'basic': 1,
-        'premium': 2,
-        'enterprise': 3
-    }
-    
-    user_tier = user.subscription.plan.tier if user.subscription.plan else 'free'
-    user_tier_level = tier_order.get(user_tier, 0)
-    required_tier_level = tier_order.get(tier, 0)
-    
-    return user_tier_level >= required_tier_level
+    user_tier = _get_user_tier(context.get('request'))
+    user_level = _TIER_ORDER.get(user_tier, 0)
+    required_level = _TIER_ORDER.get(tier, 0)
+    return user_level >= required_level
 
 
 @register.filter
 def can_access_feature(user, feature):
     """
-    Check if user can access a specific feature based on their plan.
-    
-    Args:
-        user: User object
-        feature: Feature name (string)
-    
-    Returns:
-        bool: True if user can access the feature
-    
-    Example:
-        {% if user|can_access_feature:"school_comparison" %}
-            <button>Compare Schools</button>
+    Check if a user can access a specific feature.
+
+    Example::
+
+        {% if user|can_access_feature:"mapa_geografico" %}
+            <button>Ver Mapa</button>
         {% endif %}
     """
     if not user.is_authenticated:
         return False
-    
-    # Superusers have access to everything
     if user.is_superuser:
         return True
-    
-    # Define feature requirements
-    feature_requirements = {
-        # Free features
-        'national_view': 'free',
-        'basic_search': 'free',
-        'national_charts': 'free',
-        
-        # Basic plan features
-        'department_analysis': 'basic',
-        'municipality_analysis': 'basic',
-        'school_details': 'basic',
-        'export_csv': 'basic',
-        'unlimited_search': 'basic',
-        
-        # Premium plan features
-        'school_comparison': 'premium',
-        'custom_rankings': 'premium',
-        'clustering': 'premium',
-        'export_excel': 'premium',
-        'export_pdf': 'premium',
-        'advanced_analytics': 'premium',
-        
-        # Enterprise plan features
-        'api_access': 'enterprise',
-        'custom_dashboards': 'enterprise',
-        'dedicated_support': 'enterprise',
-        'real_time_data': 'enterprise',
-    }
-    
-    required_tier = feature_requirements.get(feature, 'free')
-    
-    # Check if user has subscription
-    if not hasattr(user, 'subscription') or not user.subscription:
-        return required_tier == 'free'
-    
-    # Check if subscription is active
-    if not user.subscription.is_active:
-        return required_tier == 'free'
-    
-    # Define tier hierarchy
-    tier_order = {
-        'free': 0,
-        'basic': 1,
-        'premium': 2,
-        'enterprise': 3
-    }
-    
-    user_tier = user.subscription.plan.tier if user.subscription.plan else 'free'
-    user_tier_level = tier_order.get(user_tier, 0)
-    required_tier_level = tier_order.get(required_tier, 0)
-    
-    return user_tier_level >= required_tier_level
+
+    subscription = getattr(user, 'subscription', None)
+    user_tier = 'free'
+    if subscription and subscription.is_active:
+        plan = getattr(subscription, 'plan', None)
+        user_tier = plan.tier if plan else 'free'
+
+    required_tier = _FEATURE_REQUIREMENTS.get(feature, 'free')
+    return _TIER_ORDER.get(user_tier, 0) >= _TIER_ORDER.get(required_tier, 0)
 
 
 @register.simple_tag
 def get_plan_badge(tier):
     """
-    Get HTML badge for a plan tier.
-    
-    Args:
-        tier: Plan tier ('free', 'basic', 'premium', 'enterprise')
-    
-    Returns:
-        str: HTML badge element
-    
-    Example:
-        {{ 'premium'|get_plan_badge }}
-        <!-- Returns: <span class="badge bg-primary-subtle text-primary">Premium</span> -->
+    Return an HTML badge element for a plan tier.
+
+    Example::
+
+        {% get_plan_badge 'pro' %}
+        <!-- Returns: <span class="badge bg-primary-subtle text-primary">Pro</span> -->
     """
-    badge_config = {
-        'free': {
-            'class': 'bg-secondary-subtle text-secondary',
-            'label': 'Gratuito'
-        },
-        'basic': {
-            'class': 'bg-info-subtle text-info',
-            'label': 'Básico'
-        },
-        'premium': {
-            'class': 'bg-primary-subtle text-primary',
-            'label': 'Premium'
-        },
-        'enterprise': {
-            'class': 'bg-success-subtle text-success',
-            'label': 'Enterprise'
-        }
-    }
-    
-    config = badge_config.get(tier, badge_config['free'])
+    config = _BADGE_CONFIG.get(tier, _BADGE_CONFIG['free'])
     return f'<span class="badge {config["class"]}">{config["label"]}</span>'
 
 
 @register.simple_tag(takes_context=True)
 def get_user_plan(context):
     """
-    Get current user's plan tier.
-    
-    Returns:
-        str: Plan tier ('free', 'basic', 'premium', 'enterprise')
-    
-    Example:
+    Return the current user's canonical plan tier string.
+
+    Example::
+
         {% get_user_plan as user_plan %}
         <p>Your plan: {{ user_plan }}</p>
     """
-    request = context.get('request')
-    if not request:
-        return 'free'
-    
-    user = request.user
-    if not user.is_authenticated:
-        return 'free'
-    
-    if not hasattr(user, 'subscription') or not user.subscription:
-        return 'free'
-    
-    if not user.subscription.is_active:
-        return 'free'
-    
-    return user.subscription.plan.tier if user.subscription.plan else 'free'
+    return _get_user_tier(context.get('request'))
 
 
 @register.simple_tag
 def get_required_plan(feature):
     """
-    Get the minimum required plan tier for a feature.
-    
-    Args:
-        feature: Feature name
-    
-    Returns:
-        str: Required plan tier
-    
-    Example:
-        {% get_required_plan 'school_comparison' as required %}
-        <!-- required = 'premium' -->
+    Return the minimum required tier for a feature.
+
+    Example::
+
+        {% get_required_plan 'mapa_geografico' as required %}
+        <!-- required = 'pro' -->
     """
-    feature_requirements = {
-        'national_view': 'free',
-        'basic_search': 'free',
-        'department_analysis': 'basic',
-        'municipality_analysis': 'basic',
-        'school_details': 'basic',
-        'export_csv': 'basic',
-        'school_comparison': 'premium',
-        'custom_rankings': 'premium',
-        'export_excel': 'premium',
-        'export_pdf': 'premium',
-        'api_access': 'enterprise',
-        'custom_dashboards': 'enterprise',
-    }
-    
-    return feature_requirements.get(feature, 'free')
+    return _FEATURE_REQUIREMENTS.get(feature, 'free')
+
+
+@register.simple_tag
+def tier_display_name(tier):
+    """Return the human-readable display name for a tier."""
+    return _TIER_DISPLAY.get(tier, tier.capitalize())
