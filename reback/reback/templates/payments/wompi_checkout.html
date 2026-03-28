@@ -30,7 +30,10 @@
         <hr>
         <div class="d-flex justify-content-between align-items-center">
             <span class="h5">Total:</span>
-            <span class="h3 text-primary">${{ plan.price_monthly|floatformat:0 }} COP/mes</span>
+            <span class="h3 text-primary">
+                ${{ plan.price_monthly|floatformat:0 }} COP
+                {% if plan.billing_period == 'annual' %}/año{% elif plan.billing_period == 'one_time' %} (pago único){% else %}/mes{% endif %}
+            </span>
         </div>
     </div>
 

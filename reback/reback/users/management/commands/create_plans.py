@@ -25,6 +25,7 @@ class Command(BaseCommand):
                 'name': 'Free Plan',
                 'description': 'Perfect to get started with ICFES Analytics',
                 'price_monthly': 0.00,
+                'billing_period': 'monthly',
                 'max_queries_per_day': 10,
                 'max_export_rows': None,
                 'api_access': False,
@@ -43,6 +44,7 @@ class Command(BaseCommand):
                 'name': 'Basic Plan',
                 'description': 'For educators and researchers',
                 'price_monthly': 39900,
+                'billing_period': 'monthly',
                 'max_queries_per_day': 100,
                 'max_export_rows': 1000,
                 'api_access': False,
@@ -61,6 +63,7 @@ class Command(BaseCommand):
                 'name': 'Premium Plan',
                 'description': 'For institutions and advanced users',
                 'price_monthly': 100000,
+                'billing_period': 'annual',
                 'max_queries_per_day': 1000,
                 'max_export_rows': None,  # Unlimited
                 'api_access': True,
@@ -79,6 +82,7 @@ class Command(BaseCommand):
                 'name': 'Enterprise Plan',
                 'description': 'Custom solutions for large organizations',
                 'price_monthly': 500000,
+                'billing_period': 'annual',
                 'max_queries_per_day': 99999,
                 'max_export_rows': None,  # Unlimited
                 'api_access': True,

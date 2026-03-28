@@ -16,12 +16,24 @@ class SubscriptionPlan(models.Model):
         ('premium', 'Premium'),
         ('enterprise', 'Enterprise'),
     ]
-    
+
+    BILLING_PERIOD_CHOICES = [
+        ('monthly', 'Mensual'),
+        ('annual', 'Anual'),
+        ('one_time', 'Pago único'),
+    ]
+
     # Identificación
     tier = models.CharField(max_length=20, choices=TIER_CHOICES, unique=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     price_monthly = models.DecimalField(max_digits=10, decimal_places=2)
+    billing_period = models.CharField(
+        max_length=20,
+        choices=BILLING_PERIOD_CHOICES,
+        default='monthly',
+        help_text="Frecuencia de facturación del plan",
+    )
     
     # Límites de uso
     max_queries_per_day = models.IntegerField(
