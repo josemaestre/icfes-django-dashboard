@@ -62,7 +62,7 @@ class Command(BaseCommand):
                 'tier': 'premium',
                 'name': 'Premium Plan',
                 'description': 'For institutions and advanced users',
-                'price_monthly': 100000,
+                'price_monthly': 990000,
                 'billing_period': 'annual',
                 'max_queries_per_day': 1000,
                 'max_export_rows': None,  # Unlimited
