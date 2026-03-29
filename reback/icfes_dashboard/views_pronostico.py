@@ -72,7 +72,10 @@ def api_colegio_pronostico(request, colegio_sk):
         return JsonResponse({"error": f"Error obteniendo histórico: {str(e)}"}, status=500)
 
     if not historico:
-        return JsonResponse({"error": "No hay datos históricos para este colegio"}, status=404)
+        return JsonResponse({
+            "colegio": {}, "historico": [], "pronosticos": {}, "info_modelo": {},
+            "sin_datos": True
+        }, status=200)
 
     # 2. Traer pronósticos (2025-2029) e información del modelo
     query_pronostico = """
