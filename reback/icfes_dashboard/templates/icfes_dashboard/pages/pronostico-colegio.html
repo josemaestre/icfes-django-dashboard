@@ -1,0 +1,619 @@
+{% extends 'layout_vertical.html' %}
+{% load static %}
+
+{% block title %}Pronóstico a 5 Años 🔮{% endblock title %}
+
+{% block page_title %}
+{% include "partials/page-title.html" with page_title='Pronóstico a 5 Años 🔮' sub_title='Proyecciones predictivas de desempeño académico (2025-2029) basadas en tendencias históricas.' %}
+{% endblock page_title %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+  <!-- Buscador -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-5">
+              <h5 class="mb-1 fw-bold">Buscar Institución</h5>
+              <p class="text-muted small mb-0">Selecciona un colegio para visualizar su pronóstico.</p>
+            </div>
+            <div class="col-md-7">
+              <div class="position-relative">
+                <div class="input-group input-group-lg">
+                  <span class="input-group-text bg-light border-end-0"><iconify-icon icon="iconamoon:search-duotone"></iconify-icon></span>
+                  <input type="text" id="pr-search-input" class="form-control border-start-0 bg-light" placeholder="Nombre completo del colegio..." autocomplete="off">
+                </div>
+                <!-- Autocomplete dropdown -->
+                <div id="pr-search-results" class="list-group position-absolute w-100 shadow" style="z-index:1000;top:100%;left:0;display:none;max-height:300px;overflow-y:auto;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pr-dashboard-area" style="display:none;">
+    
+    <!-- Info del Colegio seleccionado -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div>
+            <h4 class="mb-1 fw-bold" id="pr-colegio-nombre">--</h4>
+            <span class="text-muted" id="pr-colegio-meta">--</span>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#metodologiaModal">
+              <iconify-icon icon="iconamoon:information-circle-duotone" class="me-1"></iconify-icon> Metodología
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if is_pro %}
+    <!-- DASHBOARD PRO -->
+    
+    <!-- Selectores de Materia -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="d-flex flex-wrap gap-2" id="pr-materia-selectors">
+          <button class="btn btn-primary px-4 pr-mat-btn" data-mat="global">Puntaje Global</button>
+          <button class="btn btn-outline-secondary pr-mat-btn" data-mat="matematicas">Matemáticas</button>
+          <button class="btn btn-outline-secondary pr-mat-btn" data-mat="lectura_critica">Lectura Crítica</button>
+          <button class="btn btn-outline-secondary pr-mat-btn" data-mat="c_naturales">C. Naturales</button>
+          <button class="btn btn-outline-secondary pr-mat-btn" data-mat="sociales_ciudadanas">Sociales y C.</button>
+          <button class="btn btn-outline-secondary pr-mat-btn" data-mat="ingles">Inglés</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CHART AREA -->
+    <div class="row mb-4">
+      <div class="col-lg-8 mb-4 mb-lg-0">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0">
+            <h6 class="fw-bold mb-3 text-uppercase text-muted" id="pr-chart-title">PROYECCIÓN 2025-2029: GLOBAL</h6>
+            <div class="alert alert-secondary border-0 bg-transparent py-2 px-3 mb-0" style="font-size: 0.82rem; background-color: rgba(108, 117, 125, 0.05) !important;">
+                <iconify-icon icon="iconamoon:information-circle-duotone" class="text-secondary align-middle fs-5 me-1"></iconify-icon> 
+                <strong>Guía de Lectura Visual:</strong> La línea sólida azul es la realidad 100% comprobada (Histórico). A partir del último punto, la línea punteada verde dibuja la ruta más probable al futuro. 
+                <br>La <strong>anormal franja gris</strong> bordeando la línea punteada es el <em>Cono de Tolerancia Estadística</em>. Te avisa visualmente de lo errático que ha sido el colegio en el pasado: si un colegio es muy inestable, la franja se mostrará hiper ancha, indicando "impredecibilidad".
+            </div>
+          </div>
+          <div class="card-body position-relative pb-2">
+            <div id="pr-chart-loading" class="position-absolute top-50 start-50 translate-middle" style="display:none; z-index:10;">
+              <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div id="pr-main-chart" style="min-height: 350px;"></div>
+          </div>
+          <!-- AI Storytelling Container -->
+          <div class="card-footer bg-transparent border-top-0 pt-0 pb-4 px-4" id="pr-storytelling" style="display:none;">
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS INFORMATIVAS -->
+      <div class="col-lg-4">
+        <div class="row">
+          
+          <div class="col-12 mb-3">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <p class="text-muted small mb-1 text-uppercase fw-semibold">Tendencia (5 Años)</p>
+                <div class="d-flex align-items-center">
+                  <h3 class="fw-bold mb-0 me-2" id="pr-tendencia-txt">--</h3>
+                  <span id="pr-tendencia-icon" class="fs-4"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <p class="text-muted small mb-1 text-uppercase fw-semibold">Cambio Esperado al 2029</p>
+                <h3 class="fw-bold mb-0" id="pr-cambio-txt">-- pts</h3>
+                <small class="text-muted" id="pr-cambio-meta">Frente a puntaje base (2024)</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <p class="text-muted small mb-1 text-uppercase fw-semibold">Confianza del Modelo</p>
+                <div class="d-flex align-items-center mb-1">
+                  <h3 class="fw-bold mb-0 me-2" id="pr-confianza-txt">--</h3>
+                  <small class="badge bg-secondary" id="pr-confianza-badge">--</small>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-primary" id="pr-confianza-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small class="text-muted mt-2 d-block" id="pr-confianza-meta">Basado en -- años de historia y varianza interanual.</small>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    
+    {% else %}
+    <!-- LOCK FREEMIUM -->
+    <div class="card shadow-sm border-0 mb-4 overflow-hidden position-relative">
+      
+      <!-- Fondo blurreado simulando contenido -->
+      <div class="card-body" style="filter: blur(8px); opacity: 0.6; pointer-events: none; user-select: none;">
+        <div class="row">
+          <div class="col-lg-8">
+            <div class="bg-light rounded" style="height: 350px;"></div>
+          </div>
+          <div class="col-lg-4">
+            <div class="bg-light rounded mb-3" style="height: 100px;"></div>
+            <div class="bg-light rounded mb-3" style="height: 100px;"></div>
+            <div class="bg-light rounded" style="height: 100px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlay de Upgrade -->
+      <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center" style="background: rgba(255, 255, 255, 0.7); z-index: 10;">
+        <iconify-icon icon="iconamoon:lock-duotone" style="font-size: 64px; color: var(--bs-warning);" class="mb-3"></iconify-icon>
+        <h3 class="fw-bold mb-2">Descubre el futuro de este colegio 🔮</h3>
+        <p class="text-muted text-center max-w-500 mb-4">
+          Con <strong>ICFES Analytics Pro</strong> tienes acceso a nuestro modelo predictivo.
+          Conoce si tu institución va en ascenso, estable o en riesgo de declive para los próximos 5 años, con bandas de confianza estadísticas.
+        </p>
+        <button class="btn btn-warning btn-lg fw-bold text-dark px-5" data-bs-toggle="modal" data-bs-target="#pricingModal">
+          Desbloquear Pronóstico Pro
+        </button>
+      </div>
+
+    </div>
+    {% endif %}
+
+  </div> <!-- /pr-dashboard-area -->
+
+  <!-- Modal Inicial (Estado Vacío) -->
+  <div class="row justify-content-center mt-5" id="pr-empty-state">
+    <div class="col-md-8 text-center text-muted">
+      <iconify-icon icon="iconamoon:trend-up-duotone" style="font-size:80px; opacity:0.3;"></iconify-icon>
+      <h4 class="mt-3">El futuro no está escrito, pero se puede pronosticar.</h4>
+      <p>Busca un colegio en la barra superior para evaluar su trayectoria probable al 2029.</p>
+    </div>
+  </div>
+
+</div><!-- /container-fluid -->
+
+<!-- Modal de Metodología -->
+<div class="modal fade" id="metodologiaModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold">🔮 Metodología del Pronóstico (2025-2029)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h5>1. La "Época Moderna" (2015-2024)</h5>
+        <p>Analizamos el histórico de los últimos 10 años, ignorando la escala pre-2015 para comparar peras con peras. Excluimos colegios "sintéticos" y requerimos mínimo 3 años de datos.</p>
+        
+        <h5>2. Algoritmo Predictivo</h5>
+        <p>Usamos un modelo OLS (Regresión Lineal) robusto, penalizando anomalías (como la pandemia) y ajustando la pendiente por el <strong>Momentum Motivacional</strong> reciente del colegio.</p>
+
+        <h5>3. El Cono de Incertidumbre</h5>
+        <p>Las escuelas son ecosistemas volátiles. Presentamos un <strong>Intervalo de Confianza del 80%</strong> (área sombreada). Mientras más lejos el año futuro, más ancha la banda de probabilidad.</p>
+
+        <h5>4. Índice de Confianza</h5>
+        <p>Ponderamos el R² (ajuste matemático), la completitud de la historia y penalizamos la volatilidad interanual para generar un score honesto (0.0 a 1.0) sobre la precisión esperada del pronóstico.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+// VARIABLES GLOBALES
+const esPro = {{ is_pro|yesno:"true,false" }};
+let colegioActual = null;
+let datosGenerales = null;
+let chartPronostico = null;
+
+// ELEMENTOS DOM
+const inSearch = document.getElementById('pr-search-input');
+const resSearch = document.getElementById('pr-search-results');
+const areaDash = document.getElementById('pr-dashboard-area');
+const areaEmpty = document.getElementById('pr-empty-state');
+const lblColegio = document.getElementById('pr-colegio-nombre');
+const lblMeta = document.getElementById('pr-colegio-meta');
+const btnMaterias = document.querySelectorAll('.pr-mat-btn');
+
+// BÚSQUEDA AUTOCOMPLETE
+if (inSearch) {
+  let timer;
+  inSearch.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = inSearch.value.trim();
+    if (q.length < 2) { resSearch.style.display = 'none'; return; }
+    timer = setTimeout(() => fetchBuscar(q), 250);
+  });
+}
+
+function closeSearch() {
+  resSearch.style.display = 'none';
+  inSearch.value = '';
+}
+
+async function fetchBuscar(q) {
+  try {
+    const res = await fetch(`/icfes/api/colegio/buscar/?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    resSearch.innerHTML = '';
+    
+    if (!data.length) {
+      resSearch.innerHTML = '<div class="list-group-item text-muted">Sin resultados</div>';
+      resSearch.style.display = 'block';
+      return;
+    }
+    
+    data.forEach(c => {
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'list-group-item list-group-item-action';
+      a.innerHTML = `<strong>${c.nombre_colegio}</strong> <small class="text-muted d-block">${c.municipio}, ${c.departamento} · ${c.sector}</small>`;
+      a.addEventListener('click', e => { 
+        e.preventDefault(); 
+        seleccionarColegio(c); 
+        closeSearch(); 
+      });
+      resSearch.appendChild(a);
+    });
+    resSearch.style.display = 'block';
+  } catch(e) { console.error('Error buscando', e); }
+}
+
+async function seleccionarColegio(colegioInfo) {
+  // Ocultar placeholder, mostrar area
+  areaEmpty.style.display = 'none';
+  areaDash.style.display = 'block';
+  
+  lblColegio.textContent = colegioInfo.nombre_colegio;
+  lblMeta.textContent = `${colegioInfo.sector} · ${colegioInfo.municipio}, ${colegioInfo.departamento}`;
+  colegioActual = colegioInfo.colegio_sk;
+
+  // Reset botones
+  btnMaterias.forEach(b => {
+    b.classList.remove('btn-primary');
+    b.classList.add('btn-outline-secondary');
+  });
+  if(btnMaterias[0]) {
+    btnMaterias[0].classList.remove('btn-outline-secondary');
+    btnMaterias[0].classList.add('btn-primary');
+  }
+
+  if(!esPro) return; // Si no es pro, solo se actualiza el header, el fondo sigue en blur
+
+  // Cargar datos
+  document.getElementById('pr-chart-loading').style.display = 'block';
+  
+  try {
+    const res = await fetch(`/icfes/api/colegio/${colegioActual}/pronostico/`);
+    if(!res.ok) throw new Error('No hay datos o error');
+    datosGenerales = await res.json();
+    renderMateria('global');
+  } catch(e) {
+    console.error(e);
+    alert('No hay suficientes datos históricos para generar un pronóstico para este colegio.');
+    document.getElementById('pr-chart-loading').style.display = 'none';
+  }
+}
+
+// EVENTOS BOTONES MATERIAS
+btnMaterias.forEach(btn => {
+  btn.addEventListener('click', function() {
+    if(!esPro || !datosGenerales) return;
+    
+    btnMaterias.forEach(b => {
+      b.classList.remove('btn-primary');
+      b.classList.add('btn-outline-secondary');
+    });
+    this.classList.remove('btn-outline-secondary');
+    this.classList.add('btn-primary');
+    
+    const mat = this.getAttribute('data-mat');
+    
+    // Cambiar titulo
+    const titles = {
+      'global': 'GLOBAL', 'matematicas': 'MATEMÁTICAS', 'lectura_critica':'LECTURA CRÍTICA',
+      'c_naturales':'CIENCIAS NATURALES', 'sociales_ciudadanas': 'SOCIALES Y CIUD.', 'ingles':'INGLÉS'
+    };
+    document.getElementById('pr-chart-title').textContent = `PROYECCIÓN 2025-2029: ${titles[mat]}`;
+    
+    renderMateria(mat);
+  });
+});
+
+function renderMateria(materia) {
+  document.getElementById('pr-chart-loading').style.display = 'none';
+  
+  if(!datosGenerales.pronosticos || !datosGenerales.pronosticos[materia]) {
+    document.getElementById('pr-main-chart').innerHTML = '<div class="text-center text-muted pt-5">Sin proyección para esta materia</div>';
+    return;
+  }
+
+  const matHist = datosGenerales.historico;
+  const matPro = datosGenerales.pronosticos[materia];
+  const matInfo = datosGenerales.info_modelo[materia];
+
+  // 1. Renderizar Cards
+  
+  // Confianza
+  const conf = matInfo.confianza;
+  document.getElementById('pr-confianza-txt').textContent = conf.toFixed(2);
+  document.getElementById('pr-confianza-bar').style.width = `${Math.min(100, conf * 100)}%`;
+  let badgeClass = 'bg-secondary';
+  let badgeTxt = 'Baja';
+  if(conf >= 0.7) { badgeClass = 'bg-success'; badgeTxt = 'Alta'; }
+  else if(conf >= 0.45) { badgeClass = 'bg-warning text-dark'; badgeTxt = 'Media'; }
+  
+  const b = document.getElementById('pr-confianza-badge');
+  b.className = `badge ${badgeClass}`;
+  b.textContent = badgeTxt;
+  document.getElementById('pr-confianza-meta').textContent = `Basado en ${matInfo.anos_datos_usados} años de historia.`;
+
+  // Cambio
+  const cb = matInfo.cambio_5y;
+  let cbColor = cb > 0 ? 'text-success' : (cb < 0 ? 'text-danger' : 'text-secondary');
+  let cbSign = cb > 0 ? '+' : '';
+  const txtCb = document.getElementById('pr-cambio-txt');
+  txtCb.textContent = `${cbSign}${cb.toFixed(1)} pts`;
+  txtCb.className = `fw-bold mb-0 ${cbColor}`;
+
+  // Tendencia
+  const tend = matInfo.tendencia;
+  const tendIcons = {
+    'Creciente': { icon: '📈', color: 'text-success' },
+    'Decreciente': { icon: '📉', color: 'text-danger' },
+    'Estable': { icon: '↔️', color: 'text-secondary' }
+  };
+  const tCfg = tendIcons[tend] || tendIcons['Estable'];
+  
+  const tendTxt = document.getElementById('pr-tendencia-txt');
+  tendTxt.textContent = tend;
+  tendTxt.className = `fw-bold mb-0 me-2 ${tCfg.color}`;
+  document.getElementById('pr-tendencia-icon').textContent = tCfg.icon;
+
+  // 2. Renderizar Gráfico
+  renderChart(matHist, matPro, materia);
+
+  // 3. Renderizar Storytelling
+  renderStorytelling(materia, tend, conf, cb, matPro[matPro.length-1].proyectado);
+}
+
+function getNombreMateria(matKey) {
+  const t = {
+      'global': 'Puntaje Global', 'matematicas': 'Matemáticas', 'lectura_critica':'Lectura Crítica',
+      'c_naturales':'Ciencias Naturales', 'sociales_ciudadanas': 'Sociales y Ciudadanas', 'ingles':'Inglés'
+  };
+  return t[matKey] || matKey;
+}
+
+function renderStorytelling(materia, tend, conf, cambio, projFinal) {
+  const container = document.getElementById('pr-storytelling');
+  const subjectName = getNombreMateria(materia);
+  
+  const recomendaciones = {
+    'global': {
+        'Creciente': "Mantén el enfoque integral. La política educativa actual del colegio está rindiendo frutos sólidos a nivel general. Fomenta el liderazgo estudiantil y la retroalimentación cualitativa constante.",
+        'Decreciente': "El colegio requiere una intervención directiva inmediata. Establece mesas de trabajo con los coordinadores funcionales para identificar qué departamentos están jalando el promedio hacia abajo bruscamente.",
+        'Estable': "Analiza a fondo las materias individuales en el panel superior para descubrir si algunas están subiendo a costa de la caída de otras, neutralizando tu resultado global a largo plazo."
+    },
+    'matematicas': {
+        'Creciente': "Aprovecha el sólido desarrollo numérico para impulsar proyectos avanzados STEM (Ciencia, Tecnología, Ingeniería y Matemáticas) extracurriculares.",
+        'Decreciente': "Fortalece las bases de razonamiento cuantitativo y resolución de problemas de la vida real. Un enfoque excesivamente memorístico en fórmulas puras tradicionalmente penaliza frente al modelo de evaluación del ICFES.",
+        'Estable': "Explora metodologías de 'Aulas Invertidas' para sacar a los estudiantes de la rutina del álgebra mecánica y conectarlos mejor con la modelación y la lógica proposicional."
+    },
+    'lectura_critica': {
+        'Creciente': "El éxito lector empuja directamente el resto de las materias. Escala estos hábitos promoviendo clubes de argumentación, debate o análisis crítico de medios modernos.",
+        'Decreciente': "Reenfoca el plan lector institucional. No asumas que leer significa repasar grandes obras literarias clásicas; urge enseñar a extraer intenciones, posturas y sesgos en textos periodísticos o discontinuos.",
+        'Estable': "Introduce urgentemente literatura ensayística o artículos científicos en materias fuera de 'lenguaje' (por ejemplo, exige análisis de textos críticos de biología en tu clase de ciencias)."
+    },
+    'c_naturales': {
+        'Creciente': "Las metodologías empíricas y prácticas están resonando fuerte en los estudiantes. Incentiva e invierte en ferias de ciencia enfocadas de lleno en sostenibilidad y método deductivo.",
+        'Decreciente': "Las fallas en biología y física provienen a menudo por incapacidad de entender y procesar variables de gráficos experimentales. Integra laboratorios de comprobación de hipótesis documentales.",
+        'Estable': "Promueve herramientas como laboratorios virtuales o salidas de exploración ambiental práctica para quebrar la monotonía del tablero y activar la observación y curiosidad biológica."
+    },
+    'sociales_ciudadanas': {
+        'Creciente': "Tu entorno está moldeando excelentes ciudadanos con postura geopolítica. Capitaliza esto involucrando activamente a tus jóvenes en el Modelos ONU o liderazgos cívico-sociales.",
+        'Decreciente': "Revisa el currículo en historia y cívica. El ICFES evalúa contundentemente el multiperspectivismo: tu comunidad estudiantil necesita aprender a abordar los conflictos sociales modernos desde múltiples perspectivas y no de memoria.",
+        'Estable': "Traduce los conceptos teóricos y constitucionales (ramas de poder, inflación, derechos puros) en foros de debates estructurados empleando incidentes contemporáneos recientes."
+    },
+    'ingles': {
+        'Creciente': "El programa bilingüe está triunfando orgánicamente. Es el momento dorado para pactar alianzas con academias de intercambio o iniciar inmersiones con nativos 100% conversacionales.",
+        'Decreciente': "Un declive marcado apunta a que el modelo tradicional-teórico de traducir listas de gramática está agotado. Transiciona hacia el desarrollo de las habilidades bajo un prisma puramente pragmático (MCERL).",
+        'Estable': "Es hora de 'Gamificar' y tecnificar la materia. Prescribe el uso de simuladores, herramientas modernas como Duolingo Classrooms, y videos para forzar fluidez pasiva en el oyente."
+    }
+  };
+
+  let titulo = "";
+  let diagnostico = "";
+  let accion = recomendaciones[materia][tend] || recomendaciones[materia]['Estable'];
+  let color = "primary";
+  let icon = "iconamoon:lightbulb-duotone";
+
+  if(tend === 'Creciente') {
+    titulo = "💡 Trayectoria Positiva - Insight de IA";
+    color = "success";
+    diagnostico = `Nuestro modelo predictivo estima un progreso de <strong>+${cambio.toFixed(1)} puntos</strong> en <strong>${subjectName}</strong> de cara al 2029 (rango estimado final de ${projFinal.toFixed(1)}). Esta señal destaca el claro acierto en tus directrices académicas presentes.`;
+  } else if (tend === 'Decreciente') {
+    titulo = "🚨 Alerta de Declive - Insight de IA";
+    color = "danger";
+    diagnostico = `¡Atención Institucional! Estadísticamente se alerta sobre una caída inminente en los próximos años de aproximadamente <strong>${Math.abs(cambio).toFixed(1)} puntos</strong> en el promedio de <strong>${subjectName}</strong>. Los patrones arrastrados indican una potencial desconexión del programa con la malla del ICFES.`;
+  } else {
+    titulo = "➡️ Estancamiento Detectado - Insight de IA";
+    color = "secondary";
+    diagnostico = `El horizonte indica una llanura o estancamiento de crecimiento para <strong>${subjectName}</strong>, con una micro-variación de <strong>${cambio.toFixed(1)} puntos</strong> sostenida hasta el 2029. Hay poca o nula dinámica transformadora identificable en el histórico.`;
+  }
+
+  // Agregado de aviso de certeza
+  let confText = "";
+  if(conf < 0.45) {
+    confText = `<div class="mt-3 text-muted small"><iconify-icon icon="iconamoon:attention-circle-duotone" class="text-warning"></iconify-icon> <em>Nivel de Confianza Bajo:</em> El modelo detectó resultados muy volátiles a lo largo de los últimos diez años, por lo que el algoritmo recomienda que este pronóstico se use primariamente como lectura de reflexión en lugar de sentencia rotunda.</div>`;
+  } else if(conf >= 0.70) {
+    confText = `<div class="mt-3 text-muted small"><iconify-icon icon="iconamoon:check-circle-1-duotone" class="text-success"></iconify-icon> <em>Alta Certeza:</em> La línea de tiempo institucional es envidiablemente congruente. El modelo otorga a esta proyección altísima confiabilidad y credibilidad matemática de cumplimiento.</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="card border-0 border-start border-4 border-${color} shadow-sm mt-3 bg-transparent">
+      <div class="card-body p-4 rounded" style="background-color: var(--bs-body-bg);">
+        <h5 class="fw-bold text-${color} mb-3 d-flex align-items-center">
+            <iconify-icon icon="iconamoon:lightbulb-duotone" class="me-2 fs-4"></iconify-icon>
+            ${titulo}
+        </h5>
+        <p class="mb-3 fs-6">${diagnostico}</p>
+        <div class="alert alert-${color} border-0 mb-0">
+          <strong><iconify-icon icon="iconamoon:playlist-play-duotone" class="me-1"></iconify-icon> Recomendación Estratégica:</strong><br/>
+          ${accion}
+        </div>
+        ${confText}
+      </div>
+    </div>
+  `;
+  container.style.display = 'block';
+}
+
+function renderChart(histData, proData, materiaField) {
+  // 1. Obtener todos los años cubiertos entre histórico y pronóstico
+  let yearsSet = new Set();
+  histData.forEach(d => { if(d[materiaField] != null) yearsSet.add(d.ano); });
+  proData.forEach(d => yearsSet.add(d.ano));
+  const allYears = Array.from(yearsSet).sort((a,b) => a - b);
+  
+  // 2. Padding de arrays con nulls para que ApexCharts alinee perfectamente el Eje X
+  const histPoints = [];
+  const proPoints = [];
+  const areaPoints = [];
+  
+  // Buscar último punto histórico válido como anclaje visual (conector)
+  let lastHistAno = null;
+  let lastHistVal = null;
+  for(let i = histData.length - 1; i >= 0; i--) {
+      if(histData[i][materiaField] != null) {
+          lastHistAno = histData[i].ano;
+          lastHistVal = histData[i][materiaField];
+          break;
+      }
+  }
+
+  allYears.forEach(ano => {
+    // a. Histórico: si existe el año se inserta el valor, si no null
+    let h = histData.find(d => d.ano === ano);
+    if(h && h[materiaField] != null) {
+        histPoints.push(h[materiaField]);
+    } else {
+        histPoints.push(null);
+    }
+
+    // b. Pronóstico & Área de Confianza
+    let p = proData.find(d => d.ano === ano);
+    if(p) {
+        proPoints.push(p.proyectado);
+        areaPoints.push([p.lb, p.ub]);
+    } else if (ano === lastHistAno && lastHistVal !== null) {
+        // Punto conector para que no haya un hueco entre lo sólido y lo punteado
+        proPoints.push(lastHistVal);
+        areaPoints.push([lastHistVal, lastHistVal]);
+    } else {
+        // Año puramente histórico sin proyección
+        proPoints.push(null);
+        areaPoints.push(null);
+    }
+  });
+
+  const opciones = {
+    series: [
+      {
+        name: 'Histórico',
+        type: 'line',
+        data: histPoints
+      },
+      {
+        name: 'Pronóstico',
+        type: 'line',
+        data: proPoints
+      },
+      {
+        name: 'Margen 80%',
+        type: 'area',
+        data: areaPoints
+      }
+    ],
+    chart: {
+      height: 350,
+      type: 'line',
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      fontFamily: 'Inter, sans-serif'
+    },
+    stroke: {
+      curve: 'smooth', // 'straight' puede ser mejor para regresiones
+      width: [3, 3, 0],
+      dashArray: [0, 5, 0] // Linea 1 solida, linea 2 punteada, area sin linea
+    },
+    fill: {
+      type: 'solid',
+      opacity: [1, 1, 0.2]
+    },
+    colors: ['#0d6efd', '#20c997', '#adb5bd'], // Azul, Verde, Gris area
+    markers: {
+      size: [4, 4, 0],
+      colors: ['#0d6efd', '#20c997', '#adb5bd'],
+      strokeWidth: 2,
+    },
+    xaxis: {
+      categories: allYears,
+      type: 'category',
+      tickPlacement: 'between'
+    },
+    yaxis: {
+      title: { text: "Puntaje Promedio" },
+      min: materiaField === 'global' ? function(min) { return Math.max(0, min - 20) } : function(min) { return Math.max(0, min - 10) },
+      max: materiaField === 'global' ? function(max) { return Math.min(500, max + 20) } : function(max) { return Math.min(100, max + 10) }
+    },
+    tooltip: {
+      shared: true,
+      intersect: false,
+      y: {
+        formatter: function (y, { seriesIndex, dataPointIndex, w }) {
+          if (typeof y !== "undefined" && y !== null) {
+            if(Array.isArray(y)) return `${y[0].toFixed(1)} - ${y[1].toFixed(1)}`;
+            return y.toFixed(1) + " pts";
+          }
+          return y;
+        }
+      }
+    },
+    legend: {
+      position: 'top',
+      horizontalAlign: 'right'
+    }
+  };
+
+  if(chartPronostico) {
+    chartPronostico.destroy();
+  }
+  
+  const chartEl = document.getElementById('pr-main-chart');
+  chartEl.innerHTML = '';
+  chartPronostico = new ApexCharts(chartEl, opciones);
+  chartPronostico.render();
+}
+</script>
+
+{% endblock page_content %}

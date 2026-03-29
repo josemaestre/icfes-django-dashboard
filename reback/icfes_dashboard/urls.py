@@ -22,6 +22,7 @@ from . import (
     views_motivacional,
     views_motivacional_landing,
     views_potencial,
+    views_pronostico,
     views_school_endpoints,
 )
 
@@ -55,6 +56,7 @@ urlpatterns = [
     path('ml/', views_ml.ml_dashboard, name='ml_dashboard'),
     path('motivacional/', views.motivacional_dashboard, name='motivacional_dashboard'),
     path('trafico/', traffic_views.traffic_dashboard, name='traffic_dashboard'),
+    path('pronostico/', views_pronostico.pronostico_page, name='pronostico_colegio'),
 
     # API endpoints — Dashboard Motivacional
     path('api/motivacional/resumen/',      views_motivacional.api_motivacional_resumen,      name='api_motivacional_resumen'),
@@ -250,6 +252,8 @@ urlpatterns = [
          views.api_colegio_resumen, name='api_colegio_resumen'),
     path('api/colegio/<str:colegio_sk>/ai-recommendations/',
          views.api_colegio_ai_recommendations, name='api_colegio_ai_recommendations'),
+    path('api/colegio/<str:colegio_sk>/pronostico/',
+         views_pronostico.api_colegio_pronostico, name='api_colegio_pronostico'),
 
     # Endpoints de Comparación con Contexto (NUEVO - usando modelo gold)
     path('api/colegio/<str:colegio_sk>/comparacion-contexto/',
