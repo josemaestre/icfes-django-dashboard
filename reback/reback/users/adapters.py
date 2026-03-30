@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing
 
 from allauth.account.adapter import DefaultAccountAdapter
@@ -12,6 +13,8 @@ if typing.TYPE_CHECKING:
 
     from reback.users.models import User
 
+logger = logging.getLogger("auth")
+
 
 class AccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request: HttpRequest) -> bool:
@@ -19,6 +22,17 @@ class AccountAdapter(DefaultAccountAdapter):
 
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):
+    def pre_social_login(self, request: HttpRequest, sociallogin: SocialLogin) -> None:
+        """Log Google OAuth attempts — nuevo registro vs login existente."""
+        email = ""
+        try:
+            email = sociallogin.account.extra_data.get("email", "")
+        except Exception:
+            pass
+        action = "LOGIN" if sociallogin.is_existing else "SIGNUP"
+        logger.info("Google OAuth %s | email=%s | ip=%s",
+                    action, email, request.META.get("REMOTE_ADDR", "-"))
+
     def is_open_for_signup(
         self,
         request: HttpRequest,

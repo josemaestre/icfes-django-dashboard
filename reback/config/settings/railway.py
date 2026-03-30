@@ -227,6 +227,12 @@ LOGGING = {
             "level": _LOG_LEVEL,
             "propagate": False,
         },
+        # Auth events always show — SIGNUP/LOGIN via Google.
+        "auth": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
